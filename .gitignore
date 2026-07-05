@@ -2,6 +2,8 @@
 backend/bin/
 backend/obj/
 backend/trainer.db*
+backend.Tests/bin/
+backend.Tests/obj/
 
 # Next.js / Node
 web/node_modules/

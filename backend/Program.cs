@@ -310,3 +310,6 @@ app.MapDelete("/api/assignments/{id:int}", async (int id, AppDb db) =>
 });
 
 app.Run();
+
+// Umożliwia hostowanie aplikacji przez WebApplicationFactory w testach integracyjnych.
+public partial class Program { }

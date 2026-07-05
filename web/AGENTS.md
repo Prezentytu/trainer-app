@@ -3,3 +3,75 @@
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
+
+---
+
+# Frontend — zasady dla agentów
+
+Next.js 16 (App Router) + React 19 + Tailwind 4. Port 3000. Ciemny motyw, UI po polsku. Zobacz też root `AGENTS.md`.
+
+## Struktura
+
+| Ścieżka | Rola |
+|---|---|
+| `app/layout.tsx` | Wspólny layout: sidebar + tablica `NAV` (tu dopisujesz nowe działy) |
+| `app/{zasób}/page.tsx` | Strona listy zasobu (client component) |
+| `app/{zasób}/[id]/page.tsx` | Strona szczegółów |
+| `lib/api.ts` | Typowany klient API — typy TS + obiekt `api` z metodami per zasób |
+| `components/ui.tsx` | Wspólne prymitywy UI |
+| `components/PlanBuilder.tsx` | Złożony komponent buildera planów (przykład formularza) |
+
+## Always
+
+- Strony z danymi to komponenty klienckie: pierwsza linia `"use client"`, dane przez `api.*` w `useEffect` (wzorzec `useCallback` + `load()`).
+- Nowe typy i metody API dodawaj do `lib/api.ts` — typy muszą być lustrzane do backendowych encji/DTO (camelCase).
+- Używaj prymitywów z `components/ui.tsx`: `PageHeader`, `Card`, `Button`, `Field` + `inputClass`, `ErrorBanner`, `EmptyState`, `Badge`, `formatRest`.
+- Błędy łap i pokazuj przez `<ErrorBanner message={error} />` (stan `error: string | null`).
+- Nowy dział dopisz do tablicy `NAV` w `app/layout.tsx`.
+- Import ścieżkowy przez alias `@/` (np. `@/lib/api`, `@/components/ui`).
+- Po zmianach uruchom `npm run lint`, `npm run typecheck` i `npm run build` (z katalogu `web/`).
+
+## Never
+
+- Nigdy nie używaj surowego `fetch` w stronach/komponentach — tylko `api` z `lib/api.ts`. Jedyny wrapper `fetch` żyje w `request<T>()` w tym pliku.
+- Nigdy nie hardkoduj kolorów spoza palety `zinc`/`yellow` ani nie duplikuj stylów przycisków/pól — użyj `Button`/`inputClass`.
+- Nigdy nie zakładaj wiedzy o API Next.js z pamięci — sprawdź lokalne docsy (ostrzeżenie na górze).
+
+## Wzorzec strony listy (na bazie `app/clients/page.tsx`)
+
+```tsx
+"use client";
+import { useCallback, useEffect, useState } from "react";
+import { api, ClientSummary } from "@/lib/api";
+import { Button, Card, EmptyState, ErrorBanner, PageHeader } from "@/components/ui";
+
+export default function ClientsPage() {
+  const [rows, setRows] = useState<ClientSummary[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    api.clients.list().then(setRows).catch((e: Error) => setError(e.message));
+  }, []);
+  useEffect(load, [load]);
+
+  return (
+    <div>
+      <PageHeader title="Klienci" subtitle="…" />
+      <ErrorBanner message={error} />
+      {rows.length === 0 ? <EmptyState>Brak danych.</EmptyState> : /* lista Card */ null}
+    </div>
+  );
+}
+```
+
+## Kontrakt `lib/api.ts`
+
+- Base URL: `process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5210"`.
+- `request<T>()` ustawia `Content-Type: application/json`, przy `!res.ok` wyciąga `body.message` i rzuca `Error`, przy `204` zwraca `undefined`.
+- Metody grupowane per zasób: `api.clients`, `api.exercises`, `api.plans`, `api.assignments`. Nowy zasób dokładaj analogicznie.
+
+## Styl / Tailwind
+
+- Motyw: tło `bg-zinc-950`, tekst `text-zinc-100`, akcent `yellow-400`, obramowania `border-zinc-800`.
+- Statusy przez `Badge` z tonami `neutral | yellow | green | red` — nie wymyślaj własnych klas kolorów.
+- Font Geist ładowany w `layout.tsx`.
