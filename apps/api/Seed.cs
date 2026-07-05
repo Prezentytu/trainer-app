@@ -30,15 +30,52 @@ public static class Seed
             Name = "FBW A — początkujący",
             Description = "Trening całego ciała, nacisk na wzorce podstawowe.",
             IsTemplate = true,
-            Items =
+            Days =
             [
-                new PlanItem { ExerciseId = exercises[0].Id, Order = 1, Sets = 3, Reps = 10, LoadKg = 40, RestAfterExerciseSeconds = 120 },
-                new PlanItem { ExerciseId = exercises[2].Id, Order = 2, Sets = 3, Reps = 10, LoadKg = 40, RestAfterExerciseSeconds = 120 },
-                new PlanItem { ExerciseId = exercises[3].Id, Order = 3, RestAfterExerciseSeconds = 90 },
-                new PlanItem { ExerciseId = exercises[6].Id, Order = 4, RestAfterExerciseSeconds = 60, Notes = "Ostatnia seria do przerwania pozycji." },
+                new PlanDay
+                {
+                    WeekNumber = 1, Order = 1, Label = "Trening całego ciała",
+                    Notes = "Rozgrzewka: 5 min krążeń i wymachów.",
+                    Items =
+                    [
+                        new PlanItem { ExerciseId = exercises[0].Id, Order = 1, Sets = 3, Reps = 10, LoadKg = 40, RestAfterExerciseSeconds = 120 },
+                        new PlanItem { ExerciseId = exercises[2].Id, Order = 2, Sets = 3, Reps = 10, LoadKg = 40, RestAfterExerciseSeconds = 120 },
+                        new PlanItem { ExerciseId = exercises[3].Id, Order = 3, RestAfterExerciseSeconds = 90 },
+                        new PlanItem { ExerciseId = exercises[6].Id, Order = 4, RestAfterExerciseSeconds = 60, Notes = "Ostatnia seria do przerwania pozycji." },
+                    ],
+                },
             ],
         };
         db.Plans.Add(template);
+
+        // Przykład metody 6-4-2-5-3-1 z rozkładem na serie (rampa + serie anaboliczne 80%/60% od topu).
+        var poliquin = new Plan
+        {
+            Name = "Siła — metoda 6-4-2-5-3-1 (przykład)",
+            Description = "Rampa do topu, potem serie anaboliczne liczone jako % od najcięższej serii.",
+            IsTemplate = true,
+            Days =
+            [
+                new PlanDay
+                {
+                    WeekNumber = 3, Order = 1, Label = "Poniedziałek",
+                    Items =
+                    [
+                        new PlanItem
+                        {
+                            ExerciseId = exercises[0].Id, Order = 1, SetScheme = "Rampa 6-4-2-5-3-1",
+                            PrescribedSets =
+                            [
+                                new PlanSet { Order = 1, Role = "ramp", Reps = 2, LoadKg = 50, Note = "ustal 2RM" },
+                                new PlanSet { Order = 2, Role = "backoff", Reps = 5, RepsMax = 10, LoadPercent = 80, PercentOf = "top", Note = "seria anaboliczna" },
+                                new PlanSet { Order = 3, Role = "backoff", Reps = 10, RepsMax = 15, LoadPercent = 60, PercentOf = "top" },
+                            ],
+                        },
+                    ],
+                },
+            ],
+        };
+        db.Plans.Add(poliquin);
         db.SaveChanges();
     }
 }

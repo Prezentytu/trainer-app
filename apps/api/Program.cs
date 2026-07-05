@@ -91,6 +91,7 @@ app.MapPost("/api/exercises", async (ExerciseInput input, AppDb db) =>
         DefaultSets = input.DefaultSets,
         DefaultReps = input.DefaultReps,
         DefaultRepDurationSeconds = input.DefaultRepDurationSeconds,
+        DefaultDistanceMeters = input.DefaultDistanceMeters,
         DefaultRestBetweenSetsSeconds = input.DefaultRestBetweenSetsSeconds,
         DefaultLoadKg = input.DefaultLoadKg,
     };
@@ -109,6 +110,7 @@ app.MapPut("/api/exercises/{id:int}", async (int id, ExerciseInput input, AppDb 
     exercise.DefaultSets = input.DefaultSets;
     exercise.DefaultReps = input.DefaultReps;
     exercise.DefaultRepDurationSeconds = input.DefaultRepDurationSeconds;
+    exercise.DefaultDistanceMeters = input.DefaultDistanceMeters;
     exercise.DefaultRestBetweenSetsSeconds = input.DefaultRestBetweenSetsSeconds;
     exercise.DefaultLoadKg = input.DefaultLoadKg;
     await db.SaveChangesAsync();
@@ -128,32 +130,110 @@ app.MapDelete("/api/exercises/{id:int}", async (int id, AppDb db) =>
 
 // ---------- Plany ----------
 
-static object PlanToDto(Plan plan) => new
+// Zaokrąglenie do 0,5 kg (najmniejszy talerzyk).
+static double RoundToHalf(double kg) => Math.Round(kg * 2, MidpointRounding.AwayFromZero) / 2;
+
+// Ciężar bazowy „top" dla pozycji: seria top/ramp, potem ciężar pozycji, potem najcięższa seria, potem default ćwiczenia.
+static double? TopLoadKg(PlanItem item)
 {
-    plan.Id, plan.Name, plan.Description, plan.IsTemplate, plan.CreatedAt,
-    Items = plan.Items.OrderBy(i => i.Order).Select(i => new
+    var byRole = item.PrescribedSets.FirstOrDefault(s => s.Role is "top" or "ramp" && s.LoadKg is not null)?.LoadKg;
+    if (byRole is not null) return byRole;
+    if (item.LoadKg is not null) return item.LoadKg;
+    var maxSet = item.PrescribedSets.Where(s => s.LoadKg is not null).Select(s => s.LoadKg!.Value);
+    if (maxSet.Any()) return maxSet.Max();
+    return item.Exercise?.DefaultLoadKg;
+}
+
+// Wyliczony ciężar serii: bezwzględny, albo % od topu tej pozycji. Baza "1rm" wymaga kontekstu klienta (osobny spec) → null.
+static double? ComputedSetLoad(PlanSet set, double? topKg)
+{
+    if (set.LoadKg is not null) return set.LoadKg;
+    if (set.LoadPercent is not null && set.PercentOf == "top" && topKg is not null)
+        return RoundToHalf(topKg.Value * set.LoadPercent.Value / 100.0);
+    return null;
+}
+
+static object ItemToDto(PlanItem i)
+{
+    var topKg = TopLoadKg(i);
+    return new
     {
-        i.Id, i.ExerciseId, i.Order,
+        i.Id, i.ExerciseId, i.Order, i.SupersetGroup,
         ExerciseName = i.Exercise!.Name,
         ExerciseType = i.Exercise.Type,
         ExerciseDescription = i.Exercise.Description,
         // Efektywne parametry: nadpisanie z planu albo default z ćwiczenia
         Sets = i.Sets ?? i.Exercise.DefaultSets,
         Reps = i.Reps ?? i.Exercise.DefaultReps,
+        i.RepsMax,
         RepDurationSeconds = i.RepDurationSeconds ?? i.Exercise.DefaultRepDurationSeconds,
+        i.RepDurationSecondsMax,
+        DistanceMeters = i.DistanceMeters ?? i.Exercise.DefaultDistanceMeters,
+        i.Tempo,
+        i.TargetRpe,
+        i.SetScheme,
         RestBetweenSetsSeconds = i.RestBetweenSetsSeconds ?? i.Exercise.DefaultRestBetweenSetsSeconds,
         i.RestAfterExerciseSeconds,
         LoadKg = i.LoadKg ?? i.Exercise.DefaultLoadKg,
         i.Notes,
-        Overrides = new { i.Sets, i.Reps, i.RepDurationSeconds, i.RestBetweenSetsSeconds, i.LoadKg },
-    }),
-    AssignedCount = plan.Assignments.Count(a => a.Status == "active"),
+        Overrides = new { i.Sets, i.Reps, i.RepsMax, i.RepDurationSeconds, i.RepDurationSecondsMax, i.DistanceMeters, i.RestBetweenSetsSeconds, i.LoadKg },
+        PrescribedSets = i.PrescribedSets.OrderBy(s => s.Order).Select(s => new
+        {
+            s.Id, s.Order, s.Reps, s.RepsMax, s.DurationSeconds, s.DistanceMeters,
+            s.LoadKg, s.LoadPercent, s.PercentOf, s.TargetRpe, s.Tempo, s.Role, s.Note,
+            ComputedLoadKg = ComputedSetLoad(s, topKg),
+        }),
+    };
+}
+
+static object PlanToDto(Plan plan)
+{
+    var days = plan.Days.OrderBy(d => d.WeekNumber).ThenBy(d => d.Order).ToList();
+    return new
+    {
+        plan.Id, plan.Name, plan.Description, plan.IsTemplate, plan.CreatedAt,
+        Days = days.Select(d => new
+        {
+            d.Id, d.WeekNumber, d.Order, d.Label, d.Notes,
+            Items = d.Items.OrderBy(i => i.Order).Select(ItemToDto),
+        }),
+        WeeksCount = days.Select(d => d.WeekNumber).DefaultIfEmpty(0).Max(),
+        DaysCount = days.Count,
+        ExerciseCount = days.Sum(d => d.Items.Count),
+        AssignedCount = plan.Assignments.Count(a => a.Status == "active"),
+    };
+}
+
+// Budowa encji z DTO wejściowego (współdzielone przez POST/PUT/duplicate).
+static PlanSet BuildSet(PlanSetInput s) => new()
+{
+    Order = s.Order, Reps = s.Reps, RepsMax = s.RepsMax, DurationSeconds = s.DurationSeconds,
+    DistanceMeters = s.DistanceMeters, LoadKg = s.LoadKg, LoadPercent = s.LoadPercent,
+    PercentOf = s.PercentOf, TargetRpe = s.TargetRpe, Tempo = s.Tempo, Role = s.Role, Note = s.Note,
+};
+
+static PlanItem BuildItem(PlanItemInput i) => new()
+{
+    ExerciseId = i.ExerciseId, Order = i.Order, SupersetGroup = i.SupersetGroup,
+    Sets = i.Sets, Reps = i.Reps, RepsMax = i.RepsMax,
+    RepDurationSeconds = i.RepDurationSeconds, RepDurationSecondsMax = i.RepDurationSecondsMax,
+    DistanceMeters = i.DistanceMeters, Tempo = i.Tempo, TargetRpe = i.TargetRpe, SetScheme = i.SetScheme,
+    RestBetweenSetsSeconds = i.RestBetweenSetsSeconds, RestAfterExerciseSeconds = i.RestAfterExerciseSeconds ?? 90,
+    LoadKg = i.LoadKg, Notes = i.Notes,
+    PrescribedSets = (i.PrescribedSets ?? []).Select(BuildSet).ToList(),
+};
+
+static PlanDay BuildDay(PlanDayInput d) => new()
+{
+    WeekNumber = d.WeekNumber, Order = d.Order, Label = d.Label, Notes = d.Notes,
+    Items = (d.Items ?? []).Select(BuildItem).ToList(),
 };
 
 app.MapGet("/api/plans", async (AppDb db) =>
 {
     var plans = await db.Plans
-        .Include(p => p.Items).ThenInclude(i => i.Exercise)
+        .Include(p => p.Days).ThenInclude(d => d.Items).ThenInclude(i => i.Exercise)
+        .Include(p => p.Days).ThenInclude(d => d.Items).ThenInclude(i => i.PrescribedSets)
         .Include(p => p.Assignments)
         .OrderByDescending(p => p.CreatedAt)
         .ToListAsync();
@@ -163,7 +243,8 @@ app.MapGet("/api/plans", async (AppDb db) =>
 app.MapGet("/api/plans/{id:int}", async (int id, AppDb db) =>
 {
     var plan = await db.Plans
-        .Include(p => p.Items).ThenInclude(i => i.Exercise)
+        .Include(p => p.Days).ThenInclude(d => d.Items).ThenInclude(i => i.Exercise)
+        .Include(p => p.Days).ThenInclude(d => d.Items).ThenInclude(i => i.PrescribedSets)
         .Include(p => p.Assignments)
         .FirstOrDefaultAsync(p => p.Id == id);
     return plan is null ? Results.NotFound() : Results.Ok(PlanToDto(plan));
@@ -176,18 +257,7 @@ app.MapPost("/api/plans", async (PlanInput input, AppDb db) =>
         Name = input.Name,
         Description = input.Description,
         IsTemplate = input.IsTemplate,
-        Items = input.Items.Select(i => new PlanItem
-        {
-            ExerciseId = i.ExerciseId,
-            Order = i.Order,
-            Sets = i.Sets,
-            Reps = i.Reps,
-            RepDurationSeconds = i.RepDurationSeconds,
-            RestBetweenSetsSeconds = i.RestBetweenSetsSeconds,
-            RestAfterExerciseSeconds = i.RestAfterExerciseSeconds ?? 90,
-            LoadKg = i.LoadKg,
-            Notes = i.Notes,
-        }).ToList(),
+        Days = (input.Days ?? []).Select(BuildDay).ToList(),
     };
     db.Plans.Add(plan);
     await db.SaveChangesAsync();
@@ -196,32 +266,24 @@ app.MapPost("/api/plans", async (PlanInput input, AppDb db) =>
 
 app.MapPut("/api/plans/{id:int}", async (int id, PlanInput input, AppDb db) =>
 {
-    var plan = await db.Plans.Include(p => p.Items).FirstOrDefaultAsync(p => p.Id == id);
+    var plan = await db.Plans.Include(p => p.Days).ThenInclude(d => d.Items).ThenInclude(i => i.PrescribedSets)
+        .FirstOrDefaultAsync(p => p.Id == id);
     if (plan is null) return Results.NotFound();
 
     plan.Name = input.Name;
     plan.Description = input.Description;
     plan.IsTemplate = input.IsTemplate;
-    db.PlanItems.RemoveRange(plan.Items);
-    plan.Items = input.Items.Select(i => new PlanItem
-    {
-        ExerciseId = i.ExerciseId,
-        Order = i.Order,
-        Sets = i.Sets,
-        Reps = i.Reps,
-        RepDurationSeconds = i.RepDurationSeconds,
-        RestBetweenSetsSeconds = i.RestBetweenSetsSeconds,
-        RestAfterExerciseSeconds = i.RestAfterExerciseSeconds ?? 90,
-        LoadKg = i.LoadKg,
-        Notes = i.Notes,
-    }).ToList();
+    db.PlanDays.RemoveRange(plan.Days);   // kaskada usuwa pozycje i serie
+    plan.Days = (input.Days ?? []).Select(BuildDay).ToList();
     await db.SaveChangesAsync();
     return Results.Ok(new { plan.Id });
 });
 
 app.MapPost("/api/plans/{id:int}/duplicate", async (int id, DuplicateInput input, AppDb db) =>
 {
-    var source = await db.Plans.Include(p => p.Items).FirstOrDefaultAsync(p => p.Id == id);
+    var source = await db.Plans
+        .Include(p => p.Days).ThenInclude(d => d.Items).ThenInclude(i => i.PrescribedSets)
+        .FirstOrDefaultAsync(p => p.Id == id);
     if (source is null) return Results.NotFound();
 
     var copy = new Plan
@@ -229,17 +291,24 @@ app.MapPost("/api/plans/{id:int}/duplicate", async (int id, DuplicateInput input
         Name = input.Name ?? $"{source.Name} (kopia)",
         Description = source.Description,
         IsTemplate = input.IsTemplate ?? source.IsTemplate,
-        Items = source.Items.Select(i => new PlanItem
+        Days = source.Days.Select(d => new PlanDay
         {
-            ExerciseId = i.ExerciseId,
-            Order = i.Order,
-            Sets = i.Sets,
-            Reps = i.Reps,
-            RepDurationSeconds = i.RepDurationSeconds,
-            RestBetweenSetsSeconds = i.RestBetweenSetsSeconds,
-            RestAfterExerciseSeconds = i.RestAfterExerciseSeconds,
-            LoadKg = i.LoadKg,
-            Notes = i.Notes,
+            WeekNumber = d.WeekNumber, Order = d.Order, Label = d.Label, Notes = d.Notes,
+            Items = d.Items.Select(i => new PlanItem
+            {
+                ExerciseId = i.ExerciseId, Order = i.Order, SupersetGroup = i.SupersetGroup,
+                Sets = i.Sets, Reps = i.Reps, RepsMax = i.RepsMax,
+                RepDurationSeconds = i.RepDurationSeconds, RepDurationSecondsMax = i.RepDurationSecondsMax,
+                DistanceMeters = i.DistanceMeters, Tempo = i.Tempo, TargetRpe = i.TargetRpe, SetScheme = i.SetScheme,
+                RestBetweenSetsSeconds = i.RestBetweenSetsSeconds, RestAfterExerciseSeconds = i.RestAfterExerciseSeconds,
+                LoadKg = i.LoadKg, Notes = i.Notes,
+                PrescribedSets = i.PrescribedSets.Select(s => new PlanSet
+                {
+                    Order = s.Order, Reps = s.Reps, RepsMax = s.RepsMax, DurationSeconds = s.DurationSeconds,
+                    DistanceMeters = s.DistanceMeters, LoadKg = s.LoadKg, LoadPercent = s.LoadPercent,
+                    PercentOf = s.PercentOf, TargetRpe = s.TargetRpe, Tempo = s.Tempo, Role = s.Role, Note = s.Note,
+                }).ToList(),
+            }).ToList(),
         }).ToList(),
     };
     db.Plans.Add(copy);

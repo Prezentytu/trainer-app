@@ -25,27 +25,74 @@ export type ClientDetails = {
   assignments: ClientAssignment[];
 };
 
+export type ExerciseType = "reps" | "time" | "distance";
+export type PercentBase = "1rm" | "top";
+
+export const EXERCISE_TYPE_LABELS: Record<ExerciseType, string> = {
+  reps: "powtórzenia",
+  time: "czas",
+  distance: "dystans",
+};
+
+export const SET_ROLE_LABELS: Record<string, string> = {
+  warmup: "rozgrzewka",
+  ramp: "rampa",
+  top: "top",
+  backoff: "back-off",
+  work: "robocza",
+};
+
+export const PERCENT_BASE_LABELS: Record<PercentBase, string> = {
+  "1rm": "% 1RM",
+  top: "% od topu",
+};
+
 export type Exercise = {
   id: number;
   name: string;
   description: string | null;
-  type: "reps" | "time";
+  type: ExerciseType;
   defaultSets: number;
   defaultReps: number;
   defaultRepDurationSeconds: number | null;
+  defaultDistanceMeters: number | null;
   defaultRestBetweenSetsSeconds: number;
   defaultLoadKg: number | null;
+};
+
+export type PlanSet = {
+  id: number;
+  order: number;
+  reps: number | null;
+  repsMax: number | null;
+  durationSeconds: number | null;
+  distanceMeters: number | null;
+  loadKg: number | null;
+  loadPercent: number | null;
+  percentOf: PercentBase | null;
+  targetRpe: number | null;
+  tempo: string | null;
+  role: string | null;
+  note: string | null;
+  computedLoadKg: number | null;
 };
 
 export type PlanItem = {
   id: number;
   exerciseId: number;
   order: number;
+  supersetGroup: number | null;
   exerciseName: string;
-  exerciseType: "reps" | "time";
+  exerciseType: ExerciseType;
   sets: number;
   reps: number;
+  repsMax: number | null;
   repDurationSeconds: number | null;
+  repDurationSecondsMax: number | null;
+  distanceMeters: number | null;
+  tempo: string | null;
+  targetRpe: number | null;
+  setScheme: string | null;
   restBetweenSetsSeconds: number;
   restAfterExerciseSeconds: number;
   loadKg: number | null;
@@ -53,10 +100,23 @@ export type PlanItem = {
   overrides: {
     sets: number | null;
     reps: number | null;
+    repsMax: number | null;
     repDurationSeconds: number | null;
+    repDurationSecondsMax: number | null;
+    distanceMeters: number | null;
     restBetweenSetsSeconds: number | null;
     loadKg: number | null;
   };
+  prescribedSets: PlanSet[];
+};
+
+export type PlanDay = {
+  id: number;
+  weekNumber: number;
+  order: number;
+  label: string;
+  notes: string | null;
+  items: PlanItem[];
 };
 
 export type Plan = {
@@ -64,27 +124,61 @@ export type Plan = {
   name: string;
   description: string | null;
   isTemplate: boolean;
-  items: PlanItem[];
+  days: PlanDay[];
+  weeksCount: number;
+  daysCount: number;
+  exerciseCount: number;
   assignedCount: number;
+};
+
+export type PlanSetInput = {
+  order: number;
+  reps: number | null;
+  repsMax: number | null;
+  durationSeconds: number | null;
+  distanceMeters: number | null;
+  loadKg: number | null;
+  loadPercent: number | null;
+  percentOf: PercentBase | null;
+  targetRpe: number | null;
+  tempo: string | null;
+  role: string | null;
+  note: string | null;
 };
 
 export type PlanItemInput = {
   exerciseId: number;
   order: number;
+  supersetGroup: number | null;
   sets: number | null;
   reps: number | null;
+  repsMax: number | null;
   repDurationSeconds: number | null;
+  repDurationSecondsMax: number | null;
+  distanceMeters: number | null;
+  tempo: string | null;
+  targetRpe: number | null;
+  setScheme: string | null;
   restBetweenSetsSeconds: number | null;
   restAfterExerciseSeconds: number | null;
   loadKg: number | null;
   notes: string | null;
+  prescribedSets: PlanSetInput[];
+};
+
+export type PlanDayInput = {
+  weekNumber: number;
+  order: number;
+  label: string;
+  notes: string | null;
+  items: PlanItemInput[];
 };
 
 export type PlanInput = {
   name: string;
   description: string | null;
   isTemplate: boolean;
-  items: PlanItemInput[];
+  days: PlanDayInput[];
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {

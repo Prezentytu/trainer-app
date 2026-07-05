@@ -76,7 +76,7 @@ export default function DashboardPage() {
                     {p.name}
                   </Link>
                   <span className="text-xs text-zinc-500">
-                    {p.isTemplate ? "szablon" : "plan klienta"} · {p.items.length} ćw.
+                    {p.isTemplate ? "szablon" : "plan klienta"} · {p.exerciseCount} ćw.
                   </span>
                 </li>
               ))}

@@ -17,7 +17,7 @@ public class Exercise
     public string Name { get; set; } = "";
     public string? Description { get; set; }
 
-    // "reps" | "time"
+    // "reps" | "time" | "distance"
     public string Type { get; set; } = "reps";
 
     public int DefaultSets { get; set; } = 3;
@@ -25,6 +25,9 @@ public class Exercise
 
     // Dla typu "time": czas jednego powtórzenia w sekundach
     public int? DefaultRepDurationSeconds { get; set; }
+
+    // Dla typu "distance": domyślny dystans w metrach (np. spacer farmera)
+    public int? DefaultDistanceMeters { get; set; }
 
     public int DefaultRestBetweenSetsSeconds { get; set; } = 60;
     public double? DefaultLoadKg { get; set; }
@@ -34,32 +37,78 @@ public class Plan
 {
     public int Id { get; set; }
     public string Name { get; set; } = "";
-    public string? Description { get; set; }
+    public string? Description { get; set; }   // zasady ogólne planu
     public bool IsTemplate { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public List<PlanItem> Items { get; set; } = [];
+    public List<PlanDay> Days { get; set; } = [];
     public List<Assignment> Assignments { get; set; } = [];
+}
+
+public class PlanDay
+{
+    public int Id { get; set; }
+    public int PlanId { get; set; }
+    public Plan? Plan { get; set; }
+
+    public int WeekNumber { get; set; } = 1;   // Tydzień 1..N
+    public int Order { get; set; }             // kolejność dnia w tygodniu
+    public string Label { get; set; } = "";    // „Poniedziałek", „Trening A"
+    public string? Notes { get; set; }         // rozgrzewka / wskazówki dnia
+
+    public List<PlanItem> Items { get; set; } = [];
 }
 
 public class PlanItem
 {
     public int Id { get; set; }
-    public int PlanId { get; set; }
-    public Plan? Plan { get; set; }
+    public int PlanDayId { get; set; }
+    public PlanDay? Day { get; set; }
     public int ExerciseId { get; set; }
     public Exercise? Exercise { get; set; }
 
     public int Order { get; set; }
 
+    // Superserie: ta sama wartość w obrębie dnia = seria łączona (a/b/c wg Order)
+    public int? SupersetGroup { get; set; }
+
     // Nadpisania parametrów; null = weź default z ćwiczenia
     public int? Sets { get; set; }
     public int? Reps { get; set; }
+    public int? RepsMax { get; set; }                  // zakres powtórzeń: Reps..RepsMax
     public int? RepDurationSeconds { get; set; }
+    public int? RepDurationSecondsMax { get; set; }    // zakres czasu
+    public int? DistanceMeters { get; set; }
+    public string? Tempo { get; set; }                 // „3110", „20X1"
+    public double? TargetRpe { get; set; }
+    public string? SetScheme { get; set; }             // „Rampa 6", „Rampa 4 + BO 80%"
     public int? RestBetweenSetsSeconds { get; set; }
     public int RestAfterExerciseSeconds { get; set; } = 90;
     public double? LoadKg { get; set; }
     public string? Notes { get; set; }
+
+    // Opcjonalny rozkład na serie; niepusty = definiuje serie i nadpisuje Sets/Reps
+    public List<PlanSet> PrescribedSets { get; set; } = [];
+}
+
+public class PlanSet
+{
+    public int Id { get; set; }
+    public int PlanItemId { get; set; }
+    public PlanItem? Item { get; set; }
+
+    public int Order { get; set; }
+    public int? Reps { get; set; }
+    public int? RepsMax { get; set; }
+    public int? DurationSeconds { get; set; }
+    public int? DistanceMeters { get; set; }
+    public double? LoadKg { get; set; }        // ciężar bezwzględny (alternatywa dla %)
+    public double? LoadPercent { get; set; }   // % bazy PercentOf
+    public string? PercentOf { get; set; }     // "1rm" | "top" (null = bezwzględny LoadKg)
+    public double? TargetRpe { get; set; }
+    public string? Tempo { get; set; }
+    public string? Role { get; set; }          // "warmup" | "ramp" | "top" | "backoff" | "work"
+    public string? Note { get; set; }
 }
 
 public class Assignment

@@ -1,16 +1,17 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import { api, Exercise } from "@/lib/api";
+import { api, Exercise, ExerciseType, EXERCISE_TYPE_LABELS } from "@/lib/api";
 import { Badge, Button, Card, EmptyState, ErrorBanner, Field, formatRest, inputClass, PageHeader } from "@/components/ui";
 
 type FormState = {
   name: string;
   description: string;
-  type: "reps" | "time";
+  type: ExerciseType;
   defaultSets: number;
   defaultReps: number;
   defaultRepDurationSeconds: number;
+  defaultDistanceMeters: number;
   defaultRestBetweenSetsSeconds: number;
   defaultLoadKg: string;
 };
@@ -22,6 +23,7 @@ const EMPTY_FORM: FormState = {
   defaultSets: 3,
   defaultReps: 10,
   defaultRepDurationSeconds: 30,
+  defaultDistanceMeters: 20,
   defaultRestBetweenSetsSeconds: 60,
   defaultLoadKg: "",
 };
@@ -60,6 +62,7 @@ export default function ExercisesPage() {
       defaultSets: exercise.defaultSets,
       defaultReps: exercise.defaultReps,
       defaultRepDurationSeconds: exercise.defaultRepDurationSeconds ?? 30,
+      defaultDistanceMeters: exercise.defaultDistanceMeters ?? 20,
       defaultRestBetweenSetsSeconds: exercise.defaultRestBetweenSetsSeconds,
       defaultLoadKg: exercise.defaultLoadKg?.toString() ?? "",
     });
@@ -78,6 +81,7 @@ export default function ExercisesPage() {
       defaultSets: form.defaultSets,
       defaultReps: form.type === "time" ? Math.max(form.defaultReps, 1) : form.defaultReps,
       defaultRepDurationSeconds: form.type === "time" ? form.defaultRepDurationSeconds : null,
+      defaultDistanceMeters: form.type === "distance" ? form.defaultDistanceMeters : null,
       defaultRestBetweenSetsSeconds: form.defaultRestBetweenSetsSeconds,
       defaultLoadKg: form.defaultLoadKg === "" ? null : Number(form.defaultLoadKg),
     };
@@ -122,9 +126,10 @@ export default function ExercisesPage() {
               <input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} required />
             </Field>
             <Field label="Typ">
-              <select className={inputClass} value={form.type} onChange={(e) => set("type", e.target.value as "reps" | "time")}>
+              <select className={inputClass} value={form.type} onChange={(e) => set("type", e.target.value as ExerciseType)}>
                 <option value="reps">Powtórzenia</option>
                 <option value="time">Czas</option>
+                <option value="distance">Dystans</option>
               </select>
             </Field>
             <Field label="Serie">
@@ -136,6 +141,11 @@ export default function ExercisesPage() {
             {form.type === "time" && (
               <Field label="Czas powtórzenia (s)">
                 <input className={inputClass} type="number" min={5} value={form.defaultRepDurationSeconds} onChange={(e) => set("defaultRepDurationSeconds", Number(e.target.value))} />
+              </Field>
+            )}
+            {form.type === "distance" && (
+              <Field label="Dystans (m)">
+                <input className={inputClass} type="number" min={1} value={form.defaultDistanceMeters} onChange={(e) => set("defaultDistanceMeters", Number(e.target.value))} />
               </Field>
             )}
             <Field label="Przerwa między seriami (s)">
@@ -165,13 +175,21 @@ export default function ExercisesPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">{ex.name}</span>
-                  <Badge tone={ex.type === "time" ? "yellow" : "neutral"}>
-                    {ex.type === "time" ? "czas" : "powtórzenia"}
+                  <Badge tone={ex.type === "reps" ? "neutral" : "yellow"}>
+                    {EXERCISE_TYPE_LABELS[ex.type]}
                   </Badge>
                 </div>
                 <p className="mt-0.5 text-xs text-zinc-500">
-                  {ex.defaultSets} serie × {ex.defaultReps}
-                  {ex.type === "time" && ex.defaultRepDurationSeconds ? ` × ${ex.defaultRepDurationSeconds}s` : " powt."}
+                  {ex.defaultSets} serie
+                  {ex.type === "time"
+                    ? ex.defaultRepDurationSeconds
+                      ? ` × ${ex.defaultRepDurationSeconds}s`
+                      : ""
+                    : ex.type === "distance"
+                      ? ex.defaultDistanceMeters
+                        ? ` × ${ex.defaultDistanceMeters} m`
+                        : ""
+                      : ` × ${ex.defaultReps} powt.`}
                   {" · przerwa "}{formatRest(ex.defaultRestBetweenSetsSeconds)}
                   {ex.defaultLoadKg ? ` · ${ex.defaultLoadKg} kg` : ""}
                   {ex.description ? ` — ${ex.description}` : ""}

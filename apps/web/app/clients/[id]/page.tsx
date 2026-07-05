@@ -108,7 +108,7 @@ export default function ClientDetailsPage() {
                 <option value="">— wybierz plan —</option>
                 {plans.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} ({p.items.length} ćw.)
+                    {p.name} ({p.exerciseCount} ćw.)
                   </option>
                 ))}
               </select>

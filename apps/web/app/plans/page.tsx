@@ -108,7 +108,7 @@ function PlanRow({ plan, children }: { plan: Plan; children: React.ReactNode }) 
           {plan.assignedCount > 0 && <Badge tone="green">{plan.assignedCount} aktywne przypisania</Badge>}
         </div>
         <p className="mt-0.5 text-xs text-zinc-500">
-          {plan.items.length} ćwiczeń
+          {plan.weeksCount} tyg. · {plan.daysCount} dni · {plan.exerciseCount} ćwiczeń
           {plan.description ? ` · ${plan.description}` : ""}
         </p>
       </div>
