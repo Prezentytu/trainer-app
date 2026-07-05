@@ -22,12 +22,12 @@
 
 ## Model danych
 
-{Nowe/zmienione encje (`backend/Models.cs`), relacje (`AppDb.cs`), input DTO (`Dtos.cs`).}
-{Uwaga: zmiana schematu istniejącej encji wymaga usunięcia `trainer.db` — patrz `backend/AGENTS.md`.}
+{Nowe/zmienione encje (`apps/api/Models.cs`), relacje (`AppDb.cs`), input DTO (`Dtos.cs`).}
+{Uwaga: zmiana schematu istniejącej encji wymaga usunięcia `trainer.db` — patrz `apps/api/AGENTS.md`.}
 
 ## Kontrakt API
 
-{Endpointy `/api/...` (metoda, ścieżka, request, response). Odpowiadające typy i metody w `web/lib/api.ts`.}
+{Endpointy `/api/...` (metoda, ścieżka, request, response). Odpowiadające typy i metody w `apps/web/lib/api.ts`.}
 
 | Metoda | Ścieżka | Request | Response |
 |---|---|---|---|
@@ -35,7 +35,7 @@
 
 ## UI
 
-{Strony w `web/app/...`, użyte prymitywy z `components/ui.tsx`, wpis w `NAV`.}
+{Strony w `apps/web/app/...`, użyte prymitywy z `components/ui.tsx`, wpis w `NAV`.}
 
 ## Fazy implementacji
 

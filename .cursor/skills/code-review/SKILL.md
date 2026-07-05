@@ -5,7 +5,7 @@ description: Review Trainer App code changes for compliance with project convent
 
 # Code review (zgodność z konwencjami Trainer App)
 
-Recenzuj zmiany pod kątem reguł z `AGENTS.md` (root + `backend/` + `web/`). Zgłaszaj konkretne pliki i linie. Kategoryzuj: Krytyczne / Ważne / Drobne.
+Recenzuj zmiany pod kątem reguł z `AGENTS.md` (root + `apps/api/` + `apps/web/`). Zgłaszaj konkretne pliki i linie. Kategoryzuj: Krytyczne / Ważne / Drobne.
 
 ## Checklist
 
@@ -15,7 +15,7 @@ Recenzuj zmiany pod kątem reguł z `AGENTS.md` (root + `backend/` + `web/`). Zg
 - [ ] PascalCase w C#, camelCase w JSON/TS.
 
 ### Kontrakt backend ↔ frontend
-- [ ] Typy w `web/lib/api.ts` są lustrzane do encji/DTO (kształt i nazwy pól).
+- [ ] Typy w `apps/web/lib/api.ts` są lustrzane do encji/DTO (kształt i nazwy pól).
 - [ ] GET listy rzutuje na anonimowy/DTO kształt (bez cyklicznych nawigacji).
 - [ ] POST → `Created`, DELETE → `NoContent`, brak rekordu → `NotFound`, konflikt → `Conflict(new { message })`.
 

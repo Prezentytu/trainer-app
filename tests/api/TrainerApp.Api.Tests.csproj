@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\backend\TrainerApp.Api.csproj" />
+    <ProjectReference Include="..\..\apps\api\TrainerApp.Api.csproj" />
   </ItemGroup>
 
 </Project>

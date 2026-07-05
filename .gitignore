@@ -1,14 +1,14 @@
 # .NET
-backend/bin/
-backend/obj/
-backend/trainer.db*
-backend.Tests/bin/
-backend.Tests/obj/
+apps/api/bin/
+apps/api/obj/
+apps/api/trainer.db*
+tests/api/bin/
+tests/api/obj/
 
 # Next.js / Node
-web/node_modules/
-web/.next/
-web/next-env.d.ts
+apps/web/node_modules/
+apps/web/.next/
+apps/web/next-env.d.ts
 
 # OS / IDE
 .DS_Store

@@ -29,7 +29,7 @@ Next.js 16 (App Router) + React 19 + Tailwind 4. Port 3000. Ciemny motyw, UI po 
 - Błędy łap i pokazuj przez `<ErrorBanner message={error} />` (stan `error: string | null`).
 - Nowy dział dopisz do tablicy `NAV` w `app/layout.tsx`.
 - Import ścieżkowy przez alias `@/` (np. `@/lib/api`, `@/components/ui`).
-- Po zmianach uruchom `npm run lint`, `npm run typecheck` i `npm run build` (z katalogu `web/`).
+- Po zmianach uruchom `npm run lint`, `npm run typecheck` i `npm run build` (z katalogu `apps/web/`).
 
 ## Never
 

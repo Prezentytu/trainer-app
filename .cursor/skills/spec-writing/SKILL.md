@@ -21,7 +21,7 @@ Projektuj funkcje przed kodowaniem, zgodnie z `.ai/specs/AGENTS.md`. Cel: jasne,
 
 - Czy spec nie marnuje miejsca na opis zwykłego CRUD? Skup się na tym, co unikalne.
 - Czy model danych respektuje uwagę o `EnsureCreated` (zmiana schematu = reset `trainer.db`)?
-- Czy odpowiedź API i typ w `web/lib/api.ts` są zgodne?
+- Czy odpowiedź API i typ w `apps/web/lib/api.ts` są zgodne?
 - Czy ryzyka mają konkretne scenariusze porażki i mitygacje?
 
 ## Po wdrożeniu

@@ -15,16 +15,16 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
-## Trzymaj typy `web/lib/api.ts` zsynchronizowane z backendem
+## Trzymaj typy `apps/web/lib/api.ts` zsynchronizowane z backendem
 
-**Kontekst**: Backend serializuje JSON w camelCase; frontend czyta te pola przez typy w `web/lib/api.ts`.
+**Kontekst**: Backend serializuje JSON w camelCase; frontend czyta te pola przez typy w `apps/web/lib/api.ts`.
 **Problem**: Rozjazd nazw/kształtu między encją C# a typem TS powoduje ciche `undefined` w UI.
-**Zasada**: Każda zmiana encji/DTO w `backend/` musi mieć lustrzaną aktualizację typu i metody w `web/lib/api.ts` w tej samej zmianie.
-**Dotyczy**: `backend/Models.cs`, `backend/Dtos.cs`, `web/lib/api.ts`.
+**Zasada**: Każda zmiana encji/DTO w `apps/api/` musi mieć lustrzaną aktualizację typu i metody w `apps/web/lib/api.ts` w tej samej zmianie.
+**Dotyczy**: `apps/api/Models.cs`, `apps/api/Dtos.cs`, `apps/web/lib/api.ts`.
 
 ## `EnsureCreated()` nie migruje istniejącej bazy
 
-**Kontekst**: Schemat tworzy `db.Database.EnsureCreated()` w `backend/Program.cs`.
+**Kontekst**: Schemat tworzy `db.Database.EnsureCreated()` w `apps/api/Program.cs`.
 **Problem**: Zmiana pól/relacji istniejącej encji nie zaktualizuje `trainer.db` — nowe kolumny nie powstaną, aplikacja rzuci błędem SQLite.
-**Zasada**: Po zmianie schematu usuń `backend/trainer.db` i pozwól odtworzyć bazę (dev). Utratę danych zgłoś użytkownikowi z góry.
-**Dotyczy**: `backend/Models.cs`, `backend/AppDb.cs`, `backend/Program.cs`.
+**Zasada**: Po zmianie schematu usuń `apps/api/trainer.db` i pozwól odtworzyć bazę (dev). Utratę danych zgłoś użytkownikowi z góry.
+**Dotyczy**: `apps/api/Models.cs`, `apps/api/AppDb.cs`, `apps/api/Program.cs`.

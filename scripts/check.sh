@@ -7,18 +7,18 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 echo "==> [1/5] Backend: build"
-dotnet build backend/TrainerApp.Api.csproj -nologo
+dotnet build apps/api/TrainerApp.Api.csproj -nologo
 
 echo "==> [2/5] Backend: testy"
 dotnet test -nologo
 
 echo "==> [3/5] Web: lint"
-npm run lint --prefix web
+npm run lint --prefix apps/web
 
 echo "==> [4/5] Web: typecheck"
-npm run typecheck --prefix web
+npm run typecheck --prefix apps/web
 
 echo "==> [5/5] Web: build"
-npm run build --prefix web
+npm run build --prefix apps/web
 
 echo "==> OK — bramka walidacyjna zielona."

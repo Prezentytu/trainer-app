@@ -1,0 +1,29 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+
+# .NET / C#
+[*.{cs,csproj,slnx,props,targets}]
+indent_size = 4
+
+[*.cs]
+# Preferuj usingi na zewnątrz namespace i file-scoped namespace (zgodnie z kodem apps/api)
+csharp_style_namespace_declarations = file_scoped:suggestion
+dotnet_sort_system_directives_first = true
+
+# Web (TS/JS/JSON/CSS/MD)
+[*.{ts,tsx,js,jsx,mjs,cjs,json,css,md,yml,yaml}]
+indent_size = 2
+
+# Nie normalizuj plików generowanych/lockfile
+[*.{lock,lockb}]
+insert_final_newline = false
+
+[package-lock.json]
+insert_final_newline = false
+trim_trailing_whitespace = false

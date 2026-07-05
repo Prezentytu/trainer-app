@@ -1,6 +1,6 @@
 # Backend — zasady dla agentów
 
-.NET 10 Minimal API + EF Core + SQLite. Namespace `TrainerApp.Api`. Uruchamiane `dotnet run` w `backend/` (port 5210). Zobacz też root `AGENTS.md`.
+.NET 10 Minimal API + EF Core + SQLite. Namespace `TrainerApp.Api`. Uruchamiane `dotnet run` w `apps/api/` (port 5210). Zobacz też root `AGENTS.md`.
 
 ## Struktura plików
 
@@ -18,7 +18,7 @@
 - Waliduj istnienie powiązanych rekordów przed zapisem; brak → `Results.NotFound()`.
 - Zwracaj `Results.Created($"/api/{zasób}/{id}", ...)` po POST, `Results.NoContent()` po DELETE.
 - Konflikty biznesowe zwracaj jako `Results.Conflict(new { message = "..." })` z polskim komunikatem — frontend go pokaże.
-- Po dodaniu/zmianie encji uruchom `dotnet build backend/TrainerApp.Api.csproj`.
+- Po dodaniu/zmianie encji uruchom `dotnet build apps/api/TrainerApp.Api.csproj`.
 
 ## Ask First
 
@@ -58,13 +58,13 @@ app.MapPost("/api/clients", async (ClientInput input, AppDb db) =>
 3. `Dtos.cs` — rekord `record NazwaInput(...)`.
 4. `Program.cs` — sekcja endpointów `GET/POST/PUT/DELETE /api/{zasób}` wg wzorca wyżej.
 5. `Seed.cs` — opcjonalne dane startowe.
-6. **Usuń `backend/trainer.db`** i zrestartuj backend, aby schemat się przebudował.
-7. Dodaj test integracyjny (patrz `backend.Tests/`) na wzór `ClientsEndpointsTests`.
+6. **Usuń `apps/api/trainer.db`** i zrestartuj backend, aby schemat się przebudował.
+7. Dodaj test integracyjny (patrz `tests/api/`) na wzór `ClientsEndpointsTests`.
 
 ## Uwaga o bazie (`EnsureCreated`)
 
-Zmiana kształtu istniejącej encji **nie** zaktualizuje `trainer.db`. Podczas dev: usuń `backend/trainer.db` i pozwól, by `EnsureCreated()` + `Seed.Run` odtworzyły bazę. Jeśli projekt urośnie, rozważ migracje EF Core (`dotnet ef migrations`) — ale to decyzja „Ask First”.
+Zmiana kształtu istniejącej encji **nie** zaktualizuje `trainer.db`. Podczas dev: usuń `apps/api/trainer.db` i pozwól, by `EnsureCreated()` + `Seed.Run` odtworzyły bazę. Jeśli projekt urośnie, rozważ migracje EF Core (`dotnet ef migrations`) — ale to decyzja „Ask First”.
 
 ## Testowanie
 
-Testy integracyjne żyją w `backend.Tests/` (xUnit + `WebApplicationFactory`, SQLite in-memory). `Program.cs` kończy się `public partial class Program { }`, dzięki czemu fabryka może go hostować. Wzoruj nowe testy na `ClientsEndpointsTests`.
+Testy integracyjne żyją w `tests/api/` (xUnit + `WebApplicationFactory`, SQLite in-memory). `Program.cs` kończy się `public partial class Program { }`, dzięki czemu fabryka może go hostować. Wzoruj nowe testy na `ClientsEndpointsTests`.
