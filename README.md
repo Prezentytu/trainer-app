@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Trainer App — MVP portalu trenera
 
-## Getting Started
+Proste MVP aplikacji dla trenerów personalnych: biblioteka ćwiczeń, plany treningowe (szablony + plany klientów), przypisywanie planów klientom.
 
-First, run the development server:
+## Struktura
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+trainer-app/
+├── backend/   # .NET 10 Minimal API + EF Core + SQLite (plik trainer.db, zero konfiguracji)
+└── web/       # Next.js 15 (App Router) + Tailwind — portal trenera
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Uruchomienie lokalne
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Dwa terminale:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Terminal 1 — backend (http://localhost:5210)
+cd backend
+dotnet run
 
-## Learn More
+# Terminal 2 — portal (http://localhost:3000)
+cd web
+npm install
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Baza SQLite (`backend/trainer.db`) tworzy się automatycznie przy pierwszym starcie razem z danymi startowymi (10 ćwiczeń, przykładowy klient i szablon planu FBW). Żeby zresetować dane, usuń plik `trainer.db` i zrestartuj backend.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Flow MVP
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. **Ćwiczenia** — biblioteka z domyślnymi parametrami (serie, powtórzenia / czas, przerwa między seriami, obciążenie kg).
+2. **Plany** — builder: dodajesz ćwiczenia, opcjonalnie nadpisujesz parametry per ćwiczenie (puste pole = domyślne z ćwiczenia), ustawiasz przerwę po ćwiczeniu i kolejność.
+   - **Szablon** — wielokrotnego użytku; przyciskiem „Użyj → plan klienta” tworzysz z niego przypisywalny plan.
+   - **Plan klienta** — można przypisać klientowi.
+3. **Klienci** — dodajesz klienta, na jego profilu przypisujesz plan z datą startu; przypisanie można zakończyć/anulować/wznowić.
 
-## Deploy on Vercel
+## API (REST, JSON)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Zasób | Endpointy |
+|---|---|
+| Klienci | `GET/POST /api/clients`, `GET/PUT/DELETE /api/clients/{id}` |
+| Ćwiczenia | `GET/POST /api/exercises`, `PUT/DELETE /api/exercises/{id}` |
+| Plany | `GET/POST /api/plans`, `GET/PUT/DELETE /api/plans/{id}`, `POST /api/plans/{id}/duplicate` |
+| Przypisania | `GET/POST /api/assignments`, `PATCH /api/assignments/{id}/status`, `DELETE /api/assignments/{id}` |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Plany zwracają **efektywne parametry** (nadpisanie z planu albo default z ćwiczenia) + surowe `overrides` — gotowe pod przyszły mobilny player klienta.
+
+## Poza zakresem MVP (świadomie)
+
+Auth/logowanie, aplikacja mobilna klienta, historia wykonań treningów, multi-trener/multi-tenant, media ćwiczeń. Model danych (plan → pozycje z parametrami i przerwami) jest przygotowany pod player mobilny (odznaczanie serii + timery przerw).
