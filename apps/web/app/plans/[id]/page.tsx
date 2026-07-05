@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { api, EXERCISE_TYPE_LABELS, Plan, PlanDay, PlanItem } from "@/lib/api";
-import PlanBuilder from "@/components/PlanBuilder";
+import { buildGroupLabels } from "@/lib/supersets";
+import PlanBuilder from "@/components/plan-builder/PlanBuilder";
 import { Badge, Button, Card, ErrorBanner, formatRest, PageHeader } from "@/components/ui";
 
 function repsText(item: PlanItem): string {
@@ -66,6 +67,7 @@ function PrescribedSets({ item }: { item: PlanItem }) {
 }
 
 function DayView({ day }: { day: PlanDay }) {
+  const labels = buildGroupLabels(day.items.map((i) => i.supersetGroup));
   return (
     <div className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-4">
       <div className="mb-2 flex items-center gap-2">
@@ -74,13 +76,18 @@ function DayView({ day }: { day: PlanDay }) {
       </div>
       <div className="grid gap-2">
         {day.items.map((item, idx) => (
-          <div key={item.id} className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+          <div
+            key={item.id}
+            className={`rounded-lg border bg-zinc-900/60 p-3 ${
+              item.supersetGroup != null ? "border-yellow-400/40 border-l-[3px]" : "border-zinc-800"
+            }`}
+          >
             <div className="flex items-center gap-2">
               <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-yellow-400/15 text-xs font-bold text-yellow-300">
                 {idx + 1}
               </span>
               <span className="font-medium">{item.exerciseName}</span>
-              {item.supersetGroup != null && <Badge tone="yellow">superseria {item.supersetGroup}</Badge>}
+              {labels[idx] && <Badge tone="yellow">{labels[idx]}</Badge>}
               <span className="text-xs text-zinc-500">{EXERCISE_TYPE_LABELS[item.exerciseType]}</span>
             </div>
             <p className="mt-1 text-sm text-zinc-400">

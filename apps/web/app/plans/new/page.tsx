@@ -1,6 +1,6 @@
 "use client";
 
-import PlanBuilder from "@/components/PlanBuilder";
+import PlanBuilder from "@/components/plan-builder/PlanBuilder";
 import { PageHeader } from "@/components/ui";
 
 export default function NewPlanPage() {

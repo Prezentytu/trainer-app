@@ -89,6 +89,59 @@ export function Badge({ children, tone = "neutral" }: { children: ReactNode; ton
   return <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${styles}`}>{children}</span>;
 }
 
+export function Pill({
+  children,
+  active,
+  onClick,
+}: {
+  children: ReactNode;
+  active?: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+        active ? "bg-yellow-400 text-zinc-950" : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+export function IconButton({
+  children,
+  onClick,
+  title,
+  variant = "ghost",
+  size = "sm",
+}: {
+  children: ReactNode;
+  onClick?: () => void;
+  title?: string;
+  variant?: "ghost" | "danger";
+  size?: "sm" | "xs";
+}) {
+  const styles = {
+    ghost: "bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-yellow-300",
+    danger: "bg-zinc-800 text-zinc-400 hover:bg-red-950 hover:text-red-300",
+  }[variant];
+  const dims = size === "xs" ? "h-6 w-6 text-xs" : "h-8 w-8 text-sm";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      aria-label={title}
+      className={`inline-flex ${dims} shrink-0 items-center justify-center rounded-lg transition-colors ${styles}`}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function formatRest(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
   const min = Math.floor(seconds / 60);

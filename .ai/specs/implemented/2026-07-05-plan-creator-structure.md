@@ -15,7 +15,7 @@ Obecny `Plan` to płaska lista `PlanItem` (ćwiczenie + serie/powtórzenia/przer
 - tempa (3110, 20X1), docelowego RPE (RPE7/8),
 - dystansu (spacer farmera 2×15 m),
 - schematów serii („Rampa 6", „Back-off 80%") i notatek progresji („+2,5–5 kg"),
-- **rozkładu jednej pozycji na wiele serii o różnej roli i różnym %** — metoda Poliquina 6-4-2-5-3-1 (rampa do topu + „seria anaboliczna" 80%×5-10 + seria 60%×10-15) oraz szablon 15-10-5 (50%/75%/100% × 15) z planu „Asia",
+- **rozkładu jednej pozycji na wiele serii o różnej roli i różnym %** — budulec pod metodę Poliquina 6-4-2-5-3-1 (rampa do topu + „seria anaboliczna" 80%×5-10 + seria 60%×10-15) oraz pod rampę „50/75/100% × N" z planu „Asia" (jedna pozycja, jeden dzień). **Uwaga:** pełna metoda 15-10-5 to podział TYGODNIOWY (Pon = dzień 15 powt., Śr = dzień 10, Pt = dzień 5, te same ćwiczenia, inny zakres) — patrz `.ai/specs/2026-07-05-method-templates.md`; ten spec modeluje tylko rozkład serii w obrębie jednej pozycji/dnia,
 - zasad ogólnych / rozgrzewki na poziomie planu i dnia.
 
 Żadnej z tych rzeczy nie da się dziś zapisać strukturalnie.
@@ -97,7 +97,7 @@ Przykład — 6-4-2-5-3-1, Tydzień 3 dla ćwiczenia głównego (rozkład jako `
 - `{ Order:2, Role:"backoff", Reps:5, RepsMax:10, LoadPercent:80, PercentOf:"top", Note:"seria anaboliczna" }`
 - `{ Order:3, Role:"backoff", Reps:10, RepsMax:15, LoadPercent:60, PercentOf:"top" }`
 
-Przykład — szablon 15-10-5 (wariant „15"): trzy serie `LoadPercent` 50/75/100, `PercentOf:"top"`, `Reps:15`.
+Przykład — rampa do serii roboczej, wariant „15 powt." (dzień 15 metody 15-10-5, jedna pozycja): trzy serie `LoadPercent` 50/75/100, `PercentOf:"top"`, `Reps:15`. Pełny podział tygodniowy (Dzień 15/10/5) opisuje `.ai/specs/2026-07-05-method-templates.md`.
 
 `Exercise` — minimalne zmiany: `Type` przyjmuje też `"distance"`; nowe pole `int? DefaultDistanceMeters`.
 
@@ -127,15 +127,17 @@ Typy w `apps/web/lib/api.ts` lustrzane: `Plan`, `PlanDay`, `PlanItem` (+ pola `s
 
 ## UI — kreator
 
-Przebudowa `apps/web/components/PlanBuilder.tsx` + stron `plans/new` i `plans/[id]`:
+Kreator rozbity na moduł `apps/web/components/plan-builder/` (`PlanBuilder`, `WeekTabs`, `DayBoard`, `DayColumn`, `ExerciseRow`, `SetSchemeEditor`, `ExercisePicker`, `types.ts`, `dnd.ts`) + strony `plans/new` i `plans/[id]`:
 
 - Nagłówek planu: nazwa, opis (zasady ogólne), szablon.
-- Zakładki/akordeon tygodni → w tygodniu lista dni (etykieta + notatka dnia) → w dniu lista pozycji.
-- Przyciski: „+ Tydzień", „Kopiuj tydzień" (klonuje dni i pozycje z podbiciem `weekNumber`), „+ Dzień", „+ Ćwiczenie".
-- Pozycja: wybór ćwiczenia, serie, powtórzenia (od–do) / czas (od–do) / dystans wg typu ćwiczenia, tempo, RPE, ciężar, schemat serii, przerwy, notatka, numer superserii.
-- Pozycja — tryb zaawansowany „rozpisz serie": dodawanie wierszy `PlanSet` (powtórzenia/zakres, % + baza `1RM`/`top` albo ciężar, rola, notatka). Gotowe presety w kreatorze: **6-4-2-5-3-1** (generuje serie per tydzień) i **15-10-5** — trener wybiera z listy zamiast klikać ręcznie.
-- Podgląd planu (`plans/[id]`) grupuje pozycje superserii (3a/3b), renderuje dni per tydzień i rozpisuje serie z `PrescribedSets` (z wyliczonym kg gdy jest baza %).
-- Prymitywy z `components/ui.tsx`; teksty po polsku.
+- **Zakładki tygodni** (`WeekTabs`, pigułki) — jeden tydzień widoczny na raz, „+ Tydzień", „Kopiuj tydzień" (klonuje dni i pozycje z podbiciem `weekNumber`).
+- **Tablica dni w kolumnach** (`DayBoard`/`DayColumn`, poziomy scroll) — każdy dzień to karta z etykietą, notatką i listą pozycji, „+ Dodaj ćwiczenie" (wyszukiwarka `ExercisePicker`, nie `<select>`).
+- **Kompaktowy wiersz pozycji** (`ExerciseRow`) — domyślnie zwinięty (podsumowanie „serie × powt · przerwa · ciężar · tempo", uchwyt drag&drop, znacznik superserii, kropka notatki); klik rozwija edycję inline pogrupowaną: Podstawowe / Zaawansowane / Rozkład serii.
+- **Superserie jako akcja, nie pole liczbowe**: przycisk „Połącz w superserię"/„Rozłącz" ustawia flagę `linkedToNext` na sąsiadującej pozycji; `apps/web/lib/supersets.ts` wylicza z tych flag numery `supersetGroup` (przy zapisie) i czytelne etykiety A1/A2, B1/B2… (przy renderze, także w podglądzie `plans/[id]`). Wizualnie: lewy żółty pasek + `Badge` z etykietą.
+- **Drag & drop** (`@dnd-kit/core` + `@dnd-kit/sortable`) — zmiana kolejności pozycji w dniu i przenoszenie między dniami (multi-container `SortableContext` + `useDroppable` na kontener dnia dla pustych dni), `DragOverlay` z podglądem, `KeyboardSensor` dla obsługi klawiaturowej. Fallback: przyciski ↑/↓ na każdej pozycji (zawsze działają, niezależnie od DnD).
+- Pozycja — tryb zaawansowany „rozpisz serie" (`SetSchemeEditor`): dodawanie wierszy `PlanSet` (powtórzenia/zakres, % + baza `1RM`/`top` albo ciężar, rola, notatka). Gotowe presety — budulce rozkładu serii dla jednej pozycji: **6-4-2-5-3-1** (generuje serie per tydzień) i **rampa do serii roboczej** (15/10/5 powt.) — trener wybiera z listy zamiast klikać ręcznie. To NIE są generatory całej metody na cały tydzień/plan; taka funkcja jest opisana jako przyszłe rozszerzenie w `.ai/specs/2026-07-05-method-templates.md`.
+- Podgląd planu (`plans/[id]`) renderuje dni per tydzień, superserie z paskiem i etykietą A1/A2, i rozpisuje serie z `PrescribedSets` (z wyliczonym kg gdy jest baza %).
+- Prymitywy z `components/ui.tsx` (rozszerzone o `Pill`, `IconButton`); teksty po polsku.
 
 ## Fazy implementacji
 
@@ -158,3 +160,5 @@ Przebudowa `apps/web/components/PlanBuilder.tsx` + stron `plans/new` i `plans/[i
 - 2026-07-05 — utworzono spec.
 - 2026-07-05 — dodano encję `PlanSet` (rozkład pozycji na serie o różnej roli/%), `PercentOf:"top"|"1rm"`, presety 6-4-2-5-3-1 i 15-10-5; doprecyzowano, że zależności ciężaru między tygodniami są poza MVP.
 - 2026-07-05 — WDROŻONO wszystkie fazy. Backend: `PlanDay`/`PlanItem`(rozszerzony)/`PlanSet`, kaskady w `AppDb`, DTO z domyślnymi wartościami (MVP-tolerancja), przebudowany `PlanToDto` z `computedLoadKg` dla `PercentOf:"top"`, endpointy POST/PUT/duplicate w nowej strukturze, seed z planem 6-4-2-5-3-1. Frontend: typy + słowniki w `api.ts`, `lib/planPresets.ts`, przebudowany `PlanBuilder` (tygodnie/dni/pozycje/serie, presety, „Kopiuj tydzień"), podgląd `plans/[id]` z superseriami i tabelą serii, aktualizacja list (`plans`, dashboard, karta klienta) i biblioteki ćwiczeń o typ `distance`. Bramka zielona; smoke test API potwierdził `computedLoadKg` 50/40/30. Baza `trainer.db` zresetowana (nowy schemat).
+- 2026-07-05 — KOREKTA interpretacji metod. Presety „Szablon 15-10-5" błędnie sugerowały, że jedno kliknięcie generuje całą metodę — w rzeczywistości 15-10-5 to podział TYGODNIOWY (Pon/Śr/Pt = dzień 15/10/5 dla wszystkich ćwiczeń), a rozpisane tu serie (50/75/100% itd.) to tylko rampa do serii roboczej dla jednej pozycji w jednym dniu. Przeetykietowano presety na „Rampa do serii roboczej — N powt." (`apps/web/lib/planPresets.ts`, funkcja `rampToWorkingSet`), doprecyzowano opisy w tym specu i wydzielono pełną, poprawną definicję obu metod (15-10-5 i 6-4-2-5-3-1) jako przyszłą funkcję „szablonów metod" do `.ai/specs/2026-07-05-method-templates.md`. Dodatkowo poprawiono rolę serii w tygodniach 4/5 presetu 6-4-2-5-3-1 z „work" na „ramp" (to wciąż rampa, tylko ciężarem bliskim wcześniejszemu rekordowi, nie sztywna seria robocza).
+- 2026-07-05 — PRZEBUDOWA UX kreatora (bez zmian backendu/kontraktu API). Płaski, w pełni rozwinięty formularz zastąpiono modułem `apps/web/components/plan-builder/`: zakładki tygodni (`WeekTabs`) + tablica dni w kolumnach (`DayBoard`/`DayColumn`) + kompaktowe, domyślnie zwinięte wiersze pozycji z edycją inline (`ExerciseRow`, pogrupowane pola Podstawowe/Zaawansowane/Rozkład serii) + wyszukiwarka ćwiczeń (`ExercisePicker`) zamiast `<select>`. Superserie: zamiast wpisywania numeru grupy, akcja „Połącz w superserię" ustawia flagę sąsiedztwa, z której `apps/web/lib/supersets.ts` wylicza `supersetGroup` (do zapisu) i etykiety A1/A2… (do wyświetlenia, także w podglądzie `plans/[id]`). Dodano drag & drop (`@dnd-kit`) do zmiany kolejności pozycji w dniu i przenoszenia między dniami, z fallbackiem ↑/↓. Nowe prymitywy `Pill`/`IconButton` w `components/ui.tsx`. Bramka zielona (backend build+testy, web lint/typecheck/build); sanity test API potwierdził round-trip superserii (`supersetGroup`) i rozpisanych serii (`computedLoadKg`) z nowym kreatorem.
