@@ -23,8 +23,8 @@ function repsText(item: PlanItem): string {
 function PrescribedSets({ item }: { item: PlanItem }) {
   if (item.prescribedSets.length === 0) return null;
   return (
-    <div className="mt-2 overflow-hidden rounded-lg border border-zinc-800">
-      <table className="w-full text-left text-xs">
+    <div className="mt-2 overflow-x-auto rounded-lg border border-zinc-800">
+      <table className="w-full min-w-[480px] text-left text-xs">
         <thead className="bg-zinc-900 text-[11px] uppercase tracking-wide text-zinc-500">
           <tr>
             <th className="px-3 py-1.5">#</th>
@@ -70,9 +70,9 @@ function DayView({ day }: { day: PlanDay }) {
   const labels = buildGroupLabels(day.items.map((i) => i.supersetGroup));
   return (
     <div className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-4">
-      <div className="mb-2 flex items-center gap-2">
-        <span className="font-semibold">{day.label}</span>
-        {day.notes && <span className="text-xs text-zinc-500">— {day.notes}</span>}
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <span className="break-words font-semibold">{day.label}</span>
+        {day.notes && <span className="break-words text-xs text-zinc-500">— {day.notes}</span>}
       </div>
       <div className="grid gap-2">
         {day.items.map((item, idx) => (
@@ -82,13 +82,13 @@ function DayView({ day }: { day: PlanDay }) {
               item.supersetGroup != null ? "border-yellow-400/40 border-l-[3px]" : "border-zinc-800"
             }`}
           >
-            <div className="flex items-center gap-2">
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-yellow-400/15 text-xs font-bold text-yellow-300">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-yellow-400/15 text-xs font-bold text-yellow-300">
                 {idx + 1}
               </span>
-              <span className="font-medium">{item.exerciseName}</span>
+              <span className="min-w-0 break-words font-medium">{item.exerciseName}</span>
               {labels[idx] && <Badge tone="yellow">{labels[idx]}</Badge>}
-              <span className="text-xs text-zinc-500">{EXERCISE_TYPE_LABELS[item.exerciseType]}</span>
+              <span className="shrink-0 text-xs text-zinc-500">{EXERCISE_TYPE_LABELS[item.exerciseType]}</span>
             </div>
             <p className="mt-1 text-sm text-zinc-400">
               {repsText(item)}

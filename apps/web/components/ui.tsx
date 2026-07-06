@@ -2,19 +2,19 @@ import { ReactNode } from "react";
 
 export function PageHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: ReactNode }) {
   return (
-    <div className="mb-8 flex items-start justify-between gap-4">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-        {subtitle ? <p className="mt-1 text-sm text-zinc-400">{subtitle}</p> : null}
+    <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0">
+        <h1 className="break-words text-xl font-bold tracking-tight sm:text-2xl">{title}</h1>
+        {subtitle ? <p className="mt-1 break-words text-sm text-muted-strong">{subtitle}</p> : null}
       </div>
-      {action}
+      {action ? <div className="shrink-0">{action}</div> : null}
     </div>
   );
 }
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 ${className}`}>
+    <div className={`rounded-xl border border-border bg-surface/60 p-5 ${className}`}>
       {children}
     </div>
   );
@@ -34,9 +34,9 @@ export function Button({
   disabled?: boolean;
 }) {
   const styles = {
-    primary: "bg-yellow-400 text-zinc-950 hover:bg-yellow-300 font-semibold",
-    ghost: "bg-zinc-800 text-zinc-200 hover:bg-zinc-700",
-    danger: "bg-red-950 text-red-300 hover:bg-red-900",
+    primary: "bg-accent text-accent-foreground hover:bg-accent-strong font-semibold",
+    ghost: "bg-surface-hover text-foreground-secondary hover:bg-surface-active",
+    danger: "bg-danger-bg text-danger hover:bg-danger-border",
   }[variant];
   return (
     <button
@@ -53,19 +53,19 @@ export function Button({
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="flex flex-col gap-1 text-sm">
-      <span className="text-zinc-400">{label}</span>
+      <span className="text-muted-strong">{label}</span>
       {children}
     </label>
   );
 }
 
 export const inputClass =
-  "rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-yellow-400";
+  "rounded-lg border border-border-strong bg-surface-hover px-3 py-2 text-sm text-foreground outline-none focus:border-accent";
 
 export function ErrorBanner({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <div className="mb-4 rounded-lg border border-red-900 bg-red-950/60 px-4 py-2 text-sm text-red-300">
+    <div className="mb-4 rounded-lg border border-danger-border bg-danger-bg/60 px-4 py-2 text-sm text-danger">
       {message}
     </div>
   );
@@ -73,7 +73,7 @@ export function ErrorBanner({ message }: { message: string | null }) {
 
 export function EmptyState({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-xl border border-dashed border-zinc-800 p-10 text-center text-sm text-zinc-500">
+    <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted">
       {children}
     </div>
   );
@@ -81,10 +81,10 @@ export function EmptyState({ children }: { children: ReactNode }) {
 
 export function Badge({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "yellow" | "green" | "red" }) {
   const styles = {
-    neutral: "bg-zinc-800 text-zinc-300",
-    yellow: "bg-yellow-400/15 text-yellow-300",
-    green: "bg-emerald-400/15 text-emerald-300",
-    red: "bg-red-400/15 text-red-300",
+    neutral: "bg-surface-hover text-foreground-secondary",
+    yellow: "bg-accent/15 text-accent-strong",
+    green: "bg-success-bg/15 text-success",
+    red: "bg-danger/15 text-danger",
   }[tone];
   return <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${styles}`}>{children}</span>;
 }
@@ -103,7 +103,7 @@ export function Pill({
       type="button"
       onClick={onClick}
       className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
-        active ? "bg-yellow-400 text-zinc-950" : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+        active ? "bg-accent text-accent-foreground" : "bg-surface-hover text-foreground-secondary hover:bg-surface-active"
       }`}
     >
       {children}
@@ -125,10 +125,10 @@ export function IconButton({
   size?: "sm" | "xs";
 }) {
   const styles = {
-    ghost: "bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-yellow-300",
-    danger: "bg-zinc-800 text-zinc-400 hover:bg-red-950 hover:text-red-300",
+    ghost: "bg-surface-hover text-foreground-secondary hover:bg-surface-active hover:text-accent-strong",
+    danger: "bg-surface-hover text-muted-strong hover:bg-danger-bg hover:text-danger",
   }[variant];
-  const dims = size === "xs" ? "h-6 w-6 text-xs" : "h-8 w-8 text-sm";
+  const dims = size === "xs" ? "h-8 w-8 text-xs sm:h-6 sm:w-6" : "h-10 w-10 text-sm sm:h-8 sm:w-8";
   return (
     <button
       type="button"

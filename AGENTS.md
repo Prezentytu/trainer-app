@@ -14,7 +14,7 @@ Ten plik jest punktem startowym dla każdego agenta. Zanim zaczniesz kodować, d
 | Testy API | xUnit + `WebApplicationFactory` | — | `tests/api/` |
 
 - Namespace backendu: `TrainerApp.Api`. Baza SQLite tworzona przez `EnsureCreated()` (brak migracji).
-- UI jest w całości po polsku, ciemny motyw (paleta `zinc` + akcent `yellow`).
+- UI jest w całości po polsku, ciemny motyw. Kolory wyłącznie przez tokeny semantyczne z `apps/web/app/globals.css` (`@theme`, oparte na palecie `zinc` + akcent `yellow`) — zobacz skill `design-system`.
 - Monorepo, jeden git w root: deployowalne aplikacje pod `apps/`, testy pod `tests/`.
 
 ## Układ repo
@@ -52,7 +52,7 @@ trainer-app/
 ## Never
 
 - Nigdy nie wywołuj surowego `fetch` w komponentach/stronach — używaj wyłącznie obiektu `api` z `apps/web/lib/api.ts` (jedyny dozwolony `fetch` to centralny wrapper `request<T>()` w tym pliku).
-- Nigdy nie hardkoduj kolorów spoza palety `zinc`/`yellow`/statusowych tonów `Badge` — używaj prymitywów z `apps/web/components/ui.tsx`.
+- Nigdy nie używaj surowych klas `zinc-*`/`yellow-*`/`red-*`/`emerald-*` w komponentach — wyłącznie tokeny semantyczne z `apps/web/app/globals.css` (`@theme`) i prymitywy z `apps/web/components/ui.tsx`. Zobacz skill `design-system`.
 - Nigdy nie dodawaj endpointów bez prefiksu `/api`.
 - Nigdy nie edytuj ręcznie `apps/api/trainer.db` ani plików w `bin`/`obj`.
 - Nigdy nie commituj sekretów, `.env`, kluczy.

@@ -3,7 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Exercise, EXERCISE_TYPE_LABELS } from "@/lib/api";
-import { Badge, Button, Field, IconButton, formatRest, inputClass } from "@/components/ui";
+import { Badge, Field, IconButton, formatRest, inputClass } from "@/components/ui";
 import { NumInput } from "./NumInput";
 import { SetSchemeEditor } from "./SetSchemeEditor";
 import { BuilderItem, BuilderSet } from "./types";
@@ -78,51 +78,63 @@ export function ExerciseRow({
         isInSuperset ? "border-yellow-400/40 border-l-[3px]" : "border-zinc-800"
       } ${isDragging ? "opacity-50" : ""}`}
     >
-      <div className="flex items-center gap-2 p-3">
-        <button
-          type="button"
-          {...attributes}
-          {...listeners}
-          aria-label="Przeciągnij, aby zmienić kolejność"
-          className="shrink-0 cursor-grab touch-none px-0.5 text-zinc-600 hover:text-zinc-300 active:cursor-grabbing"
-        >
-          ⋮⋮
-        </button>
+      <div className="flex flex-col gap-2 p-3">
+        <div className="flex items-start gap-2">
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            aria-label="Przeciągnij, aby zmienić kolejność"
+            className="mt-0.5 shrink-0 cursor-grab touch-none px-0.5 text-zinc-600 hover:text-zinc-300 active:cursor-grabbing"
+          >
+            ⋮⋮
+          </button>
 
-        <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-yellow-400/15 text-xs font-bold text-yellow-300">
-          {index + 1}
-        </span>
+          <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-yellow-400/15 text-xs font-bold text-yellow-300">
+            {index + 1}
+          </span>
 
-        <button type="button" onClick={onToggleExpand} className="flex min-w-0 flex-1 items-center gap-2 text-left">
-          <span className="shrink-0 text-xs text-zinc-500">{expanded ? "▾" : "▸"}</span>
-          <span className="truncate font-medium">{item.exerciseName}</span>
-          {supersetLabel && <Badge tone="yellow">{supersetLabel}</Badge>}
-          {item.notes && <span className="shrink-0 text-yellow-400" title={`Notatka: ${item.notes}`}>●</span>}
-          <span className="truncate text-xs text-zinc-500">{summaryText(item, exercise)}</span>
-        </button>
+          <button
+            type="button"
+            onClick={onToggleExpand}
+            className="flex min-w-0 flex-1 flex-wrap items-center gap-2 text-left"
+          >
+            <span className="shrink-0 text-xs text-zinc-500">{expanded ? "▾" : "▸"}</span>
+            <span className="min-w-0 break-words font-medium">{item.exerciseName}</span>
+            {supersetLabel && <Badge tone="yellow">{supersetLabel}</Badge>}
+            {item.notes && <span className="shrink-0 text-yellow-400" title={`Notatka: ${item.notes}`}>●</span>}
+          </button>
+        </div>
 
-        <div className="flex shrink-0 items-center gap-1">
-          <IconButton title="Przenieś wyżej" onClick={() => onMove(-1)} size="xs">
-            ↑
-          </IconButton>
-          <IconButton title="Przenieś niżej" onClick={() => onMove(1)} size="xs">
-            ↓
-          </IconButton>
-          {!isLastInDay && (
-            <Button variant="ghost" onClick={onToggleLink}>
-              {item.linkedToNext ? "Rozłącz" : "Połącz w superserię"}
-            </Button>
-          )}
-          <IconButton title="Usuń pozycję" variant="danger" onClick={onRemove}>
-            ✕
-          </IconButton>
+        <div className="flex flex-wrap items-center justify-between gap-2 pl-8">
+          <span className="min-w-0 break-words text-xs text-zinc-500">{summaryText(item, exercise)}</span>
+          <div className="flex shrink-0 flex-wrap items-center gap-1">
+            <IconButton title="Przenieś wyżej" onClick={() => onMove(-1)} size="xs">
+              ↑
+            </IconButton>
+            <IconButton title="Przenieś niżej" onClick={() => onMove(1)} size="xs">
+              ↓
+            </IconButton>
+            {!isLastInDay && (
+              <IconButton
+                title={item.linkedToNext ? "Rozłącz superserię" : "Połącz w superserię"}
+                onClick={onToggleLink}
+                size="xs"
+              >
+                ⛓
+              </IconButton>
+            )}
+            <IconButton title="Usuń pozycję" variant="danger" onClick={onRemove} size="xs">
+              ✕
+            </IconButton>
+          </div>
         </div>
       </div>
 
       {expanded && (
         <div className="border-t border-zinc-800 p-3">
           <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-zinc-500">Podstawowe</p>
-          <div className="mb-3 grid gap-3 sm:grid-cols-4">
+          <div className="mb-3 grid grid-cols-2 gap-3">
             <Field label={`Serie${exercise ? ` (dom. ${exercise.defaultSets})` : ""}`}>
               <NumInput value={item.sets} min={1} onChange={(v) => onPatch({ sets: v })} placeholder="dom." />
             </Field>
@@ -155,7 +167,7 @@ export function ExerciseRow({
           </div>
 
           <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-zinc-500">Zaawansowane</p>
-          <div className="mb-3 grid gap-3 sm:grid-cols-4">
+          <div className="mb-3 grid grid-cols-2 gap-3">
             <Field label="Tempo">
               <input
                 className={inputClass}
@@ -181,7 +193,7 @@ export function ExerciseRow({
                 placeholder="Rampa 6-4-2-5-3-1"
               />
             </Field>
-            <div className="sm:col-span-3">
+            <div className="col-span-2">
               <Field label="Notatka dla klienta">
                 <input
                   className={inputClass}

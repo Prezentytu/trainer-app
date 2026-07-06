@@ -39,7 +39,7 @@ export function DayBoard({
   onClearSets: (dayKey: string, itemKey: string) => void;
 }) {
   return (
-    <div className="flex gap-4 overflow-x-auto pb-2">
+    <div className="flex flex-col gap-4 md:flex-row md:overflow-x-auto md:pb-2">
       {days.map((day) => (
         <DayColumn
           key={day.key}
@@ -59,7 +59,7 @@ export function DayBoard({
           onClearSets={(itemKey) => onClearSets(day.key, itemKey)}
         />
       ))}
-      <div className="flex w-56 shrink-0 items-center justify-center">
+      <div className="flex w-full items-center justify-center md:w-56 md:shrink-0">
         <Button variant="ghost" onClick={onAddDay}>
           + Dzień
         </Button>

@@ -5,7 +5,7 @@ import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Exercise } from "@/lib/api";
 import { buildGroupLabels, computeGroupsFromLinks } from "@/lib/supersets";
-import { Button, EmptyState, inputClass } from "@/components/ui";
+import { EmptyState, IconButton, inputClass } from "@/components/ui";
 import { dayContainerId } from "./dnd";
 import { ExercisePicker } from "./ExercisePicker";
 import { ExerciseRow } from "./ExerciseRow";
@@ -57,9 +57,9 @@ export function DayColumn({
   const labels = buildGroupLabels(groups);
 
   return (
-    <div className="flex w-80 shrink-0 flex-col rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
+    <div className="flex w-full flex-col rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 md:w-80 md:shrink-0">
       <div className="mb-3 flex items-start justify-between gap-2">
-        <div className="flex-1 space-y-2">
+        <div className="min-w-0 flex-1 space-y-2">
           <input
             className={`${inputClass} w-full font-semibold`}
             value={day.label}
@@ -73,9 +73,9 @@ export function DayColumn({
             placeholder="Notatka / rozgrzewka dnia"
           />
         </div>
-        <Button variant="danger" onClick={onRemoveDay}>
-          Usuń
-        </Button>
+        <IconButton title="Usuń dzień" variant="danger" onClick={onRemoveDay}>
+          🗑
+        </IconButton>
       </div>
 
       <div ref={setNodeRef} className="flex-1 space-y-2">

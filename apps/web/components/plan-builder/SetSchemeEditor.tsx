@@ -55,55 +55,57 @@ export function SetSchemeEditor({
       </div>
 
       {advanced && (
-        <div className="grid gap-2">
-          <div className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_auto] gap-2 text-[11px] uppercase tracking-wide text-zinc-500">
-            <span>#</span>
-            <span>Powt.</span>
-            <span>Powt. maks.</span>
-            <span>%</span>
-            <span>Baza %</span>
-            <span>Ciężar</span>
-            <span />
-          </div>
-          {sets.map((s, idx) => (
-            <div key={s.key} className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_auto] items-center gap-2">
-              <span className="text-xs text-zinc-500">{idx + 1}</span>
-              <NumInput value={s.reps} min={0} onChange={(v) => onPatch(s.key, { reps: v })} placeholder="powt." />
-              <NumInput value={s.repsMax} min={0} onChange={(v) => onPatch(s.key, { repsMax: v })} placeholder="—" />
-              <NumInput value={s.loadPercent} min={0} onChange={(v) => onPatch(s.key, { loadPercent: v })} placeholder="%" />
-              <select
-                className={`${inputClass} py-1`}
-                value={s.percentOf ?? ""}
-                onChange={(e) => onPatch(s.key, { percentOf: (e.target.value || null) as PercentBase | null })}
-              >
-                <option value="">—</option>
-                {(Object.keys(PERCENT_BASE_LABELS) as PercentBase[]).map((b) => (
-                  <option key={b} value={b}>
-                    {PERCENT_BASE_LABELS[b]}
-                  </option>
-                ))}
-              </select>
-              <NumInput value={s.loadKg} min={0} step={0.5} onChange={(v) => onPatch(s.key, { loadKg: v })} placeholder="kg" />
-              <div className="flex items-center gap-1">
+        <div className="overflow-x-auto">
+          <div className="grid min-w-[640px] gap-2">
+            <div className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_auto] gap-2 text-[11px] uppercase tracking-wide text-zinc-500">
+              <span>#</span>
+              <span>Powt.</span>
+              <span>Powt. maks.</span>
+              <span>%</span>
+              <span>Baza %</span>
+              <span>Ciężar</span>
+              <span />
+            </div>
+            {sets.map((s, idx) => (
+              <div key={s.key} className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_auto] items-center gap-2">
+                <span className="text-xs text-zinc-500">{idx + 1}</span>
+                <NumInput value={s.reps} min={0} onChange={(v) => onPatch(s.key, { reps: v })} placeholder="powt." />
+                <NumInput value={s.repsMax} min={0} onChange={(v) => onPatch(s.key, { repsMax: v })} placeholder="—" />
+                <NumInput value={s.loadPercent} min={0} onChange={(v) => onPatch(s.key, { loadPercent: v })} placeholder="%" />
                 <select
                   className={`${inputClass} py-1`}
-                  value={s.role ?? "work"}
-                  onChange={(e) => onPatch(s.key, { role: e.target.value })}
-                  aria-label="Rola serii"
+                  value={s.percentOf ?? ""}
+                  onChange={(e) => onPatch(s.key, { percentOf: (e.target.value || null) as PercentBase | null })}
                 >
-                  {ROLE_OPTIONS.map((r) => (
-                    <option key={r} value={r}>
-                      {SET_ROLE_LABELS[r]}
+                  <option value="">—</option>
+                  {(Object.keys(PERCENT_BASE_LABELS) as PercentBase[]).map((b) => (
+                    <option key={b} value={b}>
+                      {PERCENT_BASE_LABELS[b]}
                     </option>
                   ))}
                 </select>
-                <IconButton title="Usuń serię" onClick={() => onRemove(s.key)}>
-                  ✕
-                </IconButton>
+                <NumInput value={s.loadKg} min={0} step={0.5} onChange={(v) => onPatch(s.key, { loadKg: v })} placeholder="kg" />
+                <div className="flex items-center gap-1">
+                  <select
+                    className={`${inputClass} py-1`}
+                    value={s.role ?? "work"}
+                    onChange={(e) => onPatch(s.key, { role: e.target.value })}
+                    aria-label="Rola serii"
+                  >
+                    {ROLE_OPTIONS.map((r) => (
+                      <option key={r} value={r}>
+                        {SET_ROLE_LABELS[r]}
+                      </option>
+                    ))}
+                  </select>
+                  <IconButton title="Usuń serię" onClick={() => onRemove(s.key)}>
+                    ✕
+                  </IconButton>
+                </div>
               </div>
-            </div>
-          ))}
-          <p className="text-[11px] text-zinc-500">
+            ))}
+          </div>
+          <p className="mt-2 text-[11px] text-zinc-500">
             „% od topu” liczy się względem najcięższej/rampowej serii tej pozycji. Preset 6-4-2-5-3-1 dopasowuje się do
             numeru tygodnia (obecnie tydzień {weekNumber}).
           </p>

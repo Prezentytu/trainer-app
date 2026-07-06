@@ -4,9 +4,49 @@
   --font-sans: var(--font-geist-sans);
 }
 
+/*
+ * Nasza paleta — warstwa tokenów semantycznych.
+ * Tier 1 (prymitywy) to wbudowana skala Tailwind (zinc/yellow/red/emerald) — nie definiujemy jej
+ * ponownie. Tier 2 (poniżej) nazywa role, nie wygląd, żeby komponenty odwoływały się do znaczenia
+ * ("surface", "accent", "danger"), a nie do konkretnego odcienia. Jedna, ciemna motywacja —
+ * bez wariantu light, więc tokeny są statyczne (@theme, nie @theme inline).
+ * Źródło prawdy dla kolorów w apps/web. Zobacz skill `design-system`.
+ */
+@theme {
+  /* Tło i powierzchnie */
+  --color-background: var(--color-zinc-950);
+  --color-surface: var(--color-zinc-900);
+  --color-surface-sunken: var(--color-zinc-950);
+  --color-surface-hover: var(--color-zinc-800);
+  --color-surface-active: var(--color-zinc-700);
+
+  /* Obramowania */
+  --color-border: var(--color-zinc-800);
+  --color-border-strong: var(--color-zinc-700);
+
+  /* Tekst */
+  --color-foreground: var(--color-zinc-100);
+  --color-foreground-secondary: var(--color-zinc-300);
+  --color-muted-strong: var(--color-zinc-400);
+  --color-muted: var(--color-zinc-500);
+  --color-muted-faint: var(--color-zinc-600);
+
+  /* Akcent (marka) */
+  --color-accent: var(--color-yellow-400);
+  --color-accent-strong: var(--color-yellow-300);
+  --color-accent-foreground: var(--color-zinc-950);
+
+  /* Status */
+  --color-danger: var(--color-red-300);
+  --color-danger-bg: var(--color-red-950);
+  --color-danger-border: var(--color-red-900);
+  --color-success: var(--color-emerald-300);
+  --color-success-bg: var(--color-emerald-400);
+}
+
 body {
-  background: #09090b;
-  color: #f4f4f5;
+  background: var(--color-background);
+  color: var(--color-foreground);
 }
 
 input,

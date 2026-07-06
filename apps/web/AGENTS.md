@@ -14,7 +14,8 @@ Next.js 16 (App Router) + React 19 + Tailwind 4. Port 3000. Ciemny motyw, UI po 
 
 | Ścieżka | Rola |
 |---|---|
-| `app/layout.tsx` | Wspólny layout: sidebar + tablica `NAV` (tu dopisujesz nowe działy) |
+| `app/layout.tsx` | Wspólny layout: renderuje `AppShell` |
+| `components/AppShell.tsx` | Sidebar (desktop) + mobilny drawer + tablica `NAV` (tu dopisujesz nowe działy) |
 | `app/{zasób}/page.tsx` | Strona listy zasobu (client component) |
 | `app/{zasób}/[id]/page.tsx` | Strona szczegółów |
 | `lib/api.ts` | Typowany klient API — typy TS + obiekt `api` z metodami per zasób |
@@ -23,18 +24,19 @@ Next.js 16 (App Router) + React 19 + Tailwind 4. Port 3000. Ciemny motyw, UI po 
 
 ## Always
 
+- Przy tworzeniu/zmianie jakiegokolwiek UI zawsze stosuj skille `design-system` (nasza paleta tokenów — jedyny dozwolony słownik kolorów) i `responsive-ui` (mobile-first; nazwy planów, ćwiczeń i klientów nigdy nie są ucinane; nic nie wychodzi poza kontener).
 - Strony z danymi to komponenty klienckie: pierwsza linia `"use client"`, dane przez `api.*` w `useEffect` (wzorzec `useCallback` + `load()`).
 - Nowe typy i metody API dodawaj do `lib/api.ts` — typy muszą być lustrzane do backendowych encji/DTO (camelCase).
 - Używaj prymitywów z `components/ui.tsx`: `PageHeader`, `Card`, `Button`, `Field` + `inputClass`, `ErrorBanner`, `EmptyState`, `Badge`, `formatRest`.
 - Błędy łap i pokazuj przez `<ErrorBanner message={error} />` (stan `error: string | null`).
-- Nowy dział dopisz do tablicy `NAV` w `app/layout.tsx`.
+- Nowy dział dopisz do tablicy `NAV` w `components/AppShell.tsx`.
 - Import ścieżkowy przez alias `@/` (np. `@/lib/api`, `@/components/ui`).
 - Po zmianach uruchom `npm run lint`, `npm run typecheck` i `npm run build` (z katalogu `apps/web/`).
 
 ## Never
 
 - Nigdy nie używaj surowego `fetch` w stronach/komponentach — tylko `api` z `lib/api.ts`. Jedyny wrapper `fetch` żyje w `request<T>()` w tym pliku.
-- Nigdy nie hardkoduj kolorów spoza palety `zinc`/`yellow` ani nie duplikuj stylów przycisków/pól — użyj `Button`/`inputClass`.
+- Nigdy nie używaj surowych klas `zinc-*`/`yellow-*`/`red-*`/`emerald-*` w komponentach — wyłącznie tokeny semantyczne (`bg-surface`, `text-accent`, `border-border-strong`…) zdefiniowane w `app/globals.css` (`@theme`). Pełna tabela i zasady: skill `design-system`. Nie duplikuj stylów przycisków/pól — użyj `Button`/`inputClass`.
 - Nigdy nie zakładaj wiedzy o API Next.js z pamięci — sprawdź lokalne docsy (ostrzeżenie na górze).
 
 ## Wzorzec strony listy (na bazie `app/clients/page.tsx`)
@@ -72,6 +74,6 @@ export default function ClientsPage() {
 
 ## Styl / Tailwind
 
-- Motyw: tło `bg-zinc-950`, tekst `text-zinc-100`, akcent `yellow-400`, obramowania `border-zinc-800`.
+- Motyw: tło `bg-background`, tekst `text-foreground`, akcent `bg-accent`/`text-accent`, obramowania `border-border`. Pełna paleta tokenów semantycznych: skill `design-system` (źródło: `app/globals.css`, blok `@theme`).
 - Statusy przez `Badge` z tonami `neutral | yellow | green | red` — nie wymyślaj własnych klas kolorów.
 - Font Geist ładowany w `layout.tsx`.
