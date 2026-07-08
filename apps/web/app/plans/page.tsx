@@ -1,24 +1,39 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, Plan } from "@/lib/api";
 import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader } from "@/components/ui";
 
+type AssignmentSummary = { planId: number; clientName: string };
+
 export default function PlansPage() {
   const router = useRouter();
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [assignments, setAssignments] = useState<AssignmentSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    api.plans
-      .list()
-      .then(setPlans)
+    Promise.all([api.plans.list(), api.assignments.list()])
+      .then(([p, a]) => {
+        setPlans(p);
+        setAssignments(a.filter((x) => x.status === "active"));
+      })
       .catch((e: Error) => setError(e.message));
   }, []);
 
   useEffect(load, [load]);
+
+  const clientNamesByPlan = useMemo(() => {
+    const map = new Map<number, string[]>();
+    for (const a of assignments) {
+      const list = map.get(a.planId) ?? [];
+      list.push(a.clientName);
+      map.set(a.planId, list);
+    }
+    return map;
+  }, [assignments]);
 
   const handleDuplicate = async (plan: Plan, asClientPlan: boolean) => {
     try {
@@ -58,13 +73,13 @@ export default function PlansPage() {
       />
       <ErrorBanner message={error} />
 
-      <Section title="Szablony">
+      <Section title="Szablony" count={templates.length}>
         {templates.length === 0 ? (
           <EmptyState>Brak szablonów. Tworząc plan, wybierz rodzaj „Szablon”.</EmptyState>
         ) : (
           templates.map((p) => (
-            <PlanRow key={p.id} plan={p}>
-              <Button variant="ghost" onClick={() => handleDuplicate(p, true)}>Użyj → plan klienta</Button>
+            <PlanRow key={p.id} plan={p} clientNames={clientNamesByPlan.get(p.id) ?? []}>
+              <Button variant="ghost" onClick={() => handleDuplicate(p, true)}>Utwórz plan klienta</Button>
               <Button variant="ghost" onClick={() => handleDuplicate(p, false)}>Duplikuj</Button>
               <Button variant="danger" onClick={() => handleDelete(p)}>Usuń</Button>
             </PlanRow>
@@ -72,12 +87,12 @@ export default function PlansPage() {
         )}
       </Section>
 
-      <Section title="Plany klientów">
+      <Section title="Plany klientów" count={clientPlans.length}>
         {clientPlans.length === 0 ? (
           <EmptyState>Brak planów klientów — stwórz nowy albo użyj szablonu.</EmptyState>
         ) : (
           clientPlans.map((p) => (
-            <PlanRow key={p.id} plan={p}>
+            <PlanRow key={p.id} plan={p} clientNames={clientNamesByPlan.get(p.id) ?? []}>
               <Button variant="ghost" onClick={() => handleDuplicate(p, false)}>Duplikuj</Button>
               <Button variant="danger" onClick={() => handleDelete(p)}>Usuń</Button>
             </PlanRow>
@@ -88,31 +103,38 @@ export default function PlansPage() {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, count, children }: { title: string; count: number; children: ReactNode }) {
   return (
     <div className="mb-8">
-      <h2 className="mb-3 font-semibold">{title}</h2>
-      <div className="grid gap-3">{children}</div>
+      <h2 className="mb-3 flex items-center gap-2 font-semibold">
+        {title} <span className="text-sm font-normal text-muted">· {count}</span>
+      </h2>
+      <div className="grid gap-3 xl:grid-cols-2">{children}</div>
     </div>
   );
 }
 
-function PlanRow({ plan, children }: { plan: Plan; children: React.ReactNode }) {
+function PlanRow({ plan, clientNames, children }: { plan: Plan; clientNames: string[]; children: ReactNode }) {
   return (
-    <Card className="flex items-center justify-between gap-4">
-      <div>
-        <div className="flex items-center gap-2">
-          <Link href={`/plans/${plan.id}`} className="font-semibold hover:text-yellow-400">
+    <Card className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href={`/plans/${plan.id}`} className="break-words font-semibold hover:text-accent">
             {plan.name}
           </Link>
-          {plan.assignedCount > 0 && <Badge tone="green">{plan.assignedCount} aktywne przypisania</Badge>}
+          {clientNames.length > 0 && (
+            <Badge tone="green">
+              aktywny u: {clientNames.slice(0, 2).join(", ")}
+              {clientNames.length > 2 ? ` +${clientNames.length - 2}` : ""}
+            </Badge>
+          )}
         </div>
-        <p className="mt-0.5 text-xs text-zinc-500">
+        <p className="mt-0.5 break-words text-xs text-muted">
           {plan.weeksCount} tyg. · {plan.daysCount} dni · {plan.exerciseCount} ćwiczeń
           {plan.description ? ` · ${plan.description}` : ""}
         </p>
       </div>
-      <div className="flex shrink-0 items-center gap-2">{children}</div>
+      <div className="flex shrink-0 flex-wrap items-center gap-2">{children}</div>
     </Card>
   );
 }

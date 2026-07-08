@@ -17,15 +17,35 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { api, Exercise, Plan, PlanInput } from "@/lib/api";
 import { PLAN_PRESETS } from "@/lib/planPresets";
 import { computeGroupsFromLinks, deriveLinkedToNext } from "@/lib/supersets";
-import { Button, Card, ErrorBanner, Field, inputClass } from "@/components/ui";
+import { Button, Card, ErrorBanner, Field, Pill, inputClass, useUndoToast } from "@/components/ui";
 import { DayBoard } from "./DayBoard";
 import { isDayContainerId, dayKeyFromContainerId } from "./dnd";
+import { PlanTable } from "./PlanTable";
 import { BuilderDay, BuilderItem, BuilderSet, newKey } from "./types";
 import { WeekTabs } from "./WeekTabs";
 
-function loadInitialDays(plan?: Plan): BuilderDay[] {
+type ViewMode = "board" | "table";
+const VIEW_MODE_STORAGE_KEY = "trainer-app:plan-builder-view-mode";
+
+function loadInitialViewMode(): ViewMode {
+  if (typeof window === "undefined") return "board";
+  return window.localStorage.getItem(VIEW_MODE_STORAGE_KEY) === "table" ? "table" : "board";
+}
+
+function loadInitialDays(plan?: Plan, initialDayCount = 1, initialWeekCount = 1): BuilderDay[] {
   if (!plan || plan.days.length === 0) {
-    return [{ key: newKey(), weekNumber: 1, order: 1, label: "Dzień 1", notes: null, items: [] }];
+    const weekCount = Math.max(initialWeekCount, 1);
+    const dayCount = Math.max(initialDayCount, 1);
+    return Array.from({ length: weekCount }, (_, w) =>
+      Array.from({ length: dayCount }, (_, idx) => ({
+        key: newKey(),
+        weekNumber: w + 1,
+        order: idx + 1,
+        label: `Dzień ${idx + 1}`,
+        notes: null,
+        items: [],
+      }))
+    ).flat();
   }
   return plan.days.map((d) => {
     const linked = deriveLinkedToNext(d.items.map((i) => i.supersetGroup));
@@ -50,6 +70,7 @@ function loadInitialDays(plan?: Plan): BuilderDay[] {
         distanceMeters: i.overrides.distanceMeters,
         tempo: i.tempo,
         targetRpe: i.targetRpe,
+        targetRir: i.targetRir,
         setScheme: i.setScheme,
         restBetweenSetsSeconds: i.overrides.restBetweenSetsSeconds,
         restAfterExerciseSeconds: i.restAfterExerciseSeconds,
@@ -66,6 +87,7 @@ function loadInitialDays(plan?: Plan): BuilderDay[] {
           loadPercent: s.loadPercent,
           percentOf: s.percentOf,
           targetRpe: s.targetRpe,
+          targetRir: s.targetRir,
           tempo: s.tempo,
           role: s.role,
           note: s.note,
@@ -86,22 +108,42 @@ function detachLinks(items: BuilderItem[], itemKey: string): BuilderItem[] {
   });
 }
 
-export default function PlanBuilder({ plan }: { plan?: Plan }) {
+export default function PlanBuilder({
+  plan,
+  initialName,
+  initialIsTemplate,
+  initialDayCount,
+  initialWeekCount,
+}: {
+  plan?: Plan;
+  /** Wypełnione tylko przy tworzeniu nowego planu (patrz app/plans/new) — smart default zamiast pustego formularza. */
+  initialName?: string;
+  initialIsTemplate?: boolean;
+  initialDayCount?: number;
+  initialWeekCount?: number;
+}) {
   const router = useRouter();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const { showUndoToast, toastNode } = useUndoToast();
 
-  const [name, setName] = useState(plan?.name ?? "");
+  const [name, setName] = useState(plan?.name ?? initialName ?? "");
   const [description, setDescription] = useState(plan?.description ?? "");
-  const [isTemplate, setIsTemplate] = useState(plan?.isTemplate ?? false);
+  const [isTemplate, setIsTemplate] = useState(plan?.isTemplate ?? initialIsTemplate ?? false);
 
-  const [days, setDays] = useState<BuilderDay[]>(() => loadInitialDays(plan));
+  const [days, setDays] = useState<BuilderDay[]>(() => loadInitialDays(plan, initialDayCount, initialWeekCount));
   const [activeWeek, setActiveWeek] = useState<number>(() => {
-    const initial = loadInitialDays(plan);
+    const initial = loadInitialDays(plan, initialDayCount, initialWeekCount);
     return initial.length ? Math.min(...initial.map((d) => d.weekNumber)) : 1;
   });
   const [activeDragItem, setActiveDragItem] = useState<BuilderItem | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>(loadInitialViewMode);
+
+  useEffect(() => {
+    window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
+  }, [viewMode]);
 
   useEffect(() => {
     api.exercises
@@ -163,10 +205,42 @@ export default function PlanBuilder({ plan }: { plan?: Plan }) {
       return [...prev, ...clones];
     });
 
-  const removeDay = (dayKey: string) => setDays((prev) => prev.filter((d) => d.key !== dayKey));
+  const removeDay = (dayKey: string) => {
+    const removed = days.find((d) => d.key === dayKey);
+    const removedIndex = days.findIndex((d) => d.key === dayKey);
+    setDays((prev) => prev.filter((d) => d.key !== dayKey));
+    if (removed) {
+      showUndoToast(`Usunięto dzień „${removed.label}”`, () =>
+        setDays((prev) => {
+          const next = [...prev];
+          next.splice(removedIndex, 0, removed);
+          return next;
+        })
+      );
+    }
+  };
+
+  const duplicateDay = (dayKey: string) =>
+    setDays((prev) => {
+      const source = prev.find((d) => d.key === dayKey);
+      if (!source) return prev;
+      const inWeek = prev.filter((d) => d.weekNumber === source.weekNumber).length;
+      const clone: BuilderDay = {
+        ...source,
+        key: newKey(),
+        order: inWeek + 1,
+        label: `${source.label} (kopia)`,
+        items: source.items.map((it) => ({
+          ...it,
+          key: newKey(),
+          prescribedSets: it.prescribedSets.map((s) => ({ ...s, key: newKey() })),
+        })),
+      };
+      return [...prev, clone];
+    });
 
   // --- mutacje pozycji ---
-  const addItem = (dayKey: string, exerciseId: number) => {
+  const addItem = (dayKey: string, exerciseId: number, overrides?: Partial<BuilderItem>) => {
     const exercise = exercises.find((e) => e.id === exerciseId);
     if (!exercise) return;
     setDays((prev) =>
@@ -192,12 +266,14 @@ export default function PlanBuilder({ plan }: { plan?: Plan }) {
                   distanceMeters: null,
                   tempo: null,
                   targetRpe: null,
+                  targetRir: null,
                   setScheme: null,
                   restBetweenSetsSeconds: null,
                   restAfterExerciseSeconds: 90,
                   loadKg: null,
                   notes: null,
                   prescribedSets: [],
+                  ...overrides,
                 },
               ],
             }
@@ -262,6 +338,7 @@ export default function PlanBuilder({ plan }: { plan?: Plan }) {
         loadPercent: null,
         percentOf: null,
         targetRpe: null,
+        targetRir: null,
         tempo: null,
         role: "work",
         note: null,
@@ -360,16 +437,7 @@ export default function PlanBuilder({ plan }: { plan?: Plan }) {
     });
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    const totalItems = days.reduce((sum, d) => sum + d.items.length, 0);
-    if (totalItems === 0) {
-      setError("Dodaj przynajmniej jedno ćwiczenie do planu.");
-      return;
-    }
-    setSaving(true);
-    setError(null);
-    const input: PlanInput = {
+  const buildPlanInput = (): PlanInput => ({
       name: name.trim(),
       description: description.trim() || null,
       isTemplate,
@@ -392,6 +460,7 @@ export default function PlanBuilder({ plan }: { plan?: Plan }) {
             distanceMeters: it.distanceMeters,
             tempo: it.tempo?.trim() || null,
             targetRpe: it.targetRpe,
+            targetRir: it.targetRir,
             setScheme: it.setScheme?.trim() || null,
             restBetweenSetsSeconds: it.restBetweenSetsSeconds,
             restAfterExerciseSeconds: it.restAfterExerciseSeconds,
@@ -407,6 +476,7 @@ export default function PlanBuilder({ plan }: { plan?: Plan }) {
               loadPercent: s.loadPercent,
               percentOf: s.percentOf,
               targetRpe: s.targetRpe,
+              targetRir: s.targetRir,
               tempo: s.tempo?.trim() || null,
               role: s.role,
               note: s.note?.trim() || null,
@@ -414,7 +484,18 @@ export default function PlanBuilder({ plan }: { plan?: Plan }) {
           })),
         };
       }),
-    };
+  });
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    const totalItems = days.reduce((sum, d) => sum + d.items.length, 0);
+    if (totalItems === 0) {
+      setError("Dodaj przynajmniej jedno ćwiczenie do planu.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    const input = buildPlanInput();
     try {
       if (plan) {
         await api.plans.update(plan.id, input);
@@ -429,6 +510,25 @@ export default function PlanBuilder({ plan }: { plan?: Plan }) {
       setSaving(false);
     }
   };
+
+  // Autosave (tylko edycja istniejącego planu — nowy plan wymaga jawnego pierwszego zapisu, bo nie
+  // ma jeszcze ID). Debounce 2s bez aktywności, gasi lęk przed utratą zmian; "Zapisz plan" zostaje
+  // jako explicit checkpoint.
+  useEffect(() => {
+    if (!plan) return;
+    const totalItems = days.reduce((sum, d) => sum + d.items.length, 0);
+    if (totalItems === 0 || !name.trim()) return;
+    const timer = setTimeout(() => {
+      api.plans
+        .update(plan.id, buildPlanInput())
+        .then(() => setLastSavedAt(new Date()))
+        .catch(() => {
+          // Autosave po cichu nie udało się — trener wciąż ma manualny "Zapisz plan" jako fallback.
+        });
+    }, 2000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plan, name, description, isTemplate, days]);
 
   return (
     <form onSubmit={handleSubmit}>
@@ -463,15 +563,55 @@ export default function PlanBuilder({ plan }: { plan?: Plan }) {
         </div>
       </Card>
 
+      <div className="mb-3 flex justify-end">
+        <div className="inline-flex shrink-0 items-center gap-1 rounded-full bg-surface-hover p-1">
+          <Pill active={viewMode === "board"} onClick={() => setViewMode("board")}>
+            Tablica
+          </Pill>
+          <Pill active={viewMode === "table"} onClick={() => setViewMode("table")}>
+            Arkusz
+          </Pill>
+        </div>
+      </div>
+
       <WeekTabs weeks={weeks} activeWeek={activeWeek} onSelect={setActiveWeek} onAddWeek={addWeek} onCopyWeek={copyWeek} />
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <DayBoard
+      {viewMode === "board" ? (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          <DayBoard
+            days={visibleDays}
+            exercises={exercises}
+            onAddDay={() => addDay(activeWeek)}
+            onPatchDay={patchDay}
+            onRemoveDay={removeDay}
+            onDuplicateDay={duplicateDay}
+            onAddItem={addItem}
+            onPatchItem={patchItem}
+            onRemoveItem={removeItem}
+            onMoveItem={moveItem}
+            onToggleLink={toggleLink}
+            onAddSet={addSet}
+            onPatchSet={patchSet}
+            onRemoveSet={removeSet}
+            onApplyPreset={applyPreset}
+            onClearSets={(dayKey, itemKey) => setItemSets(dayKey, itemKey, [])}
+          />
+          <DragOverlay>
+            {activeDragItem && (
+              <div className="rounded-lg border border-accent/60 bg-surface px-3 py-2 text-sm font-medium shadow-xl">
+                {activeDragItem.exerciseName}
+              </div>
+            )}
+          </DragOverlay>
+        </DndContext>
+      ) : (
+        <PlanTable
           days={visibleDays}
           exercises={exercises}
           onAddDay={() => addDay(activeWeek)}
           onPatchDay={patchDay}
           onRemoveDay={removeDay}
+          onDuplicateDay={duplicateDay}
           onAddItem={addItem}
           onPatchItem={patchItem}
           onRemoveItem={removeItem}
@@ -483,18 +623,20 @@ export default function PlanBuilder({ plan }: { plan?: Plan }) {
           onApplyPreset={applyPreset}
           onClearSets={(dayKey, itemKey) => setItemSets(dayKey, itemKey, [])}
         />
-        <DragOverlay>
-          {activeDragItem && (
-            <div className="rounded-lg border border-yellow-400/60 bg-zinc-900 px-3 py-2 text-sm font-medium shadow-xl">
-              {activeDragItem.exerciseName}
-            </div>
-          )}
-        </DragOverlay>
-      </DndContext>
+      )}
 
-      <Button type="submit" disabled={saving || !name.trim()}>
-        {saving ? "Zapisywanie…" : plan ? "Zapisz zmiany" : "Utwórz plan"}
-      </Button>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="submit" disabled={saving || !name.trim()}>
+          {saving ? "Zapisywanie…" : plan ? "Zapisz zmiany" : "Utwórz plan"}
+        </Button>
+        {plan && lastSavedAt && (
+          <span className="text-xs text-muted">
+            Zapisano autom. o {lastSavedAt.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })}
+          </span>
+        )}
+      </div>
+
+      {toastNode}
     </form>
   );
 }

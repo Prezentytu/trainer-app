@@ -38,10 +38,10 @@ public static class Seed
                     Notes = "Rozgrzewka: 5 min krążeń i wymachów.",
                     Items =
                     [
-                        new PlanItem { ExerciseId = exercises[0].Id, Order = 1, Sets = 3, Reps = 10, LoadKg = 40, RestAfterExerciseSeconds = 120 },
-                        new PlanItem { ExerciseId = exercises[2].Id, Order = 2, Sets = 3, Reps = 10, LoadKg = 40, RestAfterExerciseSeconds = 120 },
-                        new PlanItem { ExerciseId = exercises[3].Id, Order = 3, RestAfterExerciseSeconds = 90 },
-                        new PlanItem { ExerciseId = exercises[6].Id, Order = 4, RestAfterExerciseSeconds = 60, Notes = "Ostatnia seria do przerwania pozycji." },
+                        new PlanItem { ExerciseId = exercises[0].Id, Order = 1, Sets = 3, Reps = 10, LoadKg = 40, TargetRir = 2, RestAfterExerciseSeconds = 120 },
+                        new PlanItem { ExerciseId = exercises[2].Id, Order = 2, Sets = 3, Reps = 10, LoadKg = 40, TargetRir = 2, RestAfterExerciseSeconds = 120 },
+                        new PlanItem { ExerciseId = exercises[3].Id, Order = 3, TargetRir = 3, RestAfterExerciseSeconds = 90 },
+                        new PlanItem { ExerciseId = exercises[6].Id, Order = 4, TargetRir = 1, RestAfterExerciseSeconds = 60, Notes = "Ostatnia seria do przerwania pozycji." },
                     ],
                 },
             ],
@@ -66,9 +66,9 @@ public static class Seed
                             ExerciseId = exercises[0].Id, Order = 1, SetScheme = "Rampa 6-4-2-5-3-1",
                             PrescribedSets =
                             [
-                                new PlanSet { Order = 1, Role = "ramp", Reps = 2, LoadKg = 50, Note = "ustal 2RM" },
-                                new PlanSet { Order = 2, Role = "backoff", Reps = 5, RepsMax = 10, LoadPercent = 80, PercentOf = "top", Note = "seria anaboliczna" },
-                                new PlanSet { Order = 3, Role = "backoff", Reps = 10, RepsMax = 15, LoadPercent = 60, PercentOf = "top" },
+                                new PlanSet { Order = 1, Role = "ramp", Reps = 2, LoadKg = 50, TargetRir = 0, Note = "ustal 2RM" },
+                                new PlanSet { Order = 2, Role = "backoff", Reps = 5, RepsMax = 10, LoadPercent = 80, PercentOf = "top", TargetRir = 2, Note = "seria anaboliczna" },
+                                new PlanSet { Order = 3, Role = "backoff", Reps = 10, RepsMax = 15, LoadPercent = 60, PercentOf = "top", TargetRir = 3 },
                             ],
                         },
                     ],

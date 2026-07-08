@@ -1,0 +1,249 @@
+"use client";
+
+import { Exercise, rirFromRpe } from "@/lib/api";
+import { Badge, IconButton, inputClass } from "@/components/ui";
+import { NumInput } from "./NumInput";
+import { SetSchemeEditor } from "./SetSchemeEditor";
+import { BuilderItem, BuilderSet } from "./types";
+
+// Wspólna siatka kolumn dla wiersza i nagłówka tabeli (TableDay) — trzymana w jednym miejscu,
+// żeby kolumny obu nie mogły się rozjechać.
+export const TABLE_ROW_GRID_COLS =
+  "grid-cols-[1.75rem_1.75rem_minmax(11rem,1.4fr)_9.5rem_4.5rem_5rem_3.5rem_5rem_minmax(8rem,1fr)_8.5rem]";
+
+const cellInput = `${inputClass} px-2 py-1.5 text-center text-sm`;
+
+function SetsRepsCell({
+  item,
+  exercise,
+  onPatch,
+}: {
+  item: BuilderItem;
+  exercise?: Exercise;
+  onPatch: (patch: Partial<BuilderItem>) => void;
+}) {
+  const setsField = (
+    <NumInput
+      className="w-10 px-1 py-1.5 text-center"
+      value={item.sets}
+      min={1}
+      onChange={(v) => onPatch({ sets: v })}
+      placeholder={exercise ? String(exercise.defaultSets) : "—"}
+    />
+  );
+  const times = (
+    <span className="shrink-0 text-xs text-muted">×</span>
+  );
+
+  if (item.exerciseType === "time") {
+    return (
+      <div className="flex items-center gap-1">
+        {setsField}
+        {times}
+        <NumInput
+          className="w-12 px-1 py-1.5 text-center"
+          value={item.repDurationSeconds}
+          min={1}
+          onChange={(v) => onPatch({ repDurationSeconds: v })}
+          placeholder="s"
+        />
+      </div>
+    );
+  }
+  if (item.exerciseType === "distance") {
+    return (
+      <div className="flex items-center gap-1">
+        {setsField}
+        {times}
+        <NumInput
+          className="w-14 px-1 py-1.5 text-center"
+          value={item.distanceMeters}
+          min={1}
+          onChange={(v) => onPatch({ distanceMeters: v })}
+          placeholder="m"
+        />
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center gap-0.5">
+      {setsField}
+      {times}
+      <NumInput
+        className="w-10 px-1 py-1.5 text-center"
+        value={item.reps}
+        min={1}
+        onChange={(v) => onPatch({ reps: v })}
+        placeholder={exercise ? String(exercise.defaultReps) : "—"}
+      />
+      <span className="shrink-0 text-xs text-muted">–</span>
+      <NumInput
+        className="w-10 px-1 py-1.5 text-center"
+        value={item.repsMax}
+        min={1}
+        onChange={(v) => onPatch({ repsMax: v })}
+        placeholder="—"
+      />
+    </div>
+  );
+}
+
+export function TableExerciseRow({
+  item,
+  index,
+  weekNumber,
+  exercise,
+  supersetLabel,
+  isInSuperset,
+  isLastInDay,
+  expanded,
+  onToggleExpand,
+  onMove,
+  onRemove,
+  onToggleLink,
+  onPatch,
+  onAddSet,
+  onPatchSet,
+  onRemoveSet,
+  onApplyPreset,
+  onClearSets,
+}: {
+  item: BuilderItem;
+  index: number;
+  weekNumber: number;
+  exercise?: Exercise;
+  supersetLabel: string | null;
+  isInSuperset: boolean;
+  isLastInDay: boolean;
+  expanded: boolean;
+  onToggleExpand: () => void;
+  onMove: (dir: -1 | 1) => void;
+  onRemove: () => void;
+  onToggleLink: () => void;
+  onPatch: (patch: Partial<BuilderItem>) => void;
+  onAddSet: () => void;
+  onPatchSet: (setKey: string, patch: Partial<BuilderSet>) => void;
+  onRemoveSet: (setKey: string) => void;
+  onApplyPreset: (presetId: string) => void;
+  onClearSets: () => void;
+}) {
+  return (
+    <div
+      className={`rounded-lg border bg-surface/60 ${
+        isInSuperset ? "border-accent/40 border-l-[3px]" : "border-border"
+      }`}
+    >
+      <div className={`grid ${TABLE_ROW_GRID_COLS} items-center gap-2 px-2 py-2`}>
+        <IconButton title={expanded ? "Zwiń szczegóły" : "Rozwiń szczegóły"} size="xs" onClick={onToggleExpand}>
+          {expanded ? "▾" : "▸"}
+        </IconButton>
+
+        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-accent/15 text-xs font-bold text-accent-strong">
+          {index + 1}
+        </span>
+
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <span className="min-w-0 break-words text-sm font-medium">{item.exerciseName}</span>
+          {supersetLabel && <Badge tone="yellow">{supersetLabel}</Badge>}
+        </div>
+
+        <SetsRepsCell item={item} exercise={exercise} onPatch={onPatch} />
+
+        <input
+          className={cellInput}
+          value={item.tempo ?? ""}
+          onChange={(e) => onPatch({ tempo: e.target.value || null })}
+          placeholder="—"
+          aria-label="Tempo"
+        />
+
+        <NumInput
+          className="px-2 py-1.5 text-center"
+          value={item.restBetweenSetsSeconds}
+          min={0}
+          onChange={(v) => onPatch({ restBetweenSetsSeconds: v })}
+          placeholder={exercise ? String(exercise.defaultRestBetweenSetsSeconds) : "dom."}
+        />
+
+        <NumInput
+          className="px-2 py-1.5 text-center"
+          value={item.targetRir}
+          min={0}
+          step={0.5}
+          onChange={(v) => onPatch({ targetRir: v })}
+          placeholder="—"
+          aria-label="RIR celu"
+        />
+
+        <NumInput
+          className="px-2 py-1.5 text-center"
+          value={item.loadKg}
+          min={0}
+          step={0.5}
+          onChange={(v) => onPatch({ loadKg: v })}
+          placeholder="dom."
+        />
+
+        <input
+          className={`${inputClass} px-2 py-1.5 text-sm`}
+          value={item.notes ?? ""}
+          onChange={(e) => onPatch({ notes: e.target.value || null })}
+          placeholder="Notatka dla klienta"
+          aria-label="Notatka dla klienta"
+        />
+
+        <div className="flex flex-wrap items-center justify-end gap-1">
+          <IconButton title="Przenieś wyżej" onClick={() => onMove(-1)} size="xs">
+            ↑
+          </IconButton>
+          <IconButton title="Przenieś niżej" onClick={() => onMove(1)} size="xs">
+            ↓
+          </IconButton>
+          {!isLastInDay && (
+            <IconButton
+              title={item.linkedToNext ? "Rozłącz superserię" : "Połącz w superserię"}
+              onClick={onToggleLink}
+              size="xs"
+            >
+              ⛓
+            </IconButton>
+          )}
+          <IconButton title="Usuń pozycję" variant="danger" onClick={onRemove} size="xs">
+            ✕
+          </IconButton>
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="border-t border-border p-3">
+          <div className="mb-3 flex items-center gap-2">
+            <label className="flex items-center gap-1.5 text-xs text-muted">
+              RPE (opcjonalnie)
+              <NumInput
+                className="w-16 px-2 py-1 text-center"
+                value={item.targetRpe}
+                min={1}
+                step={0.5}
+                onChange={(v) => onPatch({ targetRpe: v })}
+                placeholder="—"
+              />
+            </label>
+            {item.targetRpe != null && item.targetRir == null && (
+              <span className="text-xs text-muted">≈ RIR {rirFromRpe(item.targetRpe)}</span>
+            )}
+          </div>
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">Rozkład serii</p>
+          <SetSchemeEditor
+            sets={item.prescribedSets}
+            weekNumber={weekNumber}
+            onAdd={onAddSet}
+            onPatch={onPatchSet}
+            onRemove={onRemoveSet}
+            onApplyPreset={onApplyPreset}
+            onClear={onClearSets}
+          />
+        </div>
+      )}
+    </div>
+  );
+}

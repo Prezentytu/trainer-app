@@ -23,6 +23,7 @@ public record PlanSetInput(
     double? LoadPercent = null,
     string? PercentOf = null,
     double? TargetRpe = null,
+    double? TargetRir = null,
     string? Tempo = null,
     string? Role = null,
     string? Note = null);
@@ -39,6 +40,7 @@ public record PlanItemInput(
     int? DistanceMeters = null,
     string? Tempo = null,
     double? TargetRpe = null,
+    double? TargetRir = null,
     string? SetScheme = null,
     int? RestBetweenSetsSeconds = null,
     int? RestAfterExerciseSeconds = null,

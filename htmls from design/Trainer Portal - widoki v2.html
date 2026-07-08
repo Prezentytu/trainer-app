@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style data-omelette-injected>html,body{background:transparent}</style><script data-omelette-injected>(()=>{{const H=new URLSearchParams(location.search).get("theme");if(H==="light"||H==="dark"){document.documentElement.dataset.theme=H}}{const H=()=>{try{if(document.querySelector('meta[name="color-scheme"]'))return;const A=getComputedStyle(document.documentElement).getPropertyValue("color-scheme").trim();if(A&&A!=="normal")return;const M=(L)=>{if(!L)return null;const F=getComputedStyle(L).backgroundColor.match(/^rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)(?:[,\s/]+([\d.]+%?))?\s*\)$/);if(!F)return null;const Y=F[4]==null?1:parseFloat(F[4])/(F[4].endsWith("%")?100:1);if(Y<0.99)return null;return[+F[1],+F[2],+F[3]]};const j=M(document.body)||M(document.documentElement);if(!j)return;const x=(L)=>{const F=L/255;return F<=0.04045?F/12.92:((F+0.055)/1.055)**2.4};const G=0.2126*x(j[0])+0.7152*x(j[1])+0.0722*x(j[2]);document.documentElement.style.setProperty("color-scheme",G<0.4?"dark":"light")}catch{}};if(document.readyState==="complete")H();else window.addEventListener("load",H)}var S=["https://claude.ai","https://preview.claude.ai","https://f392cc29-f16f-48fc-9734-47e8881f258d.claudeusercontent.com"];var v=true;var P=30000;var h=3000;document.addEventListener("DOMContentLoaded",()=>{const H=window.Babel;const A="om-src-id";if(H&&H.registerPlugin&&!(H.availablePlugins&&H.availablePlugins[A])){H.registerPlugin(A,({types:G})=>({visitor:{JSXOpeningElement(L,F){const Y=L.node;if(Y.name&&Y.name.type==="JSXMemberExpression")return;for(let J=0;J<Y.attributes.length;J++){const V=Y.attributes[J];if(V.type==="JSXAttribute"&&V.name&&V.name.name==="data-om-id")return}const B=F.file&&F.file.opts&&F.file.opts.filename||"?";const w=Y.loc&&Y.loc.start;const z=`jsx:${B}:${Y.start??0}:${w?w.line:0}:${w?w.column+1:0}`;Y.attributes.push(G.jsxAttribute(G.jsxIdentifier("data-om-id"),G.stringLiteral(z)))}}}))}const M="om-text-extract";let j=false;if(v&&H&&H.registerPlugin&&!(H.availablePlugins&&H.availablePlugins[M])){const G=window.React;if(G&&G.useSyncExternalStore&&G.createElement){j=true;const L={};const F=new Set;let Y=0;window.__omTextO=L;window.__omTextSet=(z)=>{for(const J in z){const V=z[J];if(V==null)delete L[J];else L[J]=V}Y++;F.forEach((J)=>J())};const B=(z)=>{F.add(z);return()=>F.delete(z)};const w=()=>Y;window.__OmT=function z(J){G.useSyncExternalStore(B,w,w);return G.createElement("span",{"data-om-text":J.i,className:"__om-t"},J.i in L?L[J.i]:J.children)};H.registerPlugin(M,({types:z})=>{const J={style:1,script:1,noscript:1,textarea:1,title:1,option:1,text:1,tspan:1,textPath:1};const V={placeholder:1,alt:1,title:1,label:1,"aria-label":1,"aria-description":1,"aria-placeholder":1};const W=(Z,q)=>z.logicalExpression("??",z.memberExpression(z.logicalExpression("||",z.memberExpression(z.identifier("window"),z.identifier("__omTextO")),z.objectExpression([])),z.stringLiteral(Z),true),q);const Q=(Z)=>Z.file&&Z.file.opts&&Z.file.opts.filename||"?";const C=(Z)=>Z.file&&Z.file.code||"";const K=(Z,q)=>{const U=($)=>$&&$.start!=null&&$.end!=null&&($.type==="StringLiteral"||$.type==="TemplateLiteral"&&$.expressions.length===0)?[$.start,$.end]:null;const N=U(q);if(N)return N;if(q&&q.type==="Identifier"){const $=Z.scope.getBinding(q.name);if($&&$.constant&&$.path.node.type==="VariableDeclarator"){return U($.path.node.init)}}return null};const E=(Z,q,U)=>{const N=Z.node;let $=false;const R=(D,k)=>{$=true;return z.jsxElement(z.jsxOpeningElement(z.jsxIdentifier("__OmT"),[z.jsxAttribute(z.jsxIdentifier("i"),z.stringLiteral(D))],false),z.jsxClosingElement(z.jsxIdentifier("__OmT")),[k],false)};const X=N.children.map((D)=>{if(D.type==="JSXText"){if(D.start==null||D.end==null)return D;const k=U.slice(D.start,D.end);const f=k.length-k.trimStart().length;const I=k.length-k.trimEnd().length;if(f+I>=k.length)return D;return R(`txt:${q}:${D.start+f}:${D.end-I}`,D)}if(D.type==="JSXExpressionContainer"){const k=K(Z,D.expression);if(k)return R(`str:${q}:${k[0]}:${k[1]}`,D)}return D});if($)N.children=X};return{visitor:{JSXOpeningElement(Z,q){const U=Z.node;const N=Q(q);const $={};for(let R=0;R<U.attributes.length;R++){const X=U.attributes[R];if(X.type!=="JSXAttribute"||!X.name)continue;const D=X.name.name;if(!V[D])continue;if(!X.value||X.value.type!=="StringLiteral")continue;if(X.value.start==null||X.value.end==null)continue;const k=`txt:${N}:${X.value.start}:${X.value.end}`;$[D]=k;X.value=z.jsxExpressionContainer(W(k,z.stringLiteral(X.value.value)))}if(Object.keys($).length){U.attributes.push(z.jsxAttribute(z.jsxIdentifier("data-om-text-attrs"),z.stringLiteral(JSON.stringify($))))}},JSXElement(Z,q){const U=Z.node.openingElement;const N=U&&U.name&&U.name.name;if(N==="__OmT")return;if(typeof N==="string"&&J[N])return;E(Z,Q(q),C(q))},JSXFragment(Z,q){E(Z,Q(q),C(q))}}}})}}const x=j?["transform-react-jsx-source",A,M]:["transform-react-jsx-source",A];document.querySelectorAll('script[type="text/babel"],script[type="text/jsx"]').forEach((G,L)=>{const F=G.getAttribute("data-plugins")||"";const Y=x.filter((B)=>F.indexOf(B)<0);if(Y.length){G.setAttribute("data-plugins",F?`${F},${Y.join(",")}`:Y.join(","))}if(!G.hasAttribute("data-filename")){G.setAttribute("data-filename",G.getAttribute("src")||`inline-${L}`)}})});var _=window.parent;if(_&&_!==window){const H=(z,J)=>{try{_.postMessage({__omelette_log:true,type:z,data:J},"*")}catch{}};["log","warn","error"].forEach((z)=>{const J=console[z];console[z]=(...V)=>{const W=V.map((Q)=>{try{return typeof Q==="object"?JSON.stringify(Q):String(Q)}catch{try{return String(Q)}catch{return"[unstringifiable]"}}}).join(" ");H(z,W);J.apply(console,V)}});window.addEventListener("error",(z)=>{const J=z.target;if(J&&J!==window&&J.tagName){const V=J.src||J.href||"";H("resource_error",`${J.tagName} failed to load: ${V}`)}else{H("error",`${z.message||"Unknown error"} at ${z.filename||"?"}:${z.lineno||0}:${z.colno||0}`)}},true);window.addEventListener("unhandledrejection",(z)=>{const J=z.reason;const V=J instanceof Error?`${J.message} ${J.stack}`:String(J);H("error",`Unhandled rejection: ${V}`)});window.addEventListener("click",(z)=>{if(z.defaultPrevented||z.button!==0)return;if(z.metaKey||z.ctrlKey||z.shiftKey||z.altKey)return;const J=z.composedPath?z.composedPath():[];const V=["button","input","select","textarea","summary","label"];let W=null;for(const E of J){if(!(E instanceof Element))continue;if(E.localName==="a"){if(!(E instanceof HTMLAnchorElement))return;W=E;break}if(V.indexOf(E.localName)!==-1)return}if(!W)return;if(W.isContentEditable)return;const Q=W.closest("[contenteditable]");if(Q&&Q.getAttribute("contenteditable")!=="false")return;const C=(W.getAttribute("target")||"_self").toLowerCase();if(C!=="_self"&&C!=="_top"&&C!=="_parent")return;let K;try{K=new URL(W.href)}catch{return}if(K.protocol!=="http:"&&K.protocol!=="https:")return;if(location.origin==="null")return;if(K.origin===location.origin)return;z.preventDefault();window.open(K.href,"_blank","noopener,noreferrer")});const A=()=>{try{_.postMessage({type:"omelette:height",height:document.documentElement.scrollHeight},"*")}catch{}};if(window.ResizeObserver)new ResizeObserver(A).observe(document.documentElement);const M=()=>{A();if(!document.querySelector('script[type="text/babel"],script[type="text/jsx"]'))return;const z=()=>document.getElementById("root")||document.querySelector("body > div[id]");const J=z()?.firstElementChild??null;let V=0;const W=()=>{const Q=z();if(Q&&Q.firstElementChild!==J||++V>30){A();return}setTimeout(W,100)};setTimeout(W,100)};if(document.readyState==="complete")M();else window.addEventListener("load",M);const j={};let x=0;const G=(z)=>new Promise((J,V)=>{if(!S.length){V(new Error("claude.complete: no parent origin"));return}const W=`c${++x}`;const Q=()=>setTimeout(()=>{delete j[W];V(new Error(`claude.complete: no data for ${P/1000}s`))},P);const C=Q();j[W]={resolve:J,reject:V,text:"",t:C,arm:Q};try{for(const K of S){_.postMessage({__om_api:true,id:W,body:z},K)}}catch(K){clearTimeout(C);delete j[W];V(K)}});const L=8;const F=async(z,J)=>{if(!Array.isArray(z.messages)){throw new Error("claude.complete: tools require a messages array")}const V=z.messages.slice();const W={...z,tools:z.tools.map((K)=>{if(K===null||typeof K!=="object")return K;const E={};for(const Z of Object.keys(K)){if(typeof K[Z]!=="function")E[Z]=K[Z]}return E})};const Q=W.tool_choice;const C=Q!=null&&(Q.type==="any"||Q.type==="tool")?{...W,tool_choice:Q.disable_parallel_tool_use!==undefined?{type:"auto",disable_parallel_tool_use:Q.disable_parallel_tool_use}:{type:"auto"}}:W;for(let K=0;K<L;K++){const E=await G({...K===0?W:C,messages:V});const Z=E.message;const q=Z&&Array.isArray(Z.content)?Z.content:null;const U=q?q.filter(($)=>$?.type==="tool_use"):[];if(Z?.stop_reason!=="tool_use"||U.length===0){return E.text}const N=[];for(const $ of U){const R=J.get($.name);if(!R){N.push({type:"tool_result",tool_use_id:$.id,content:`no handler for tool "${$.name}"`,is_error:true});continue}try{const X=await R($.input);const D=typeof X==="string"?X:w(X)??"";N.push({type:"tool_result",tool_use_id:$.id,content:D})}catch(X){N.push({type:"tool_result",tool_use_id:$.id,content:String(X?.message??X??"tool handler failed"),is_error:true})}}V.push({role:"assistant",content:q},{role:"user",content:N})}throw new Error(`claude.complete: exceeded ${L} tool turns`)};window.claude={complete(z){const J=z;if(J!==null&&typeof J==="object"&&Array.isArray(J.tools)&&J.tools.some((V)=>V!==null&&typeof V==="object"&&typeof V.run==="function")){const V=new Map;for(const W of J.tools){if(W!==null&&typeof W==="object"&&typeof W.run==="function"){V.set(String(W.name),W.run)}}return F(J,V)}return G(z).then((V)=>V.text)}};const Y={};let B=0;window.omelette={writeFile:(z,J)=>new Promise((V,W)=>{if(!S.length){V();return}const Q=`f${++B}`;const C=setTimeout(()=>{delete Y[Q];V()},h);Y[Q]={resolve:V,reject:W,t:C};try{for(const K of S){_.postMessage({__om_file:true,id:Q,op:"write",path:z,content:J},K)}}catch{clearTimeout(C);delete Y[Q];V()}})};const w=(z)=>{try{return JSON.stringify(z)}catch{return JSON.stringify(String(z))}};window.addEventListener("message",(z)=>{if(S.indexOf(z.origin)<0)return;if(z.source!==_)return;const J=z.data;if(!J)return;if(J.type==="omelette-preview-refresh"){if(typeof J.token!=="string"||!/^[0-9a-f.-]+(\.(rc|pr-[0-9]+))?(\.[0-9]+\.[0-9a-f]{16})?$/.test(J.token))return;const Q=Math.max(1,Math.floor((J.expiresAt||0)-Date.now()/1000));document.cookie="__Host-omelette-preview="+J.token+"; Path=/; Secure; SameSite=None; Partitioned; Max-Age="+Q;return}if(J.__om_file_r){const Q=Y[J.id];if(!Q)return;clearTimeout(Q.t);delete Y[J.id];if(J.ok)Q.resolve();else Q.reject(new Error(J.error||"write failed"));return}if(J.__om_api_r){const Q=j[J.id];if(!Q)return;if(J.error!=null){clearTimeout(Q.t);delete j[J.id];Q.reject(new Error(J.error));return}if(J.chunk!=null){clearTimeout(Q.t);Q.t=Q.arm();Q.text+=J.chunk;return}if(J.done){clearTimeout(Q.t);delete j[J.id];Q.resolve({text:J.text!=null?J.text:Q.text,message:J.message});return}return}if(!J.__om_eval)return;const V=J;const W=(Q)=>{z.source.postMessage({...Q,__om_eval_r:1,id:V.id},z.origin)};try{const Q=(0,eval)(V.code);if(Q&&typeof Q.then==="function"){Q.then((C)=>W({ok:1,v:w(C)}),(C)=>W({ok:0,e:String(C)}))}else{W({ok:1,v:w(Q)})}}catch(Q){W({ok:0,e:String(Q)})}})}})();
+</script>
+
+<style data-omelette-print-defaults>
+@media print {
+  @page { margin: 0.5in; }
+  h1, h2, h3, h4, h5, h6 { break-after: avoid; }
+  figure, table, pre, blockquote, img, svg, tr, [class~="card" i] { break-inside: avoid; }
+  img, svg { max-width: 100%; }
+  p { orphans: 3; widows: 3; }
+}
+</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#09090b;color:#f4f4f5;font-family:'Geist',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-feature-settings:'tnum','cv01'}
+  ::selection{background:#facc15;color:#09090b}
+  a{color:#fde047;text-decoration:none}
+  a:hover{color:#facc15}
+</style>
+</helmet>
+
+<div style="padding:48px 56px 96px;display:flex;flex-direction:column;gap:16px;align-items:flex-start;min-width:1560px">
+
+  <!-- ============ CANVAS HEADER ============ -->
+  <div style="width:1200px;margin-bottom:8px">
+    <div style="font:500 12px 'Geist Mono',monospace;letter-spacing:.12em;color:#71717a;text-transform:uppercase;margin-bottom:12px">Trainer Portal · Redesign v2 · Senior UX/CRO</div>
+    <h1 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-.01em;color:#f4f4f5">Widoki po audycie kosztu interakcji</h1>
+    <p style="margin:8px 0 0;font-size:14px;line-height:1.5;color:#a1a1aa;max-width:820px">Te same trasy i prymitywy co v1, ale każdy ekran przeszedł Friction Audit: rozpoznawanie zamiast przypominania (awatary, liczniki w nawigacji), wartość ponad etykietę (liczby 600, etykiety muted), 1 dominanta na widok, smart defaults i presety, destrukcyjne akcje zdegradowane + Undo. Adnotacje pod każdym ekranem mapują zmianę na driver psychologiczny.</p>
+  </div>
+
+  <!-- ============ 01 — PANEL ============ -->
+  <div style="display:flex;align-items:center;gap:12px;margin-top:24px"><span style="font:600 12px 'Geist Mono',monospace;padding:4px 8px;background:#27272a;color:#a1a1aa;border-radius:8px">01</span><span style="font-weight:500;font-size:14px;color:#f4f4f5">Panel trenera</span><span style="font-size:14px;color:#71717a">— skanowalny przegląd + kolejka „wymaga uwagi”</span><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">/</span></div>
+  <div style="width:1200px;flex:none;border:1px solid #27272a;border-radius:12px;overflow:hidden;background:#09090b;display:flex">
+    <aside style="width:216px;flex:none;border-right:1px solid #27272a;background:#18181b;padding:16px 12px;display:flex;flex-direction:column;gap:24px">
+      <div style="display:flex;align-items:center;gap:8px;padding:4px"><span style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border-radius:8px;background:#facc15;color:#09090b;font-weight:800;font-size:15px">T</span><span style="font-size:15px;font-weight:700">Trainer<span style="color:#facc15">Portal</span></span></div>
+      <nav style="display:flex;flex-direction:column;gap:2px">
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:600;color:#fde047;background:#27272a;text-decoration:none">Panel</a>
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:#a1a1aa;text-decoration:none" style-hover="background:#27272a;color:#f4f4f5"><span>Klienci</span><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">4</span></a>
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:#a1a1aa;text-decoration:none" style-hover="background:#27272a;color:#f4f4f5"><span>Ćwiczenia</span><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">4</span></a>
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:#a1a1aa;text-decoration:none" style-hover="background:#27272a;color:#f4f4f5"><span>Plany</span><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">4</span></a>
+      </nav>
+      <div style="margin-top:auto;display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;background:#27272a"><span style="display:inline-flex;width:28px;height:28px;flex:none;align-items:center;justify-content:center;border-radius:999px;background:#3f3f46;color:#d4d4d8;font-size:11px;font-weight:600">TK</span><div style="min-width:0"><div style="font-size:13px;font-weight:500;color:#f4f4f5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Tomasz Kruk</div><div style="font-size:11px;color:#71717a">trener · konto</div></div></div>
+    </aside>
+    <div style="flex:1;min-width:0;padding:32px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:28px">
+        <div><h1 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-.01em">Panel trenera</h1><p style="margin:8px 0 0;font-size:14px;color:#a1a1aa">Poniedziałek, 7 lipca 2026</p></div>
+        <button style="border:none;border-radius:8px;padding:10px 16px;font:600 14px 'Geist',sans-serif;background:#facc15;color:#09090b;cursor:pointer;white-space:nowrap;transition:background .15s" style-hover="background:#fde047">+ Nowy plan</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+        <a href="#" style="display:block;border:1px solid #27272a;background:#18181b;border-radius:12px;padding:20px;text-decoration:none;transition:background .15s,border-color .15s;cursor:pointer" style-hover="background:#27272a;border-color:#3f3f46"><div style="font-size:32px;font-weight:600;color:#f4f4f5;line-height:1">4</div><div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between"><span style="font-size:13px;color:#a1a1aa">Klienci</span><span style="font-size:14px;color:#71717a">›</span></div></a>
+        <a href="#" style="display:block;border:1px solid #27272a;background:#18181b;border-radius:12px;padding:20px;text-decoration:none;transition:background .15s,border-color .15s;cursor:pointer" style-hover="background:#27272a;border-color:#3f3f46"><div style="font-size:32px;font-weight:600;color:#f4f4f5;line-height:1">3</div><div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between"><span style="font-size:13px;color:#a1a1aa">Szablony planów</span><span style="font-size:14px;color:#71717a">›</span></div></a>
+        <a href="#" style="display:block;border:1px solid #27272a;background:#18181b;border-radius:12px;padding:20px;text-decoration:none;transition:background .15s,border-color .15s;cursor:pointer" style-hover="background:#27272a;border-color:#3f3f46"><div style="font-size:32px;font-weight:600;color:#f4f4f5;line-height:1">2</div><div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between"><span style="font-size:13px;color:#a1a1aa">Plany klientów</span><span style="font-size:14px;color:#71717a">›</span></div></a>
+        <a href="#" style="display:block;border:1px solid #27272a;background:#18181b;border-radius:12px;padding:20px;text-decoration:none;transition:background .15s,border-color .15s;cursor:pointer" style-hover="background:#27272a;border-color:#3f3f46"><div style="font-size:32px;font-weight:600;color:#f4f4f5;line-height:1">4</div><div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between"><span style="font-size:13px;color:#a1a1aa">Aktywne przypisania</span><span style="font-size:14px;color:#71717a">›</span></div></a>
+      </div>
+      <!-- wymaga uwagi -->
+      <div style="margin-top:24px;border:1px solid rgba(250,204,21,.25);background:rgba(250,204,21,.05);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:16px">
+        <span style="display:inline-flex;width:32px;height:32px;flex:none;align-items:center;justify-content:center;border-radius:999px;background:#27272a;color:#d4d4d8;font-size:12px;font-weight:600">AN</span>
+        <div style="flex:1;min-width:0"><span style="font-size:14px;font-weight:600;color:#f4f4f5">Anna Nowak</span><span style="font-size:14px;color:#a1a1aa"> nie ma aktywnego planu — jedno kliknięcie i zaczyna trenować.</span></div>
+        <button style="border:1px solid rgba(250,204,21,.4);border-radius:8px;padding:8px 14px;font:600 13px 'Geist',sans-serif;background:transparent;color:#fde047;cursor:pointer;white-space:nowrap;transition:background .15s" style-hover="background:rgba(250,204,21,.1)">Przypisz plan</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px">
+        <div style="border:1px solid #27272a;background:#18181b;border-radius:12px;padding:20px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px"><span style="font-size:16px;font-weight:600">Klienci</span><a href="#" style="font-size:13px;font-weight:500">Wszyscy ›</a></div>
+          <div style="display:flex;flex-direction:column">
+            <a href="#" style="display:flex;align-items:center;gap:12px;padding:10px 8px;margin:0 -8px;border-radius:8px;text-decoration:none;transition:background .15s" style-hover="background:#27272a"><span style="display:inline-flex;width:32px;height:32px;flex:none;align-items:center;justify-content:center;border-radius:999px;background:#27272a;color:#d4d4d8;font-size:12px;font-weight:600">JK</span><span style="flex:1;font-size:14px;color:#f4f4f5">Jan Kowalski</span><span style="font-size:13px;font-weight:600;color:#6ee7b7">1 plan</span><span style="font-size:14px;color:#71717a">›</span></a>
+            <a href="#" style="display:flex;align-items:center;gap:12px;padding:10px 8px;margin:0 -8px;border-radius:8px;text-decoration:none;transition:background .15s" style-hover="background:#27272a"><span style="display:inline-flex;width:32px;height:32px;flex:none;align-items:center;justify-content:center;border-radius:999px;background:#27272a;color:#d4d4d8;font-size:12px;font-weight:600">MK</span><span style="flex:1;font-size:14px;color:#f4f4f5">Marek Kowalczyk</span><span style="font-size:13px;font-weight:600;color:#6ee7b7">2 plany</span><span style="font-size:14px;color:#71717a">›</span></a>
+            <a href="#" style="display:flex;align-items:center;gap:12px;padding:10px 8px;margin:0 -8px;border-radius:8px;text-decoration:none;transition:background .15s" style-hover="background:#27272a"><span style="display:inline-flex;width:32px;height:32px;flex:none;align-items:center;justify-content:center;border-radius:999px;background:#27272a;color:#d4d4d8;font-size:12px;font-weight:600">AN</span><span style="flex:1;font-size:14px;color:#f4f4f5">Anna Nowak</span><span style="font-size:13px;font-weight:500;color:#71717a">bez planu</span><span style="font-size:14px;color:#71717a">›</span></a>
+            <a href="#" style="display:flex;align-items:center;gap:12px;padding:10px 8px;margin:0 -8px;border-radius:8px;text-decoration:none;transition:background .15s" style-hover="background:#27272a"><span style="display:inline-flex;width:32px;height:32px;flex:none;align-items:center;justify-content:center;border-radius:999px;background:#27272a;color:#d4d4d8;font-size:12px;font-weight:600">PZ</span><span style="flex:1;font-size:14px;color:#f4f4f5">Piotr Zieliński</span><span style="font-size:13px;font-weight:600;color:#6ee7b7">1 plan</span><span style="font-size:14px;color:#71717a">›</span></a>
+          </div>
+        </div>
+        <div style="border:1px solid #27272a;background:#18181b;border-radius:12px;padding:20px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px"><span style="font-size:16px;font-weight:600">Ostatnie plany</span><a href="#" style="font-size:13px;font-weight:500">Wszystkie ›</a></div>
+          <div style="display:flex;flex-direction:column">
+            <a href="#" style="display:flex;align-items:center;gap:12px;padding:12px 8px;margin:0 -8px;border-radius:8px;text-decoration:none;transition:background .15s" style-hover="background:#27272a"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500;color:#f4f4f5">Hipertrofia PPL — Blok II</div><div style="margin-top:2px;font-size:12px;color:#71717a">szablon · <span style="color:#d4d4d8;font-weight:500">6 ćw.</span> · <span style="color:#d4d4d8;font-weight:500">4 dni</span></div></div><span style="font-size:14px;color:#71717a">›</span></a>
+            <a href="#" style="display:flex;align-items:center;gap:12px;padding:12px 8px;margin:0 -8px;border-radius:8px;text-decoration:none;transition:background .15s" style-hover="background:#27272a"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500;color:#f4f4f5">Siła — metoda 6-4-2-5-3-1</div><div style="margin-top:2px;font-size:12px;color:#71717a">szablon · <span style="color:#d4d4d8;font-weight:500">1 ćw.</span> · <span style="color:#d4d4d8;font-weight:500">6 tyg.</span></div></div><span style="font-size:14px;color:#71717a">›</span></a>
+            <a href="#" style="display:flex;align-items:center;gap:12px;padding:12px 8px;margin:0 -8px;border-radius:8px;text-decoration:none;transition:background .15s" style-hover="background:#27272a"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500;color:#f4f4f5">FBW A — początkujący</div><div style="margin-top:2px;font-size:12px;color:#71717a">szablon · <span style="color:#d4d4d8;font-weight:500">4 ćw.</span></div></div><span style="font-size:14px;color:#71717a">›</span></a>
+            <a href="#" style="display:flex;align-items:center;gap:12px;padding:12px 8px;margin:0 -8px;border-radius:8px;text-decoration:none;transition:background .15s" style-hover="background:#27272a"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500;color:#f4f4f5">FBW A — plan klienta</div><div style="margin-top:2px;font-size:12px;color:#71717a">plan klienta · <span style="color:#d4d4d8;font-weight:500">4 ćw.</span></div></div><span style="font-size:14px;color:#71717a">›</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="width:1200px;display:flex;flex-wrap:wrap;gap:8px 32px;padding:4px 4px 12px">
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;max-width:560px"><span style="font:600 11px 'Geist Mono',monospace;color:#fde047;letter-spacing:.06em;padding-top:1px">DEFAULTS</span><span style="color:#a1a1aa">Kolejka „wymaga uwagi” zamienia martwą daną („brak planu”) w akcję 1-klik.</span></div>
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;max-width:560px"><span style="font:600 11px 'Geist Mono',monospace;color:#fde047;letter-spacing:.06em;padding-top:1px">RECOGNITION</span><span style="color:#a1a1aa">Awatary z inicjałami + liczniki w nawigacji; całe wiersze i StatCards klikalne (mniejszy koszt fizyczny).</span></div>
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;max-width:560px"><span style="font:600 11px 'Geist Mono',monospace;color:#fde047;letter-spacing:.06em;padding-top:1px">CONTRAST</span><span style="color:#a1a1aa">1 dominanta: „+ Nowy plan”. Karta statystyk bez żółtej ramki (v1 miała fałszywą dominantę).</span></div>
+  </div>
+
+  <!-- ============ 02 — KLIENCI ============ -->
+  <div style="display:flex;align-items:center;gap:12px;margin-top:24px"><span style="font:600 12px 'Geist Mono',monospace;padding:4px 8px;background:#27272a;color:#a1a1aa;border-radius:8px">02</span><span style="font-weight:500;font-size:14px;color:#f4f4f5">Klienci</span><span style="font-size:14px;color:#71717a">— szukaj + formularz z chipami celu, delete poza listą</span><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">/clients</span></div>
+  <div style="width:1200px;flex:none;border:1px solid #27272a;border-radius:12px;overflow:hidden;background:#09090b;display:flex">
+    <aside style="width:216px;flex:none;border-right:1px solid #27272a;background:#18181b;padding:16px 12px;display:flex;flex-direction:column;gap:24px">
+      <div style="display:flex;align-items:center;gap:8px;padding:4px"><span style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border-radius:8px;background:#facc15;color:#09090b;font-weight:800;font-size:15px">T</span><span style="font-size:15px;font-weight:700">Trainer<span style="color:#facc15">Portal</span></span></div>
+      <nav style="display:flex;flex-direction:column;gap:2px">
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:#a1a1aa;text-decoration:none" style-hover="background:#27272a;color:#f4f4f5">Panel</a>
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:600;color:#fde047;background:#27272a;text-decoration:none"><span>Klienci</span><span style="font:500 12px 'Geist Mono',monospace;color:#a1a1aa">4</span></a>
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:#a1a1aa;text-decoration:none" style-hover="background:#27272a;color:#f4f4f5"><span>Ćwiczenia</span><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">4</span></a>
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:#a1a1aa;text-decoration:none" style-hover="background:#27272a;color:#f4f4f5"><span>Plany</span><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">4</span></a>
+      </nav>
+    </aside>
+    <div style="flex:1;min-width:0;padding:32px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px">
+        <div><h1 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-.01em">Klienci</h1><p style="margin:8px 0 0;font-size:14px;color:#a1a1aa">Twoi podopieczni i ich aktywne plany</p></div>
+        <button style="border:none;border-radius:8px;padding:10px 16px;font:600 14px 'Geist',sans-serif;background:#facc15;color:#09090b;cursor:pointer;white-space:nowrap;transition:background .15s" style-hover="background:#fde047">+ Dodaj klienta</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 12px;border-radius:8px;border:1px solid #3f3f46;background:#18181b;max-width:360px;margin-bottom:20px">
+        <svg width="14" height="14" viewBox="0 0 14 14"><circle cx="6" cy="6" r="4.5" fill="none" stroke="#71717a" stroke-width="1.5"></circle><line x1="9.5" y1="9.5" x2="13" y2="13" stroke="#71717a" stroke-width="1.5"></line></svg>
+        <span style="font-size:14px;color:#71717a">Szukaj klienta…</span>
+      </div>
+      <!-- add form (open state after CTA) -->
+      <div style="border:1px solid #3f3f46;background:#18181b;border-radius:12px;padding:20px;margin-bottom:24px;box-shadow:0 8px 24px rgba(24,24,27,.6)">
+        <div style="font-size:16px;font-weight:600;margin-bottom:16px">Nowy klient</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div><span style="display:block;font-size:14px;color:#a1a1aa;margin-bottom:8px">Imię i nazwisko *</span><div style="display:flex;align-items:center;height:40px;padding:0 12px;border-radius:8px;border:1px solid #facc15;background:#27272a;font-size:14px;color:#f4f4f5">Piotr Zieliński</div></div>
+          <div><span style="display:block;font-size:14px;color:#a1a1aa;margin-bottom:8px">E-mail <span style="color:#71717a">(opcjonalnie)</span></span><div style="display:flex;align-items:center;height:40px;padding:0 12px;border-radius:8px;border:1px solid #3f3f46;background:#27272a;font-size:14px;color:#71717a">piotr.z@example.com</div></div>
+        </div>
+        <div style="margin-top:16px">
+          <span style="display:block;font-size:14px;color:#a1a1aa;margin-bottom:8px">Cel treningowy</span>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <button style="border:none;border-radius:999px;padding:8px 14px;font:500 13px 'Geist',sans-serif;background:#facc15;color:#09090b;cursor:pointer;font-weight:600">Redukcja</button>
+            <button style="border:none;border-radius:999px;padding:8px 14px;font:500 13px 'Geist',sans-serif;background:#27272a;color:#d4d4d8;cursor:pointer;transition:background .15s" style-hover="background:#3f3f46">Siła</button>
+            <button style="border:none;border-radius:999px;padding:8px 14px;font:500 13px 'Geist',sans-serif;background:#27272a;color:#d4d4d8;cursor:pointer;transition:background .15s" style-hover="background:#3f3f46">Hipertrofia</button>
+            <button style="border:none;border-radius:999px;padding:8px 14px;font:500 13px 'Geist',sans-serif;background:#27272a;color:#d4d4d8;cursor:pointer;transition:background .15s" style-hover="background:#3f3f46">Kondycja</button>
+            <button style="border:none;border-radius:999px;padding:8px 14px;font:500 13px 'Geist',sans-serif;background:transparent;color:#a1a1aa;cursor:pointer;border:1px dashed #3f3f46">+ własny</button>
+          </div>
+        </div>
+        <div style="margin-top:20px;display:flex;align-items:center;gap:12px">
+          <button style="border:none;border-radius:8px;padding:10px 16px;font:600 14px 'Geist',sans-serif;background:#facc15;color:#09090b;cursor:pointer;transition:background .15s" style-hover="background:#fde047">Dodaj klienta</button>
+          <button style="border:none;border-radius:8px;padding:10px 16px;font:500 14px 'Geist',sans-serif;background:transparent;color:#a1a1aa;cursor:pointer;transition:color .15s" style-hover="color:#f4f4f5">Anuluj</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <a href="#" style="display:flex;align-items:center;gap:16px;border:1px solid #27272a;background:#18181b;border-radius:12px;padding:14px 20px;text-decoration:none;transition:background .15s,border-color .15s" style-hover="background:#27272a;border-color:#3f3f46"><span style="display:inline-flex;width:36px;height:36px;flex:none;align-items:center;justify-content:center;border-radius:999px;background:#27272a;color:#d4d4d8;font-size:13px;font-weight:600">JK</span><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;color:#f4f4f5">Jan Kowalski</div><div style="margin-top:2px;font-size:12px;color:#71717a">jan.kowalski@example.com · Cel: siła, 3× w tygodniu</div></div><span style="display:inline-flex;align-items:center;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:500;background:rgba(52,211,153,.15);color:#6ee7b7;white-space:nowrap">1 aktywny plan</span><span style="font-size:14px;color:#71717a">›</span></a>
+        <a href="#" style="display:flex;align-items:center;gap:16px;border:1px solid #27272a;background:#18181b;border-radius:12px;padding:14px 20px;text-decoration:none;transition:background .15s,border-color .15s" style-hover="background:#27272a;border-color:#3f3f46"><span style="display:inline-flex;width:36px;height:36px;flex:none;align-items:center;justify-content:center;border-radius:999px;background:#27272a;color:#d4d4d8;font-size:13px;font-weight:600">MK</span><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;color:#f4f4f5">Marek Kowalczyk</div><div style="margin-top:2px;font-size:12px;color:#71717a">marek.k@example.com · Hipertrofia, blok II</div></div><span style="display:inline-flex;align-items:center;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:500;background:rgba(52,211,153,.15);color:#6ee7b7;white-space:nowrap">2 aktywne plany</span><span style="font-size:14px;color:#71717a">›</span></a>
+        <a href="#" style="display:flex;align-items:center;gap:16px;border:1px solid #27272a;background:#18181b;border-radius:12px;padding:14px 20px;text-decoration:none;transition:background .15s,border-color .15s" style-hover="background:#27272a;border-color:#3f3f46"><span style="display:inline-flex;width:36px;height:36px;flex:none;align-items:center;justify-content:center;border-radius:999px;background:#27272a;color:#d4d4d8;font-size:13px;font-weight:600">AN</span><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;color:#f4f4f5">Anna Nowak</div><div style="margin-top:2px;font-size:12px;color:#71717a">brak e-maila</div></div><span style="display:inline-flex;align-items:center;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:500;background:#27272a;color:#d4d4d8;white-space:nowrap">bez planu — przypisz</span><span style="font-size:14px;color:#71717a">›</span></a>
+      </div>
+    </div>
+  </div>
+  <div style="width:1200px;display:flex;flex-wrap:wrap;gap:8px 32px;padding:4px 4px 12px">
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;max-width:560px"><span style="font:600 11px 'Geist Mono',monospace;color:#fde047;letter-spacing:.06em;padding-top:1px">SWATCHES</span><span style="color:#a1a1aa">Cel treningowy jako chipy (1 tap) zamiast wolnego pola „Notatka” — mniej decyzji, spójne dane.</span></div>
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;max-width:560px"><span style="font:600 11px 'Geist Mono',monospace;color:#fde047;letter-spacing:.06em;padding-top:1px">SAFETY</span><span style="color:#a1a1aa">„Usuń” zniknęło z listy (ryzyko pomyłki obok linku) — destrukcja żyje tylko w profilu klienta, z Undo.</span></div>
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;max-width:560px"><span style="font:600 11px 'Geist Mono',monospace;color:#fde047;letter-spacing:.06em;padding-top:1px">MICROCOPY</span><span style="color:#a1a1aa">„Zapisz klienta” → „Dodaj klienta”; badge „bez planu — przypisz” prowadzi dalej, nie kończy ślepo.</span></div>
+  </div>
+
+  <!-- ============ 03 — KLIENT (detail) ============ -->
+  <div style="display:flex;align-items:center;gap:12px;margin-top:24px"><span style="font:600 12px 'Geist Mono',monospace;padding:4px 8px;background:#27272a;color:#a1a1aa;border-radius:8px">03</span><span style="font-weight:500;font-size:14px;color:#f4f4f5">Klient — profil</span><span style="font-size:14px;color:#71717a">— wybór planu kartami, prefill daty, Undo po usunięciu</span><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">/clients/[id]</span></div>
+  <div style="width:1200px;flex:none;border:1px solid #27272a;border-radius:12px;overflow:hidden;background:#09090b;display:flex;position:relative">
+    <aside style="width:216px;flex:none;border-right:1px solid #27272a;background:#18181b;padding:16px 12px;display:flex;flex-direction:column;gap:24px">
+      <div style="display:flex;align-items:center;gap:8px;padding:4px"><span style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border-radius:8px;background:#facc15;color:#09090b;font-weight:800;font-size:15px">T</span><span style="font-size:15px;font-weight:700">Trainer<span style="color:#facc15">Portal</span></span></div>
+      <nav style="display:flex;flex-direction:column;gap:2px">
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:#a1a1aa;text-decoration:none" style-hover="background:#27272a;color:#f4f4f5">Panel</a>
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:600;color:#fde047;background:#27272a;text-decoration:none"><span>Klienci</span><span style="font:500 12px 'Geist Mono',monospace;color:#a1a1aa">4</span></a>
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:#a1a1aa;text-decoration:none" style-hover="background:#27272a;color:#f4f4f5"><span>Ćwiczenia</span><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">4</span></a>
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:#a1a1aa;text-decoration:none" style-hover="background:#27272a;color:#f4f4f5"><span>Plany</span><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">4</span></a>
+      </nav>
+    </aside>
+    <div style="flex:1;min-width:0;padding:32px">
+      <a href="#" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:#a1a1aa;text-decoration:none;margin-bottom:16px" style-hover="color:#f4f4f5">‹ Klienci</a>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px">
+        <span style="display:inline-flex;width:48px;height:48px;flex:none;align-items:center;justify-content:center;border-radius:999px;background:#27272a;color:#d4d4d8;font-size:16px;font-weight:600">JK</span>
+        <div style="flex:1;min-width:0"><h1 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-.01em">Jan Kowalski</h1><p style="margin:6px 0 0;font-size:14px;color:#a1a1aa">jan.kowalski@example.com · Cel: <span style="color:#d4d4d8;font-weight:500">siła, 3× w tygodniu</span></p></div>
+        <button style="border:none;border-radius:8px;padding:10px 16px;font:500 14px 'Geist',sans-serif;background:#27272a;color:#d4d4d8;cursor:pointer;transition:background .15s" style-hover="background:#3f3f46">Edytuj dane</button>
+      </div>
+      <!-- assign -->
+      <div style="border:1px solid #27272a;background:#18181b;border-radius:12px;padding:20px;margin-bottom:24px">
+        <div style="font-size:16px;font-weight:600;margin-bottom:4px">Przypisz plan</div>
+        <div style="font-size:13px;color:#71717a;margin-bottom:16px">Wybierz plan — start domyślnie od dziś, możesz zmienić.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div style="border:1px solid #facc15;background:rgba(250,204,21,.06);border-radius:8px;padding:14px;cursor:pointer;position:relative"><span style="position:absolute;top:12px;right:12px;display:inline-flex;width:18px;height:18px;align-items:center;justify-content:center;border-radius:999px;background:#facc15;color:#09090b;font-size:11px;font-weight:700">✓</span><div style="font-size:14px;font-weight:600;color:#f4f4f5;padding-right:24px">FBW A — plan klienta</div><div style="margin-top:6px;font-size:12px;color:#a1a1aa"><span style="color:#d4d4d8;font-weight:500">4 ćwiczenia</span> · 1 tydz. · pasuje do celu: siła</div></div>
+          <div style="border:1px solid #27272a;background:#09090b;border-radius:8px;padding:14px;cursor:pointer;transition:border-color .15s,background .15s" style-hover="border-color:#3f3f46;background:#18181b"><div style="font-size:14px;font-weight:600;color:#f4f4f5">Siła — 6-4-2-5-3-1</div><div style="margin-top:6px;font-size:12px;color:#a1a1aa"><span style="color:#d4d4d8;font-weight:500">1 ćwiczenie</span> · 6 tyg. · periodyzacja</div></div>
+          <div style="border:1px solid #27272a;background:#09090b;border-radius:8px;padding:14px;cursor:pointer;transition:border-color .15s,background .15s" style-hover="border-color:#3f3f46;background:#18181b"><div style="font-size:14px;font-weight:600;color:#f4f4f5">Hipertrofia PPL — Blok II</div><div style="margin-top:6px;font-size:12px;color:#a1a1aa"><span style="color:#d4d4d8;font-weight:500">6 ćwiczeń</span> · 6 tyg. · 4 dni/tydz.</div></div>
+        </div>
+        <div style="display:flex;align-items:end;gap:16px;margin-top:16px">
+          <div><span style="display:block;font-size:14px;color:#a1a1aa;margin-bottom:8px">Data startu</span><div style="display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:8px;border:1px solid #3f3f46;background:#27272a;font-size:14px;color:#f4f4f5">2026-07-07 <span style="font-size:12px;color:#71717a">· dziś</span></div></div>
+          <div style="flex:1"><span style="display:block;font-size:14px;color:#a1a1aa;margin-bottom:8px">Notatka <span style="color:#71717a">(opcjonalnie)</span></span><div style="display:flex;align-items:center;height:40px;padding:0 12px;border-radius:8px;border:1px solid #3f3f46;background:#27272a;font-size:14px;color:#71717a">Blok bazowy</div></div>
+          <button style="border:none;border-radius:8px;padding:10px 20px;height:40px;font:600 14px 'Geist',sans-serif;background:#facc15;color:#09090b;cursor:pointer;white-space:nowrap;transition:background .15s" style-hover="background:#fde047">Przypisz plan</button>
+        </div>
+      </div>
+      <div style="font-size:16px;font-weight:600;margin-bottom:12px">Przypisane plany <span style="font-size:13px;font-weight:500;color:#71717a">· 3</span></div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:16px;border:1px solid rgba(52,211,153,.3);background:#18181b;border-radius:12px;padding:14px 20px"><span style="display:inline-flex;align-items:center;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:500;background:rgba(52,211,153,.15);color:#6ee7b7;white-space:nowrap">aktywny</span><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;color:#f4f4f5">FBW A — plan klienta</div><div style="margin-top:2px;font-size:12px;color:#71717a">start <span style="color:#d4d4d8;font-weight:500">7 lip 2026</span> · Blok bazowy</div></div><button style="border:none;border-radius:8px;padding:8px 14px;font:500 13px 'Geist',sans-serif;background:#27272a;color:#d4d4d8;cursor:pointer;transition:background .15s" style-hover="background:#3f3f46">Podgląd planu</button><button style="border:none;border-radius:8px;padding:8px 14px;font:500 13px 'Geist',sans-serif;background:#27272a;color:#d4d4d8;cursor:pointer;transition:background .15s" style-hover="background:#3f3f46">Zakończ</button><button style="border:none;background:transparent;padding:8px;font:500 13px 'Geist',sans-serif;color:#71717a;cursor:pointer;transition:color .15s" style-hover="color:#fca5a5">Usuń</button></div>
+        <div style="display:flex;align-items:center;gap:16px;border:1px solid #27272a;background:#18181b;border-radius:12px;padding:14px 20px"><span style="display:inline-flex;align-items:center;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:500;background:rgba(250,204,21,.15);color:#fde047;white-space:nowrap">zakończony</span><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;color:#f4f4f5">Siła — metoda 6-4-2-5-3-1</div><div style="margin-top:2px;font-size:12px;color:#71717a">1 kwi – 15 maj 2026 · zakończony cykl</div></div><button style="border:none;border-radius:8px;padding:8px 14px;font:500 13px 'Geist',sans-serif;background:#27272a;color:#d4d4d8;cursor:pointer;transition:background .15s" style-hover="background:#3f3f46">Wznów</button><button style="border:none;background:transparent;padding:8px;font:500 13px 'Geist',sans-serif;color:#71717a;cursor:pointer;transition:color .15s" style-hover="color:#fca5a5">Usuń</button></div>
+      </div>
+      <!-- undo toast -->
+      <div style="position:absolute;right:24px;bottom:24px;display:flex;align-items:center;gap:16px;background:#27272a;border:1px solid #3f3f46;border-radius:12px;padding:12px 16px;box-shadow:0 12px 32px rgba(9,9,11,.7)"><span style="font-size:13px;color:#d4d4d8">Usunięto „Mezocykl testowy”</span><button style="border:none;background:transparent;padding:0;font:600 13px 'Geist',sans-serif;color:#fde047;cursor:pointer">Cofnij</button></div>
+    </div>
+  </div>
+  <div style="width:1200px;display:flex;flex-wrap:wrap;gap:8px 32px;padding:4px 4px 12px">
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;max-width:560px"><span style="font:600 11px 'Geist Mono',monospace;color:#fde047;letter-spacing:.06em;padding-top:1px">SWATCHES</span><span style="color:#a1a1aa">Plan wybierany kartami z metadanymi (nie ukryty w select) — decyzja z pełnym kontekstem, 1 klik.</span></div>
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;max-width:560px"><span style="font:600 11px 'Geist Mono',monospace;color:#fde047;letter-spacing:.06em;padding-top:1px">DEFAULTS</span><span style="color:#a1a1aa">Data startu prefill „dziś”, pierwszy pasujący plan wstępnie zaznaczony — happy path = 1 klik „Przypisz plan”.</span></div>
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;max-width:560px"><span style="font:600 11px 'Geist Mono',monospace;color:#fde047;letter-spacing:.06em;padding-top:1px">LOSS AVERSION</span><span style="color:#a1a1aa">Usunięcie = toast z „Cofnij” zamiast modala; „Usuń” jako tekst, czerwień dopiero na hover.</span></div>
+  </div>
+
+  <!-- ============ 04 — ĆWICZENIA ============ -->
+  <div style="display:flex;align-items:center;gap:12px;margin-top:24px"><span style="font:600 12px 'Geist Mono',monospace;padding:4px 8px;background:#27272a;color:#a1a1aa;border-radius:8px">04</span><span style="font-weight:500;font-size:14px;color:#f4f4f5">Ćwiczenia — biblioteka</span><span style="font-size:14px;color:#71717a">— segmenty typów + parametry label-value</span><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">/exercises</span></div>
+  <div style="width:1200px;flex:none;border:1px solid #27272a;border-radius:12px;overflow:hidden;background:#09090b;display:flex">
+    <aside style="width:216px;flex:none;border-right:1px solid #27272a;background:#18181b;padding:16px 12px;display:flex;flex-direction:column;gap:24px">
+      <div style="display:flex;align-items:center;gap:8px;padding:4px"><span style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border-radius:8px;background:#facc15;color:#09090b;font-weight:800;font-size:15px">T</span><span style="font-size:15px;font-weight:700">Trainer<span style="color:#facc15">Portal</span></span></div>
+      <nav style="display:flex;flex-direction:column;gap:2px">
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:#a1a1aa;text-decoration:none" style-hover="background:#27272a;color:#f4f4f5">Panel</a>
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:#a1a1aa;text-decoration:none" style-hover="background:#27272a;color:#f4f4f5"><span>Klienci</span><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">4</span></a>
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:600;color:#fde047;background:#27272a;text-decoration:none"><span>Ćwiczenia</span><span style="font:500 12px 'Geist Mono',monospace;color:#a1a1aa">4</span></a>
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:#a1a1aa;text-decoration:none" style-hover="background:#27272a;color:#f4f4f5"><span>Plany</span><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">4</span></a>
+      </nav>
+    </aside>
+    <div style="flex:1;min-width:0;padding:32px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px">
+        <div><h1 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-.01em">Ćwiczenia</h1><p style="margin:8px 0 0;font-size:14px;color:#a1a1aa">Biblioteka z domyślnymi parametrami — kreator planu bierze je jako prefill</p></div>
+        <button style="border:none;border-radius:8px;padding:10px 16px;font:600 14px 'Geist',sans-serif;background:#facc15;color:#09090b;cursor:pointer;white-space:nowrap;transition:background .15s" style-hover="background:#fde047">+ Dodaj ćwiczenie</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 12px;border-radius:8px;border:1px solid #3f3f46;background:#18181b;width:280px">
+          <svg width="14" height="14" viewBox="0 0 14 14"><circle cx="6" cy="6" r="4.5" fill="none" stroke="#71717a" stroke-width="1.5"></circle><line x1="9.5" y1="9.5" x2="13" y2="13" stroke="#71717a" stroke-width="1.5"></line></svg>
+          <span style="font-size:14px;color:#71717a">Szukaj ćwiczenia…</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;background:#18181b;border:1px solid #27272a;border-radius:8px;padding:4px">
+          <button style="border:none;border-radius:6px;padding:6px 12px;font:600 13px 'Geist',sans-serif;background:#3f3f46;color:#f4f4f5;cursor:pointer">Wszystkie · 4</button>
+          <button style="border:none;border-radius:6px;padding:6px 12px;font:500 13px 'Geist',sans-serif;background:transparent;color:#a1a1aa;cursor:pointer;transition:color .15s" style-hover="color:#f4f4f5">Powtórzenia · 2</button>
+          <button style="border:none;border-radius:6px;padding:6px 12px;font:500 13px 'Geist',sans-serif;background:transparent;color:#a1a1aa;cursor:pointer;transition:color .15s" style-hover="color:#f4f4f5">Czas · 1</button>
+          <button style="border:none;border-radius:6px;padding:6px 12px;font:500 13px 'Geist',sans-serif;background:transparent;color:#a1a1aa;cursor:pointer;transition:color .15s" style-hover="color:#f4f4f5">Dystans · 1</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:20px;border:1px solid #27272a;background:#18181b;border-radius:12px;padding:16px 20px;transition:background .15s,border-color .15s" style-hover="background:#27272a;border-color:#3f3f46">
+          <div style="width:300px;min-width:0"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:14px;font-weight:600;color:#f4f4f5">Przysiad ze sztangą</span><span style="display:inline-flex;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:500;background:#27272a;color:#d4d4d8">Powtórzenia</span></div><div style="margin-top:4px;font-size:12px;color:#71717a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Klatka wyprostowana, kolana w linii stóp.</div></div>
+          <div style="flex:1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+            <div><div style="font:500 10px 'Geist Mono',monospace;letter-spacing:.08em;color:#71717a;text-transform:uppercase">Serie × powt.</div><div style="margin-top:3px;font-size:15px;font-weight:600;color:#f4f4f5">4 × 8</div></div>
+            <div><div style="font:500 10px 'Geist Mono',monospace;letter-spacing:.08em;color:#71717a;text-transform:uppercase">Przerwa</div><div style="margin-top:3px;font-size:15px;font-weight:600;color:#f4f4f5">2:00</div></div>
+            <div><div style="font:500 10px 'Geist Mono',monospace;letter-spacing:.08em;color:#71717a;text-transform:uppercase">Ciężar</div><div style="margin-top:3px;font-size:15px;font-weight:600;color:#fde047">60 kg</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px"><button style="border:none;border-radius:8px;padding:8px 14px;font:500 13px 'Geist',sans-serif;background:#27272a;color:#d4d4d8;cursor:pointer;transition:background .15s" style-hover="background:#3f3f46">Edytuj</button><button style="border:none;background:transparent;padding:8px;font:500 13px 'Geist',sans-serif;color:#71717a;cursor:pointer;transition:color .15s" style-hover="color:#fca5a5">Usuń</button></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;border:1px solid #27272a;background:#18181b;border-radius:12px;padding:16px 20px;transition:background .15s,border-color .15s" style-hover="background:#27272a;border-color:#3f3f46">
+          <div style="width:300px;min-width:0"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:14px;font-weight:600;color:#f4f4f5">Martwy ciąg</span><span style="display:inline-flex;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:500;background:#27272a;color:#d4d4d8">Powtórzenia</span></div><div style="margin-top:4px;font-size:12px;color:#71717a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Neutralny kręgosłup, sztanga blisko ciała.</div></div>
+          <div style="flex:1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+            <div><div style="font:500 10px 'Geist Mono',monospace;letter-spacing:.08em;color:#71717a;text-transform:uppercase">Serie × powt.</div><div style="margin-top:3px;font-size:15px;font-weight:600;color:#f4f4f5">4 × 6</div></div>
+            <div><div style="font:500 10px 'Geist Mono',monospace;letter-spacing:.08em;color:#71717a;text-transform:uppercase">Przerwa</div><div style="margin-top:3px;font-size:15px;font-weight:600;color:#f4f4f5">2:30</div></div>
+            <div><div style="font:500 10px 'Geist Mono',monospace;letter-spacing:.08em;color:#71717a;text-transform:uppercase">Ciężar</div><div style="margin-top:3px;font-size:15px;font-weight:600;color:#fde047">80 kg</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px"><button style="border:none;border-radius:8px;padding:8px 14px;font:500 13px 'Geist',sans-serif;background:#27272a;color:#d4d4d8;cursor:pointer;transition:background .15s" style-hover="background:#3f3f46">Edytuj</button><button style="border:none;background:transparent;padding:8px;font:500 13px 'Geist',sans-serif;color:#71717a;cursor:pointer;transition:color .15s" style-hover="color:#fca5a5">Usuń</button></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;border:1px solid #27272a;background:#18181b;border-radius:12px;padding:16px 20px;transition:background .15s,border-color .15s" style-hover="background:#27272a;border-color:#3f3f46">
+          <div style="width:300px;min-width:0"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:14px;font-weight:600;color:#f4f4f5">Plank</span><span style="display:inline-flex;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:500;background:rgba(250,204,21,.15);color:#fde047">Czas</span></div><div style="margin-top:4px;font-size:12px;color:#71717a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Napięty brzuch i pośladki, ciało w linii prostej.</div></div>
+          <div style="flex:1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+            <div><div style="font:500 10px 'Geist Mono',monospace;letter-spacing:.08em;color:#71717a;text-transform:uppercase">Serie × czas</div><div style="margin-top:3px;font-size:15px;font-weight:600;color:#f4f4f5">3 × 45 s</div></div>
+            <div><div style="font:500 10px 'Geist Mono',monospace;letter-spacing:.08em;color:#71717a;text-transform:uppercase">Przerwa</div><div style="margin-top:3px;font-size:15px;font-weight:600;color:#f4f4f5">1:00</div></div>
+            <div><div style="font:500 10px 'Geist Mono',monospace;letter-spacing:.08em;color:#71717a;text-transform:uppercase">Ciężar</div><div style="margin-top:3px;font-size:15px;font-weight:500;color:#71717a">—</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px"><button style="border:none;border-radius:8px;padding:8px 14px;font:500 13px 'Geist',sans-serif;background:#27272a;color:#d4d4d8;cursor:pointer;transition:background .15s" style-hover="background:#3f3f46">Edytuj</button><button style="border:none;background:transparent;padding:8px;font:500 13px 'Geist',sans-serif;color:#71717a;cursor:pointer;transition:color .15s" style-hover="color:#fca5a5">Usuń</button></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;border:1px solid #27272a;background:#18181b;border-radius:12px;padding:16px 20px;transition:background .15s,border-color .15s" style-hover="background:#27272a;border-color:#3f3f46">
+          <div style="width:300px;min-width:0"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:14px;font-weight:600;color:#f4f4f5">Spacer farmera jednorącz</span><span style="display:inline-flex;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:500;background:rgba(250,204,21,.15);color:#fde047">Dystans</span></div><div style="margin-top:4px;font-size:12px;color:#71717a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Na stronę.</div></div>
+          <div style="flex:1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+            <div><div style="font:500 10px 'Geist Mono',monospace;letter-spacing:.08em;color:#71717a;text-transform:uppercase">Serie × dystans</div><div style="margin-top:3px;font-size:15px;font-weight:600;color:#f4f4f5">2 × 15 m</div></div>
+            <div><div style="font:500 10px 'Geist Mono',monospace;letter-spacing:.08em;color:#71717a;text-transform:uppercase">Przerwa</div><div style="margin-top:3px;font-size:15px;font-weight:600;color:#f4f4f5">1:30</div></div>
+            <div><div style="font:500 10px 'Geist Mono',monospace;letter-spacing:.08em;color:#71717a;text-transform:uppercase">Ciężar</div><div style="margin-top:3px;font-size:15px;font-weight:500;color:#71717a">—</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px"><button style="border:none;border-radius:8px;padding:8px 14px;font:500 13px 'Geist',sans-serif;background:#27272a;color:#d4d4d8;cursor:pointer;transition:background .15s" style-hover="background:#3f3f46">Edytuj</button><button style="border:none;background:transparent;padding:8px;font:500 13px 'Geist',sans-serif;color:#71717a;cursor:pointer;transition:color .15s" style-hover="color:#fca5a5">Usuń</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="width:1200px;display:flex;flex-wrap:wrap;gap:8px 32px;padding:4px 4px 12px">
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;max-width:560px"><span style="font:600 11px 'Geist Mono',monospace;color:#fde047;letter-spacing:.06em;padding-top:1px">VALUE&gt;LABEL</span><span style="color:#a1a1aa">Parametry w stałych kolumnach (mono-etykieta + wartość 600) zamiast zdania — skan pionowy, porównywalność.</span></div>
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;max-width:560px"><span style="font:600 11px 'Geist Mono',monospace;color:#fde047;letter-spacing:.06em;padding-top:1px">SEGMENTED</span><span style="color:#a1a1aa">Filtr typów jako segmented z licznikami — zero ukrytych opcji, 1 klik do podzbioru.</span></div>
+  </div>
+
+  <!-- ============ 05 — PLANY ============ -->
+  <div style="display:flex;align-items:center;gap:12px;margin-top:24px"><span style="font:600 12px 'Geist Mono',monospace;padding:4px 8px;background:#27272a;color:#a1a1aa;border-radius:8px">05</span><span style="font-weight:500;font-size:14px;color:#f4f4f5">Plany treningowe</span><span style="font-size:14px;color:#71717a">— obie sekcje widoczne, benefit-driven akcje</span><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">/plans</span></div>
+  <div style="width:1200px;flex:none;border:1px solid #27272a;border-radius:12px;overflow:hidden;background:#09090b;display:flex">
+    <aside style="width:216px;flex:none;border-right:1px solid #27272a;background:#18181b;padding:16px 12px;display:flex;flex-direction:column;gap:24px">
+      <div style="display:flex;align-items:center;gap:8px;padding:4px"><span style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border-radius:8px;background:#facc15;color:#09090b;font-weight:800;font-size:15px">T</span><span style="font-size:15px;font-weight:700">Trainer<span style="color:#facc15">Portal</span></span></div>
+      <nav style="display:flex;flex-direction:column;gap:2px">
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:#a1a1aa;text-decoration:none" style-hover="background:#27272a;color:#f4f4f5">Panel</a>
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:#a1a1aa;text-decoration:none" style-hover="background:#27272a;color:#f4f4f5"><span>Klienci</span><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">4</span></a>
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:#a1a1aa;text-decoration:none" style-hover="background:#27272a;color:#f4f4f5"><span>Ćwiczenia</span><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">4</span></a>
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:600;color:#fde047;background:#27272a;text-decoration:none"><span>Plany</span><span style="font:500 12px 'Geist Mono',monospace;color:#a1a1aa">4</span></a>
+      </nav>
+    </aside>
+    <div style="flex:1;min-width:0;padding:32px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:28px">
+        <div><h1 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-.01em">Plany treningowe</h1><p style="margin:8px 0 0;font-size:14px;color:#a1a1aa">Szablony wielokrotnego użytku i plany gotowe do przypisania</p></div>
+        <button style="border:none;border-radius:8px;padding:10px 16px;font:600 14px 'Geist',sans-serif;background:#facc15;color:#09090b;cursor:pointer;white-space:nowrap;transition:background .15s" style-hover="background:#fde047">+ Nowy plan</button>
+      </div>
+      <div style="margin-bottom:32px">
+        <div style="font-size:16px;font-weight:600;margin-bottom:12px">Szablony <span style="font-size:13px;font-weight:500;color:#71717a">· 3</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <a href="#" style="display:flex;align-items:center;gap:16px;border:1px solid #27272a;background:#18181b;border-radius:12px;padding:14px 20px;text-decoration:none;transition:background .15s,border-color .15s" style-hover="background:#27272a;border-color:#3f3f46"><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:14px;font-weight:600;color:#f4f4f5">Hipertrofia PPL — Blok II</span><span style="display:inline-flex;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:500;background:rgba(52,211,153,.15);color:#6ee7b7">1 aktywne przypisanie</span></div><div style="margin-top:4px;font-size:12px;color:#71717a"><span style="color:#d4d4d8;font-weight:500">6 tyg.</span> · <span style="color:#d4d4d8;font-weight:500">4 dni/tydz.</span> · <span style="color:#d4d4d8;font-weight:500">6 ćwiczeń</span> · periodyzacja liniowa</div></div><button style="border:1px solid rgba(250,204,21,.4);border-radius:8px;padding:8px 14px;font:600 13px 'Geist',sans-serif;background:transparent;color:#fde047;cursor:pointer;white-space:nowrap;transition:background .15s" style-hover="background:rgba(250,204,21,.1)">Utwórz plan klienta</button><button style="border:none;border-radius:8px;padding:8px 14px;font:500 13px 'Geist',sans-serif;background:#27272a;color:#d4d4d8;cursor:pointer;transition:background .15s" style-hover="background:#3f3f46">Duplikuj</button><button style="border:none;background:transparent;padding:8px;font:500 13px 'Geist',sans-serif;color:#71717a;cursor:pointer;transition:color .15s" style-hover="color:#fca5a5">Usuń</button></a>
+          <a href="#" style="display:flex;align-items:center;gap:16px;border:1px solid #27272a;background:#18181b;border-radius:12px;padding:14px 20px;text-decoration:none;transition:background .15s,border-color .15s" style-hover="background:#27272a;border-color:#3f3f46"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;color:#f4f4f5">Siła — metoda 6-4-2-5-3-1</div><div style="margin-top:4px;font-size:12px;color:#71717a"><span style="color:#d4d4d8;font-weight:500">6 tyg.</span> · <span style="color:#d4d4d8;font-weight:500">1 dzień/tydz.</span> · <span style="color:#d4d4d8;font-weight:500">1 ćwiczenie</span> · rampa do topu + back-off</div></div><button style="border:1px solid rgba(250,204,21,.4);border-radius:8px;padding:8px 14px;font:600 13px 'Geist',sans-serif;background:transparent;color:#fde047;cursor:pointer;white-space:nowrap;transition:background .15s" style-hover="background:rgba(250,204,21,.1)">Utwórz plan klienta</button><button style="border:none;border-radius:8px;padding:8px 14px;font:500 13px 'Geist',sans-serif;background:#27272a;color:#d4d4d8;cursor:pointer;transition:background .15s" style-hover="background:#3f3f46">Duplikuj</button><button style="border:none;background:transparent;padding:8px;font:500 13px 'Geist',sans-serif;color:#71717a;cursor:pointer;transition:color .15s" style-hover="color:#fca5a5">Usuń</button></a>
+          <a href="#" style="display:flex;align-items:center;gap:16px;border:1px solid #27272a;background:#18181b;border-radius:12px;padding:14px 20px;text-decoration:none;transition:background .15s,border-color .15s" style-hover="background:#27272a;border-color:#3f3f46"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;color:#f4f4f5">FBW A — początkujący</div><div style="margin-top:4px;font-size:12px;color:#71717a"><span style="color:#d4d4d8;font-weight:500">1 tydz.</span> · <span style="color:#d4d4d8;font-weight:500">1 dzień</span> · <span style="color:#d4d4d8;font-weight:500">4 ćwiczenia</span> · wzorce podstawowe</div></div><button style="border:1px solid rgba(250,204,21,.4);border-radius:8px;padding:8px 14px;font:600 13px 'Geist',sans-serif;background:transparent;color:#fde047;cursor:pointer;white-space:nowrap;transition:background .15s" style-hover="background:rgba(250,204,21,.1)">Utwórz plan klienta</button><button style="border:none;border-radius:8px;padding:8px 14px;font:500 13px 'Geist',sans-serif;background:#27272a;color:#d4d4d8;cursor:pointer;transition:background .15s" style-hover="background:#3f3f46">Duplikuj</button><button style="border:none;background:transparent;padding:8px;font:500 13px 'Geist',sans-serif;color:#71717a;cursor:pointer;transition:color .15s" style-hover="color:#fca5a5">Usuń</button></a>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:16px;font-weight:600;margin-bottom:12px">Plany klientów <span style="font-size:13px;font-weight:500;color:#71717a">· 1</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <a href="#" style="display:flex;align-items:center;gap:16px;border:1px solid #27272a;background:#18181b;border-radius:12px;padding:14px 20px;text-decoration:none;transition:background .15s,border-color .15s" style-hover="background:#27272a;border-color:#3f3f46"><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:14px;font-weight:600;color:#f4f4f5">FBW A — plan klienta</span><span style="display:inline-flex;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:500;background:rgba(52,211,153,.15);color:#6ee7b7">aktywny u: Jan K.</span></div><div style="margin-top:4px;font-size:12px;color:#71717a"><span style="color:#d4d4d8;font-weight:500">1 tydz.</span> · <span style="color:#d4d4d8;font-weight:500">1 dzień</span> · <span style="color:#d4d4d8;font-weight:500">4 ćwiczenia</span></div></div><button style="border:none;border-radius:8px;padding:8px 14px;font:500 13px 'Geist',sans-serif;background:#27272a;color:#d4d4d8;cursor:pointer;transition:background .15s" style-hover="background:#3f3f46">Duplikuj</button><button style="border:none;background:transparent;padding:8px;font:500 13px 'Geist',sans-serif;color:#71717a;cursor:pointer;transition:color .15s" style-hover="color:#fca5a5">Usuń</button></a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="width:1200px;display:flex;flex-wrap:wrap;gap:8px 32px;padding:4px 4px 12px">
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;max-width:560px"><span style="font:600 11px 'Geist Mono',monospace;color:#fde047;letter-spacing:.06em;padding-top:1px">MICROCOPY</span><span style="color:#a1a1aa">„Użyj → plan klienta” → „Utwórz plan klienta” (benefit); badge „aktywny u: Jan K.” zamiast anonimowego licznika.</span></div>
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;max-width:560px"><span style="font:600 11px 'Geist Mono',monospace;color:#fde047;letter-spacing:.06em;padding-top:1px">IKEA</span><span style="color:#a1a1aa">Ścieżka szablon → duplikat → personalizacja wyeksponowana akcentową obwódką — współtworzenie planu buduje przywiązanie.</span></div>
+  </div>
+
+  <!-- ============ 06 — PODGLĄD PLANU ============ -->
+  <div style="display:flex;align-items:center;gap:12px;margin-top:24px"><span style="font:600 12px 'Geist Mono',monospace;padding:4px 8px;background:#27272a;color:#a1a1aa;border-radius:8px">06</span><span style="font-weight:500;font-size:14px;color:#f4f4f5">Podgląd planu</span><span style="font-size:14px;color:#71717a">— zakładki tygodni + progres + tabela serii value-first</span><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">/plans/[id]</span></div>
+  <div style="width:1200px;flex:none;border:1px solid #27272a;border-radius:12px;overflow:hidden;background:#09090b;display:flex">
+    <aside style="width:216px;flex:none;border-right:1px solid #27272a;background:#18181b;padding:16px 12px;display:flex;flex-direction:column;gap:24px">
+      <div style="display:flex;align-items:center;gap:8px;padding:4px"><span style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border-radius:8px;background:#facc15;color:#09090b;font-weight:800;font-size:15px">T</span><span style="font-size:15px;font-weight:700">Trainer<span style="color:#facc15">Portal</span></span></div>
+      <nav style="display:flex;flex-direction:column;gap:2px">
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:#a1a1aa;text-decoration:none" style-hover="background:#27272a;color:#f4f4f5">Panel</a>
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:#a1a1aa;text-decoration:none" style-hover="background:#27272a;color:#f4f4f5"><span>Klienci</span><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">4</span></a>
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:#a1a1aa;text-decoration:none" style-hover="background:#27272a;color:#f4f4f5"><span>Ćwiczenia</span><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">4</span></a>
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:600;color:#fde047;background:#27272a;text-decoration:none"><span>Plany</span><span style="font:500 12px 'Geist Mono',monospace;color:#a1a1aa">4</span></a>
+      </nav>
+    </aside>
+    <div style="flex:1;min-width:0;padding:32px">
+      <a href="#" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:#a1a1aa;text-decoration:none;margin-bottom:16px" style-hover="color:#f4f4f5">‹ Plany</a>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px">
+        <div style="min-width:0"><h1 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-.01em">Siła — metoda 6-4-2-5-3-1</h1><p style="margin:8px 0 0;font-size:14px;color:#a1a1aa">Rampa do topu, potem serie anaboliczne liczone jako % od najcięższej serii.</p></div>
+        <button style="border:none;border-radius:8px;padding:10px 16px;font:600 14px 'Geist',sans-serif;background:#facc15;color:#09090b;cursor:pointer;white-space:nowrap;transition:background .15s" style-hover="background:#fde047">Edytuj plan</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:24px"><span style="display:inline-flex;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:500;background:rgba(250,204,21,.15);color:#fde047">szablon</span><span style="display:inline-flex;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:500;background:#27272a;color:#d4d4d8">6 tyg. · 1 dzień/tydz. · 1 ćwiczenie</span></div>
+      <!-- week tabs + progress -->
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:4px;background:#18181b;border:1px solid #27272a;border-radius:8px;padding:4px">
+          <button style="border:none;border-radius:6px;padding:6px 12px;font:500 13px 'Geist',sans-serif;background:transparent;color:#6ee7b7;cursor:pointer">T1 ✓</button>
+          <button style="border:none;border-radius:6px;padding:6px 12px;font:500 13px 'Geist',sans-serif;background:transparent;color:#6ee7b7;cursor:pointer">T2 ✓</button>
+          <button style="border:none;border-radius:6px;padding:6px 12px;font:600 13px 'Geist',sans-serif;background:#facc15;color:#09090b;cursor:pointer">T3</button>
+          <button style="border:none;border-radius:6px;padding:6px 12px;font:500 13px 'Geist',sans-serif;background:transparent;color:#a1a1aa;cursor:pointer;transition:color .15s" style-hover="color:#f4f4f5">T4</button>
+          <button style="border:none;border-radius:6px;padding:6px 12px;font:500 13px 'Geist',sans-serif;background:transparent;color:#a1a1aa;cursor:pointer;transition:color .15s" style-hover="color:#f4f4f5">T5</button>
+          <button style="border:none;border-radius:6px;padding:6px 12px;font:500 13px 'Geist',sans-serif;background:transparent;color:#a1a1aa;cursor:pointer;transition:color .15s" style-hover="color:#f4f4f5">T6</button>
+        </div>
+        <div style="flex:1;display:flex;align-items:center;gap:12px"><div style="flex:1;height:4px;border-radius:999px;background:#27272a;overflow:hidden"><div style="width:42%;height:100%;background:#facc15;border-radius:999px"></div></div><span style="font-size:12px;font-weight:500;color:#a1a1aa;white-space:nowrap">Tydzień <span style="color:#f4f4f5;font-weight:600">3</span> z 6</span></div>
+      </div>
+      <!-- day -->
+      <div style="border:1px solid #27272a;background:#18181b;border-radius:12px;padding:20px">
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px"><span style="font-size:16px;font-weight:600">Poniedziałek</span><span style="font-size:12px;color:#71717a">1 ćwiczenie · 3 serie</span></div>
+        <div style="border:1px solid #27272a;background:#09090b;border-radius:8px;padding:16px">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px"><span style="display:inline-flex;width:24px;height:24px;align-items:center;justify-content:center;border-radius:999px;background:rgba(250,204,21,.15);color:#fde047;font-size:12px;font-weight:600">1</span><span style="font-size:14px;font-weight:600;color:#f4f4f5">Przysiad ze sztangą</span><span style="display:inline-flex;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:500;background:#27272a;color:#d4d4d8">Powtórzenia</span><span style="font-size:12px;color:#71717a">· przerwa <span style="color:#d4d4d8;font-weight:500">2:00</span> · preset: Rampa 6-4-2-5-3-1</span></div>
+          <div style="border:1px solid #27272a;border-radius:8px;overflow:hidden">
+            <div style="display:grid;grid-template-columns:44px 110px 130px 190px 1fr;background:#18181b;border-bottom:1px solid #27272a;font:500 11px 'Geist Mono',monospace;color:#71717a;text-transform:uppercase;letter-spacing:.06em"><div style="padding:8px 12px">#</div><div style="padding:8px 12px">Rola</div><div style="padding:8px 12px">Powt.</div><div style="padding:8px 12px">Obciążenie</div><div style="padding:8px 12px">Notatka</div></div>
+            <div style="display:grid;grid-template-columns:44px 110px 130px 190px 1fr;border-bottom:1px solid #27272a;font-size:13px;align-items:center;transition:background .15s" style-hover="background:#18181b"><div style="padding:10px 12px;color:#71717a">1</div><div style="padding:10px 12px"><span style="display:inline-flex;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:500;background:rgba(250,204,21,.15);color:#fde047">rampa</span></div><div style="padding:10px 12px;font-size:15px;font-weight:600;color:#f4f4f5">2</div><div style="padding:10px 12px"><span style="font-size:15px;font-weight:600;color:#fde047">50 kg</span></div><div style="padding:10px 12px;color:#a1a1aa">ustal 2RM</div></div>
+            <div style="display:grid;grid-template-columns:44px 110px 130px 190px 1fr;border-bottom:1px solid #27272a;font-size:13px;align-items:center;transition:background .15s" style-hover="background:#18181b"><div style="padding:10px 12px;color:#71717a">2</div><div style="padding:10px 12px"><span style="display:inline-flex;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:500;background:#27272a;color:#d4d4d8">back-off</span></div><div style="padding:10px 12px;font-size:15px;font-weight:600;color:#f4f4f5">5–10</div><div style="padding:10px 12px"><span style="font-size:15px;font-weight:600;color:#fde047">40 kg</span> <span style="font-size:12px;color:#71717a">80% topu</span></div><div style="padding:10px 12px;color:#a1a1aa">seria anaboliczna</div></div>
+            <div style="display:grid;grid-template-columns:44px 110px 130px 190px 1fr;font-size:13px;align-items:center;transition:background .15s" style-hover="background:#18181b"><div style="padding:10px 12px;color:#71717a">3</div><div style="padding:10px 12px"><span style="display:inline-flex;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:500;background:#27272a;color:#d4d4d8">back-off</span></div><div style="padding:10px 12px;font-size:15px;font-weight:600;color:#f4f4f5">10–15</div><div style="padding:10px 12px"><span style="font-size:15px;font-weight:600;color:#fde047">30 kg</span> <span style="font-size:12px;color:#71717a">60% topu</span></div><div style="padding:10px 12px;color:#71717a">—</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="width:1200px;display:flex;flex-wrap:wrap;gap:8px 32px;padding:4px 4px 12px">
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;max-width:560px"><span style="font:600 11px 'Geist Mono',monospace;color:#fde047;letter-spacing:.06em;padding-top:1px">GOAL GRADIENT</span><span style="color:#a1a1aa">Zakładki tygodni T1–T6 z ✓ za sobą + pasek „Tydzień 3 z 6” — postęp widoczny, nie startuje od zera.</span></div>
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;max-width:560px"><span style="font:600 11px 'Geist Mono',monospace;color:#fde047;letter-spacing:.06em;padding-top:1px">VALUE&gt;LABEL</span><span style="color:#a1a1aa">Powt. i kg 15px/600 (kg w akcencie), rola jako badge, % jako kontekst muted — koniec z range trap w kolumnie obciążenia.</span></div>
+  </div>
+
+  <!-- ============ 07 — MOBILE ============ -->
+  <div style="display:flex;align-items:center;gap:12px;margin-top:24px"><span style="font:600 12px 'Geist Mono',monospace;padding:4px 8px;background:#27272a;color:#a1a1aa;border-radius:8px">07</span><span style="font-weight:500;font-size:14px;color:#f4f4f5">Mobile ≤ md</span><span style="font-size:14px;color:#71717a">— bottom nav, thumb zone, cele dotykowe ≥ 44 px</span><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">390 px</span></div>
+  <div style="display:flex;gap:24px;align-items:flex-start">
+    <!-- 07a klienci mobile -->
+    <div style="width:390px;flex:none;border:1px solid #27272a;border-radius:24px;overflow:hidden;background:#09090b;display:flex;flex-direction:column;height:760px">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #27272a;background:#18181b">
+        <div style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;width:26px;height:26px;align-items:center;justify-content:center;border-radius:8px;background:#facc15;color:#09090b;font-weight:800;font-size:14px">T</span><span style="font-size:14px;font-weight:700">Trainer<span style="color:#facc15">Portal</span></span></div>
+        <span style="display:inline-flex;width:32px;height:32px;align-items:center;justify-content:center;border-radius:999px;background:#27272a;color:#d4d4d8;font-size:11px;font-weight:600">TK</span>
+      </div>
+      <div style="flex:1;overflow:hidden;padding:20px;display:flex;flex-direction:column;gap:12px">
+        <h1 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-.01em">Klienci</h1>
+        <div style="display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;border-radius:8px;border:1px solid #3f3f46;background:#18181b">
+          <svg width="14" height="14" viewBox="0 0 14 14"><circle cx="6" cy="6" r="4.5" fill="none" stroke="#71717a" stroke-width="1.5"></circle><line x1="9.5" y1="9.5" x2="13" y2="13" stroke="#71717a" stroke-width="1.5"></line></svg>
+          <span style="font-size:14px;color:#71717a">Szukaj klienta…</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <a href="#" style="display:flex;align-items:center;gap:12px;border:1px solid #27272a;background:#18181b;border-radius:12px;padding:14px 16px;min-height:64px;text-decoration:none"><span style="display:inline-flex;width:36px;height:36px;flex:none;align-items:center;justify-content:center;border-radius:999px;background:#27272a;color:#d4d4d8;font-size:13px;font-weight:600">JK</span><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;color:#f4f4f5">Jan Kowalski</div><div style="margin-top:2px;font-size:12px;color:#6ee7b7;font-weight:500">1 aktywny plan</div></div><span style="font-size:14px;color:#71717a">›</span></a>
+          <a href="#" style="display:flex;align-items:center;gap:12px;border:1px solid #27272a;background:#18181b;border-radius:12px;padding:14px 16px;min-height:64px;text-decoration:none"><span style="display:inline-flex;width:36px;height:36px;flex:none;align-items:center;justify-content:center;border-radius:999px;background:#27272a;color:#d4d4d8;font-size:13px;font-weight:600">MK</span><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;color:#f4f4f5">Marek Kowalczyk</div><div style="margin-top:2px;font-size:12px;color:#6ee7b7;font-weight:500">2 aktywne plany</div></div><span style="font-size:14px;color:#71717a">›</span></a>
+          <a href="#" style="display:flex;align-items:center;gap:12px;border:1px solid #27272a;background:#18181b;border-radius:12px;padding:14px 16px;min-height:64px;text-decoration:none"><span style="display:inline-flex;width:36px;height:36px;flex:none;align-items:center;justify-content:center;border-radius:999px;background:#27272a;color:#d4d4d8;font-size:13px;font-weight:600">AN</span><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;color:#f4f4f5">Anna Nowak</div><div style="margin-top:2px;font-size:12px;color:#71717a">bez planu — przypisz</div></div><span style="font-size:14px;color:#71717a">›</span></a>
+          <a href="#" style="display:flex;align-items:center;gap:12px;border:1px solid #27272a;background:#18181b;border-radius:12px;padding:14px 16px;min-height:64px;text-decoration:none"><span style="display:inline-flex;width:36px;height:36px;flex:none;align-items:center;justify-content:center;border-radius:999px;background:#27272a;color:#d4d4d8;font-size:13px;font-weight:600">PZ</span><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;color:#f4f4f5">Piotr Zieliński</div><div style="margin-top:2px;font-size:12px;color:#6ee7b7;font-weight:500">1 aktywny plan</div></div><span style="font-size:14px;color:#71717a">›</span></a>
+        </div>
+      </div>
+      <div style="padding:0 20px 12px"><button style="width:100%;height:48px;border:none;border-radius:10px;font:600 15px 'Geist',sans-serif;background:#facc15;color:#09090b;cursor:pointer">+ Dodaj klienta</button></div>
+      <div style="border-top:1px solid #27272a;background:#18181b;display:grid;grid-template-columns:repeat(4,1fr);padding:8px 8px 26px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;min-height:44px;justify-content:center;cursor:pointer"><span style="width:5px;height:5px;border-radius:999px;background:transparent"></span><span style="font-size:12px;font-weight:500;color:#71717a">Panel</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;min-height:44px;justify-content:center;cursor:pointer"><span style="width:5px;height:5px;border-radius:999px;background:#facc15"></span><span style="font-size:12px;font-weight:700;color:#fde047">Klienci</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;min-height:44px;justify-content:center;cursor:pointer"><span style="width:5px;height:5px;border-radius:999px;background:transparent"></span><span style="font-size:12px;font-weight:500;color:#71717a">Ćwiczenia</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;min-height:44px;justify-content:center;cursor:pointer"><span style="width:5px;height:5px;border-radius:999px;background:transparent"></span><span style="font-size:12px;font-weight:500;color:#71717a">Plany</span></div>
+      </div>
+    </div>
+    <!-- 07b podgląd planu mobile -->
+    <div style="width:390px;flex:none;border:1px solid #27272a;border-radius:24px;overflow:hidden;background:#09090b;display:flex;flex-direction:column;height:760px">
+      <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid #27272a;background:#18181b">
+        <a href="#" style="font-size:20px;color:#a1a1aa;text-decoration:none;min-width:32px">‹</a>
+        <div style="min-width:0"><div style="font-size:15px;font-weight:600;color:#f4f4f5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Siła — 6-4-2-5-3-1</div><div style="font-size:11px;color:#71717a">szablon · 6 tyg.</div></div>
+      </div>
+      <div style="flex:1;overflow:hidden;padding:20px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:center;gap:6px;overflow:hidden">
+          <button style="border:none;border-radius:999px;min-height:36px;padding:6px 14px;font:500 13px 'Geist',sans-serif;background:#18181b;border:1px solid #27272a;color:#6ee7b7;cursor:pointer;flex:none">T1 ✓</button>
+          <button style="border:none;border-radius:999px;min-height:36px;padding:6px 14px;font:500 13px 'Geist',sans-serif;background:#18181b;border:1px solid #27272a;color:#6ee7b7;cursor:pointer;flex:none">T2 ✓</button>
+          <button style="border:none;border-radius:999px;min-height:36px;padding:6px 14px;font:600 13px 'Geist',sans-serif;background:#facc15;color:#09090b;cursor:pointer;flex:none">T3</button>
+          <button style="border:none;border-radius:999px;min-height:36px;padding:6px 14px;font:500 13px 'Geist',sans-serif;background:#18181b;border:1px solid #27272a;color:#a1a1aa;cursor:pointer;flex:none">T4</button>
+          <button style="border:none;border-radius:999px;min-height:36px;padding:6px 14px;font:500 13px 'Geist',sans-serif;background:#18181b;border:1px solid #27272a;color:#a1a1aa;cursor:pointer;flex:none">T5</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px"><div style="flex:1;height:4px;border-radius:999px;background:#27272a;overflow:hidden"><div style="width:42%;height:100%;background:#facc15;border-radius:999px"></div></div><span style="font-size:12px;color:#a1a1aa;white-space:nowrap">Tydzień <span style="color:#f4f4f5;font-weight:600">3</span> z 6</span></div>
+        <div style="border:1px solid #27272a;background:#18181b;border-radius:12px;padding:16px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><span style="display:inline-flex;width:24px;height:24px;align-items:center;justify-content:center;border-radius:999px;background:rgba(250,204,21,.15);color:#fde047;font-size:12px;font-weight:600">1</span><div style="min-width:0"><div style="font-size:14px;font-weight:600;color:#f4f4f5">Przysiad ze sztangą</div><div style="font-size:11px;color:#71717a">przerwa 2:00 · rampa 6-4-2-5-3-1</div></div></div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:12px;border:1px solid #27272a;background:#09090b;border-radius:8px;padding:12px 14px;min-height:56px"><span style="display:inline-flex;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:500;background:rgba(250,204,21,.15);color:#fde047;flex:none">rampa</span><span style="font-size:17px;font-weight:600;color:#f4f4f5">2 powt.</span><span style="margin-left:auto;font-size:17px;font-weight:600;color:#fde047">50 kg</span></div>
+            <div style="display:flex;align-items:center;gap:12px;border:1px solid #27272a;background:#09090b;border-radius:8px;padding:12px 14px;min-height:56px"><span style="display:inline-flex;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:500;background:#27272a;color:#d4d4d8;flex:none">back-off</span><span style="font-size:17px;font-weight:600;color:#f4f4f5">5–10</span><span style="margin-left:auto;text-align:right"><span style="font-size:17px;font-weight:600;color:#fde047">40 kg</span><span style="display:block;font-size:11px;color:#71717a">80% topu</span></span></div>
+            <div style="display:flex;align-items:center;gap:12px;border:1px solid #27272a;background:#09090b;border-radius:8px;padding:12px 14px;min-height:56px"><span style="display:inline-flex;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:500;background:#27272a;color:#d4d4d8;flex:none">back-off</span><span style="font-size:17px;font-weight:600;color:#f4f4f5">10–15</span><span style="margin-left:auto;text-align:right"><span style="font-size:17px;font-weight:600;color:#fde047">30 kg</span><span style="display:block;font-size:11px;color:#71717a">60% topu</span></span></div>
+          </div>
+        </div>
+      </div>
+      <div style="padding:0 20px 12px"><button style="width:100%;height:48px;border:none;border-radius:10px;font:600 15px 'Geist',sans-serif;background:#facc15;color:#09090b;cursor:pointer">Edytuj plan</button></div>
+      <div style="border-top:1px solid #27272a;background:#18181b;display:grid;grid-template-columns:repeat(4,1fr);padding:8px 8px 26px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;min-height:44px;justify-content:center;cursor:pointer"><span style="width:5px;height:5px;border-radius:999px;background:transparent"></span><span style="font-size:12px;font-weight:500;color:#71717a">Panel</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;min-height:44px;justify-content:center;cursor:pointer"><span style="width:5px;height:5px;border-radius:999px;background:transparent"></span><span style="font-size:12px;font-weight:500;color:#71717a">Klienci</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;min-height:44px;justify-content:center;cursor:pointer"><span style="width:5px;height:5px;border-radius:999px;background:transparent"></span><span style="font-size:12px;font-weight:500;color:#71717a">Ćwiczenia</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;min-height:44px;justify-content:center;cursor:pointer"><span style="width:5px;height:5px;border-radius:999px;background:#facc15"></span><span style="font-size:12px;font-weight:700;color:#fde047">Plany</span></div>
+      </div>
+    </div>
+    <!-- responsive notes -->
+    <div style="width:330px;border:1px solid #27272a;background:#18181b;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:500 11px 'Geist Mono',monospace;letter-spacing:.08em;color:#71717a;text-transform:uppercase">Reguły responsive</div>
+      <div style="font-size:13px;line-height:1.55;color:#a1a1aa"><span style="color:#f4f4f5;font-weight:600">Breakpointy.</span> md+ = sidebar (AppShell), poniżej = top bar + bottom nav 4 zakładki. Grid statystyk 4→2→1, listy zawsze 1 kolumna.</div>
+      <div style="font-size:13px;line-height:1.55;color:#a1a1aa"><span style="color:#f4f4f5;font-weight:600">Thumb zone.</span> Primary CTA jako sticky przycisk pełnej szerokości nad bottom nav (48 px). Wiersze list ≥ 64 px, wszystkie cele ≥ 44 px.</div>
+      <div style="font-size:13px;line-height:1.55;color:#a1a1aa"><span style="color:#f4f4f5;font-weight:600">Active tab = 2 zmiany.</span> Kolor + waga 700 + kropka wskaźnika; safe area 26 px pod nawigacją (Home Indicator).</div>
+      <div style="font-size:13px;line-height:1.55;color:#a1a1aa"><span style="color:#f4f4f5;font-weight:600">Tabele serii → karty.</span> Grid tabeli zwija się do stosu kart: rola-badge po lewej, powt./kg jako duże wartości; nic nie jest ucięte poziomo.</div>
+    </div>
+  </div>
+
+  <!-- ============ 08 — NOWY PLAN (START) ============ -->
+  <div style="display:flex;align-items:center;gap:12px;margin-top:24px"><span style="font:600 12px 'Geist Mono',monospace;padding:4px 8px;background:#27272a;color:#a1a1aa;border-radius:8px">08</span><span style="font-weight:500;font-size:14px;color:#f4f4f5">Nowy plan — start kreatora</span><span style="font-size:14px;color:#71717a">— nigdy pusty formularz: struktura wybrana zanim trener cokolwiek wpisze</span><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">/plans/new</span></div>
+  <div style="width:1200px;flex:none;border:1px solid #27272a;border-radius:12px;overflow:hidden;background:#09090b;display:flex">
+    <aside style="width:216px;flex:none;border-right:1px solid #27272a;background:#18181b;padding:16px 12px;display:flex;flex-direction:column;gap:24px">
+      <div style="display:flex;align-items:center;gap:8px;padding:4px"><span style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border-radius:8px;background:#facc15;color:#09090b;font-weight:800;font-size:15px">T</span><span style="font-size:15px;font-weight:700">Trainer<span style="color:#facc15">Portal</span></span></div>
+      <nav style="display:flex;flex-direction:column;gap:2px">
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:#a1a1aa;text-decoration:none" style-hover="background:#27272a;color:#f4f4f5">Panel</a>
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:#a1a1aa;text-decoration:none" style-hover="background:#27272a;color:#f4f4f5"><span>Klienci</span><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">4</span></a>
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:#a1a1aa;text-decoration:none" style-hover="background:#27272a;color:#f4f4f5"><span>Ćwiczenia</span><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">4</span></a>
+        <a href="#" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:600;color:#fde047;background:#27272a;text-decoration:none"><span>Plany</span><span style="font:500 12px 'Geist Mono',monospace;color:#a1a1aa">4</span></a>
+      </nav>
+    </aside>
+    <div style="flex:1;min-width:0;padding:32px">
+      <a href="#" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:#a1a1aa;text-decoration:none;margin-bottom:16px" style-hover="color:#f4f4f5">‹ Plany</a>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px">
+        <div><h1 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-.01em">Nowy plan</h1><p style="margin:8px 0 0;font-size:14px;color:#a1a1aa">Wybierz strukturę startową — wszystko zmienisz w kreatorze.</p></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;max-width:520px"><div style="flex:1;height:4px;border-radius:999px;background:#27272a;overflow:hidden"><div style="width:33%;height:100%;background:#facc15;border-radius:999px"></div></div><span style="font-size:12px;font-weight:500;color:#a1a1aa;white-space:nowrap">Krok <span style="color:#f4f4f5;font-weight:600">1</span> z 3 · struktura wybrana</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:20px">
+        <div style="border:1px solid #facc15;background:rgba(250,204,21,.06);border-radius:12px;padding:16px;cursor:pointer;position:relative"><span style="position:absolute;top:12px;right:12px;display:inline-flex;width:18px;height:18px;align-items:center;justify-content:center;border-radius:999px;background:#facc15;color:#09090b;font-size:11px;font-weight:700">✓</span><div style="font-size:14px;font-weight:600;color:#f4f4f5;padding-right:24px">Siła — 6-4-2-5-3-1</div><div style="margin-top:6px;font-size:12px;color:#a1a1aa;line-height:1.5"><span style="color:#d4d4d8;font-weight:500">6 tyg.</span> · serie auto na każdy tydzień · rampa + back-off</div></div>
+        <div style="border:1px solid #27272a;background:#18181b;border-radius:12px;padding:16px;cursor:pointer;transition:border-color .15s,background .15s" style-hover="border-color:#3f3f46;background:#27272a"><div style="font-size:14px;font-weight:600;color:#f4f4f5">Rampa 15-10-5</div><div style="margin-top:6px;font-size:12px;color:#a1a1aa;line-height:1.5"><span style="color:#d4d4d8;font-weight:500">3 dni/tydz.</span> · rozgrzewka % → seria robocza</div></div>
+        <div style="border:1px solid #27272a;background:#18181b;border-radius:12px;padding:16px;cursor:pointer;transition:border-color .15s,background .15s" style-hover="border-color:#3f3f46;background:#27272a"><div style="font-size:14px;font-weight:600;color:#f4f4f5">Z Twojego szablonu</div><div style="margin-top:6px;font-size:12px;color:#a1a1aa;line-height:1.5">FBW A, PPL Blok II… · <span style="color:#d4d4d8;font-weight:500">3 szablony</span></div></div>
+        <div style="border:1px dashed #3f3f46;background:transparent;border-radius:12px;padding:16px;cursor:pointer;transition:border-color .15s" style-hover="border-color:#71717a"><div style="font-size:14px;font-weight:600;color:#d4d4d8">Pusty plan</div><div style="margin-top:6px;font-size:12px;color:#71717a;line-height:1.5">1 tydzień · 1 dzień · zbuduj od zera</div></div>
+      </div>
+      <!-- reciprocity: preview before effort -->
+      <div style="border:1px solid #27272a;background:#18181b;border-radius:12px;padding:16px 20px;margin-bottom:24px">
+        <div style="font:500 11px 'Geist Mono',monospace;letter-spacing:.08em;color:#71717a;text-transform:uppercase;margin-bottom:10px">Podgląd struktury — Siła 6-4-2-5-3-1</div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">
+          <div style="border:1px solid #27272a;background:#09090b;border-radius:8px;padding:10px 12px"><div style="font:500 11px 'Geist Mono',monospace;color:#71717a">T1</div><div style="margin-top:4px;font-size:13px;font-weight:600;color:#f4f4f5">6RM</div><div style="font-size:11px;color:#71717a">rampa</div></div>
+          <div style="border:1px solid #27272a;background:#09090b;border-radius:8px;padding:10px 12px"><div style="font:500 11px 'Geist Mono',monospace;color:#71717a">T2</div><div style="margin-top:4px;font-size:13px;font-weight:600;color:#f4f4f5">4RM <span style="color:#a1a1aa;font-weight:500">+80%</span></div><div style="font-size:11px;color:#71717a">rampa + back-off</div></div>
+          <div style="border:1px solid #27272a;background:#09090b;border-radius:8px;padding:10px 12px"><div style="font:500 11px 'Geist Mono',monospace;color:#71717a">T3</div><div style="margin-top:4px;font-size:13px;font-weight:600;color:#f4f4f5">2RM <span style="color:#a1a1aa;font-weight:500">+80/60%</span></div><div style="font-size:11px;color:#71717a">rampa + 2 back-off</div></div>
+          <div style="border:1px solid #27272a;background:#09090b;border-radius:8px;padding:10px 12px"><div style="font:500 11px 'Geist Mono',monospace;color:#71717a">T4</div><div style="margin-top:4px;font-size:13px;font-weight:600;color:#f4f4f5">5 <span style="color:#a1a1aa;font-weight:500">@ ~4RM</span></div><div style="font-size:11px;color:#71717a">rampa + back-off</div></div>
+          <div style="border:1px solid #27272a;background:#09090b;border-radius:8px;padding:10px 12px"><div style="font:500 11px 'Geist Mono',monospace;color:#71717a">T5</div><div style="margin-top:4px;font-size:13px;font-weight:600;color:#f4f4f5">3 <span style="color:#a1a1aa;font-weight:500">@ ~2RM</span></div><div style="font-size:11px;color:#71717a">tapering</div></div>
+          <div style="border:1px solid rgba(250,204,21,.35);background:rgba(250,204,21,.05);border-radius:8px;padding:10px 12px"><div style="font:500 11px 'Geist Mono',monospace;color:#fde047">T6</div><div style="margin-top:4px;font-size:13px;font-weight:600;color:#fde047">1RM</div><div style="font-size:11px;color:#a1a1aa">test maksu</div></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:end;gap:16px">
+        <div style="flex:1;max-width:380px"><span style="display:block;font-size:14px;color:#a1a1aa;margin-bottom:8px">Nazwa planu</span><div style="display:flex;align-items:center;height:40px;padding:0 12px;border-radius:8px;border:1px solid #3f3f46;background:#27272a;font-size:14px;color:#f4f4f5">Siła — metoda 6-4-2-5-3-1 <span style="margin-left:8px;font-size:11px;color:#71717a">· auto z presetu</span></div></div>
+        <div><span style="display:block;font-size:14px;color:#a1a1aa;margin-bottom:8px">Rodzaj</span><div style="display:flex;align-items:center;gap:4px;background:#18181b;border:1px solid #27272a;border-radius:8px;padding:4px;height:40px"><button style="border:none;border-radius:6px;padding:6px 14px;font:600 13px 'Geist',sans-serif;background:#3f3f46;color:#f4f4f5;cursor:pointer">Szablon</button><button style="border:none;border-radius:6px;padding:6px 14px;font:500 13px 'Geist',sans-serif;background:transparent;color:#a1a1aa;cursor:pointer;transition:color .15s" style-hover="color:#f4f4f5">Plan klienta</button></div></div>
+        <button style="border:none;border-radius:8px;padding:10px 20px;height:40px;font:600 14px 'Geist',sans-serif;background:#facc15;color:#09090b;cursor:pointer;white-space:nowrap;transition:background .15s" style-hover="background:#fde047">Otwórz w kreatorze →</button>
+        <button style="border:none;border-radius:8px;padding:10px 12px;height:40px;font:500 14px 'Geist',sans-serif;background:transparent;color:#a1a1aa;cursor:pointer;transition:color .15s" style-hover="color:#f4f4f5">Anuluj</button>
+      </div>
+    </div>
+  </div>
+  <div style="width:1200px;display:flex;flex-wrap:wrap;gap:8px 32px;padding:4px 4px 12px">
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;max-width:560px"><span style="font:600 11px 'Geist Mono',monospace;color:#fde047;letter-spacing:.06em;padding-top:1px">DEFAULTS</span><span style="color:#a1a1aa">Preset wstępnie zaznaczony, nazwa auto-uzupełniona — happy path do kreatora to 1 klik, nie pusty formularz.</span></div>
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;max-width:560px"><span style="font:600 11px 'Geist Mono',monospace;color:#fde047;letter-spacing:.06em;padding-top:1px">GOAL GRADIENT</span><span style="color:#a1a1aa">Pasek „Krok 1 z 3 · struktura wybrana” — kreator nie startuje od 0%.</span></div>
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;max-width:560px"><span style="font:600 11px 'Geist Mono',monospace;color:#fde047;letter-spacing:.06em;padding-top:1px">RECIPROCITY</span><span style="color:#a1a1aa">Podgląd T1–T6 pokazuje wartość presetu zanim trener włoży jakikolwiek wysiłek.</span></div>
+  </div>
+
+  <!-- ============ 09 — KREATOR PLANU (TABLICA) ============ -->
+  <div style="display:flex;align-items:center;gap:12px;margin-top:24px"><span style="font:600 12px 'Geist Mono',monospace;padding:4px 8px;background:#27272a;color:#a1a1aa;border-radius:8px">09</span><span style="font-weight:500;font-size:14px;color:#f4f4f5">Kreator planu — tablica tygodnia</span><span style="font-size:14px;color:#71717a">— tryb skupienia: biblioteka → drag na dzień · serie dziedziczą · presety 1-klik</span><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">/plans/new · /plans/[id]/edit</span></div>
+  <div style="width:1440px;flex:none;border:1px solid #27272a;border-radius:12px;overflow:hidden;background:#09090b;display:flex">
+    <!-- focus rail -->
+    <aside style="width:56px;flex:none;border-right:1px solid #27272a;background:#18181b;padding:16px 0;display:flex;flex-direction:column;align-items:center;gap:16px">
+      <span style="display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border-radius:8px;background:#facc15;color:#09090b;font-weight:800;font-size:15px">T</span>
+      <a href="#" title="Wróć do planów" style="display:inline-flex;width:36px;height:36px;align-items:center;justify-content:center;border-radius:8px;color:#a1a1aa;font-size:18px;text-decoration:none;transition:background .15s" style-hover="background:#27272a;color:#f4f4f5">‹</a>
+      <span style="margin-top:auto;display:inline-flex;width:32px;height:32px;align-items:center;justify-content:center;border-radius:999px;background:#27272a;color:#d4d4d8;font-size:11px;font-weight:600">TK</span>
+    </aside>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+      <!-- header -->
+      <div style="display:flex;align-items:center;gap:16px;padding:14px 24px;border-bottom:1px solid #27272a;background:#09090b">
+        <div style="min-width:0;display:flex;align-items:center;gap:10px">
+          <h2 style="margin:0;font-size:16px;font-weight:600;letter-spacing:-.01em;white-space:nowrap">Hipertrofia PPL — Blok II</h2>
+          <span style="color:#52525b;font-size:13px;cursor:pointer" title="Zmień nazwę">✎</span>
+          <span style="display:inline-flex;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:500;background:rgba(250,204,21,.15);color:#fde047">szablon</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;background:#18181b;border:1px solid #27272a;border-radius:8px;padding:4px;margin-left:8px">
+          <button style="border:none;border-radius:6px;padding:5px 12px;font:600 13px 'Geist',sans-serif;background:#3f3f46;color:#f4f4f5;cursor:pointer">Tablica</button>
+          <button style="border:none;border-radius:6px;padding:5px 12px;font:500 13px 'Geist',sans-serif;background:transparent;color:#a1a1aa;cursor:pointer;transition:color .15s" style-hover="color:#f4f4f5">Tabela</button>
+        </div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
+          <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:#6ee7b7"><span style="width:6px;height:6px;border-radius:999px;background:#6ee7b7"></span>Zapisano przed chwilą</span>
+          <button style="border:none;border-radius:8px;padding:8px 12px;font:500 13px 'Geist',sans-serif;background:transparent;color:#a1a1aa;cursor:pointer;transition:color .15s" style-hover="color:#f4f4f5">↩ Cofnij</button>
+          <button style="border:none;border-radius:8px;padding:9px 14px;font:500 14px 'Geist',sans-serif;background:#27272a;color:#d4d4d8;cursor:pointer;transition:background .15s" style-hover="background:#3f3f46">Podgląd</button>
+          <button style="border:none;border-radius:8px;padding:9px 16px;font:600 14px 'Geist',sans-serif;background:#facc15;color:#09090b;cursor:pointer;transition:background .15s" style-hover="background:#fde047">Zapisz plan</button>
+        </div>
+      </div>
+      <!-- week bar -->
+      <div style="display:flex;align-items:center;gap:8px;padding:12px 24px;border-bottom:1px solid #27272a;background:#09090b">
+        <span style="font-size:12px;color:#71717a;font-weight:500;margin-right:4px">Tydzień</span>
+        <button style="min-width:36px;border:1px solid #27272a;border-radius:999px;padding:7px 12px;font:500 13px 'Geist',sans-serif;background:#18181b;color:#a1a1aa;cursor:pointer;transition:color .15s" style-hover="color:#f4f4f5">1</button>
+        <button style="min-width:36px;border:1px solid #27272a;border-radius:999px;padding:7px 12px;font:500 13px 'Geist',sans-serif;background:#18181b;color:#a1a1aa;cursor:pointer;transition:color .15s" style-hover="color:#f4f4f5">2</button>
+        <button style="min-width:36px;border:none;border-radius:999px;padding:8px 13px;font:600 13px 'Geist',sans-serif;background:#facc15;color:#09090b;cursor:pointer">3</button>
+        <button style="display:flex;align-items:center;gap:6px;border:1px solid #27272a;border-radius:999px;padding:7px 12px;font:500 13px 'Geist',sans-serif;background:#18181b;color:#a1a1aa;cursor:pointer;transition:color .15s" style-hover="color:#f4f4f5">4 <span style="font-size:11px;color:#6ee7b7">deload</span></button>
+        <span style="width:1px;height:20px;background:#27272a;margin:0 4px"></span>
+        <button style="border:1px dashed #3f3f46;border-radius:999px;padding:7px 12px;font:500 13px 'Geist',sans-serif;background:transparent;color:#d4d4d8;cursor:pointer;white-space:nowrap;transition:border-color .15s" style-hover="border-color:#71717a">+ Tydzień <span style="color:#71717a">· kopiuje T3</span></button>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:10px"><div style="width:120px;height:4px;border-radius:999px;background:#27272a;overflow:hidden"><div style="width:50%;height:100%;background:#facc15;border-radius:999px"></div></div><span style="font-size:12px;color:#a1a1aa;white-space:nowrap">Tydzień <span style="color:#f4f4f5;font-weight:600">3</span> z 6 · <span style="color:#f4f4f5;font-weight:600">18</span> serii</span></div>
+      </div>
+      <!-- body -->
+      <div style="flex:1;display:flex;min-height:0;height:640px">
+        <!-- library -->
+        <aside style="width:280px;flex:none;border-right:1px solid #27272a;background:#18181b;display:flex;flex-direction:column">
+          <div style="padding:16px 16px 12px;display:flex;flex-direction:column;gap:10px">
+            <div style="font-size:14px;font-weight:600">Biblioteka ćwiczeń <span style="font-size:12px;font-weight:500;color:#71717a">· 4</span></div>
+            <div style="display:flex;align-items:center;gap:8px;height:36px;padding:0 10px;border-radius:8px;border:1px solid #3f3f46;background:#27272a">
+              <svg width="13" height="13" viewBox="0 0 14 14"><circle cx="6" cy="6" r="4.5" fill="none" stroke="#71717a" stroke-width="1.5"></circle><line x1="9.5" y1="9.5" x2="13" y2="13" stroke="#71717a" stroke-width="1.5"></line></svg>
+              <span style="font-size:13px;color:#71717a">Szukaj…</span>
+            </div>
+            <div style="display:flex;gap:6px">
+              <button style="border:none;border-radius:999px;padding:5px 10px;font:600 11px 'Geist',sans-serif;background:#3f3f46;color:#f4f4f5;cursor:pointer">Wszystkie</button>
+              <button style="border:none;border-radius:999px;padding:5px 10px;font:500 11px 'Geist',sans-serif;background:#27272a;color:#a1a1aa;cursor:pointer;transition:color .15s" style-hover="color:#f4f4f5">Powt.</button>
+              <button style="border:none;border-radius:999px;padding:5px 10px;font:500 11px 'Geist',sans-serif;background:#27272a;color:#a1a1aa;cursor:pointer;transition:color .15s" style-hover="color:#f4f4f5">Czas</button>
+              <button style="border:none;border-radius:999px;padding:5px 10px;font:500 11px 'Geist',sans-serif;background:#27272a;color:#a1a1aa;cursor:pointer;transition:color .15s" style-hover="color:#f4f4f5">Dystans</button>
+            </div>
+          </div>
+          <div style="flex:1;overflow:hidden;padding:0 16px 16px;display:flex;flex-direction:column;gap:6px">
+            <div style="font:500 10px 'Geist Mono',monospace;letter-spacing:.08em;color:#71717a;text-transform:uppercase;padding:6px 0 2px">Ostatnio używane</div>
+            <div style="display:flex;align-items:center;gap:10px;border:1px solid #27272a;background:#09090b;border-radius:8px;padding:10px 12px;cursor:grab;transition:border-color .15s,background .15s" style-hover="border-color:#3f3f46;background:#18181b"><span style="color:#52525b;font-size:13px;letter-spacing:1px">⠿</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:#f4f4f5">Wyciskanie leżąc</div><div style="font-size:11px;color:#71717a">domyślnie: 4 × 8 · 60 kg</div></div><button style="border:none;width:26px;height:26px;border-radius:6px;background:#27272a;color:#d4d4d8;font-size:14px;cursor:pointer;transition:background .15s" style-hover="background:#3f3f46" title="Dodaj do zaznaczonego dnia">+</button></div>
+            <div style="display:flex;align-items:center;gap:10px;border:1px solid #27272a;background:#09090b;border-radius:8px;padding:10px 12px;cursor:grab;transition:border-color .15s,background .15s" style-hover="border-color:#3f3f46;background:#18181b"><span style="color:#52525b;font-size:13px;letter-spacing:1px">⠿</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:#f4f4f5">Martwy ciąg</div><div style="font-size:11px;color:#71717a">domyślnie: 4 × 6 · 80 kg</div></div><button style="border:none;width:26px;height:26px;border-radius:6px;background:#27272a;color:#d4d4d8;font-size:14px;cursor:pointer;transition:background .15s" style-hover="background:#3f3f46" title="Dodaj do zaznaczonego dnia">+</button></div>
+            <div style="font:500 10px 'Geist Mono',monospace;letter-spacing:.08em;color:#71717a;text-transform:uppercase;padding:10px 0 2px">Wszystkie</div>
+            <div style="display:flex;align-items:center;gap:10px;border:1px solid #27272a;background:#09090b;border-radius:8px;padding:10px 12px;cursor:grab;transition:border-color .15s,background .15s" style-hover="border-color:#3f3f46;background:#18181b"><span style="color:#52525b;font-size:13px;letter-spacing:1px">⠿</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:#f4f4f5">Przysiad ze sztangą</div><div style="font-size:11px;color:#71717a">domyślnie: 4 × 8 · 60 kg</div></div><button style="border:none;width:26px;height:26px;border-radius:6px;background:#27272a;color:#d4d4d8;font-size:14px;cursor:pointer;transition:background .15s" style-hover="background:#3f3f46" title="Dodaj do zaznaczonego dnia">+</button></div>
+            <div style="display:flex;align-items:center;gap:10px;border:1px solid #27272a;background:#09090b;border-radius:8px;padding:10px 12px;cursor:grab;transition:border-color .15s,background .15s" style-hover="border-color:#3f3f46;background:#18181b"><span style="color:#52525b;font-size:13px;letter-spacing:1px">⠿</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:#f4f4f5">Plank</div><div style="font-size:11px;color:#71717a">domyślnie: 3 × 45 s</div></div><button style="border:none;width:26px;height:26px;border-radius:6px;background:#27272a;color:#d4d4d8;font-size:14px;cursor:pointer;transition:background .15s" style-hover="background:#3f3f46" title="Dodaj do zaznaczonego dnia">+</button></div>
+            <div style="margin-top:auto;font-size:11px;color:#71717a;line-height:1.5;padding-top:10px;border-top:1px solid #27272a">Przeciągnij na dzień <span style="color:#d4d4d8">albo</span> kliknij <span style="color:#d4d4d8;font-weight:600">+</span> — trafi do zaznaczonego dnia z domyślnymi parametrami.</div>
+          </div>
+        </aside>
+        <!-- board -->
+        <div style="flex:1;min-width:0;padding:16px 24px;display:flex;gap:16px;align-items:stretch;overflow:hidden">
+          <!-- D1 -->
+          <div style="width:340px;flex:none;display:flex;flex-direction:column;background:#18181b;border:1px solid #3f3f46;border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(24,24,27,.5)">
+            <div style="padding:12px 14px;border-bottom:1px solid #27272a">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="display:flex;align-items:baseline;gap:8px"><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">D1</span><span style="font-size:14px;font-weight:600">Poniedziałek</span><span style="color:#52525b;font-size:12px;cursor:pointer">✎</span></div><span style="color:#52525b;font-size:16px;cursor:pointer">⋯</span></div>
+              <div style="font-size:12px;color:#a1a1aa;margin-top:3px">Push — klatka, barki, triceps · <span style="color:#d4d4d8;font-weight:500">3 ćw. · 9 serii</span></div>
+            </div>
+            <div style="flex:1;padding:12px;display:flex;flex-direction:column;gap:8px;overflow:hidden">
+              <!-- item 1 expanded -->
+              <div style="border:1px solid #3f3f46;background:#09090b;border-radius:10px;overflow:hidden">
+                <div style="display:flex;align-items:center;gap:8px;padding:10px 12px"><span style="color:#52525b;font-size:12px;letter-spacing:1px;cursor:grab">⠿</span><span style="display:inline-flex;width:20px;height:20px;align-items:center;justify-content:center;border-radius:999px;background:rgba(250,204,21,.15);color:#fde047;font-size:11px;font-weight:600">1</span><span style="flex:1;font-size:13px;font-weight:600;color:#f4f4f5">Wyciskanie leżąc</span><span style="color:#52525b;font-size:14px;cursor:pointer">⋯</span></div>
+                <div style="display:flex;gap:6px;padding:0 12px 10px;flex-wrap:wrap">
+                  <button style="border:1px solid rgba(250,204,21,.4);border-radius:999px;padding:4px 10px;font:600 11px 'Geist',sans-serif;background:rgba(250,204,21,.08);color:#fde047;cursor:pointer">Rampa 6-4-2-5-3-1 ✓</button>
+                  <button style="border:none;border-radius:999px;padding:4px 10px;font:500 11px 'Geist',sans-serif;background:#27272a;color:#a1a1aa;cursor:pointer;transition:color .15s" style-hover="color:#f4f4f5">5×5</button>
+                  <button style="border:none;border-radius:999px;padding:4px 10px;font:500 11px 'Geist',sans-serif;background:#27272a;color:#a1a1aa;cursor:pointer;transition:color .15s" style-hover="color:#f4f4f5">3×8–12</button>
+                </div>
+                <div style="border-top:1px solid #27272a">
+                  <div style="display:grid;grid-template-columns:64px 76px 1fr;gap:8px;padding:6px 12px;font:500 10px 'Geist Mono',monospace;letter-spacing:.06em;color:#71717a;text-transform:uppercase"><span>Rola</span><span>Powt.</span><span>Ciężar</span></div>
+                  <div style="display:grid;grid-template-columns:64px 76px 1fr;gap:8px;align-items:center;padding:5px 12px;background:#18181b"><span style="display:inline-flex;justify-self:start;border-radius:999px;padding:2px 7px;font-size:10px;font-weight:500;background:rgba(250,204,21,.15);color:#fde047">rampa</span><span style="font-size:14px;font-weight:600;color:#f4f4f5">2</span><div style="display:inline-flex;align-items:center;border:1px solid #3f3f46;border-radius:6px;overflow:hidden;justify-self:start"><button style="border:none;width:24px;height:26px;background:#27272a;color:#a1a1aa;cursor:pointer;font-size:13px;transition:color .15s" style-hover="color:#f4f4f5">–</button><span style="min-width:56px;text-align:center;font-size:13px;font-weight:600;color:#fde047">50 kg</span><button style="border:none;width:24px;height:26px;background:#27272a;color:#a1a1aa;cursor:pointer;font-size:13px;transition:color .15s" style-hover="color:#f4f4f5">+</button></div></div>
+                  <div style="display:grid;grid-template-columns:64px 76px 1fr;gap:8px;align-items:center;padding:7px 12px"><span style="display:inline-flex;justify-self:start;border-radius:999px;padding:2px 7px;font-size:10px;font-weight:500;background:#27272a;color:#d4d4d8">back-off</span><span style="font-size:14px;font-weight:600;color:#f4f4f5">5–10</span><span style="font-size:13px;font-weight:600;color:#fde047">40 kg <span style="font-size:11px;font-weight:500;color:#71717a">80% topu</span></span></div>
+                  <div style="display:grid;grid-template-columns:64px 76px 1fr;gap:8px;align-items:center;padding:7px 12px"><span style="display:inline-flex;justify-self:start;border-radius:999px;padding:2px 7px;font-size:10px;font-weight:500;background:#27272a;color:#d4d4d8">back-off</span><span style="font-size:14px;font-weight:600;color:#f4f4f5">10–15</span><span style="font-size:13px;font-weight:600;color:#fde047">30 kg <span style="font-size:11px;font-weight:500;color:#71717a">60% topu</span></span></div>
+                  <button style="display:block;width:calc(100% - 24px);margin:6px 12px 10px;border:1px dashed #3f3f46;border-radius:8px;padding:7px;font:500 12px 'Geist',sans-serif;background:transparent;color:#a1a1aa;cursor:pointer;transition:border-color .15s,color .15s" style-hover="border-color:#71717a;color:#f4f4f5">+ Seria — powieli ostatnią (10–15 · 30 kg)</button>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;padding:8px 12px;border-top:1px solid #27272a;font-size:11px;color:#71717a">przerwa <span style="color:#d4d4d8;font-weight:600">2:00</span> · RPE <span style="color:#d4d4d8;font-weight:600">8</span> · tempo <span style="color:#d4d4d8;font-weight:600">31X1</span><span style="margin-left:auto;color:#52525b;cursor:pointer">✎</span></div>
+              </div>
+              <!-- superset group -->
+              <div style="border:1px solid rgba(250,204,21,.3);background:rgba(250,204,21,.04);border-radius:10px;overflow:hidden">
+                <div style="display:flex;align-items:center;gap:8px;padding:7px 12px"><span style="font:600 10px 'Geist Mono',monospace;letter-spacing:.08em;color:#fde047">SUPERSERIA A</span><span style="font-size:11px;color:#71717a">bez przerwy A1→A2</span><span style="margin-left:auto;font-size:11px;color:#71717a;cursor:pointer" style-hover="color:#fca5a5">rozłącz</span></div>
+                <div style="padding:0 8px 8px;display:flex;flex-direction:column;gap:6px">
+                  <div style="display:flex;align-items:center;gap:8px;border:1px solid #27272a;background:#09090b;border-radius:8px;padding:9px 10px;transition:border-color .15s" style-hover="border-color:#3f3f46"><span style="color:#52525b;font-size:12px;cursor:grab">⠿</span><span style="font:600 11px 'Geist Mono',monospace;color:#fde047">A1</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:#f4f4f5">Rozpiętki hantle</div><div style="font-size:11px;color:#71717a"><span style="color:#d4d4d8;font-weight:500">3 × 10–12</span> · <span style="color:#fde047;font-weight:500">14 kg</span></div></div><span style="color:#52525b;font-size:14px;cursor:pointer">⋯</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;border:1px solid #27272a;background:#09090b;border-radius:8px;padding:9px 10px;transition:border-color .15s" style-hover="border-color:#3f3f46"><span style="color:#52525b;font-size:12px;cursor:grab">⠿</span><span style="font:600 11px 'Geist Mono',monospace;color:#fde047">A2</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:#f4f4f5">Pompki</div><div style="font-size:11px;color:#71717a"><span style="color:#d4d4d8;font-weight:500">3 × max</span> · masa ciała</div></div><span style="color:#52525b;font-size:14px;cursor:pointer">⋯</span></div>
+                </div>
+              </div>
+              <button style="border:1px dashed #3f3f46;border-radius:10px;padding:10px;font:500 13px 'Geist',sans-serif;background:transparent;color:#a1a1aa;cursor:pointer;transition:border-color .15s,color .15s" style-hover="border-color:#71717a;color:#f4f4f5">+ Ćwiczenie</button>
+            </div>
+          </div>
+          <!-- D2 -->
+          <div style="width:340px;flex:none;display:flex;flex-direction:column;background:#18181b;border:1px solid #27272a;border-radius:12px;overflow:hidden">
+            <div style="padding:12px 14px;border-bottom:1px solid #27272a">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="display:flex;align-items:baseline;gap:8px"><span style="font:500 12px 'Geist Mono',monospace;color:#71717a">D2</span><span style="font-size:14px;font-weight:600">Środa</span><span style="color:#52525b;font-size:12px;cursor:pointer">✎</span></div><span style="color:#52525b;font-size:16px;cursor:pointer">⋯</span></div>
+              <div style="font-size:12px;color:#a1a1aa;margin-top:3px">Pull — plecy, biceps · <span style="color:#d4d4d8;font-weight:500">1 ćw. · 4 serie</span></div>
+            </div>
+            <div style="flex:1;padding:12px;display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:center;gap:8px;border:1px solid #27272a;background:#09090b;border-radius:10px;padding:10px 12px;transition:border-color .15s" style-hover="border-color:#3f3f46"><span style="color:#52525b;font-size:12px;cursor:grab">⠿</span><span style="display:inline-flex;width:20px;height:20px;align-items:center;justify-content:center;border-radius:999px;background:rgba(250,204,21,.15);color:#fde047;font-size:11px;font-weight:600">1</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:#f4f4f5">Martwy ciąg</div><div style="font-size:11px;color:#71717a"><span style="color:#d4d4d8;font-weight:500">4 × 6</span> · <span style="color:#fde047;font-weight:500">80 kg</span> · przerwa 2:30</div></div><span style="color:#52525b;font-size:14px;cursor:pointer">⋯</span></div>
+              <!-- drop target -->
+              <div style="flex:1;border:2px dashed rgba(250,204,21,.35);background:rgba(250,204,21,.04);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:140px"><span style="font-size:13px;font-weight:600;color:#fde047">Upuść „Wyciskanie leżąc” tutaj</span><span style="font-size:11px;color:#a1a1aa">doda się z domyślnymi: 4 × 8 · 60 kg</span></div>
+              <button style="border:1px dashed #3f3f46;border-radius:10px;padding:10px;font:500 13px 'Geist',sans-serif;background:transparent;color:#a1a1aa;cursor:pointer;transition:border-color .15s,color .15s" style-hover="border-color:#71717a;color:#f4f4f5">+ Ćwiczenie</button>
+            </div>
+          </div>
+          <!-- add day -->
+          <div style="width:220px;flex:none;border:1px dashed #3f3f46;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px">
+            <button style="border:none;border-radius:8px;padding:10px 16px;font:600 13px 'Geist',sans-serif;background:#27272a;color:#f4f4f5;cursor:pointer;transition:background .15s" style-hover="background:#3f3f46">+ Dodaj dzień</button>
+            <button style="border:none;border-radius:999px;padding:6px 12px;font:500 12px 'Geist',sans-serif;background:transparent;color:#a1a1aa;cursor:pointer;border:1px solid #27272a;transition:color .15s" style-hover="color:#f4f4f5">Powiel układ D1</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="width:1440px;display:flex;flex-wrap:wrap;gap:8px 32px;padding:4px 4px 12px">
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;max-width:560px"><span style="font:600 11px 'Geist Mono',monospace;color:#fde047;letter-spacing:.06em;padding-top:1px">DEFAULTS</span><span style="color:#a1a1aa">Ćwiczenie wpada z parametrami domyślnymi z biblioteki; „+ Seria” powiela ostatnią (prefill); presety serii 1-klik na karcie.</span></div>
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;max-width:560px"><span style="font:600 11px 'Geist Mono',monospace;color:#fde047;letter-spacing:.06em;padding-top:1px">F-PATTERN</span><span style="color:#a1a1aa">Biblioteka i uchwyty ⠿ po lewej; dwa sposoby dodania (drag lub +) — niższy koszt fizyczny dla obu nawyków.</span></div>
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;max-width:560px"><span style="font:600 11px 'Geist Mono',monospace;color:#fde047;letter-spacing:.06em;padding-top:1px">IKEA</span><span style="color:#a1a1aa">„+ Tydzień · kopiuje T3”, „Powiel układ D1” — trener współtworzy przez klonowanie, nie od zera.</span></div>
+    <div style="display:flex;gap:8px;font-size:12px;line-height:1.5;max-width:560px"><span style="font:600 11px 'Geist Mono',monospace;color:#fde047;letter-spacing:.06em;padding-top:1px">CONTRAST</span><span style="color:#a1a1aa">Tryb skupienia (nawigacja zwinięta do railu); 1 dominanta „Zapisz plan”; autosave + „Cofnij” gaszą lęk przed utratą zmian.</span></div>
+  </div>
+
+</div>
+
+</x-dc>
+<script>
+(async () => {
+  if (!document.title || !document.title.trim()) document.title = "Trainer Portal - widoki v2";
+  // Prepend so page-supplied @page / break rules (deck-stage's margin:0,
+  // author CSS) keep source-order precedence over the baseline.
+  const baseCss = document.createElement('style');
+  baseCss.textContent = "@media print {\n  figure, table { break-inside: avoid; }\n  *, *::before, *::after {\n    print-color-adjust: exact; -webkit-print-color-adjust: exact;\n    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;\n    animation-delay: -99s !important; animation-duration: .001s !important;\n    animation-iteration-count: 1 !important; animation-fill-mode: both !important;\n    animation-play-state: running !important; transition-duration: 0s !important;\n  }\n}";
+  document.head.prepend(baseCss);
+  if (document.readyState === 'loading') {
+    await new Promise((r) => document.addEventListener('DOMContentLoaded', r, { once: true }));
+  }
+  let ds = document.querySelector('deck-stage');
+  // whenDefined never resolves when nothing registers the element, so only
+  // await it when a <deck-stage> tag exists (and race a timeout regardless).
+  if (ds && !customElements.get('deck-stage')) {
+    try {
+      await Promise.race([
+        customElements.whenDefined('deck-stage'),
+        new Promise((r) => setTimeout(r, 3000)),
+      ]);
+    } catch (e) {}
+    ds = document.querySelector('deck-stage');
+  }
+  // dc-runtime assigns window.DCLogic at init and mounts into #dc-root on
+  // DOMContentLoaded; settle on that subtree so React has rendered before
+  // print(). Non-DC pages fall through to weighing body.
+  const isDc = !ds && 'DCLogic' in window;
+  const settleRoot = ds || (isDc ? document.getElementById('dc-root') : null) || document.body;
+  if (settleRoot) {
+    // Weigh only content children — skip script/style/template so inline
+    // Babel/CSS doesn't register as stable "content" before the framework
+    // has mounted anything.
+    const MEDIA = 'img,svg,canvas,video,picture,iframe,embed,object';
+    const weigh = () => {
+      let text = 0, media = 0;
+      for (const c of settleRoot.children) {
+        const t = c.tagName;
+        if (t === 'SCRIPT' || t === 'STYLE' || t === 'TEMPLATE') continue;
+        text += (c.textContent || '').trim().length;
+        media += c.querySelectorAll(MEDIA).length + (c.matches(MEDIA) ? 1 : 0);
+      }
+      return text + media * 100;
+    };
+    // "Non-zero and stable" alone is not sufficient to mean rendered: generic
+    // body can carry a static shell while async main content is pending, and
+    // #dc-root can carry the root DC's static text while child refs are still
+    // .sc-placeholder boxes. Gate generic on readyState 'complete', and never
+    // accept stability while a dc-runtime placeholder is present.
+    const isGeneric = settleRoot === document.body;
+    const deadline = Date.now() + 15000;
+    let last = -1, stable = 0;
+    while (Date.now() < deadline) {
+      const n = weigh();
+      const ready =
+        (!isGeneric || document.readyState === 'complete') &&
+        !settleRoot.querySelector('.sc-placeholder');
+      if (n > 0 && n === last && ready) { if (++stable >= 2) break; } else { stable = 0; }
+      last = n;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+  }
+  // Project support.js may predate runtime default-seeding; push via bridge.
+  if (isDc && window.__dcSetProps && window.__dcRootName) {
+    try {
+      const dpEl = document.querySelector('script[data-dc-script]');
+      const meta = JSON.parse((dpEl && dpEl.getAttribute('data-props')) || '{}');
+      const bag = {};
+      for (const k in meta)
+        if (k[0] !== '$' && meta[k] && meta[k].default !== undefined)
+          bag[k] = meta[k].default;
+      if (Object.keys(bag).length) {
+        window.__dcSetProps(window.__dcRootName(), bag);
+        await new Promise((r) => setTimeout(r, 50));
+      }
+    } catch (e) {}
+  }
+  // Reveal content gated on scroll or visibility before printing. Lazy <img>,
+  // IntersectionObserver fade-ins, and collapsed <details> don't render while
+  // off-screen, so a long page would print with them blank or closed. Open
+  // every <details>, force native-lazy images eager, and scroll the document
+  // through its full height to trip lazy-load + IO; then wait (bounded) for the
+  // newly-triggered images. Inert for deck-stage (slides aren't scroll-gated).
+  try {
+    for (const d of document.querySelectorAll('details')) d.open = true;
+    for (const img of document.querySelectorAll('img[loading="lazy"]'))
+      img.loading = 'eager';
+    const scroller = document.scrollingElement || document.documentElement;
+    const full = Math.max(scroller.scrollHeight, document.body.scrollHeight);
+    const step = window.innerHeight || 800;
+    for (let y = 0; y <= full; y += step) {
+      window.scrollTo(0, y);
+      await new Promise((r) => requestAnimationFrame(r));
+    }
+    window.scrollTo(0, 0);
+    await Promise.race([
+      Promise.all(
+        [...document.images].map((img) =>
+          img.complete
+            ? null
+            : new Promise((res) => {
+                img.addEventListener('load', res, { once: true });
+                img.addEventListener('error', res, { once: true });
+              })
+        )
+      ),
+      new Promise((r) => setTimeout(r, 4000)),
+    ]);
+  } catch (e) {}
+  try { await document.fonts.ready; } catch (e) {}
+  // Jump every animation to its end state so print() never captures a slide
+  // mid-entrance. Ordering matters: the 0s-transition style must be live
+  // BEFORE data-deck-active is set so attribute-keyed transitions don't
+  // start a (now-0s) run from the pre-active base.
+  const st = document.createElement('style');
+  st.textContent = '*,*::before,*::after{animation-delay:-99s !important;animation-duration:.001s !important;animation-iteration-count:1 !important;animation-fill-mode:both !important;animation-play-state:running !important;transition-duration:0s !important}';
+  document.head.appendChild(st);
+  for (const d of document.querySelectorAll('deck-stage')) {
+    for (const c of d.children) {
+      const t = c.tagName;
+      if (t === 'SCRIPT' || t === 'STYLE' || t === 'TEMPLATE') continue;
+      c.setAttribute('data-deck-active', '');
+    }
+  }
+  // Re-append deck-stage's @page last so no author @page can add a margin and
+  // spill each full-bleed slide onto two sheets. Backstop for old copies.
+  if (ds) {
+    let pg = document.getElementById('deck-stage-print-page');
+    if (!pg) {
+      pg = document.createElement('style');
+      pg.textContent = '@page{size:' + (+ds.getAttribute('width') || 1920) +
+        'px ' + (+ds.getAttribute('height') || 1080) + 'px;margin:0}';
+    }
+    document.body.appendChild(pg);
+  }
+  try {
+    const sweep = () => {
+      for (const a of document.getAnimations()) {
+        try { a.finish(); } catch (e) {
+          try { a.currentTime = (a.effect && a.effect.getComputedTiming().duration) || 0; a.pause(); } catch (e2) {}
+        }
+      }
+    };
+    sweep();
+    await new Promise((r) => requestAnimationFrame(r));
+    sweep();
+    await new Promise((r) => requestAnimationFrame(r));
+  } catch (e) {}
+  // Size the PDF page to the rendered design unless the file opted into
+  // standard paper via @page{size:letter|A4|…}. Decks own their own @page.
+  // Wrappers (body, …) lose padding+margin so the frame sits at (0,0); the
+  // frame itself loses only margin — its padding is INSIDE the measured
+  // rect and must stay, or content shifts and leaves a gap at bottom/right.
+  var __m = null;
+  try { __m = (() => {
+  var STAMP = true;
+  var docEl = document.documentElement;
+  var doc = { width: docEl.scrollWidth, height: docEl.scrollHeight };
+
+  var ds = document.querySelector('deck-stage');
+  if (ds) {
+    var dw = Number(ds.getAttribute('width')) || 1920;
+    var dh = Number(ds.getAttribute('height')) || 1080;
+    var n = typeof ds.length === 'number' ? ds.length : ds.children.length;
+    var idx = typeof ds.index === 'number' ? ds.index : 0;
+    var frames = [];
+    for (var i = 0; i < n; i++) frames.push({ left: 0, top: 0, width: dw, height: dh });
+    return { kind: 'deck', source: 'declared', doc: doc, frames: frames,
+      authored: frames.map(function(){return{width:true,height:true}}),
+      deck: { width: dw, height: dh, slideCount: n, index: idx },
+      signals: { paperPage: false, pxPage: false } };
+  }
+
+  // Declared kind: a doc-page tag names the kind outright, so no signal
+  // heuristics run (like the deck branch above, signals report false —
+  // they describe inferred classifications only). The tag alone is not
+  // trusted: the element must have upgraded (shadowRoot present), so a
+  // leftover tag whose script was deleted falls through to the heuristics
+  // that handle plain markup.
+  var stageSx = window.scrollX || 0, stageSy = window.scrollY || 0;
+  var dp = document.querySelector('doc-page');
+  if (dp && dp.shadowRoot) {
+    // Crop to the sheet, not the host — the desk around it is screen-only
+    // chrome that must not land in PNG exports.
+    var sheet = dp.shadowRoot.querySelector('.sheet');
+    var sr = (sheet || dp).getBoundingClientRect();
+    return { kind: 'paper-doc', source: 'declared', doc: doc,
+      frames: [{ left: sr.left + stageSx, top: sr.top + stageSy,
+        width: sr.width, height: sr.height }],
+      authored: [{ width: false, height: false }],
+      signals: { paperPage: false, pxPage: false } };
+  }
+  var paperPage = false, pxPage = false;
+  var eachRule = function (fn) {
+    for (var s = 0; s < document.styleSheets.length; s++) {
+      var rs; try { rs = document.styleSheets[s].cssRules; } catch (e) { continue; }
+      for (var r = 0; r < rs.length; r++) {
+        fn(rs[r]);
+        if (rs[r].cssRules) for (var n = 0; n < rs[r].cssRules.length; n++) fn(rs[r].cssRules[n]);
+      }
+    }
+  };
+  eachRule(function (r) {
+    if (r.type !== 6) return;
+    var m = /\bsize\s*:\s*([^;}]+)/i.exec(r.cssText || '');
+    if (!m) return;
+    if (/\b(letter|a[3-5]|legal|ledger)\b/i.test(m[1])) paperPage = true;
+    if (/\d+(?:\.\d+)?px\b/i.test(m[1])) pxPage = true;
+  });
+  var signals = { paperPage: paperPage, pxPage: pxPage };
+
+  var pxVal = function (v) {
+    var m = /^(\d+(?:\.\d+)?)px$/.exec(v || ''); return m ? +m[1] : 0;
+  };
+  var authoredPx = function (el, prop) {
+    if (pxVal(el.style[prop])) return true;
+    var attr = el.getAttribute(prop);
+    if (attr && /^\d+$/.test(attr)) return true;
+    var hit = false;
+    eachRule(function (r) {
+      if (hit || r.type !== 1 || !r.style) return;
+      try { if (el.matches(r.selectorText) && pxVal(r.style[prop])) hit = true; } catch (e) {}
+    });
+    return hit;
+  };
+
+  var el = document.body, rootPxW = false;
+  for (;;) {
+    var kids = [];
+    for (var c = 0; c < el.children.length; c++) {
+      var t = el.children[c].tagName;
+      if (t !== 'SCRIPT' && t !== 'STYLE' && t !== 'TEMPLATE') kids.push(el.children[c]);
+    }
+    if (kids.length !== 1 || !(kids[0] instanceof HTMLElement)) break;
+    if (STAMP) el.setAttribute('data-om-frame-wrap', '');
+    el = kids[0];
+    rootPxW = authoredPx(el, 'width');
+    if (rootPxW) break;
+  }
+  if (!rootPxW) rootPxW = authoredPx(el, 'width');
+
+  // @page{size:letter} alone is a flowing doc; with a px-width root it's a
+  // fixed sheet pretending to be paper — fall through and size to render.
+  if (paperPage && !rootPxW) {
+    return { kind: 'paper-doc', source: 'inferred', doc: doc, signals: signals,
+      frames: [{ left: 0, top: 0, width: doc.width, height: doc.height }],
+      authored: [{ width: false, height: false }] };
+  }
+
+  var sx = window.scrollX || 0, sy = window.scrollY || 0;
+  var rectOf = function (e) {
+    var r = e.getBoundingClientRect();
+    var oy; try { oy = getComputedStyle(e).overflowY; } catch (err) {}
+    var h = oy === 'visible' ? Math.max(r.height, e.scrollHeight || 0) : r.height;
+    return { left: r.left + sx, top: r.top + sy, width: r.width, height: h };
+  };
+
+  // Multi-frame: off unless the page opts in via data-om-multi-frame on the
+  // stop element — the explicit opt-in is what guards against card grids
+  // and pricing tables that match the geometry but aren't separate
+  // canvases. Two ways to name the frames, explicit first:
+  // 1. Descendants marked data-om-frame-export (the social-frames starter
+  //    marks each asset frame; shells/panels around them are presentation,
+  //    so nesting is expected). Document order.
+  // 2. Fallback, no marked descendants: direct children with an authored px
+  //    width AND height (the original geometry heuristic).
+  // Frames may be different sizes (a gallery mixes 1080×1920 stories with
+  // 728×90 banners); data-om-frame-label rides along for export filenames.
+  if (el.hasAttribute('data-om-multi-frame')) {
+    var visOk = function (e) {
+      var cs; try { cs = getComputedStyle(e); } catch (err) { return false; }
+      return cs.display !== 'none' && cs.visibility !== 'hidden' && cs.position !== 'fixed';
+    };
+    // A frame's crop is its VISUAL box — never the scrollHeight-inflated
+    // rect that rectOf computes for page roots. Shadow-DOM hover controls
+    // (image-slot's Replace bar parks 29px below its host) and similar
+    // escaping UI contribute scrollable overflow to the frame, and the
+    // inflated height both squashes the nominal-size resize and drags
+    // content below the frame into the crop. Zoom-independent; bit every
+    // slot-bearing frame.
+    var frameRectOf = function (e) {
+      var r = e.getBoundingClientRect();
+      return { left: r.left + sx, top: r.top + sy, width: r.width, height: r.height };
+    };
+    var pushCand = function (list, e) {
+      if (!visOk(e)) return;
+      var rc = frameRectOf(e);
+      if (rc.width < 2 || rc.height < 2) return;
+      var lbl = e.getAttribute('data-om-frame-label');
+      if (lbl) rc.label = lbl;
+      list.push(rc);
+    };
+    var cands = [];
+    var marked = el.querySelectorAll('[data-om-frame-export]');
+    if (marked.length) {
+      for (var mk = 0; mk < marked.length; mk++) pushCand(cands, marked[mk]);
+    } else {
+      for (var k = 0; k < el.children.length; k++) {
+        var ch = el.children[k];
+        if (!authoredPx(ch, 'width') || !authoredPx(ch, 'height')) continue;
+        pushCand(cands, ch);
+      }
+    }
+    if (cands.length >= 2) {
+      return { kind: 'multi-frame', source: 'inferred', doc: doc, signals: signals,
+        frames: cands, authored: cands.map(function(){return{width:true,height:true}}) };
+    }
+  }
+
+  if (STAMP) el.setAttribute('data-om-frame', '');
+  return { kind: 'single-canvas', source: 'inferred', doc: doc, signals: signals,
+    frames: [rectOf(el)],
+    authored: [{ width: rootPxW, height: authoredPx(el, 'height') }] };
+})(); } catch (e) {}
+  var frame = null;
+  if (__m && __m.kind === 'single-canvas') {
+    var f = __m.frames && __m.frames[0];
+    if (f && f.width >= 200 && f.height >= 200) {
+      frame = f;
+      var fst = document.createElement('style');
+      fst.textContent = '@media print{@page{size:' + Math.ceil(f.width) + 'px ' +
+        Math.ceil(f.height) + 'px;margin:0}' +
+        'html,body,[data-om-frame-wrap]{padding:0!important;margin:0!important;background:none!important}' +
+        '[data-om-frame]{margin:0!important}}';
+      document.body.appendChild(fst);
+    }
+  }
+  // Relax break-inside on oversized elements. An element taller than a
+  // printable page can't honor break-inside: avoid — browsers either overflow
+  // it or push it whole to the next page, leaving a blank gap, then break it
+  // anyway at an arbitrary point. After the final layout (content revealed,
+  // animations jumped), find elements taller than a page that still compute
+  // break-inside: avoid and reset them to auto, so the browser breaks them at
+  // their children's boundaries instead (children keep their own avoid). PAGE_PX
+  // is a conservative portrait estimate at 96 CSS px/in — Letter/A4 usable
+  // height minus our 0.5in margins — so only clearly-oversized elements are
+  // touched and under-page elements still stay whole. Skipped for decks (slides
+  // are sized to the page) and for fixed-size canvases (frame set, or an author
+  // px-based @page) — runs as before for flowing docs on letter/A4.
+  try {
+    if (!ds && !frame && !(__m && __m.signals && __m.signals.pxPage)) {
+      const PAGE_PX = 1024;
+      // Our print defaults add a real @page margin only when the source has
+      // no @page of its own; computed style can't tell us (it reports screen
+      // media), so read the injected rule directly.
+      const defaults = document.querySelector('style[data-omelette-print-defaults]');
+      const pageInset = /@page\s*\{[^}]*margin/.test(defaults ? defaults.textContent || '' : '');
+      const SEL = 'section,article,figure,table,pre,blockquote,[class~="card" i],[class~="page" i],[class~="sheet" i]';
+      for (const el of document.body.querySelectorAll(SEL)) {
+        if (el instanceof HTMLElement && el.offsetHeight > PAGE_PX) {
+          el.setAttribute('data-om-oversized', '');
+          // Fake-paged docs simulate sheets with over-tall break-after:page
+          // boxes; honoring the break spills half-blank pages and ends a
+          // colored box mid-sheet. Flow them, and (only when we own the page
+          // inset) drop the redundant padding/background via the rule below.
+          const cs = getComputedStyle(el);
+          if (cs.breakAfter === 'page' || cs.pageBreakAfter === 'always') {
+            el.setAttribute('data-om-fakepage', '');
+          }
+        }
+      }
+      const ost = document.createElement('style');
+      ost.textContent = '@media print{' +
+        '[data-om-oversized]{break-inside:auto !important;page-break-inside:auto !important}' +
+        '[data-om-fakepage]{break-after:auto !important;page-break-after:auto !important}' +
+        (pageInset ? '[data-om-fakepage]{padding:0 !important;background:none !important}' : '') +
+        '}';
+      document.head.appendChild(ost);
+    }
+  } catch (e) {}
+  // macOS Preview renders Skia-PDF Luminosity soft-masks as opaque grey boxes;
+  // swap the CSS that triggers them for Preview-safe forms.
+  try {
+    for (const el of document.body.querySelectorAll('*')) {
+      const cs = getComputedStyle(el);
+
+      if (cs.boxShadow !== 'none' && cs.filter === 'none') {
+        const outs = [], kept = [];
+        for (const s of cs.boxShadow.split(/,(?![^(]*[)])/)) {
+          const t = s.trim();
+          const m = t.match(/^(rgba?[(][^)]+[)]) (-?[0-9.]+px) (-?[0-9.]+px) ([0-9.]+px) -?[0-9.]+px$/);
+          if (m && parseFloat(m[4]) > 0) outs.push('drop-shadow(' + m[2] + ' ' + m[3] + ' ' + m[4] + ' ' + m[1] + ')');
+          else kept.push(t);
+        }
+        if (outs.length) {
+          el.style.setProperty('filter', outs.join(' '), 'important');
+          el.style.setProperty('box-shadow', kept.join(', ') || 'none', 'important');
+        }
+      }
+
+      const mask = cs.maskImage && cs.maskImage !== 'none' ? cs.maskImage : cs.webkitMaskImage;
+      if (mask && mask !== 'none' && cs.filter === 'none') el.style.setProperty('filter', 'opacity(1)', 'important');
+    }
+  } catch (e) {}
+  setTimeout(() => { try { window.print(); } catch (e) {} }, 200);
+})();
+</script>
+</body>
+</html>

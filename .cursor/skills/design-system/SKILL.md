@@ -156,5 +156,6 @@ Zwróć: listę konkretnych zmian (plik + linia + przed/po), bez zmiany zachowan
 
 - Responsywność: skill `responsive-ui`.
 - Domenowe UX kreatora planów i logowania: skill `fitness-ui-ux`.
+- Psychologia konwersji i redukcja kosztu interakcji (poziom "10/10"): skill `senior-ux-cro` — czytaj przy każdej implementacji UI.
 - Kopia tego prompta do wklejenia w innej sesji/narzędziu (audyt zgodności z tokenami/responsywnością): `.ai/design-review-prompt.md`.
 - Prompt do realnej poprawy jakości wizualnej (typografia/spacing/hierarchia, nie tylko zgodność): `.ai/design-quality-prompt.md`.

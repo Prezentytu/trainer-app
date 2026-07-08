@@ -17,6 +17,18 @@ export type ClientAssignment = {
   note: string | null;
 };
 
+export type Assignment = {
+  id: number;
+  planId: number;
+  clientId: number;
+  startDate: string;
+  status: string;
+  note: string | null;
+  createdAt: string;
+  planName: string;
+  clientName: string;
+};
+
 export type ClientDetails = {
   id: number;
   name: string;
@@ -24,6 +36,10 @@ export type ClientDetails = {
   note: string | null;
   assignments: ClientAssignment[];
 };
+
+// Cele treningowe klienta — chipy 1-tap w formularzu klienta, zapisywane jako tekst w `Client.note`
+// (bez zmiany schematu backendu). Jedyne źródło prawdy dla opcji, analogicznie do EXERCISE_TYPE_LABELS.
+export const CLIENT_GOALS = ["Redukcja", "Hipertrofia", "Kondycja", "Siła", "Ogólna sprawność"] as const;
 
 export type ExerciseType = "reps" | "time" | "distance";
 export type PercentBase = "1rm" | "top";
@@ -46,6 +62,17 @@ export const PERCENT_BASE_LABELS: Record<PercentBase, string> = {
   "1rm": "% 1RM",
   top: "% od topu",
 };
+
+export const RIR_HELP = "Liczba powtórzeń w zapasie do upadku mięśniowego";
+
+/** RIR (Reps In Reserve) i RPE to dwie skale tej samej intensywności: RIR = 10 − RPE. */
+export function rirFromRpe(rpe: number): number {
+  return 10 - rpe;
+}
+
+export function rpeFromRir(rir: number): number {
+  return 10 - rir;
+}
 
 export type Exercise = {
   id: number;
@@ -71,6 +98,7 @@ export type PlanSet = {
   loadPercent: number | null;
   percentOf: PercentBase | null;
   targetRpe: number | null;
+  targetRir: number | null;
   tempo: string | null;
   role: string | null;
   note: string | null;
@@ -92,6 +120,7 @@ export type PlanItem = {
   distanceMeters: number | null;
   tempo: string | null;
   targetRpe: number | null;
+  targetRir: number | null;
   setScheme: string | null;
   restBetweenSetsSeconds: number;
   restAfterExerciseSeconds: number;
@@ -141,6 +170,7 @@ export type PlanSetInput = {
   loadPercent: number | null;
   percentOf: PercentBase | null;
   targetRpe: number | null;
+  targetRir: number | null;
   tempo: string | null;
   role: string | null;
   note: string | null;
@@ -158,6 +188,7 @@ export type PlanItemInput = {
   distanceMeters: number | null;
   tempo: string | null;
   targetRpe: number | null;
+  targetRir: number | null;
   setScheme: string | null;
   restBetweenSetsSeconds: number | null;
   restAfterExerciseSeconds: number | null;
@@ -231,6 +262,7 @@ export const api = {
     remove: (id: number) => request(`/api/plans/${id}`, { method: "DELETE" }),
   },
   assignments: {
+    list: () => request<Assignment[]>("/api/assignments"),
     create: (input: { planId: number; clientId: number; startDate: string; note: string | null }) =>
       request("/api/assignments", { method: "POST", body: JSON.stringify(input) }),
     setStatus: (id: number, status: string) =>

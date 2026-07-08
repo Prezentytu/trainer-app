@@ -2,17 +2,46 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { api, ClientDetails, Plan } from "@/lib/api";
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, inputClass, PageHeader } from "@/components/ui";
+import { Badge, Button, Card, EmptyState, ErrorBanner, Field, inputClass, PageHeader, useUndoToast } from "@/components/ui";
+
+function PlanPickerCard({ plan, selected, onSelect }: { plan: Plan; selected: boolean; onSelect: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`flex items-start gap-2 rounded-lg border p-3 text-left transition-colors ${
+        selected ? "border-accent bg-accent/10" : "border-border bg-surface/60 hover:border-border-strong"
+      }`}
+    >
+      <span
+        className={`mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] ${
+          selected ? "border-accent bg-accent text-accent-foreground" : "border-border-strong"
+        }`}
+        aria-hidden
+      >
+        {selected ? "✓" : ""}
+      </span>
+      <span className="min-w-0">
+        <span className="block break-words text-sm font-medium">{plan.name}</span>
+        <span className="mt-0.5 block text-xs text-muted">
+          {plan.weeksCount} tyg. · {plan.exerciseCount} ćw.
+        </span>
+      </span>
+    </button>
+  );
+}
 
 export default function ClientDetailsPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const clientId = Number(params.id);
 
   const [client, setClient] = useState<ClientDetails | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const { showUndoToast, toastNode } = useUndoToast();
 
   const [planId, setPlanId] = useState<number | "">("");
   const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -23,7 +52,10 @@ export default function ClientDetailsPage() {
     Promise.all([api.clients.get(clientId), api.plans.list()])
       .then(([c, p]) => {
         setClient(c);
-        setPlans(p.filter((plan) => !plan.isTemplate));
+        const assignable = p.filter((plan) => !plan.isTemplate);
+        setPlans(assignable);
+        // Smart default: happy path do przypisania to 1 klik, nie puste pole.
+        setPlanId((prev) => (prev === "" && assignable.length > 0 ? assignable[0].id : prev));
       })
       .catch((e: Error) => setError(e.message));
   }, [clientId]);
@@ -56,11 +88,34 @@ export default function ClientDetailsPage() {
     }
   };
 
-  const handleRemove = async (assignmentId: number) => {
-    if (!confirm("Usunąć to przypisanie?")) return;
+  const handleRemove = async (assignment: ClientDetails["assignments"][number]) => {
     try {
-      await api.assignments.remove(assignmentId);
+      await api.assignments.remove(assignment.id);
       load();
+      showUndoToast(`Usunięto „${assignment.planName}”`, async () => {
+        try {
+          await api.assignments.create({
+            planId: assignment.planId,
+            clientId,
+            startDate: assignment.startDate,
+            note: assignment.note,
+          });
+          load();
+        } catch (err) {
+          setError((err as Error).message);
+        }
+      });
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
+  const handleDeleteClient = async () => {
+    if (!client) return;
+    if (!confirm(`Usunąć klienta „${client.name}” wraz z przypisaniami? Tej operacji nie można cofnąć.`)) return;
+    try {
+      await api.clients.remove(client.id);
+      router.push("/clients");
     } catch (err) {
       setError((err as Error).message);
     }
@@ -70,7 +125,7 @@ export default function ClientDetailsPage() {
     return (
       <div>
         <ErrorBanner message={error} />
-        <p className="text-zinc-500">Ładowanie…</p>
+        <p className="text-muted">Ładowanie…</p>
       </div>
     );
   }
@@ -93,36 +148,30 @@ export default function ClientDetailsPage() {
         {plans.length === 0 ? (
           <EmptyState>
             Nie masz jeszcze planów klienta.{" "}
-            <Link href="/plans/new" className="text-yellow-400 underline">Stwórz plan</Link>{" "}
+            <Link href="/plans/new" className="text-accent underline">Stwórz plan</Link>{" "}
             (szablony najpierw zduplikuj do planu klienta).
           </EmptyState>
         ) : (
-          <form onSubmit={handleAssign} className="grid gap-4 sm:grid-cols-4">
+          <form onSubmit={handleAssign}>
             <Field label="Plan *">
-              <select
-                className={inputClass}
-                value={planId}
-                onChange={(e) => setPlanId(e.target.value === "" ? "" : Number(e.target.value))}
-                required
-              >
-                <option value="">— wybierz plan —</option>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {plans.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({p.exerciseCount} ćw.)
-                  </option>
+                  <PlanPickerCard key={p.id} plan={p} selected={planId === p.id} onSelect={() => setPlanId(p.id)} />
                 ))}
-              </select>
+              </div>
             </Field>
-            <Field label="Data startu">
-              <input className={inputClass} type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-            </Field>
-            <Field label="Notatka">
-              <input className={inputClass} value={note} onChange={(e) => setNote(e.target.value)} />
-            </Field>
-            <div className="flex items-end">
-              <Button type="submit" disabled={saving || planId === ""}>
-                {saving ? "Przypisywanie…" : "Przypisz"}
-              </Button>
+            <div className="mt-4 grid gap-4 sm:grid-cols-3">
+              <Field label="Data startu">
+                <input className={inputClass} type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+              </Field>
+              <Field label="Notatka">
+                <input className={inputClass} value={note} onChange={(e) => setNote(e.target.value)} />
+              </Field>
+              <div className="flex items-end">
+                <Button type="submit" disabled={saving || planId === ""}>
+                  {saving ? "Przypisywanie…" : "Przypisz plan"}
+                </Button>
+              </div>
             </div>
           </form>
         )}
@@ -132,19 +181,19 @@ export default function ClientDetailsPage() {
       {client.assignments.length === 0 ? (
         <EmptyState>Ten klient nie ma jeszcze żadnych przypisań.</EmptyState>
       ) : (
-        <div className="grid gap-3">
+        <div className="grid gap-3 xl:grid-cols-2">
           {client.assignments.map((a) => (
             <Card key={a.id} className="flex items-center justify-between gap-4">
-              <div>
-                <Link href={`/plans/${a.planId}`} className="font-semibold hover:text-yellow-400">
+              <div className="min-w-0">
+                <Link href={`/plans/${a.planId}`} className="break-words font-semibold hover:text-accent">
                   {a.planName}
                 </Link>
-                <p className="mt-0.5 text-xs text-zinc-500">
+                <p className="mt-0.5 text-xs text-muted">
                   start: {a.startDate}
                   {a.note ? ` · ${a.note}` : ""}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-3">
                 <Badge tone={statusTone(a.status)}>{statusLabel(a.status)}</Badge>
                 {a.status === "active" && (
                   <>
@@ -155,12 +204,26 @@ export default function ClientDetailsPage() {
                 {a.status !== "active" && (
                   <Button variant="ghost" onClick={() => handleStatus(a.id, "active")}>Wznów</Button>
                 )}
-                <Button variant="danger" onClick={() => handleRemove(a.id)}>Usuń</Button>
+                <button
+                  type="button"
+                  onClick={() => handleRemove(a)}
+                  className="text-sm text-muted-strong hover:text-danger"
+                >
+                  Usuń
+                </button>
               </div>
             </Card>
           ))}
         </div>
       )}
+
+      <div className="mt-10 border-t border-border pt-4">
+        <button type="button" onClick={handleDeleteClient} className="text-xs text-muted hover:text-danger">
+          Usuń klienta wraz z przypisaniami
+        </button>
+      </div>
+
+      {toastNode}
     </div>
   );
 }

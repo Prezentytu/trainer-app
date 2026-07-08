@@ -56,6 +56,12 @@ Największy błąd to jeden layout dla obu. Projektuj je osobno.
 - Nowe zależności (np. biblioteka wykresów) wymagają zgody — domyślnie wykres jako inline SVG.
 - Zmiany minimalne i skupione; prostota przede wszystkim.
 
+## Powiązane
+
+- Tokeny/typografia/spacing: skill `design-system`.
+- Responsywność: skill `responsive-ui`.
+- Psychologia konwersji, hierarchia uwagi, empty states, gotchas (poziom "10/10"): skill `senior-ux-cro` — czytaj przy każdej implementacji UI.
+
 ## Źródła
 
 FitFocus (program builder, block periodisation), Flynn OS (drag-and-drop, split view, per-exercise history), TeamBuildr BUILD (progression view, multi-select, custom % 1RM/tempo/superserie), Gravitus (zakładki Stats/History, rep maxes, muscle engagement), Dezyn i Sleek „Forge" (rozdzielenie trybów, typografia, rest timer), badania UX logowania PUMP UP i Sweatlog (priorytetyzacja inputów, prefill).

@@ -2,17 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { Exercise, EXERCISE_TYPE_LABELS } from "@/lib/api";
+import { filterExercises } from "@/lib/quickEntry";
 import { Button, inputClass } from "@/components/ui";
 
 export function ExercisePicker({ exercises, onAdd }: { exercises: Exercise[]; onAdd: (exerciseId: number) => void }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return exercises;
-    return exercises.filter((e) => e.name.toLowerCase().includes(q) || EXERCISE_TYPE_LABELS[e.type].includes(q));
-  }, [exercises, query]);
+  const filtered = useMemo(() => filterExercises(query, exercises), [exercises, query]);
 
   const close = () => {
     setOpen(false);

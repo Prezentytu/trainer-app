@@ -19,6 +19,7 @@ export type BuilderItem = {
   distanceMeters: number | null;
   tempo: string | null;
   targetRpe: number | null;
+  targetRir: number | null;
   setScheme: string | null;
   restBetweenSetsSeconds: number | null;
   restAfterExerciseSeconds: number | null;

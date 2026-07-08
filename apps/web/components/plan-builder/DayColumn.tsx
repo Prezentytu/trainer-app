@@ -5,10 +5,10 @@ import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Exercise } from "@/lib/api";
 import { buildGroupLabels, computeGroupsFromLinks } from "@/lib/supersets";
-import { EmptyState, IconButton, inputClass } from "@/components/ui";
+import { Badge, EmptyState, IconButton, inputClass } from "@/components/ui";
 import { dayContainerId } from "./dnd";
-import { ExercisePicker } from "./ExercisePicker";
 import { ExerciseRow } from "./ExerciseRow";
+import { QuickComposer } from "./QuickComposer";
 import { BuilderDay, BuilderItem, BuilderSet } from "./types";
 
 export function DayColumn({
@@ -16,6 +16,7 @@ export function DayColumn({
   exercises,
   onPatchDay,
   onRemoveDay,
+  onDuplicateDay,
   onAddItem,
   onPatchItem,
   onRemoveItem,
@@ -31,7 +32,8 @@ export function DayColumn({
   exercises: Exercise[];
   onPatchDay: (patch: Partial<BuilderDay>) => void;
   onRemoveDay: () => void;
-  onAddItem: (exerciseId: number) => void;
+  onDuplicateDay: () => void;
+  onAddItem: (exerciseId: number, overrides?: Partial<BuilderItem>) => void;
   onPatchItem: (itemKey: string, patch: Partial<BuilderItem>) => void;
   onRemoveItem: (itemKey: string) => void;
   onMoveItem: (itemKey: string, dir: -1 | 1) => void;
@@ -44,6 +46,7 @@ export function DayColumn({
 }) {
   const { setNodeRef } = useDroppable({ id: dayContainerId(day.key) });
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
+  const [collapsed, setCollapsed] = useState(false);
 
   const toggleExpand = (key: string) =>
     setExpandedKeys((prev) => {
@@ -57,62 +60,83 @@ export function DayColumn({
   const labels = buildGroupLabels(groups);
 
   return (
-    <div className="flex w-full flex-col rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 md:w-80 md:shrink-0">
+    <div ref={setNodeRef} className="flex w-full flex-col rounded-xl border border-border bg-surface/60 p-4">
       <div className="mb-3 flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1 space-y-2">
-          <input
-            className={`${inputClass} w-full font-semibold`}
-            value={day.label}
-            onChange={(e) => onPatchDay({ label: e.target.value })}
-            placeholder="np. Poniedziałek / Trening A"
-          />
-          <input
-            className={`${inputClass} w-full text-xs`}
-            value={day.notes ?? ""}
-            onChange={(e) => onPatchDay({ notes: e.target.value || null })}
-            placeholder="Notatka / rozgrzewka dnia"
-          />
-        </div>
-        <IconButton title="Usuń dzień" variant="danger" onClick={onRemoveDay}>
-          🗑
-        </IconButton>
-      </div>
-
-      <div ref={setNodeRef} className="flex-1 space-y-2">
-        {day.items.length === 0 ? (
-          <EmptyState>Dzień jest pusty.</EmptyState>
-        ) : (
-          <SortableContext items={day.items.map((i) => i.key)} strategy={verticalListSortingStrategy}>
-            {day.items.map((item, idx) => (
-              <ExerciseRow
-                key={item.key}
-                item={item}
-                index={idx}
-                weekNumber={day.weekNumber}
-                exercise={exercises.find((e) => e.id === item.exerciseId)}
-                supersetLabel={labels[idx]}
-                isInSuperset={groups[idx] != null}
-                isLastInDay={idx === day.items.length - 1}
-                expanded={expandedKeys.has(item.key)}
-                onToggleExpand={() => toggleExpand(item.key)}
-                onMove={(dir) => onMoveItem(item.key, dir)}
-                onRemove={() => onRemoveItem(item.key)}
-                onToggleLink={() => onToggleLink(item.key)}
-                onPatch={(patch) => onPatchItem(item.key, patch)}
-                onAddSet={() => onAddSet(item.key)}
-                onPatchSet={(setKey, patch) => onPatchSet(item.key, setKey, patch)}
-                onRemoveSet={(setKey) => onRemoveSet(item.key, setKey)}
-                onApplyPreset={(presetId) => onApplyPreset(item.key, presetId)}
-                onClearSets={() => onClearSets(item.key)}
+        <div className="flex min-w-0 flex-1 items-start gap-2">
+          <IconButton
+            title={collapsed ? "Rozwiń dzień" : "Zwiń dzień"}
+            onClick={() => setCollapsed((c) => !c)}
+            size="xs"
+          >
+            {collapsed ? "▸" : "▾"}
+          </IconButton>
+          <div className="min-w-0 flex-1 space-y-2">
+            <input
+              className={`${inputClass} w-full font-semibold`}
+              value={day.label}
+              onChange={(e) => onPatchDay({ label: e.target.value })}
+              placeholder="np. Poniedziałek / Trening A"
+            />
+            {!collapsed && (
+              <input
+                className={`${inputClass} w-full text-xs`}
+                value={day.notes ?? ""}
+                onChange={(e) => onPatchDay({ notes: e.target.value || null })}
+                placeholder="Notatka / rozgrzewka dnia"
               />
-            ))}
-          </SortableContext>
-        )}
+            )}
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          {collapsed && <Badge>{day.items.length} ćw.</Badge>}
+          <IconButton title={`Powiel układ „${day.label}"`} onClick={onDuplicateDay}>
+            ⧉
+          </IconButton>
+          <IconButton title="Usuń dzień" variant="danger" onClick={onRemoveDay}>
+            🗑
+          </IconButton>
+        </div>
       </div>
 
-      <div className="mt-3">
-        <ExercisePicker exercises={exercises} onAdd={onAddItem} />
-      </div>
+      {!collapsed && (
+        <>
+          <div className="flex-1 space-y-2">
+            {day.items.length === 0 ? (
+              <EmptyState>Dzień jest pusty.</EmptyState>
+            ) : (
+              <SortableContext items={day.items.map((i) => i.key)} strategy={verticalListSortingStrategy}>
+                {day.items.map((item, idx) => (
+                  <ExerciseRow
+                    key={item.key}
+                    item={item}
+                    index={idx}
+                    weekNumber={day.weekNumber}
+                    exercise={exercises.find((e) => e.id === item.exerciseId)}
+                    supersetLabel={labels[idx]}
+                    isInSuperset={groups[idx] != null}
+                    isLastInDay={idx === day.items.length - 1}
+                    expanded={expandedKeys.has(item.key)}
+                    onToggleExpand={() => toggleExpand(item.key)}
+                    onMove={(dir) => onMoveItem(item.key, dir)}
+                    onRemove={() => onRemoveItem(item.key)}
+                    onToggleLink={() => onToggleLink(item.key)}
+                    onPatch={(patch) => onPatchItem(item.key, patch)}
+                    onAddSet={() => onAddSet(item.key)}
+                    onPatchSet={(setKey, patch) => onPatchSet(item.key, setKey, patch)}
+                    onRemoveSet={(setKey) => onRemoveSet(item.key, setKey)}
+                    onApplyPreset={(presetId) => onApplyPreset(item.key, presetId)}
+                    onClearSets={() => onClearSets(item.key)}
+                  />
+                ))}
+              </SortableContext>
+            )}
+          </div>
+
+          <div className="mt-3">
+            <QuickComposer exercises={exercises} day={day} onAdd={onAddItem} onToggleLink={onToggleLink} />
+          </div>
+        </>
+      )}
     </div>
   );
 }

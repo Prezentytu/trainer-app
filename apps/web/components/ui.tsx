@@ -1,4 +1,6 @@
-import { ReactNode } from "react";
+"use client";
+
+import { ReactNode, useCallback, useRef, useState } from "react";
 
 export function PageHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: ReactNode }) {
   return (
@@ -26,12 +28,14 @@ export function Button({
   type = "button",
   variant = "primary",
   disabled,
+  title,
 }: {
   children: ReactNode;
   onClick?: () => void;
   type?: "button" | "submit";
   variant?: "primary" | "ghost" | "danger";
   disabled?: boolean;
+  title?: string;
 }) {
   const styles = {
     primary: "bg-accent text-accent-foreground hover:bg-accent-strong font-semibold",
@@ -43,6 +47,7 @@ export function Button({
       type={type}
       onClick={onClick}
       disabled={disabled}
+      title={title}
       className={`rounded-lg px-4 py-2 text-sm transition-colors disabled:opacity-50 ${styles}`}
     >
       {children}
@@ -50,10 +55,25 @@ export function Button({
   );
 }
 
-export function Field({ label, children }: { label: string; children: ReactNode }) {
+export function Field({
+  label,
+  hint,
+  title,
+  children,
+}: {
+  label: string;
+  /** Tekst pomocniczy widoczny obok etykiety (np. przelicznik „≈ RIR 8”). */
+  hint?: string;
+  /** Tooltip (natywny title) z dłuższym wyjaśnieniem pola. */
+  title?: string;
+  children: ReactNode;
+}) {
   return (
-    <label className="flex flex-col gap-1 text-sm">
-      <span className="text-muted-strong">{label}</span>
+    <label className="flex flex-col gap-1 text-sm" title={title}>
+      <span className="flex flex-wrap items-baseline gap-1.5 text-muted-strong">
+        {label}
+        {hint ? <span className="text-xs font-normal normal-case text-muted">{hint}</span> : null}
+      </span>
       {children}
     </label>
   );
@@ -140,6 +160,65 @@ export function IconButton({
       {children}
     </button>
   );
+}
+
+/** Awatar z inicjałami (recognition over recall) — używany wszędzie, gdzie listujemy klientów. */
+export function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md" | "lg" }) {
+  const initials =
+    name
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .join("") || "?";
+  const dims = { sm: "h-6 w-6 text-xs", md: "h-8 w-8 text-xs", lg: "h-10 w-10 text-sm" }[size];
+  return (
+    <span
+      className={`inline-flex ${dims} shrink-0 items-center justify-center rounded-full bg-surface-hover font-semibold text-foreground-secondary`}
+    >
+      {initials}
+    </span>
+  );
+}
+
+/**
+ * Wzorzec „akcja + Cofnij + auto-dismiss" dla destrukcyjnych akcji (loss aversion). Wykonaj akcję
+ * natychmiast, potem wywołaj `showUndoToast(komunikat, cofnijAkcję)` — toast sam się chowa po 5s.
+ */
+export function useUndoToast() {
+  const [toast, setToast] = useState<{ message: string; onUndo?: () => void } | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const dismiss = useCallback(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setToast(null);
+  }, []);
+
+  const showUndoToast = useCallback((message: string, onUndo?: () => void) => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setToast({ message, onUndo });
+    timeoutRef.current = setTimeout(() => setToast(null), 5000);
+  }, []);
+
+  const toastNode = toast ? (
+    <div className="fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-lg border border-border-strong bg-surface px-4 py-3 text-sm shadow-xl">
+      <span className="text-foreground-secondary">{toast.message}</span>
+      {toast.onUndo && (
+        <button
+          type="button"
+          onClick={() => {
+            toast.onUndo?.();
+            dismiss();
+          }}
+          className="font-semibold text-accent hover:text-accent-strong"
+        >
+          Cofnij
+        </button>
+      )}
+    </div>
+  ) : null;
+
+  return { showUndoToast, dismissToast: dismiss, toastNode };
 }
 
 export function formatRest(seconds: number): string {

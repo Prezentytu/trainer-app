@@ -12,6 +12,7 @@ function set(order: number, patch: Partial<PlanSetInput>): PlanSetInput {
     loadPercent: null,
     percentOf: null,
     targetRpe: null,
+    targetRir: null,
     tempo: null,
     role: null,
     note: null,

@@ -171,6 +171,7 @@ static object ItemToDto(PlanItem i)
         DistanceMeters = i.DistanceMeters ?? i.Exercise.DefaultDistanceMeters,
         i.Tempo,
         i.TargetRpe,
+        i.TargetRir,
         i.SetScheme,
         RestBetweenSetsSeconds = i.RestBetweenSetsSeconds ?? i.Exercise.DefaultRestBetweenSetsSeconds,
         i.RestAfterExerciseSeconds,
@@ -180,7 +181,7 @@ static object ItemToDto(PlanItem i)
         PrescribedSets = i.PrescribedSets.OrderBy(s => s.Order).Select(s => new
         {
             s.Id, s.Order, s.Reps, s.RepsMax, s.DurationSeconds, s.DistanceMeters,
-            s.LoadKg, s.LoadPercent, s.PercentOf, s.TargetRpe, s.Tempo, s.Role, s.Note,
+            s.LoadKg, s.LoadPercent, s.PercentOf, s.TargetRpe, s.TargetRir, s.Tempo, s.Role, s.Note,
             ComputedLoadKg = ComputedSetLoad(s, topKg),
         }),
     };
@@ -209,7 +210,7 @@ static PlanSet BuildSet(PlanSetInput s) => new()
 {
     Order = s.Order, Reps = s.Reps, RepsMax = s.RepsMax, DurationSeconds = s.DurationSeconds,
     DistanceMeters = s.DistanceMeters, LoadKg = s.LoadKg, LoadPercent = s.LoadPercent,
-    PercentOf = s.PercentOf, TargetRpe = s.TargetRpe, Tempo = s.Tempo, Role = s.Role, Note = s.Note,
+    PercentOf = s.PercentOf, TargetRpe = s.TargetRpe, TargetRir = s.TargetRir, Tempo = s.Tempo, Role = s.Role, Note = s.Note,
 };
 
 static PlanItem BuildItem(PlanItemInput i) => new()
@@ -217,7 +218,7 @@ static PlanItem BuildItem(PlanItemInput i) => new()
     ExerciseId = i.ExerciseId, Order = i.Order, SupersetGroup = i.SupersetGroup,
     Sets = i.Sets, Reps = i.Reps, RepsMax = i.RepsMax,
     RepDurationSeconds = i.RepDurationSeconds, RepDurationSecondsMax = i.RepDurationSecondsMax,
-    DistanceMeters = i.DistanceMeters, Tempo = i.Tempo, TargetRpe = i.TargetRpe, SetScheme = i.SetScheme,
+    DistanceMeters = i.DistanceMeters, Tempo = i.Tempo, TargetRpe = i.TargetRpe, TargetRir = i.TargetRir, SetScheme = i.SetScheme,
     RestBetweenSetsSeconds = i.RestBetweenSetsSeconds, RestAfterExerciseSeconds = i.RestAfterExerciseSeconds ?? 90,
     LoadKg = i.LoadKg, Notes = i.Notes,
     PrescribedSets = (i.PrescribedSets ?? []).Select(BuildSet).ToList(),
@@ -299,14 +300,14 @@ app.MapPost("/api/plans/{id:int}/duplicate", async (int id, DuplicateInput input
                 ExerciseId = i.ExerciseId, Order = i.Order, SupersetGroup = i.SupersetGroup,
                 Sets = i.Sets, Reps = i.Reps, RepsMax = i.RepsMax,
                 RepDurationSeconds = i.RepDurationSeconds, RepDurationSecondsMax = i.RepDurationSecondsMax,
-                DistanceMeters = i.DistanceMeters, Tempo = i.Tempo, TargetRpe = i.TargetRpe, SetScheme = i.SetScheme,
+                DistanceMeters = i.DistanceMeters, Tempo = i.Tempo, TargetRpe = i.TargetRpe, TargetRir = i.TargetRir, SetScheme = i.SetScheme,
                 RestBetweenSetsSeconds = i.RestBetweenSetsSeconds, RestAfterExerciseSeconds = i.RestAfterExerciseSeconds,
                 LoadKg = i.LoadKg, Notes = i.Notes,
                 PrescribedSets = i.PrescribedSets.Select(s => new PlanSet
                 {
                     Order = s.Order, Reps = s.Reps, RepsMax = s.RepsMax, DurationSeconds = s.DurationSeconds,
                     DistanceMeters = s.DistanceMeters, LoadKg = s.LoadKg, LoadPercent = s.LoadPercent,
-                    PercentOf = s.PercentOf, TargetRpe = s.TargetRpe, Tempo = s.Tempo, Role = s.Role, Note = s.Note,
+                    PercentOf = s.PercentOf, TargetRpe = s.TargetRpe, TargetRir = s.TargetRir, Tempo = s.Tempo, Role = s.Role, Note = s.Note,
                 }).ToList(),
             }).ToList(),
         }).ToList(),

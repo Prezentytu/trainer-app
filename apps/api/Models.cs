@@ -81,6 +81,7 @@ public class PlanItem
     public int? DistanceMeters { get; set; }
     public string? Tempo { get; set; }                 // „3110", „20X1"
     public double? TargetRpe { get; set; }
+    public double? TargetRir { get; set; }
     public string? SetScheme { get; set; }             // „Rampa 6", „Rampa 4 + BO 80%"
     public int? RestBetweenSetsSeconds { get; set; }
     public int RestAfterExerciseSeconds { get; set; } = 90;
@@ -106,6 +107,7 @@ public class PlanSet
     public double? LoadPercent { get; set; }   // % bazy PercentOf
     public string? PercentOf { get; set; }     // "1rm" | "top" (null = bezwzględny LoadKg)
     public double? TargetRpe { get; set; }
+    public double? TargetRir { get; set; }
     public string? Tempo { get; set; }
     public string? Role { get; set; }          // "warmup" | "ramp" | "top" | "backoff" | "work"
     public string? Note { get; set; }

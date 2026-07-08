@@ -1,10 +1,14 @@
 "use client";
 
 import { Exercise } from "@/lib/api";
-import { DayColumn } from "./DayColumn";
+import { TableDay } from "./TableDay";
 import { BuilderDay, BuilderItem, BuilderSet } from "./types";
 
-export function DayBoard({
+// W przeciwieństwie do DayBoard (kanban obok siebie) dni w Arkuszu są ułożone pionowo, jeden pod
+// drugim, pełnej szerokości — tak trenerzy układają plany w arkuszach kalkulacyjnych (Dzień A1,
+// Dzień B1, Dzień C1... jedna kolumna, kolejne sekcje w dół), a każda tabela dnia i tak potrzebuje
+// pełnej szerokości na kolumny parametrów.
+export function PlanTable({
   days,
   exercises,
   onAddDay,
@@ -40,9 +44,9 @@ export function DayBoard({
   onClearSets: (dayKey: string, itemKey: string) => void;
 }) {
   return (
-    <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(18rem,1fr))]">
+    <div className="flex flex-col gap-4">
       {days.map((day) => (
-        <DayColumn
+        <TableDay
           key={day.key}
           day={day}
           exercises={exercises}
@@ -64,7 +68,7 @@ export function DayBoard({
       <button
         type="button"
         onClick={onAddDay}
-        className="flex min-h-24 w-full items-center justify-center rounded-xl border border-dashed border-border text-sm font-medium text-muted-strong transition-colors hover:border-border-strong hover:bg-surface-hover hover:text-foreground-secondary"
+        className="flex min-h-16 w-full items-center justify-center rounded-xl border border-dashed border-border text-sm font-medium text-muted-strong transition-colors hover:border-border-strong hover:bg-surface-hover hover:text-foreground-secondary"
       >
         + Dzień
       </button>

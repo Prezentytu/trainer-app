@@ -1,8 +1,33 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { api, Exercise, ExerciseType, EXERCISE_TYPE_LABELS } from "@/lib/api";
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, formatRest, inputClass, PageHeader } from "@/components/ui";
+import { Badge, Button, Card, EmptyState, ErrorBanner, Field, formatRest, inputClass, PageHeader, Pill } from "@/components/ui";
+
+const TYPE_FILTERS: Array<{ id: ExerciseType | "all"; label: string }> = [
+  { id: "all", label: "Wszystkie" },
+  { id: "reps", label: EXERCISE_TYPE_LABELS.reps },
+  { id: "time", label: EXERCISE_TYPE_LABELS.time },
+  { id: "distance", label: EXERCISE_TYPE_LABELS.distance },
+];
+
+function VolumeValue({ exercise }: { exercise: Exercise }) {
+  const value =
+    exercise.type === "time"
+      ? exercise.defaultRepDurationSeconds
+        ? `${exercise.defaultRepDurationSeconds}s`
+        : "—"
+      : exercise.type === "distance"
+        ? exercise.defaultDistanceMeters
+          ? `${exercise.defaultDistanceMeters} m`
+          : "—"
+        : `${exercise.defaultReps}`;
+  return (
+    <span>
+      {exercise.defaultSets}×{value}
+    </span>
+  );
+}
 
 type FormState = {
   name: string;
@@ -35,6 +60,7 @@ export default function ExercisesPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<ExerciseType | "all">("all");
 
   const load = useCallback(() => {
     api.exercises
@@ -109,6 +135,17 @@ export default function ExercisesPage() {
     }
   };
 
+  const typeCounts = useMemo(() => {
+    const counts: Record<ExerciseType | "all", number> = { all: exercises.length, reps: 0, time: 0, distance: 0 };
+    for (const ex of exercises) counts[ex.type]++;
+    return counts;
+  }, [exercises]);
+
+  const filteredExercises = useMemo(
+    () => (typeFilter === "all" ? exercises : exercises.filter((ex) => ex.type === typeFilter)),
+    [exercises, typeFilter]
+  );
+
   return (
     <div>
       <PageHeader
@@ -166,35 +203,57 @@ export default function ExercisesPage() {
         </Card>
       )}
 
+      <div className="mb-4 inline-flex flex-wrap items-center gap-1 rounded-full bg-surface-hover p-1">
+        {TYPE_FILTERS.map((f) => (
+          <Pill key={f.id} active={typeFilter === f.id} onClick={() => setTypeFilter(f.id)}>
+            {f.label} · {typeCounts[f.id]}
+          </Pill>
+        ))}
+      </div>
+
       {exercises.length === 0 ? (
         <EmptyState>Brak ćwiczeń w bibliotece.</EmptyState>
+      ) : filteredExercises.length === 0 ? (
+        <EmptyState>Brak ćwiczeń w tej kategorii.</EmptyState>
       ) : (
-        <div className="grid gap-3">
-          {exercises.map((ex) => (
-            <Card key={ex.id} className="flex items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold">{ex.name}</span>
+        <div className="grid gap-3 2xl:grid-cols-2">
+          {filteredExercises.map((ex) => (
+            <Card key={ex.id} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="break-words font-semibold">{ex.name}</span>
                   <Badge tone={ex.type === "reps" ? "neutral" : "yellow"}>
                     {EXERCISE_TYPE_LABELS[ex.type]}
                   </Badge>
                 </div>
-                <p className="mt-0.5 text-xs text-zinc-500">
-                  {ex.defaultSets} serie
-                  {ex.type === "time"
-                    ? ex.defaultRepDurationSeconds
-                      ? ` × ${ex.defaultRepDurationSeconds}s`
-                      : ""
-                    : ex.type === "distance"
-                      ? ex.defaultDistanceMeters
-                        ? ` × ${ex.defaultDistanceMeters} m`
-                        : ""
-                      : ` × ${ex.defaultReps} powt.`}
-                  {" · przerwa "}{formatRest(ex.defaultRestBetweenSetsSeconds)}
-                  {ex.defaultLoadKg ? ` · ${ex.defaultLoadKg} kg` : ""}
-                  {ex.description ? ` — ${ex.description}` : ""}
-                </p>
+                {ex.description && <p className="mt-1 break-words text-xs text-muted">{ex.description}</p>}
               </div>
+
+              <div className="grid grid-cols-3 gap-4 sm:flex sm:shrink-0 sm:gap-6">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-muted">Serie×{ex.type === "reps" ? "powt." : ex.type === "time" ? "czas" : "dyst."}</p>
+                  <p className="text-sm font-semibold">
+                    <VolumeValue exercise={ex} />
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-muted">Przerwa</p>
+                  <p className="text-sm font-semibold">{formatRest(ex.defaultRestBetweenSetsSeconds)}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-muted">Ciężar</p>
+                  <p className="text-sm font-semibold">
+                    {ex.defaultLoadKg ? (
+                      <>
+                        {ex.defaultLoadKg} <span className="text-accent">kg</span>
+                      </>
+                    ) : (
+                      "—"
+                    )}
+                  </p>
+                </div>
+              </div>
+
               <div className="flex shrink-0 items-center gap-2">
                 <Button variant="ghost" onClick={() => startEdit(ex)}>Edytuj</Button>
                 <Button variant="danger" onClick={() => handleDelete(ex)}>Usuń</Button>

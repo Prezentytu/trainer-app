@@ -56,18 +56,19 @@ export function SetSchemeEditor({
 
       {advanced && (
         <div className="overflow-x-auto">
-          <div className="grid min-w-[640px] gap-2">
-            <div className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_auto] gap-2 text-[11px] uppercase tracking-wide text-zinc-500">
+          <div className="grid min-w-[720px] gap-2">
+            <div className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr_auto] gap-2 text-[11px] uppercase tracking-wide text-zinc-500">
               <span>#</span>
               <span>Powt.</span>
               <span>Powt. maks.</span>
               <span>%</span>
               <span>Baza %</span>
               <span>Ciężar</span>
+              <span>RIR</span>
               <span />
             </div>
             {sets.map((s, idx) => (
-              <div key={s.key} className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_auto] items-center gap-2">
+              <div key={s.key} className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr_auto] items-center gap-2">
                 <span className="text-xs text-zinc-500">{idx + 1}</span>
                 <NumInput value={s.reps} min={0} onChange={(v) => onPatch(s.key, { reps: v })} placeholder="powt." />
                 <NumInput value={s.repsMax} min={0} onChange={(v) => onPatch(s.key, { repsMax: v })} placeholder="—" />
@@ -85,6 +86,14 @@ export function SetSchemeEditor({
                   ))}
                 </select>
                 <NumInput value={s.loadKg} min={0} step={0.5} onChange={(v) => onPatch(s.key, { loadKg: v })} placeholder="kg" />
+                <NumInput
+                  value={s.targetRir}
+                  min={0}
+                  step={0.5}
+                  onChange={(v) => onPatch(s.key, { targetRir: v })}
+                  placeholder="—"
+                  aria-label="RIR celu serii"
+                />
                 <div className="flex items-center gap-1">
                   <select
                     className={`${inputClass} py-1`}
