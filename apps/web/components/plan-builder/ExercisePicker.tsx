@@ -144,8 +144,9 @@ export function ExercisePicker({ exercises, onAdd }: { exercises: Exercise[]; on
                 }}
                 className="flex w-full items-center gap-2 rounded-[10px] px-2 py-1.5 text-left text-sm text-foreground hover:bg-surface-hover"
               >
-                <div className="w-12 shrink-0">
+                <div className="h-10 w-10 shrink-0">
                   <ExerciseThumb
+                    variant="square"
                     youtubeId={thumb?.youtubeId}
                     category={e.category}
                     alt={e.name}

@@ -14,6 +14,11 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
     public DbSet<PlanItem> PlanItems => Set<PlanItem>();
     public DbSet<PlanSet> PlanSets => Set<PlanSet>();
     public DbSet<Assignment> Assignments => Set<Assignment>();
+    public DbSet<ClientMax> ClientMaxes => Set<ClientMax>();
+    public DbSet<ClientAccessToken> ClientAccessTokens => Set<ClientAccessToken>();
+    public DbSet<WorkoutSession> WorkoutSessions => Set<WorkoutSession>();
+    public DbSet<LoggedExercise> LoggedExercises => Set<LoggedExercise>();
+    public DbSet<LoggedSet> LoggedSets => Set<LoggedSet>();
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -50,6 +55,70 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
             .HasOne(a => a.Client)
             .WithMany(c => c.Assignments)
             .HasForeignKey(a => a.ClientId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ClientMax>()
+            .HasOne(m => m.Client)
+            .WithMany(c => c.Maxes)
+            .HasForeignKey(m => m.ClientId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ClientMax>()
+            .HasOne(m => m.Exercise)
+            .WithMany()
+            .HasForeignKey(m => m.ExerciseId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<ClientAccessToken>()
+            .HasOne(t => t.Client)
+            .WithMany(c => c.AccessTokens)
+            .HasForeignKey(t => t.ClientId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ClientAccessToken>()
+            .HasIndex(t => t.Token)
+            .IsUnique();
+
+        modelBuilder.Entity<WorkoutSession>()
+            .HasOne(s => s.Client)
+            .WithMany(c => c.Sessions)
+            .HasForeignKey(s => s.ClientId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<WorkoutSession>()
+            .HasOne(s => s.Assignment)
+            .WithMany()
+            .HasForeignKey(s => s.AssignmentId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<WorkoutSession>()
+            .HasOne(s => s.PlanDay)
+            .WithMany()
+            .HasForeignKey(s => s.PlanDayId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<WorkoutSession>()
+            .HasOne(s => s.Plan)
+            .WithMany()
+            .HasForeignKey(s => s.PlanId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<LoggedExercise>()
+            .HasOne(e => e.Session)
+            .WithMany(s => s.Exercises)
+            .HasForeignKey(e => e.WorkoutSessionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<LoggedExercise>()
+            .HasOne(e => e.Exercise)
+            .WithMany()
+            .HasForeignKey(e => e.ExerciseId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<LoggedSet>()
+            .HasOne(s => s.LoggedExercise)
+            .WithMany(e => e.Sets)
+            .HasForeignKey(s => s.LoggedExerciseId)
             .OnDelete(DeleteBehavior.Cascade);
 
         var stringListConverter = new ValueConverter<List<string>, string>(

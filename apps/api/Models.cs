@@ -9,6 +9,33 @@ public class Client
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public List<Assignment> Assignments { get; set; } = [];
+    public List<ClientMax> Maxes { get; set; } = [];
+    public List<WorkoutSession> Sessions { get; set; } = [];
+    public List<ClientAccessToken> AccessTokens { get; set; } = [];
+}
+
+/// <summary>1RM klienta per ćwiczenie (historia — aktualny = najnowszy wg daty).</summary>
+public class ClientMax
+{
+    public int Id { get; set; }
+    public int ClientId { get; set; }
+    public Client? Client { get; set; }
+    public int ExerciseId { get; set; }
+    public Exercise? Exercise { get; set; }
+    public double MaxKg { get; set; }
+    public DateOnly MeasuredOn { get; set; }
+    public string? Note { get; set; }
+}
+
+/// <summary>Magic-link do PWA klienta (token w URL).</summary>
+public class ClientAccessToken
+{
+    public int Id { get; set; }
+    public int ClientId { get; set; }
+    public Client? Client { get; set; }
+    public string Token { get; set; } = "";
+    public DateTime? ExpiresAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
 /// <summary>Materiał wideo ćwiczenia. Kind: "demo" | "tip" | "mistakes".</summary>
@@ -108,6 +135,7 @@ public class PlanItem
     public int? RestBetweenSetsSeconds { get; set; }
     public int RestAfterExerciseSeconds { get; set; } = 90;
     public double? LoadKg { get; set; }
+    public double? LoadPercent { get; set; }   // % 1RM klienta (alternatywa dla LoadKg)
     public string? Notes { get; set; }
 
     // Opcjonalny rozkład na serie; niepusty = definiuje serie i nadpisuje Sets/Reps
@@ -149,4 +177,53 @@ public class Assignment
     // "active" | "completed" | "cancelled"
     public string Status { get; set; } = "active";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public class WorkoutSession
+{
+    public int Id { get; set; }
+    public int ClientId { get; set; }
+    public Client? Client { get; set; }
+    public int? AssignmentId { get; set; }
+    public Assignment? Assignment { get; set; }
+    public int? PlanDayId { get; set; }
+    public PlanDay? PlanDay { get; set; }
+    public int? PlanId { get; set; }
+    public Plan? Plan { get; set; }
+
+    public DateOnly PerformedOn { get; set; }
+    public int? DurationSeconds { get; set; }
+    public string? Note { get; set; }
+    // "in_progress" | "completed"
+    public string Status { get; set; } = "in_progress";
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public List<LoggedExercise> Exercises { get; set; } = [];
+}
+
+public class LoggedExercise
+{
+    public int Id { get; set; }
+    public int WorkoutSessionId { get; set; }
+    public WorkoutSession? Session { get; set; }
+    public int ExerciseId { get; set; }
+    public Exercise? Exercise { get; set; }
+    public int Order { get; set; }
+    public string? Note { get; set; }
+    public List<LoggedSet> Sets { get; set; } = [];
+}
+
+public class LoggedSet
+{
+    public int Id { get; set; }
+    public int LoggedExerciseId { get; set; }
+    public LoggedExercise? LoggedExercise { get; set; }
+    public int SetNumber { get; set; }
+    public double? WeightKg { get; set; }
+    public int? Reps { get; set; }
+    public int? DurationSeconds { get; set; }
+    public int? DistanceMeters { get; set; }
+    public double? Rir { get; set; }
+    public double? Rpe { get; set; }
+    public bool IsWarmup { get; set; }
 }

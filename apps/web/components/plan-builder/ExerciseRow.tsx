@@ -3,8 +3,10 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Exercise, RIR_HELP, rirFromRpe } from "@/lib/api";
+import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { formatMeasureCore } from "@/lib/measure";
 import { Badge, Field, IconButton, formatRest, inputClass } from "@/components/ui";
+import { demoMedia } from "@/lib/youtube";
 import { NumInput } from "./NumInput";
 import { SetSchemeEditor } from "./SetSchemeEditor";
 import { BuilderItem, BuilderSet } from "./types";
@@ -99,6 +101,14 @@ export function ExerciseRow({
             className="flex min-w-0 flex-1 flex-wrap items-center gap-2 text-left"
           >
             <span className="shrink-0 text-xs text-muted">{expanded ? "▾" : "▸"}</span>
+            <div className="h-10 w-10 shrink-0">
+              <ExerciseThumb
+                variant="square"
+                youtubeId={demoMedia(exercise).youtubeId}
+                category={exercise?.category}
+                alt={item.exerciseName}
+              />
+            </div>
             <span className="min-w-0 break-words font-medium">{item.exerciseName}</span>
             {supersetLabel && <Badge tone="accent">{supersetLabel}</Badge>}
           </button>

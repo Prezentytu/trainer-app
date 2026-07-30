@@ -47,6 +47,7 @@ export function loadInitialDays(plan?: Plan, initialDayCount = 1, initialWeekCou
         restBetweenSetsSeconds: i.overrides.restBetweenSetsSeconds,
         restAfterExerciseSeconds: i.restAfterExerciseSeconds,
         loadKg: i.overrides.loadKg,
+        loadPercent: i.overrides.loadPercent ?? i.loadPercent ?? null,
         notes: i.notes,
         prescribedSets: i.prescribedSets.map((s) => ({
           key: newKey(),

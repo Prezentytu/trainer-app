@@ -2,12 +2,14 @@
 
 import { KeyboardEvent, useMemo, useRef, useState } from "react";
 import { Exercise } from "@/lib/api";
+import { ExerciseThumb } from "@/components/ExerciseThumb";
 import {
   createExercisePreviewLabel,
   exerciseInputFromQuickEntry,
 } from "@/lib/exerciseDraft";
 import { formatMeasureCore, measureOverridesFromParsed } from "@/lib/measure";
 import { matchExercises, parseQuickEntry } from "@/lib/quickEntry";
+import { demoMedia } from "@/lib/youtube";
 import { ComposerHelp, markComposerHelpSeen, useComposerHelpOpen } from "./ComposerHelp";
 import { CreateExerciseRow } from "./CreateExerciseRow";
 import { useExerciseLibraryActions } from "./ExerciseLibraryContext";
@@ -202,6 +204,7 @@ export function ListComposer({
       restBetweenSetsSeconds: null,
       restAfterExerciseSeconds: null,
       loadKg: null,
+      loadPercent: null,
       notes: null,
       prescribedSets: [],
     };
@@ -238,6 +241,14 @@ export function ListComposer({
                   idx === activeIndex ? "bg-surface-hover" : "bg-transparent"
                 }`}
               >
+                <div className="h-9 w-9 shrink-0">
+                  <ExerciseThumb
+                    variant="square"
+                    youtubeId={demoMedia(exercise).youtubeId}
+                    category={exercise.category}
+                    alt={exercise.name}
+                  />
+                </div>
                 <span className="min-w-0 flex-1 break-words text-sm font-medium text-foreground">
                   {exercise.name}
                 </span>

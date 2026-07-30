@@ -98,6 +98,89 @@ public static class Seed
         };
         db.Plans.Add(poliquin);
         db.SaveChanges();
+
+        // Plan klienta (kopia szablonu) + przypisanie + maxy + przykładowa sesja + magic-link.
+        var clientPlan = new Plan
+        {
+            Name = "Jan — FBW A",
+            Description = template.Description,
+            IsTemplate = false,
+            Days =
+            [
+                new PlanDay
+                {
+                    WeekNumber = 1, Order = 1, Label = "Trening całego ciała",
+                    Notes = "Rozgrzewka: 5 min krążeń i wymachów.",
+                    Items =
+                    [
+                        new PlanItem { ExerciseId = squat.Id, Order = 1, Sets = 3, Reps = 10, LoadPercent = 70, TargetRir = 2, RestAfterExerciseSeconds = 120 },
+                        new PlanItem { ExerciseId = bench.Id, Order = 2, Sets = 3, Reps = 10, LoadKg = 40, TargetRir = 2, RestAfterExerciseSeconds = 120 },
+                        new PlanItem { ExerciseId = row.Id, Order = 3, TargetRir = 3, RestAfterExerciseSeconds = 90 },
+                        new PlanItem { ExerciseId = plank.Id, Order = 4, TargetRir = 1, RestAfterExerciseSeconds = 60 },
+                    ],
+                },
+            ],
+        };
+        db.Plans.Add(clientPlan);
+        db.SaveChanges();
+
+        var assignment = new Assignment
+        {
+            PlanId = clientPlan.Id,
+            ClientId = client.Id,
+            StartDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-7)),
+            Status = "active",
+        };
+        db.Assignments.Add(assignment);
+
+        db.ClientMaxes.AddRange(
+            new ClientMax { ClientId = client.Id, ExerciseId = squat.Id, MaxKg = 100, MeasuredOn = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-14)), Note = "test 1RM" },
+            new ClientMax { ClientId = client.Id, ExerciseId = bench.Id, MaxKg = 80, MeasuredOn = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-14)), Note = "szacowane z 5RM" });
+
+        db.ClientAccessTokens.Add(new ClientAccessToken
+        {
+            ClientId = client.Id,
+            Token = "demo-jan-kowalski",
+        });
+        db.SaveChanges();
+
+        var day = clientPlan.Days[0];
+        db.WorkoutSessions.Add(new WorkoutSession
+        {
+            ClientId = client.Id,
+            AssignmentId = assignment.Id,
+            PlanId = clientPlan.Id,
+            PlanDayId = day.Id,
+            PerformedOn = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-3)),
+            DurationSeconds = 48 * 60,
+            Status = "completed",
+            Note = "Dobry dzień",
+            Exercises =
+            [
+                new LoggedExercise
+                {
+                    ExerciseId = squat.Id, Order = 0,
+                    Sets =
+                    [
+                        new LoggedSet { SetNumber = 1, WeightKg = 70, Reps = 10, Rir = 2 },
+                        new LoggedSet { SetNumber = 2, WeightKg = 70, Reps = 10, Rir = 2 },
+                        new LoggedSet { SetNumber = 3, WeightKg = 72.5, Reps = 8, Rir = 1 },
+                    ],
+                },
+                new LoggedExercise
+                {
+                    ExerciseId = bench.Id, Order = 1,
+                    Sets =
+                    [
+                        new LoggedSet { SetNumber = 1, WeightKg = 40, Reps = 10, Rir = 2 },
+                        new LoggedSet { SetNumber = 2, WeightKg = 42.5, Reps = 8, Rir = 1 },
+                        new LoggedSet { SetNumber = 3, WeightKg = 42.5, Reps = 8, Rir = 1 },
+                    ],
+                },
+            ],
+        });
+
+        db.SaveChanges();
     }
 
     private static string NormalizeName(string? name) =>

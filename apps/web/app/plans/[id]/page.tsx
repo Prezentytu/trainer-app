@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { api, Plan, PlanDay, PlanItem, rirFromRpe } from "@/lib/api";
+import { api, Exercise, Plan, PlanDay, PlanItem, rirFromRpe } from "@/lib/api";
+import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { formatMeasureCore, MEASURE_LABELS } from "@/lib/measure";
 import { buildGroupLabels } from "@/lib/supersets";
+import { demoMedia } from "@/lib/youtube";
 import PlanBuilder from "@/components/plan-builder/PlanBuilder";
 import { Badge, Button, Card, ErrorBanner, formatRest, PageHeader, Pill } from "@/components/ui";
 
@@ -71,7 +73,16 @@ function PrescribedSets({ item }: { item: PlanItem }) {
   );
 }
 
-function ItemView({ item, label }: { item: PlanItem; label: string | null }) {
+function ItemView({
+  item,
+  label,
+  exercise,
+}: {
+  item: PlanItem;
+  label: string | null;
+  exercise?: Exercise;
+}) {
+  const thumb = demoMedia(exercise);
   return (
     <div
       className={`rounded-[10px] border bg-surface p-3 ${
@@ -79,6 +90,14 @@ function ItemView({ item, label }: { item: PlanItem; label: string | null }) {
       }`}
     >
       <div className="flex flex-wrap items-center gap-2">
+        <div className="h-10 w-10 shrink-0">
+          <ExerciseThumb
+            variant="square"
+            youtubeId={thumb.youtubeId}
+            category={exercise?.category}
+            alt={item.exerciseName}
+          />
+        </div>
         <span className="min-w-0 break-words font-medium">{item.exerciseName}</span>
         {item.isWarmup && <Badge tone="neutral">rozgrzewka</Badge>}
         {label && <Badge tone="accent">{label}</Badge>}
@@ -106,7 +125,7 @@ function ItemView({ item, label }: { item: PlanItem; label: string | null }) {
   );
 }
 
-function DayView({ day }: { day: PlanDay }) {
+function DayView({ day, exercisesById }: { day: PlanDay; exercisesById: Map<number, Exercise> }) {
   const labels = buildGroupLabels(day.items.map((i) => i.supersetGroup));
   const hasWarmup = day.items.some((i) => i.isWarmup);
   const firstMainIdx = day.items.findIndex((i) => !i.isWarmup);
@@ -138,7 +157,11 @@ function DayView({ day }: { day: PlanDay }) {
                   <span className="h-px flex-1 bg-border" />
                 </div>
               ) : null}
-              <ItemView item={item} label={labels[idx]} />
+              <ItemView
+                item={item}
+                label={labels[idx]}
+                exercise={exercisesById.get(item.exerciseId)}
+              />
             </div>
           );
         })}
@@ -152,9 +175,15 @@ export default function PlanDetailsPage() {
   const planId = Number(params.id);
 
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [activeWeek, setActiveWeek] = useState<number | null>(null);
+
+  const exercisesById = useMemo(
+    () => new Map(exercises.map((e) => [e.id, e])),
+    [exercises],
+  );
 
   useEffect(() => {
     api.plans
@@ -165,6 +194,10 @@ export default function PlanDetailsPage() {
       })
       .catch((e: Error) => setError(e.message));
   }, [planId, editing]);
+
+  useEffect(() => {
+    api.exercises.list().then(setExercises).catch(() => setExercises([]));
+  }, []);
 
   if (!plan) {
     return (
@@ -241,7 +274,7 @@ export default function PlanDetailsPage() {
           .filter((d) => d.weekNumber === currentWeek)
           .sort((a, b) => a.order - b.order)
           .map((day) => (
-            <DayView key={day.id} day={day} />
+            <DayView key={day.id} day={day} exercisesById={exercisesById} />
           ))}
       </div>
     </div>

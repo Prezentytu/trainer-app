@@ -89,10 +89,10 @@ Wzory w helperze `apps/api/Stats.cs`: Epley; wolumen = Σ w·r (bez rozgrzewkowy
 
 ## Fazy implementacji
 
-- [ ] Faza 1 — backend: encje + DTO + endpointy sesji + seed (kilka sesji Jana z progresją) + testy
-- [ ] Faza 2 — backend: `Stats.cs` + endpointy stats/history + testy wzorów (Epley, PR, wolumen)
-- [ ] Faza 3 — frontend: logowanie sesji na karcie klienta
-- [ ] Faza 4 — frontend: statystyki + historia + wykres trendu
+- [x] Faza 1 — backend: encje + DTO + endpointy sesji (+ AssignmentId/PlanDayId/Status) + seed + testy
+- [x] Faza 2 — backend: `Stats.cs` + endpointy stats/records/progress + PR (Epley)
+- [x] Faza 3 — frontend: logowanie sesji (`SessionLogger`) z karty klienta
+- [x] Faza 4 — frontend: Historia / Rekordy na karcie klienta + feed na dashboardzie (wykres trendu: API gotowe, UI SVG odłożone)
 
 ## Ryzyka i wpływ
 
@@ -103,3 +103,4 @@ Wzory w helperze `apps/api/Stats.cs`: Epley; wolumen = Σ w·r (bez rozgrzewkowy
 ## Changelog
 
 - 2026-07-05 — utworzono spec.
+- 2026-07-30 — wdrożono MVP (RIR na LoggedSet, sesje z dnia planu, PR Epley, portal trenera + PWA klienta).

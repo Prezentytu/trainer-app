@@ -3,7 +3,9 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Exercise } from "@/lib/api";
+import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { IconButton } from "@/components/ui";
+import { demoMedia } from "@/lib/youtube";
 import { ExerciseEditor } from "./ExerciseEditor";
 import { summaryText } from "./summaryText";
 import { BuilderItem, BuilderSet } from "./types";
@@ -123,6 +125,14 @@ export function ExerciseCard({
         ) : null}
         <button type="button" onClick={onToggleExpand} className="min-w-0 flex-1 text-left">
           <div className="flex items-center gap-2">
+            <div className="h-10 w-10 shrink-0">
+              <ExerciseThumb
+                variant="square"
+                youtubeId={demoMedia(exercise).youtubeId}
+                category={exercise?.category}
+                alt={item.exerciseName}
+              />
+            </div>
             <span className="min-w-0 break-words text-sm font-medium text-foreground">{item.exerciseName}</span>
             {item.isWarmup ? (
               <span className="shrink-0 rounded-full bg-surface-active px-2 py-0.5 text-xs text-muted">

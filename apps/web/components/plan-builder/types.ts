@@ -28,6 +28,7 @@ export type BuilderItem = {
   restBetweenSetsSeconds: number | null;
   restAfterExerciseSeconds: number | null;
   loadKg: number | null;
+  loadPercent: number | null;
   notes: string | null;
   prescribedSets: BuilderSet[];
 };

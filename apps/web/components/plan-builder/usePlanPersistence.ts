@@ -43,6 +43,7 @@ export function buildPlanInput(
           restBetweenSetsSeconds: it.restBetweenSetsSeconds,
           restAfterExerciseSeconds: it.restAfterExerciseSeconds,
           loadKg: it.loadKg,
+          loadPercent: it.loadPercent,
           notes: it.notes?.trim() || null,
           prescribedSets: it.prescribedSets.map((s, sidx) => ({
             order: sidx + 1,

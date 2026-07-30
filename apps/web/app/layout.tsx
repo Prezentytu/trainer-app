@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, IBM_Plex_Mono, Instrument_Sans } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/AppShell";
@@ -22,6 +22,16 @@ const fontMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Workout Alchemist",
   description: "Studio trenera — formuły treningowe dla klientów",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "WA Klient",
+    statusBarStyle: "black-translucent",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0B0D0E",
 };
 
 export default function RootLayout({

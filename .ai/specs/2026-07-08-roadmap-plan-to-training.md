@@ -32,19 +32,23 @@ Zakres tego repo = **portal trenera** (Next.js 16 + .NET 10 Minimal API). Aplika
 
 ```mermaid
 flowchart TD
-  E1["Etap 1: RIR + Composer + Portal v2 (trener)"] --> E2["Etap 2: Maxy + procent 1RM, wzbogacenie biblioteki (istniejace specy)"]
-  E2 --> E3["Etap 3: Logowanie + statystyki + podglad sesji u trenera (istniejacy spec)"]
-  E3 --> E4["Etap 4: Szablony metod (istniejacy spec)"]
-  E3 -.-> D["ODLOZONE: osobny projekt Expo jak fizjo-app - apka klienta (podglad planu + logowanie na zywo), konsumuje REST API"]
+  E1["Etap 1: RIR + Composer + Portal v2 (trener)"] --> E2["Etap 2: Maxy + procent 1RM + biblioteka YT"]
+  E2 --> E3["Etap 3: Logowanie + statystyki u trenera"]
+  E3 --> E4["Etap 4: PWA klienta magic-link"]
+  E3 --> E5["Etap 5: Progres / Records / PR na dashboardzie"]
+  E4 --> E5
+  E5 --> E6["Nastepne: szablony metod"]
 ```
 
 | Etap | Specy | Status | Zależy od |
 |---|---|---|---|
-| 1 | `2026-07-08-rir-support.md`, `2026-07-08-quick-entry-composer.md`, `2026-07-08-trainer-portal-v2-friction-audit.md` | nowe, pełne | — |
-| 2 | `2026-07-05-client-maxes-percent-loading.md`, `2026-07-05-exercise-library-enrichment.md` | istniejące, oczekujące | Etap 1 (reset `trainer.db` w jednej turze) |
-| 3 | `2026-07-05-workout-logging-stats.md` | istniejące, oczekujące | Etap 2 (maxy przydatne do PR-ów) |
-| 4 | `2026-07-05-method-templates.md` | istniejące, oczekujące | Etap 2 (maxy) + Etap 3 (logi) |
-| odłożone | `2026-07-08-client-mobile-app.md` | szkielet-wizja, Open Questions | Etap 3 (kontrakt danych wykonania) |
+| 1 | `rir-support`, `quick-entry-composer`, `trainer-portal-v2` | wdrożone (w kodzie) | — |
+| 2 | `client-maxes-percent-loading`, `exercise-library-youtube` | wdrożone | Etap 1 |
+| 3 | `workout-logging-stats` | wdrożone | Etap 2 |
+| 4 | `2026-07-30-client-portal-pwa.md` | wdrożone | Etap 3 |
+| 5 | progres / records (część logging + dashboard) | wdrożone | Etap 3–4 |
+| następne | `method-templates` | oczekujące | Etap 2+3 |
+| odłożone | `client-mobile-app` (Expo) | **zastąpione przez PWA** — Expo opcjonalnie później na tym samym kontrakcie API | — |
 
 Uwaga: Etapy 2–4 to już istniejące specy — ten roadmap ich nie duplikuje, tylko ustala kolejność i punkt wejścia. Każdy z nich przed implementacją przechodzi jeszcze przez własną fazę „Rozwinięcie" (TEMPLATE.md), bo dziś nie mają Open Questions do rozstrzygnięcia.
 
@@ -58,8 +62,8 @@ Kolejność wewnątrz etapu: **RIR najpierw** (zmiana schematu, jeden reset `tra
 
 ## Poza zakresem (świadomie odłożone)
 
-- **Aplikacja mobilna klienta** — kroki 3–6 z „Proces — od planu do treningu" (podgląd planu, podgląd dnia, trening i logowanie na żywo) oraz część kroku 7 („na żywo" po stronie trenera). Trafi do **osobnego repo/projektu Expo/React Native**, wzorem `../fizjo-app`. W tym repo zostaje tylko `2026-07-08-client-mobile-app.md` — szkielet z Open Questions (auth, kontrakt API dla klienta, real-time, offline) — nie rozpisujemy dalej, dopóki te pytania nie są odpowiedziane.
-- **Automatyczna progresja między tygodniami** (np. 15-10-5: +2,5 kg po sukcesie) — zależy od Etapu 3 (logi) i jest częścią `method-templates.md` (Faza 4–5 tego specu), nie tego roadmapu.
+- **Natywna apka Expo** — opcjonalnie później; MVP klienta to PWA magic-link (`2026-07-30-client-portal-pwa.md`) w tym samym repo. Spec `client-mobile-app.md` zostaje jako wizja natywna, nie blokuje MVP.
+- **Automatyczna progresja między tygodniami** (np. 15-10-5: +2,5 kg po sukcesie) — zależy od logów i jest częścią `method-templates.md`.
 
 ## Ryzyka i wpływ
 
@@ -71,3 +75,4 @@ Kolejność wewnątrz etapu: **RIR najpierw** (zmiana schematu, jeden reset `tra
 ## Changelog
 
 - 2026-07-08 — utworzono roadmap; zsekwencjonowano 4 istniejące oczekujące specy z 3 nowymi (RIR, quick-entry composer, portal v2) i wydzielono aplikację mobilną klienta jako odłożony, osobny projekt (wzorem `fizjo-app`) opisany szkieletem `client-mobile-app.md`.
+- 2026-07-30 — decyzja MVP: **PWA magic-link zamiast Expo**; wdrożono maxy, logowanie sesji, portal klienta, progres/PR. Expo zostaje opcją post-MVP.

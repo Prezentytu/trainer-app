@@ -229,7 +229,16 @@ export function ListEntryEditor({
                   value={item.loadKg}
                   min={0}
                   step={0.5}
-                  onChange={(v) => onPatch({ loadKg: v })}
+                  onChange={(v) => onPatch({ loadKg: v, loadPercent: v != null ? null : item.loadPercent })}
+                  placeholder="—"
+                />
+              </Field>
+              <Field label="% 1RM">
+                <NumInput
+                  value={item.loadPercent}
+                  min={1}
+                  step={1}
+                  onChange={(v) => onPatch({ loadPercent: v, loadKg: v != null ? null : item.loadKg })}
                   placeholder="—"
                 />
               </Field>

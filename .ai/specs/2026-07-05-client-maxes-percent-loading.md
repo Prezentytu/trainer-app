@@ -58,8 +58,8 @@ public class ClientMax
 
 ## Fazy implementacji
 
-- [ ] Faza 1 — backend: `ClientMax`, `PlanItem.LoadPercent`, endpointy, wyliczanie `computedLoadKg`, seed (maxy Jana Kowalskiego), testy
-- [ ] Faza 2 — frontend: maxy na karcie klienta, przełącznik kg/% w kreatorze, wyliczone ciężary w podglądzie
+- [x] Faza 1 — backend: `ClientMax`, `PlanItem.LoadPercent`, endpointy, wyliczanie `computedLoadKg`, seed (maxy Jana Kowalskiego), testy
+- [x] Faza 2 — frontend: maxy na karcie klienta, pole % 1RM w kreatorze (ListEntryEditor), wyliczone ciężary przy `?clientId=`
 
 ## Ryzyka i wpływ
 
@@ -70,3 +70,4 @@ public class ClientMax
 ## Changelog
 
 - 2026-07-05 — utworzono spec.
+- 2026-07-30 — wdrożono (wraz z logowaniem sesji — jeden reset `trainer.db`).

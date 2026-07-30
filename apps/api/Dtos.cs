@@ -60,6 +60,7 @@ public record PlanItemInput(
     int? RestBetweenSetsSeconds = null,
     int? RestAfterExerciseSeconds = null,
     double? LoadKg = null,
+    double? LoadPercent = null,
     string? Notes = null,
     List<PlanSetInput>? PrescribedSets = null);
 
@@ -81,3 +82,39 @@ public record AssignmentInput(int PlanId, int ClientId, DateOnly StartDate, stri
 public record DuplicateInput(string? Name, bool? IsTemplate);
 
 public record StatusInput(string Status);
+
+public record ClientMaxInput(int ExerciseId, double MaxKg, DateOnly MeasuredOn, string? Note = null);
+
+public record LoggedSetInput(
+    int SetNumber = 1,
+    double? WeightKg = null,
+    int? Reps = null,
+    int? DurationSeconds = null,
+    int? DistanceMeters = null,
+    double? Rir = null,
+    double? Rpe = null,
+    bool IsWarmup = false);
+
+public record LoggedExerciseInput(
+    int ExerciseId,
+    int Order = 0,
+    string? Note = null,
+    List<LoggedSetInput>? Sets = null);
+
+public record WorkoutSessionInput(
+    int ClientId,
+    DateOnly PerformedOn,
+    int? AssignmentId = null,
+    int? PlanDayId = null,
+    int? PlanId = null,
+    int? DurationSeconds = null,
+    string? Note = null,
+    string Status = "completed",
+    List<LoggedExerciseInput>? Exercises = null);
+
+public record StartSessionInput(
+    int ClientId,
+    int? AssignmentId = null,
+    int? PlanDayId = null,
+    int? PlanId = null,
+    DateOnly? PerformedOn = null);

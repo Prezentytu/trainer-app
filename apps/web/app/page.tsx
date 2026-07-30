@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { api, ClientSummary, Plan } from "@/lib/api";
+import { api, ClientRecord, ClientSummary, Plan, SessionSummary } from "@/lib/api";
 import { Avatar, Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, StatBlock } from "@/components/ui";
 
 const ATTENTION_LIMIT = 5;
@@ -10,14 +10,34 @@ const ATTENTION_LIMIT = 5;
 export default function DashboardPage() {
   const [clients, setClients] = useState<ClientSummary[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [recentSessions, setRecentSessions] = useState<(SessionSummary & { clientName: string })[]>([]);
+  const [recentPrs, setRecentPrs] = useState<(ClientRecord & { clientName: string })[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([api.clients.list(), api.plans.list()])
-      .then(([c, p]) => {
+      .then(async ([c, p]) => {
         setClients(c);
         setPlans(p);
+        const sessionBundles = await Promise.all(
+          c.slice(0, 8).map(async (client) => {
+            const sessions = await api.clients.sessions(client.id).catch(() => [] as SessionSummary[]);
+            return sessions.slice(0, 3).map((s) => ({ ...s, clientName: client.name }));
+          }),
+        );
+        const prBundles = await Promise.all(
+          c.slice(0, 8).map(async (client) => {
+            const records = await api.clients.records(client.id).catch(() => [] as ClientRecord[]);
+            return records.slice(0, 2).map((r) => ({ ...r, clientName: client.name }));
+          }),
+        );
+        setRecentSessions(
+          sessionBundles.flat().sort((a, b) => b.performedOn.localeCompare(a.performedOn)).slice(0, 6),
+        );
+        setRecentPrs(
+          prBundles.flat().sort((a, b) => b.performedOn.localeCompare(a.performedOn)).slice(0, 6),
+        );
       })
       .catch((e: Error) => setError(`${e.message}. Czy backend działa na porcie 5210?`))
       .finally(() => setLoading(false));
@@ -69,6 +89,59 @@ export default function DashboardPage() {
         <StatCard label="Formuły" value={templates.length} href="/plans" />
         <StatCard label="Plany klientów" value={clientPlans.length} href="/plans" />
         <StatCard label="Aktywne przypisania" value={activeAssignments} href="/clients" />
+      </div>
+
+      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+        <Card>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-display text-lg font-semibold">Ostatnie sesje</h2>
+          </div>
+          {recentSessions.length === 0 ? (
+            <EmptyState>Brak zalogowanych treningów. Wejdź w klienta → Loguj trening.</EmptyState>
+          ) : (
+            <ul className="divide-y divide-border">
+              {recentSessions.map((s) => (
+                <li key={s.id} className="flex items-center justify-between gap-3 py-2.5">
+                  <Link
+                    href={`/clients/${s.clientId}/sessions/${s.id}`}
+                    className="min-w-0 text-sm hover:text-accent"
+                  >
+                    <span className="font-medium">{s.clientName}</span>
+                    <span className="mt-0.5 block font-mono text-xs tabular-nums text-muted">
+                      {s.dayLabel ?? "Trening"} · {s.performedOn}
+                    </span>
+                  </Link>
+                  <span className="shrink-0 font-mono text-xs tabular-nums text-muted">
+                    {Math.round(s.totalVolumeKg)} kg
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
+        <Card>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-display text-lg font-semibold">Ostatnie rekordy</h2>
+          </div>
+          {recentPrs.length === 0 ? (
+            <EmptyState>PR-y pojawią się po zalogowaniu serii z ciężarem.</EmptyState>
+          ) : (
+            <ul className="divide-y divide-border">
+              {recentPrs.map((r) => (
+                <li key={`${r.clientName}-${r.exerciseId}`} className="flex items-center justify-between gap-3 py-2.5">
+                  <div className="min-w-0 text-sm">
+                    <span className="font-medium">{r.clientName}</span>
+                    <span className="mt-0.5 block break-words text-xs text-muted">{r.exerciseName}</span>
+                  </div>
+                  <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-pr">
+                    {r.estimated1Rm} kg
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">

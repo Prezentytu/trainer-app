@@ -132,6 +132,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     plans: null,
   });
   const pathname = usePathname();
+  // PWA klienta — bez sidebara trenera.
+  const isPortal = (pathname ?? "").startsWith("/portal");
   // Kreator/podgląd planu (/plans/new, /plans/[id]) potrzebuje szerokiej siatki na dni tygodnia —
   // lista planów (/plans) zostaje przy wąskim, czytelnym kontenerze jak reszta stron. Te same
   // trasy dostają "tryb skupienia": sidebar zwija się do wąskiego railu z ikonami.
@@ -139,12 +141,23 @@ export function AppShell({ children }: { children: ReactNode }) {
   const showRail = isPlanEditor && !railExpanded;
 
   useEffect(() => {
+    if (isPortal) return;
     Promise.all([api.clients.list(), api.plans.list()])
       .then(([clients, plans]) => setCounts({ clients: clients.length, plans: plans.length }))
       .catch(() => {
         // Liczniki nawigacji to tylko usprawnienie orientacji — brak backendu nie może wywrócić layoutu.
       });
-  }, []);
+  }, [isPortal]);
+
+  if (isPortal) {
+    return (
+      <div className="min-h-screen bg-background text-foreground">
+        <main className="mx-auto w-full max-w-lg px-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] pt-4">
+          {children}
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">

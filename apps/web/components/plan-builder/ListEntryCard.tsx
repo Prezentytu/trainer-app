@@ -1,6 +1,8 @@
 "use client";
 
 import { Exercise } from "@/lib/api";
+import { ExerciseThumb } from "@/components/ExerciseThumb";
+import { demoMedia } from "@/lib/youtube";
 import { ListEntryEditor } from "./ListEntryEditor";
 import { listEntrySummary } from "./listGroups";
 import { BuilderItem, BuilderSet } from "./types";
@@ -69,6 +71,14 @@ export function ListEntryCard({
           >
             {label}
           </span>
+          <div className="h-10 w-10 shrink-0">
+            <ExerciseThumb
+              variant="square"
+              youtubeId={demoMedia(exercise).youtubeId}
+              category={exercise?.category}
+              alt={item.exerciseName}
+            />
+          </div>
           <span className="min-w-0 flex-1 break-words text-sm font-semibold leading-snug text-foreground">
             {item.exerciseName}
           </span>
@@ -97,7 +107,7 @@ export function ListEntryCard({
             ×
           </span>
         </div>
-        <div className="mt-1.5 flex flex-wrap items-center gap-2 pl-10 font-mono text-xs tabular-nums text-muted">
+        <div className="mt-1.5 flex flex-wrap items-center gap-2 pl-[5.25rem] font-mono text-xs tabular-nums text-muted">
           <span className="font-semibold text-foreground">{summary.split(" · ")[0]}</span>
           {summary.includes(" · ") ? (
             <>

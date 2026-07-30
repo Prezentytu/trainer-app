@@ -1,7 +1,9 @@
 "use client";
 
 import { Exercise, rirFromRpe } from "@/lib/api";
+import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { Badge, IconButton, inputClass } from "@/components/ui";
+import { demoMedia } from "@/lib/youtube";
 import { NumInput } from "./NumInput";
 import { SetSchemeEditor } from "./SetSchemeEditor";
 import { BuilderItem, BuilderSet } from "./types";
@@ -142,10 +144,20 @@ export function TableExerciseRow({
           {supersetLabel ?? index + 1}
         </span>
 
-        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-          <span className="min-w-0 break-words text-sm font-medium">{item.exerciseName}</span>
-          {item.isWarmup ? <Badge tone="neutral">rozgrzewka</Badge> : null}
-          {supersetLabel && <Badge tone="accent">{supersetLabel}</Badge>}
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="h-9 w-9 shrink-0">
+            <ExerciseThumb
+              variant="square"
+              youtubeId={demoMedia(exercise).youtubeId}
+              category={exercise?.category}
+              alt={item.exerciseName}
+            />
+          </div>
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+            <span className="min-w-0 break-words text-sm font-medium">{item.exerciseName}</span>
+            {item.isWarmup ? <Badge tone="neutral">rozgrzewka</Badge> : null}
+            {supersetLabel && <Badge tone="accent">{supersetLabel}</Badge>}
+          </div>
         </div>
 
         <SetsRepsCell item={item} exercise={exercise} onPatch={onPatch} />

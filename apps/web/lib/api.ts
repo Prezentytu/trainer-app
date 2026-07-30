@@ -208,6 +208,8 @@ export type PlanItem = {
   isWarmup: boolean;
   exerciseName: string;
   exerciseType: ExerciseType;
+  category?: string | null;
+  demoYoutubeId?: string | null;
   /** Efektywna miara pozycji (`MeasureType ?? Exercise.Type`). */
   measureType: ExerciseType;
   sets: number;
@@ -223,6 +225,8 @@ export type PlanItem = {
   restBetweenSetsSeconds: number;
   restAfterExerciseSeconds: number;
   loadKg: number | null;
+  loadPercent: number | null;
+  computedLoadKg: number | null;
   notes: string | null;
   overrides: {
     measureType: ExerciseType | null;
@@ -234,6 +238,7 @@ export type PlanItem = {
     distanceMeters: number | null;
     restBetweenSetsSeconds: number | null;
     loadKg: number | null;
+    loadPercent: number | null;
   };
   prescribedSets: PlanSet[];
 };
@@ -295,8 +300,107 @@ export type PlanItemInput = {
   restBetweenSetsSeconds: number | null;
   restAfterExerciseSeconds: number | null;
   loadKg: number | null;
+  loadPercent: number | null;
   notes: string | null;
   prescribedSets: PlanSetInput[];
+};
+
+export type ClientMax = {
+  id: number;
+  clientId: number;
+  exerciseId: number;
+  exerciseName: string;
+  maxKg: number;
+  measuredOn: string;
+  note: string | null;
+};
+
+export type LoggedSet = {
+  id: number;
+  setNumber: number;
+  weightKg: number | null;
+  reps: number | null;
+  durationSeconds: number | null;
+  distanceMeters: number | null;
+  rir: number | null;
+  rpe: number | null;
+  isWarmup: boolean;
+  estimated1Rm: number | null;
+  isPr: boolean;
+};
+
+export type LoggedExercise = {
+  id: number;
+  exerciseId: number;
+  exerciseName: string;
+  exerciseType: ExerciseType;
+  category: string | null;
+  media: ExerciseMedia[];
+  order: number;
+  note: string | null;
+  sets: LoggedSet[];
+};
+
+export type SessionSummary = {
+  id: number;
+  clientId: number;
+  assignmentId: number | null;
+  planDayId: number | null;
+  planId: number | null;
+  planName: string | null;
+  dayLabel: string | null;
+  performedOn: string;
+  durationSeconds: number | null;
+  note: string | null;
+  status: string;
+  createdAt: string;
+  totalSets: number;
+  totalVolumeKg: number;
+  exerciseCount: number;
+};
+
+export type SessionDetail = SessionSummary & {
+  prs: {
+    exerciseId: number;
+    exerciseName: string;
+    setNumber: number;
+    weightKg: number | null;
+    reps: number | null;
+    estimated1Rm: number | null;
+  }[];
+  exercises: LoggedExercise[];
+};
+
+export type ClientProgress = {
+  assignmentId: number | null;
+  planId?: number;
+  planName?: string;
+  completed: number;
+  total: number;
+  percent: number;
+};
+
+export type ClientRecord = {
+  exerciseId: number;
+  exerciseName: string;
+  estimated1Rm: number;
+  weightKg: number | null;
+  reps: number | null;
+  performedOn: string;
+};
+
+export type PortalHome = {
+  client: { id: number; name: string };
+  today: {
+    assignmentId: number;
+    planId: number;
+    planName: string;
+    day: PlanDay;
+    completed: number;
+    total: number;
+    percent: number;
+  } | null;
+  inProgressSession: { id: number; planDayId: number | null; performedOn: string } | null;
 };
 
 export type PlanDayInput = {
@@ -333,6 +437,36 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json();
 }
 
+export type LoggedSetInput = {
+  setNumber: number;
+  weightKg: number | null;
+  reps: number | null;
+  durationSeconds: number | null;
+  distanceMeters: number | null;
+  rir: number | null;
+  rpe: number | null;
+  isWarmup: boolean;
+};
+
+export type LoggedExerciseInput = {
+  exerciseId: number;
+  order: number;
+  note: string | null;
+  sets: LoggedSetInput[];
+};
+
+export type WorkoutSessionInput = {
+  clientId: number;
+  performedOn: string;
+  assignmentId?: number | null;
+  planDayId?: number | null;
+  planId?: number | null;
+  durationSeconds?: number | null;
+  note?: string | null;
+  status?: string;
+  exercises: LoggedExerciseInput[];
+};
+
 export const api = {
   clients: {
     list: () => request<ClientSummary[]>("/api/clients"),
@@ -340,6 +474,28 @@ export const api = {
     create: (input: { name: string; email: string | null; note: string | null }) =>
       request("/api/clients", { method: "POST", body: JSON.stringify(input) }),
     remove: (id: number) => request(`/api/clients/${id}`, { method: "DELETE" }),
+    maxes: (clientId: number) => request<ClientMax[]>(`/api/clients/${clientId}/maxes`),
+    addMax: (
+      clientId: number,
+      input: { exerciseId: number; maxKg: number; measuredOn: string; note?: string | null },
+    ) =>
+      request<{ id: number }>(`/api/clients/${clientId}/maxes`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    removeMax: (id: number) => request(`/api/maxes/${id}`, { method: "DELETE" }),
+    sessions: (clientId: number) => request<SessionSummary[]>(`/api/clients/${clientId}/sessions`),
+    records: (clientId: number) => request<ClientRecord[]>(`/api/clients/${clientId}/records`),
+    progress: (clientId: number) => request<ClientProgress>(`/api/clients/${clientId}/progress`),
+    accessToken: (clientId: number) =>
+      request<{ token: string; createdAt: string; expiresAt: string | null }>(
+        `/api/clients/${clientId}/access-token`,
+      ),
+    rotateAccessToken: (clientId: number) =>
+      request<{ token: string; createdAt: string; expiresAt: string | null }>(
+        `/api/clients/${clientId}/access-token/rotate`,
+        { method: "POST" },
+      ),
   },
   exercises: {
     list: () => request<Exercise[]>("/api/exercises"),
@@ -352,7 +508,8 @@ export const api = {
   },
   plans: {
     list: () => request<Plan[]>("/api/plans"),
-    get: (id: number) => request<Plan>(`/api/plans/${id}`),
+    get: (id: number, clientId?: number) =>
+      request<Plan>(`/api/plans/${id}${clientId != null ? `?clientId=${clientId}` : ""}`),
     create: (input: PlanInput) =>
       request<{ id: number }>("/api/plans", { method: "POST", body: JSON.stringify(input) }),
     update: (id: number, input: PlanInput) =>
@@ -374,5 +531,60 @@ export const api = {
         body: JSON.stringify({ status }),
       }),
     remove: (id: number) => request(`/api/assignments/${id}`, { method: "DELETE" }),
+  },
+  sessions: {
+    get: (id: number) => request<SessionDetail>(`/api/sessions/${id}`),
+    start: (input: {
+      clientId: number;
+      assignmentId?: number | null;
+      planDayId?: number | null;
+      planId?: number | null;
+      performedOn?: string | null;
+    }) =>
+      request<SessionDetail>("/api/sessions/start", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    create: (input: WorkoutSessionInput) =>
+      request<SessionDetail>("/api/sessions", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    update: (id: number, input: WorkoutSessionInput) =>
+      request<SessionDetail>(`/api/sessions/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(input),
+      }),
+    complete: (id: number) =>
+      request<SessionDetail>(`/api/sessions/${id}/complete`, { method: "PATCH" }),
+    remove: (id: number) => request(`/api/sessions/${id}`, { method: "DELETE" }),
+  },
+  portal: {
+    home: (token: string) => request<PortalHome>(`/api/portal/${token}`),
+    getSession: (token: string, id: number) =>
+      request<SessionDetail>(`/api/portal/${token}/sessions/${id}`),
+    startSession: (
+      token: string,
+      input: {
+        clientId: number;
+        assignmentId?: number | null;
+        planDayId?: number | null;
+        planId?: number | null;
+        performedOn?: string | null;
+      },
+    ) =>
+      request<SessionDetail>(`/api/portal/${token}/sessions/start`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    updateSession: (token: string, id: number, input: WorkoutSessionInput) =>
+      request<SessionDetail>(`/api/portal/${token}/sessions/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(input),
+      }),
+    completeSession: (token: string, id: number) =>
+      request<SessionDetail>(`/api/portal/${token}/sessions/${id}/complete`, {
+        method: "PATCH",
+      }),
   },
 };

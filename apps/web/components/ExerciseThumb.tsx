@@ -14,6 +14,11 @@ type Props = {
   className?: string;
   /** Pokaż przycisk play overlay. */
   showPlay?: boolean;
+  /**
+   * `video` — landscape 16:9 (biblioteka, modal).
+   * `square` — mała kwadratowa miniaturka w wierszach planu / composerze.
+   */
+  variant?: "video" | "square";
 };
 
 export function ExerciseThumb({
@@ -23,6 +28,7 @@ export function ExerciseThumb({
   seconds,
   className = "",
   showPlay = false,
+  variant = "video",
 }: Props) {
   const [failed, setFailed] = useState(false);
   const src = youtubeId && !failed ? thumbUrl(youtubeId) : null;
@@ -30,26 +36,34 @@ export function ExerciseThumb({
     category && category in CATEGORY_LABELS
       ? CATEGORY_LABELS[category as ExerciseCategory]
       : null;
-  const duration = formatVideoSeconds(seconds);
+  const duration = variant === "video" ? formatVideoSeconds(seconds) : "";
+  const square = variant === "square";
 
   return (
     <div
-      className={`relative aspect-video w-full overflow-hidden rounded-[10px] bg-surface-sunken ${className}`}
+      className={`relative overflow-hidden bg-surface-sunken ${
+        square
+          ? "aspect-square w-full rounded-lg"
+          : "aspect-video w-full rounded-[10px]"
+      } ${className}`}
     >
       {src ? (
         <Image
           src={src}
           alt={alt}
           fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1280px) 33vw, 25vw"
+          sizes={square ? "48px" : "(max-width: 640px) 100vw, (max-width: 1280px) 33vw, 25vw"}
           className="object-cover"
           onError={() => setFailed(true)}
           unoptimized
         />
       ) : (
         <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-muted">
-          <Dumbbell className="h-7 w-7 text-muted-faint" aria-hidden />
-          {catLabel ? (
+          <Dumbbell
+            className={square ? "h-4 w-4 text-muted-faint" : "h-7 w-7 text-muted-faint"}
+            aria-hidden
+          />
+          {!square && catLabel ? (
             <span className="text-xs font-semibold uppercase tracking-[0.08em]">{catLabel}</span>
           ) : null}
         </div>

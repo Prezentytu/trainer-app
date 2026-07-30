@@ -2,12 +2,14 @@
 
 import { KeyboardEvent, useMemo, useRef, useState } from "react";
 import { Exercise } from "@/lib/api";
+import { ExerciseThumb } from "@/components/ExerciseThumb";
 import {
   createExercisePreviewLabel,
   exerciseInputFromQuickEntry,
 } from "@/lib/exerciseDraft";
 import { formatMeasureCore, measureOverridesFromParsed } from "@/lib/measure";
 import { matchExercises, parseQuickEntry } from "@/lib/quickEntry";
+import { demoMedia } from "@/lib/youtube";
 import { Badge, IconButton, inputClass } from "@/components/ui";
 import { ComposerHelp, markComposerHelpSeen, useComposerHelpOpen } from "./ComposerHelp";
 import { CreateExerciseRow } from "./CreateExerciseRow";
@@ -42,6 +44,7 @@ function previewSummary(exercise: Exercise, overrides: Partial<BuilderItem>): st
     restBetweenSetsSeconds: null,
     restAfterExerciseSeconds: null,
     loadKg: null,
+    loadPercent: null,
     notes: null,
     prescribedSets: [],
   };
@@ -268,7 +271,17 @@ export function QuickComposer({
                     idx === activeIndex ? "bg-surface-hover text-foreground" : "text-foreground-secondary"
                   }`}
                 >
-                  <span className="min-w-0 truncate">{exercise.name}</span>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <div className="h-8 w-8 shrink-0">
+                      <ExerciseThumb
+                        variant="square"
+                        youtubeId={demoMedia(exercise).youtubeId}
+                        category={exercise.category}
+                        alt={exercise.name}
+                      />
+                    </div>
+                    <span className="min-w-0 break-words">{exercise.name}</span>
+                  </div>
                   <span className="shrink-0 text-xs text-muted">
                     {previewSummary(exercise, measureOverridesFromParsed(parsed, exercise.type))}
                   </span>
