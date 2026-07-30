@@ -491,7 +491,7 @@ export function Dialog({
         role="dialog"
         aria-modal
         aria-labelledby="dialog-title"
-        className="relative w-full max-w-md rounded-2xl border border-border bg-surface-sunken p-6 shadow-modal"
+        className="relative w-full max-w-lg rounded-2xl border border-border bg-surface-sunken p-6 shadow-modal"
       >
         <h2 id="dialog-title" className="font-display text-xl font-bold text-foreground">
           {title}

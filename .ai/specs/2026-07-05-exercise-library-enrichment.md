@@ -1,5 +1,8 @@
 # Wzbogacenie biblioteki ćwiczeń (metadane w stylu Gravitus)
 
+> **Zastąpiony** przez [2026-07-30-exercise-library-youtube.md](2026-07-30-exercise-library-youtube.md) (2026-07-30).
+> Ten plik zostaje jako historia decyzji; implementuj wyłącznie nowszy spec.
+
 ## TLDR
 
 Opcjonalne metadane ćwiczenia: kategoria, mięśnie główne/pomocnicze, sprzęt, mechanika, poziom trudności, instrukcja krok po kroku, media (listy URL-i zdjęć i wideo) + filtrowanie biblioteki. Wszystko opcjonalne — ćwiczenie z samą nazwą działa jak dotychczas. Najniższy priorytet z czterech speców (czysto opisowe, niczego nie blokuje).

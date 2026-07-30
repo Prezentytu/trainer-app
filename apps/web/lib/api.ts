@@ -43,12 +43,93 @@ export const CLIENT_GOALS = ["Redukcja", "Hipertrofia", "Kondycja", "Siła", "Og
 
 export type ExerciseType = "reps" | "time" | "distance";
 export type PercentBase = "1rm" | "top";
+export type ExerciseMediaKind = "demo" | "tip" | "mistakes";
+export type ExerciseCategory =
+  | "shoulders"
+  | "chest"
+  | "back"
+  | "arms"
+  | "core"
+  | "legs"
+  | "fullbody";
+export type ExercisePattern =
+  | "vertical-push"
+  | "horizontal-push"
+  | "vertical-pull"
+  | "horizontal-pull"
+  | "isolation"
+  | "scapular"
+  | "rotation"
+  | "anti-rotation"
+  | "anti-extension"
+  | "carry"
+  | "squat"
+  | "hinge";
 
 export const EXERCISE_TYPE_LABELS: Record<ExerciseType, string> = {
   reps: "powtórzenia",
   time: "czas",
   distance: "dystans",
 };
+
+export const CATEGORY_LABELS: Record<ExerciseCategory, string> = {
+  shoulders: "Barki",
+  chest: "Klatka",
+  back: "Plecy",
+  arms: "Ramiona",
+  core: "Core",
+  legs: "Nogi",
+  fullbody: "Całe ciało",
+};
+
+export const PATTERN_LABELS: Record<ExercisePattern, string> = {
+  "vertical-push": "Wyciskanie pionowe",
+  "horizontal-push": "Wyciskanie poziome",
+  "vertical-pull": "Ściąganie pionowe",
+  "horizontal-pull": "Wiosłowanie",
+  isolation: "Izolacja",
+  scapular: "Łopatka",
+  rotation: "Rotacja",
+  "anti-rotation": "Anti-rotacja",
+  "anti-extension": "Anti-extensja",
+  carry: "Carry",
+  squat: "Przysiad",
+  hinge: "Zawias biodrowy",
+};
+
+export const EQUIPMENT_LABELS: Record<string, string> = {
+  barbell: "Sztanga",
+  dumbbell: "Hantle",
+  cable: "Wyciąg",
+  machine: "Maszyna",
+  bodyweight: "Masa ciała",
+  band: "Guma",
+  kettlebell: "Kettlebell",
+  landmine: "Landmine",
+  smith: "Smith",
+  trx: "TRX",
+  rings: "Kółka",
+  ghd: "GHD",
+  sled: "Sanie",
+  "foam-roller": "Wałek",
+  other: "Inne",
+};
+
+export const MEDIA_KIND_LABELS: Record<ExerciseMediaKind, string> = {
+  demo: "Demonstracja",
+  tip: "Wskazówki",
+  mistakes: "Błędy",
+};
+
+export const CATEGORY_ORDER: ExerciseCategory[] = [
+  "shoulders",
+  "chest",
+  "back",
+  "arms",
+  "core",
+  "legs",
+  "fullbody",
+];
 
 export const SET_ROLE_LABELS: Record<string, string> = {
   warmup: "rozgrzewka",
@@ -74,6 +155,13 @@ export function rpeFromRir(rir: number): number {
   return 10 - rir;
 }
 
+export type ExerciseMedia = {
+  youtubeId: string;
+  title: string;
+  seconds: number | null;
+  kind: ExerciseMediaKind | string;
+};
+
 export type Exercise = {
   id: number;
   name: string;
@@ -85,6 +173,13 @@ export type Exercise = {
   defaultDistanceMeters: number | null;
   defaultRestBetweenSetsSeconds: number;
   defaultLoadKg: number | null;
+  category: ExerciseCategory | string | null;
+  pattern: ExercisePattern | string | null;
+  isUnilateral: boolean;
+  equipment: string[];
+  primaryMuscles: string[];
+  instructions: string | null;
+  media: ExerciseMedia[];
 };
 
 export type PlanSet = {
@@ -248,6 +343,7 @@ export const api = {
   },
   exercises: {
     list: () => request<Exercise[]>("/api/exercises"),
+    get: (id: number) => request<Exercise>(`/api/exercises/${id}`),
     create: (input: Omit<Exercise, "id">) =>
       request<Exercise>("/api/exercises", { method: "POST", body: JSON.stringify(input) }),
     update: (id: number, input: Omit<Exercise, "id">) =>

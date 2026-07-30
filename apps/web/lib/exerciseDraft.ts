@@ -13,6 +13,13 @@ export const DEFAULT_EXERCISE_INPUT: ExerciseInput = {
   defaultDistanceMeters: null,
   defaultRestBetweenSetsSeconds: 60,
   defaultLoadKg: null,
+  category: null,
+  pattern: null,
+  isUnilateral: false,
+  equipment: [],
+  primaryMuscles: [],
+  instructions: null,
+  media: [],
 };
 
 /** Buduje payload tworzenia ćwiczenia z nazwy + opcjonalnych parametrów quick-entry. */

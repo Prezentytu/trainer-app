@@ -11,6 +11,9 @@ public class Client
     public List<Assignment> Assignments { get; set; } = [];
 }
 
+/// <summary>Materiał wideo ćwiczenia. Kind: "demo" | "tip" | "mistakes".</summary>
+public record ExerciseMedia(string YoutubeId, string Title, int? Seconds, string Kind);
+
 public class Exercise
 {
     public int Id { get; set; }
@@ -31,6 +34,19 @@ public class Exercise
 
     public int DefaultRestBetweenSetsSeconds { get; set; } = 60;
     public double? DefaultLoadKg { get; set; }
+
+    // Taksonomia / media (opcjonalne) — shoulders|chest|back|arms|core|legs|fullbody
+    public string? Category { get; set; }
+
+    // vertical-push|horizontal-push|vertical-pull|horizontal-pull|isolation|scapular|rotation|anti-rotation|anti-extension|carry|squat|hinge
+    public string? Pattern { get; set; }
+
+    public bool IsUnilateral { get; set; }
+
+    public List<string> Equipment { get; set; } = [];
+    public List<string> PrimaryMuscles { get; set; } = [];
+    public string? Instructions { get; set; }
+    public List<ExerciseMedia> Media { get; set; } = [];
 }
 
 public class Plan

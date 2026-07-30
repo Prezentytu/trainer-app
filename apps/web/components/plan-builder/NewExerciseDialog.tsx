@@ -23,6 +23,13 @@ function initialForm(
       defaultDistanceMeters: editExercise.defaultDistanceMeters,
       defaultRestBetweenSetsSeconds: editExercise.defaultRestBetweenSetsSeconds,
       defaultLoadKg: editExercise.defaultLoadKg,
+      category: editExercise.category,
+      pattern: editExercise.pattern,
+      isUnilateral: editExercise.isUnilateral,
+      equipment: editExercise.equipment ?? [],
+      primaryMuscles: editExercise.primaryMuscles ?? [],
+      instructions: editExercise.instructions,
+      media: editExercise.media ?? [],
     };
   }
   return { ...DEFAULT_EXERCISE_INPUT, ...prefill };

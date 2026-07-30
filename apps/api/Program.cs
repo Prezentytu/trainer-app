@@ -78,8 +78,41 @@ app.MapDelete("/api/clients/{id:int}", async (int id, AppDb db) =>
 
 // ---------- Ćwiczenia ----------
 
+static void ApplyExerciseInput(Exercise exercise, ExerciseInput input, string name)
+{
+    exercise.Name = name;
+    exercise.Description = input.Description;
+    exercise.Type = input.Type;
+    exercise.DefaultSets = input.DefaultSets;
+    exercise.DefaultReps = input.DefaultReps;
+    exercise.DefaultRepDurationSeconds = input.DefaultRepDurationSeconds;
+    exercise.DefaultDistanceMeters = input.DefaultDistanceMeters;
+    exercise.DefaultRestBetweenSetsSeconds = input.DefaultRestBetweenSetsSeconds;
+    exercise.DefaultLoadKg = input.DefaultLoadKg;
+    exercise.Category = string.IsNullOrWhiteSpace(input.Category) ? null : input.Category.Trim();
+    exercise.Pattern = string.IsNullOrWhiteSpace(input.Pattern) ? null : input.Pattern.Trim();
+    exercise.IsUnilateral = input.IsUnilateral;
+    exercise.Equipment = input.Equipment?.Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s.Trim()).ToList() ?? [];
+    exercise.PrimaryMuscles = input.PrimaryMuscles?.Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s.Trim()).ToList() ?? [];
+    exercise.Instructions = string.IsNullOrWhiteSpace(input.Instructions) ? null : input.Instructions.Trim();
+    exercise.Media = (input.Media ?? [])
+        .Where(m => !string.IsNullOrWhiteSpace(m.YoutubeId))
+        .Select(m => new ExerciseMedia(
+            m.YoutubeId.Trim(),
+            m.Title?.Trim() ?? "",
+            m.Seconds,
+            string.IsNullOrWhiteSpace(m.Kind) ? "demo" : m.Kind.Trim()))
+        .ToList();
+}
+
 app.MapGet("/api/exercises", async (AppDb db) =>
     await db.Exercises.OrderBy(e => e.Name).ToListAsync());
+
+app.MapGet("/api/exercises/{id:int}", async (int id, AppDb db) =>
+{
+    var exercise = await db.Exercises.FindAsync(id);
+    return exercise is null ? Results.NotFound() : Results.Ok(exercise);
+});
 
 app.MapPost("/api/exercises", async (ExerciseInput input, AppDb db) =>
 {
@@ -88,18 +121,8 @@ app.MapPost("/api/exercises", async (ExerciseInput input, AppDb db) =>
     var duplicate = await db.Exercises.AnyAsync(e => e.Name.ToLower() == name.ToLower());
     if (duplicate) return Results.Conflict(new { message = $"Ćwiczenie „{name}” już jest w bibliotece." });
 
-    var exercise = new Exercise
-    {
-        Name = name,
-        Description = input.Description,
-        Type = input.Type,
-        DefaultSets = input.DefaultSets,
-        DefaultReps = input.DefaultReps,
-        DefaultRepDurationSeconds = input.DefaultRepDurationSeconds,
-        DefaultDistanceMeters = input.DefaultDistanceMeters,
-        DefaultRestBetweenSetsSeconds = input.DefaultRestBetweenSetsSeconds,
-        DefaultLoadKg = input.DefaultLoadKg,
-    };
+    var exercise = new Exercise();
+    ApplyExerciseInput(exercise, input, name);
     db.Exercises.Add(exercise);
     await db.SaveChangesAsync();
     return Results.Created($"/api/exercises/{exercise.Id}", exercise);
@@ -115,15 +138,7 @@ app.MapPut("/api/exercises/{id:int}", async (int id, ExerciseInput input, AppDb 
     var duplicate = await db.Exercises.AnyAsync(e => e.Id != id && e.Name.ToLower() == name.ToLower());
     if (duplicate) return Results.Conflict(new { message = $"Ćwiczenie „{name}” już jest w bibliotece." });
 
-    exercise.Name = name;
-    exercise.Description = input.Description;
-    exercise.Type = input.Type;
-    exercise.DefaultSets = input.DefaultSets;
-    exercise.DefaultReps = input.DefaultReps;
-    exercise.DefaultRepDurationSeconds = input.DefaultRepDurationSeconds;
-    exercise.DefaultDistanceMeters = input.DefaultDistanceMeters;
-    exercise.DefaultRestBetweenSetsSeconds = input.DefaultRestBetweenSetsSeconds;
-    exercise.DefaultLoadKg = input.DefaultLoadKg;
+    ApplyExerciseInput(exercise, input, name);
     await db.SaveChangesAsync();
     return Results.Ok(exercise);
 });

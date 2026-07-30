@@ -12,6 +12,8 @@ public class ExercisesEndpointsTests : IClassFixture<TestWebAppFactory>
 
     public ExercisesEndpointsTests(TestWebAppFactory factory) => _client = factory.CreateClient();
 
+    private record ExerciseMediaDto(string YoutubeId, string Title, int? Seconds, string Kind);
+
     private record ExerciseDto(
         int Id,
         string Name,
@@ -22,7 +24,14 @@ public class ExercisesEndpointsTests : IClassFixture<TestWebAppFactory>
         int? DefaultRepDurationSeconds,
         int? DefaultDistanceMeters,
         int DefaultRestBetweenSetsSeconds,
-        double? DefaultLoadKg);
+        double? DefaultLoadKg,
+        string? Category,
+        string? Pattern,
+        bool IsUnilateral,
+        List<string>? Equipment,
+        List<string>? PrimaryMuscles,
+        string? Instructions,
+        List<ExerciseMediaDto>? Media);
 
     private record ErrorBody(string Message);
 
@@ -40,6 +49,10 @@ public class ExercisesEndpointsTests : IClassFixture<TestWebAppFactory>
         Assert.Equal(3, created.DefaultSets);
         Assert.Equal(10, created.DefaultReps);
         Assert.Equal(60, created.DefaultRestBetweenSetsSeconds);
+        Assert.Null(created.Category);
+        Assert.False(created.IsUnilateral);
+        Assert.Empty(created.Equipment ?? []);
+        Assert.Empty(created.Media ?? []);
     }
 
     [Fact]
@@ -94,5 +107,71 @@ public class ExercisesEndpointsTests : IClassFixture<TestWebAppFactory>
         Assert.NotNull(updated);
         Assert.Equal(4, updated!.DefaultSets);
         Assert.Equal(8, updated.DefaultReps);
+    }
+
+    [Fact]
+    public async Task CreateExercise_WithMediaAndTaxonomy_RoundTrips()
+    {
+        var payload = new
+        {
+            name = "Test military press media",
+            type = "reps",
+            defaultSets = 4,
+            defaultReps = 6,
+            defaultRestBetweenSetsSeconds = 120,
+            category = "shoulders",
+            pattern = "vertical-push",
+            isUnilateral = false,
+            equipment = new[] { "barbell" },
+            primaryMuscles = new[] { "Przedni akton barku", "Triceps" },
+            instructions = "Napięty core, sztanga nad barkami.",
+            media = new[]
+            {
+                new { youtubeId = "1fwmBAKzW4g", title = "Military press", seconds = 38, kind = "demo" },
+            },
+        };
+
+        var post = await _client.PostAsJsonAsync("/api/exercises", payload);
+        Assert.Equal(HttpStatusCode.Created, post.StatusCode);
+        var created = await post.Content.ReadFromJsonAsync<ExerciseDto>(JsonOpts);
+        Assert.NotNull(created);
+        Assert.Equal("shoulders", created!.Category);
+        Assert.Equal("vertical-push", created.Pattern);
+        Assert.Equal(new[] { "barbell" }, created.Equipment);
+        Assert.Equal(new[] { "Przedni akton barku", "Triceps" }, created.PrimaryMuscles);
+        Assert.NotNull(created.Media);
+        Assert.Single(created.Media!);
+        Assert.Equal("1fwmBAKzW4g", created.Media[0].YoutubeId);
+        Assert.Equal("demo", created.Media[0].Kind);
+
+        var get = await _client.GetAsync($"/api/exercises/{created.Id}");
+        Assert.Equal(HttpStatusCode.OK, get.StatusCode);
+        var fetched = await get.Content.ReadFromJsonAsync<ExerciseDto>(JsonOpts);
+        Assert.NotNull(fetched);
+        Assert.Equal("1fwmBAKzW4g", fetched!.Media![0].YoutubeId);
+        Assert.Equal("shoulders", fetched.Category);
+    }
+
+    [Fact]
+    public async Task GetExercise_UnknownId_Returns404()
+    {
+        var get = await _client.GetAsync("/api/exercises/999999");
+        Assert.Equal(HttpStatusCode.NotFound, get.StatusCode);
+    }
+
+    [Fact]
+    public async Task Seed_HasEnrichedLibraryExercises()
+    {
+        var list = await _client.GetFromJsonAsync<List<ExerciseDto>>("/api/exercises", JsonOpts);
+        Assert.NotNull(list);
+        Assert.True(list!.Count >= 100, $"Oczekiwano ≥100 ćwiczeń z biblioteki, jest {list.Count}");
+
+        var withMedia = list.Where(e => e.Media is { Count: > 0 }).ToList();
+        Assert.True(withMedia.Count >= 50, "Seed powinien zawierać ćwiczenia z filmami YouTube");
+
+        var military = list.FirstOrDefault(e => e.Name.Contains("military press", StringComparison.OrdinalIgnoreCase));
+        Assert.NotNull(military);
+        Assert.Equal("shoulders", military!.Category);
+        Assert.NotEmpty(military.Media!);
     }
 }

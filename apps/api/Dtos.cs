@@ -2,6 +2,12 @@ namespace TrainerApp.Api;
 
 public record ClientInput(string Name, string? Email, string? Note);
 
+public record ExerciseMediaInput(
+    string YoutubeId,
+    string Title = "",
+    int? Seconds = null,
+    string Kind = "demo");
+
 public record ExerciseInput(
     string Name,
     string? Description = null,
@@ -11,7 +17,14 @@ public record ExerciseInput(
     int? DefaultRepDurationSeconds = null,
     int? DefaultDistanceMeters = null,
     int DefaultRestBetweenSetsSeconds = 60,
-    double? DefaultLoadKg = null);
+    double? DefaultLoadKg = null,
+    string? Category = null,
+    string? Pattern = null,
+    bool IsUnilateral = false,
+    List<string>? Equipment = null,
+    List<string>? PrimaryMuscles = null,
+    string? Instructions = null,
+    List<ExerciseMediaInput>? Media = null);
 
 public record PlanSetInput(
     int Order = 0,

@@ -1,0 +1,3482 @@
+{
+  "source": "https://www.youtube.com/playlist?list=PLmhudurbOPnfRM76zhvTdN9MgeDwWnYUf",
+  "exercises": [
+    {
+      "name": "Wyciskanie żołnierskie (military press)",
+      "category": "shoulders",
+      "pattern": "vertical-push",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Przedni akton barku",
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "1fwmBAKzW4g",
+          "title": "Military press",
+          "seconds": 38,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie za kark (Behind the Neck Press)",
+      "category": "shoulders",
+      "pattern": "vertical-push",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Przedni akton barku",
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "jkjzFLn-whY",
+          "title": "Behind neck press",
+          "seconds": 45,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "eAkalDSMcbo",
+          "title": "Push Press Behind the Neck | Olympic Weightlifting Exercise Library",
+          "seconds": 88,
+          "kind": "tip"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie pchnięciem (Push Press)",
+      "category": "shoulders",
+      "pattern": "vertical-push",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell",
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Przedni akton barku",
+        "Triceps",
+        "Nogi"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "iaBVSJm78ko",
+          "title": "The Push Press",
+          "seconds": 63,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "4tCaD42ghlc",
+          "title": "The Dumbbell Push Press",
+          "seconds": 52,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "kLp8iq3gU_Y",
+          "title": "1 arm push press",
+          "seconds": 33,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie sztangi neutralnym chwytem nad głowę",
+      "category": "shoulders",
+      "pattern": "vertical-push",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Przedni akton barku",
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "cJnTS9SskLU",
+          "title": "Wyciskanie sztangi nad głowę chwytem neutralnym",
+          "seconds": 36,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie hantli nad głowę (Dumbbell Shoulder Press)",
+      "category": "shoulders",
+      "pattern": "vertical-push",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Przedni akton barku",
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "qEwKCR5JCog",
+          "title": "How To: Dumbbell Shoulder Press",
+          "seconds": 144,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie barków na ławce skośnej 75° (Incline Shoulder Press)",
+      "category": "shoulders",
+      "pattern": "vertical-push",
+      "isUnilateral": false,
+      "equipment": [
+        "smith",
+        "dumbbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Przedni akton barku",
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "DetFDcQncKk",
+          "title": "75 degree incline mid grip smith machine shoulder press",
+          "seconds": 20,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "euL-EK3yH7s",
+          "title": "75° INCLINE DB SHOULDER PRESS - 75 degree incline dumbbell shoulder bench press",
+          "seconds": 10,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie siedząc nad głowę (Seated Overhead Press)",
+      "category": "shoulders",
+      "pattern": "vertical-push",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Przedni akton barku",
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "jhMKcHIPZRk",
+          "title": "Seated Overhead Press",
+          "seconds": 32,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie jednorącz półklęcząc (1-Arm Shoulder Press)",
+      "category": "shoulders",
+      "pattern": "vertical-push",
+      "isUnilateral": true,
+      "equipment": [
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Przedni akton barku",
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "ecpm0GbBF3Y",
+          "title": "1-arm shoulder press neutral grip, half kneeling",
+          "seconds": 44,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie landmine (Landmine Press)",
+      "category": "shoulders",
+      "pattern": "vertical-push",
+      "isUnilateral": true,
+      "equipment": [
+        "landmine",
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Przedni akton barku",
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "oxUS6ZMtDHg",
+          "title": "1-arm landmine press",
+          "seconds": 78,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "e4ljJXQgo8E",
+          "title": "1 arm landmine push press",
+          "seconds": 34,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "DKxWIt64AyU",
+          "title": "Landmine Z Press",
+          "seconds": 13,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wznosy bokiem (Lateral Raise)",
+      "category": "shoulders",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell",
+        "cable",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Środkowy akton barku"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "nyhyiRxCltg",
+          "title": "lateral raise (+incline)",
+          "seconds": 35,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "EpCXQiWwyQA",
+          "title": "1-Arm DB Lateral Raise w/Band Resistance",
+          "seconds": 25,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "Z5FA9aq3L6A",
+          "title": "How To Do Cable Lateral Raises",
+          "seconds": 15,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "tGDrznupPSg",
+          "title": "WZNOSY BOKIEM - LEPSZA WERSJA!  #fitness #kulturystyka #silownia",
+          "seconds": 22,
+          "kind": "tip"
+        },
+        {
+          "youtubeId": "I_5QVVZU1IM",
+          "title": "TIP NA BARKI! *co w zamian?",
+          "seconds": 119,
+          "kind": "tip"
+        },
+        {
+          "youtubeId": "ONflIe9sNHY",
+          "title": "TRÓJWYMIAROWE BARKI!",
+          "seconds": 102,
+          "kind": "tip"
+        },
+        {
+          "youtubeId": "TIMLz6IMBD0",
+          "title": "KULISTE BARKI w 1.5 min!",
+          "seconds": 95,
+          "kind": "tip"
+        },
+        {
+          "youtubeId": "hLrFCb1fm3w",
+          "title": "Instrukcja: Unoszenie boczne wyciągu górnego – nisko a na wysokości nadgarstka",
+          "seconds": 195,
+          "kind": "tip"
+        }
+      ]
+    },
+    {
+      "name": "Wznosy Lu (Lu Raises)",
+      "category": "shoulders",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Przedni akton barku"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "1dl_oQUW7Xw",
+          "title": "Lu Raises",
+          "seconds": 36,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wznosy przodem chwytem podchwytem (Front Raise)",
+      "category": "shoulders",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Przedni akton barku"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "pedcXb2ypec",
+          "title": "Poradnik: Wznosy hantli przodem w chwycie podchwytem na ławce skośnej | Team Evolve",
+          "seconds": 47,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Face pull",
+      "category": "shoulders",
+      "pattern": "horizontal-pull",
+      "isUnilateral": false,
+      "equipment": [
+        "cable"
+      ],
+      "primaryMuscles": [
+        "Tylny akton barku",
+        "Rotatory barku"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "Q8AdFVD17zA",
+          "title": "FACE PULL WERSJA DOSKONAŁA! #silownia #fitness  #kulturystyka",
+          "seconds": 28,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "csk2jbDmfUY",
+          "title": "db rotation face pull",
+          "seconds": 30,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "zXYdUBjS5Vg",
+          "title": "rotation face pull",
+          "seconds": 56,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "eTDtVNypLpY",
+          "title": "Standing Cable Face Pull to Overhead Press",
+          "seconds": 10,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "GlyvKUZaeVk",
+          "title": "ZAPOMNIANY MIĘSIEŃ - KRUCZO-RAMIENNY!",
+          "seconds": 251,
+          "kind": "tip"
+        }
+      ]
+    },
+    {
+      "name": "Rotacja wewnętrzna barku (Internal Rotation)",
+      "category": "shoulders",
+      "pattern": "rotation",
+      "isUnilateral": true,
+      "equipment": [
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Rotatory barku"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "YtoEUUeU8X8",
+          "title": "Lying internal rotation - ROT WEWN",
+          "seconds": 10,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Unoszenie trap 3 (Trap 3 Raise)",
+      "category": "shoulders",
+      "pattern": "scapular",
+      "isUnilateral": true,
+      "equipment": [
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Przedni akton barku",
+        "Tylny akton barku"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "XwBuVCxqi9k",
+          "title": "1 arm trap 3 raise",
+          "seconds": 30,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "i-4simi-ZhY",
+          "title": "TRAP 3 RAISE",
+          "seconds": 35,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Unoszenie T (T-Raise)",
+      "category": "shoulders",
+      "pattern": "scapular",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Przedni akton barku",
+        "Tylny akton barku"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "YoOdv0jPmF4",
+          "title": "t-raise",
+          "seconds": 40,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Powell raise",
+      "category": "shoulders",
+      "pattern": "scapular",
+      "isUnilateral": true,
+      "equipment": [
+        "dumbbell",
+        "cable"
+      ],
+      "primaryMuscles": [
+        "Przedni akton barku",
+        "Tylny akton barku"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "gdMpGtGw7MY",
+          "title": "powell raise",
+          "seconds": 33,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "siYQGa16250",
+          "title": "Standing Cable Powell Raise",
+          "seconds": 12,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "_VvfjVcoYtE",
+          "title": "PEŁNE BARKI, ODMIANA POWELL RAISE!",
+          "seconds": 38,
+          "kind": "tip"
+        }
+      ]
+    },
+    {
+      "name": "Odwodzenie tylne wyciągiem (Rear Delt Cable Fly)",
+      "category": "shoulders",
+      "pattern": "horizontal-pull",
+      "isUnilateral": false,
+      "equipment": [
+        "cable"
+      ],
+      "primaryMuscles": [
+        "Tylny akton barku"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "ACTs5hJu_E4",
+          "title": "Cross Cable Rear Delt Fly",
+          "seconds": 20,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Rotacja zewnętrzna barku (External Rotation)",
+      "category": "shoulders",
+      "pattern": "rotation",
+      "isUnilateral": true,
+      "equipment": [
+        "dumbbell",
+        "cable"
+      ],
+      "primaryMuscles": [
+        "Rotatory barku"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "2qb_UiSmFjk",
+          "title": "1-arm external rotation",
+          "seconds": 49,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "eAx9wEH9dHg",
+          "title": "db floor external rotation",
+          "seconds": 49,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "PWWn3z8Ft5s",
+          "title": "Shoulder Exercise - Side Lying External Rotation - Zion Physical Therapy Video",
+          "seconds": 100,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "GxDF2AYsI1Q",
+          "title": "Rotacja zewnętrzna barku kablowego",
+          "seconds": 50,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Kurczenie barków szerokim chwytem (Snatch Shrugs)",
+      "category": "shoulders",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Przedni akton barku",
+        "Kaptury"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "Qnicc0PJRCY",
+          "title": "Wide Grip Shrugs (aka Snatch Shrugs)",
+          "seconds": 17,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Unoszenie victory (Victory Raises)",
+      "category": "shoulders",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Przedni akton barku"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "QfFHEe2bIUo",
+          "title": "db victory raises",
+          "seconds": 35,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Unoszenie Y wyciągiem (Cable Y Raise)",
+      "category": "shoulders",
+      "pattern": "scapular",
+      "isUnilateral": false,
+      "equipment": [
+        "cable"
+      ],
+      "primaryMuscles": [
+        "Przedni akton barku",
+        "Tylny akton barku"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "oDSGrucETfw",
+          "title": "CABLE Y RAISE",
+          "seconds": 61,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Anioły łopatki (Scap Angels)",
+      "category": "shoulders",
+      "pattern": "scapular",
+      "isUnilateral": false,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Przedni akton barku",
+        "Łopatki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "QRhTkyK8llY",
+          "title": "scap angels",
+          "seconds": 19,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Kompleks Y-T-I (Y-T-I Shoulder Complex)",
+      "category": "shoulders",
+      "pattern": "scapular",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Przedni akton barku",
+        "Tylny akton barku"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "Iz-zfITmg9g",
+          "title": "Y-T-I Shoulder Complex",
+          "seconds": 66,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Ćwiczenie No Money",
+      "category": "shoulders",
+      "pattern": "rotation",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell",
+        "cable"
+      ],
+      "primaryMuscles": [
+        "Rotatory barku",
+        "Przedni akton barku"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "Anu16JcrPBI",
+          "title": "no money",
+          "seconds": 48,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Ślizgi ścienne na przednią zębatą (Serratus Wall Slides)",
+      "category": "shoulders",
+      "pattern": "scapular",
+      "isUnilateral": false,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Przednia zębata",
+        "Przedni akton barku"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "LOOSsWHhbqE",
+          "title": "serratus wall slides",
+          "seconds": 75,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "gebvKkSvg6A",
+          "title": "ZRÓB TO LEPIEJ!",
+          "seconds": 122,
+          "kind": "tip"
+        }
+      ]
+    },
+    {
+      "name": "Pływak leżąc (Prone Swimmers)",
+      "category": "shoulders",
+      "pattern": "scapular",
+      "isUnilateral": false,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Przedni akton barku",
+        "Najszerszy grzbietu"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "M8a1cgnhyqk",
+          "title": "Prone Swimmers",
+          "seconds": 39,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wiatraczek kettlebell (KB Windmill)",
+      "category": "shoulders",
+      "pattern": "rotation",
+      "isUnilateral": true,
+      "equipment": [
+        "kettlebell"
+      ],
+      "primaryMuscles": [
+        "Przedni akton barku",
+        "Core"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "UzCbtDBQ8t4",
+          "title": "1/2 Kneeling KB Windmill",
+          "seconds": 11,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie leżąc (Bench Press)",
+      "category": "chest",
+      "pattern": "horizontal-push",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Klatka piersiowa",
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "Cjp1lXY-sKA",
+          "title": "BIACROMICAL BENCH PRESS",
+          "seconds": 35,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "5DNAkk7IHEI",
+          "title": "ATLAS ĆWICZEŃ - WYCISKANIE LEŻĄC *łopatki",
+          "seconds": 503,
+          "kind": "tip"
+        },
+        {
+          "youtubeId": "J9DvDZzCOTo",
+          "title": "NADGRZEBIENIOWY - WYCISKANIE, KONTUZJA, CO ROBIĆ? #trening #fitness",
+          "seconds": 25,
+          "kind": "tip"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie wąskim chwytem (Close Grip Bench Press)",
+      "category": "chest",
+      "pattern": "horizontal-push",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Triceps",
+        "Klatka piersiowa"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "taSKv_apLiA",
+          "title": "bench press close grip",
+          "seconds": 42,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie Larsena (Larsen Press)",
+      "category": "chest",
+      "pattern": "horizontal-push",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Klatka piersiowa",
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "Ilt0GuTwB_Y",
+          "title": "Jak wykonać wyciskanie Larsena",
+          "seconds": 46,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie na podłodze (Floor Press)",
+      "category": "chest",
+      "pattern": "horizontal-push",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell",
+        "dumbbell",
+        "band"
+      ],
+      "primaryMuscles": [
+        "Klatka piersiowa",
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "g3FMV4-UkZ4",
+          "title": "floor press",
+          "seconds": 41,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "rs05AtccEhg",
+          "title": "Neutral Grip Dumbbell Floor Press",
+          "seconds": 24,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "GEDnyih65M4",
+          "title": "Band-Resisted Floor Press",
+          "seconds": 35,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie skośne sztangą (Incline Barbell Press)",
+      "category": "chest",
+      "pattern": "horizontal-push",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Klatka piersiowa",
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "DbFgADa2PL8",
+          "title": "Poradnik: Wyciskanie sztangi na ławce skośnej",
+          "seconds": 235,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "ccPfG12Gm6I",
+          "title": "LEPSZA WERSJA WYCISKANIA HANTLAMI! #fitness #kulturystyka #silownia",
+          "seconds": 35,
+          "kind": "tip"
+        },
+        {
+          "youtubeId": "FUvVnmsRBDw",
+          "title": "PROSTE ĆWICZENIE NA GÓRNĄ KLATKĘ!",
+          "seconds": 91,
+          "kind": "tip"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie skośne hantlami (Incline Dumbbell Press)",
+      "category": "chest",
+      "pattern": "horizontal-push",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Klatka piersiowa",
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "JxRezxz5xIM",
+          "title": "db incline press",
+          "seconds": 44,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "T0huVIujERo",
+          "title": "Hammer Strength Incline Chest Press Machine (pectoralis major)",
+          "seconds": 12,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "S3mIwrSW-f4",
+          "title": "\"Incline Dumbbell Press: Are You Making These Mistakes?\"",
+          "seconds": 8,
+          "kind": "mistakes"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie hantli na płaskiej (Dumbbell Bench Press)",
+      "category": "chest",
+      "pattern": "horizontal-push",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Klatka piersiowa",
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "XCvlz9P9NX0",
+          "title": "db bench press neutral grip",
+          "seconds": 32,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie Spoto (Spoto Press)",
+      "category": "chest",
+      "pattern": "horizontal-push",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Klatka piersiowa",
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "Ok4CpgMxhGY",
+          "title": "spoto press",
+          "seconds": 48,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie Poliquina (Poliquin Press)",
+      "category": "chest",
+      "pattern": "horizontal-push",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Klatka piersiowa",
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "OPQieu1Z6GM",
+          "title": "poliquin press",
+          "seconds": 36,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Rozpiętki Poliquina (Poliquin Fly)",
+      "category": "chest",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Klatka piersiowa"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "VOQW3zJeXcQ",
+          "title": "poliquin flys",
+          "seconds": 40,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Pullover hantlem (Dumbbell Pullover)",
+      "category": "chest",
+      "pattern": "horizontal-pull",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Klatka piersiowa",
+        "Najszerszy grzbietu"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "sgFTRuzj87M",
+          "title": "db pullover",
+          "seconds": 37,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "XEbwbhLd1dc",
+          "title": "GHD Dumbbell Pull Overs",
+          "seconds": 20,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Pompki z gumą (Band Push-Up)",
+      "category": "chest",
+      "pattern": "horizontal-push",
+      "isUnilateral": false,
+      "equipment": [
+        "band",
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Klatka piersiowa",
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "cOFwFzzLFWw",
+          "title": "Movement Demo - Push Ups With Bands",
+          "seconds": 62,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Pompki na poręczach (Dips)",
+      "category": "chest",
+      "pattern": "horizontal-push",
+      "isUnilateral": false,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Klatka piersiowa",
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "RT-rXASyvFI",
+          "title": "dips",
+          "seconds": 21,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Rozpiętki wysokie wyciągiem (High Cable Fly)",
+      "category": "chest",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "cable"
+      ],
+      "primaryMuscles": [
+        "Klatka piersiowa"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "Iwe6AmxVf7o",
+          "title": "Instrukcja: Wysokie rozpiętki na klatce piersiowej",
+          "seconds": 132,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Rozpiętki dolne wyciągiem (Low Cable Fly)",
+      "category": "chest",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "cable"
+      ],
+      "primaryMuscles": [
+        "Klatka piersiowa"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "fijZic20Gcw",
+          "title": "Workout 101- Low Cable Fly",
+          "seconds": 430,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Motylek na maszynie (Pec Deck)",
+      "category": "chest",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Klatka piersiowa"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "WpVu2duHnQE",
+          "title": "Butterfly Pectoral machine tutorial",
+          "seconds": 72,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Press around na górną klatkę (Clavicular Pec Press Around)",
+      "category": "chest",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "cable"
+      ],
+      "primaryMuscles": [
+        "Klatka piersiowa"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "Lo6R9rllS78",
+          "title": "Clavicular pec press around",
+          "seconds": 111,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie mostkowe hantlami (Bridge Dumbbell Press)",
+      "category": "chest",
+      "pattern": "horizontal-push",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Klatka piersiowa",
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "KQ02CWBXtkw",
+          "title": "Bridge Dumbbell Press",
+          "seconds": 32,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie mostkowe sztangą (Bridge Barbell Press)",
+      "category": "chest",
+      "pattern": "horizontal-push",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Klatka piersiowa",
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "DvXTJ1nsPSo",
+          "title": "BB Bridge Press",
+          "seconds": 39,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie ujemne hantlami (Decline Dumbbell Press)",
+      "category": "chest",
+      "pattern": "horizontal-push",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Klatka piersiowa",
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "1OdTFeN90W4",
+          "title": "Decline Db chest press",
+          "seconds": 10,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "zUWQG9iWqC4",
+          "title": "Decline bench press mistakes! Right✅ vs Wrong❌ | GAZI FITNESS #gym #shorts",
+          "seconds": 6,
+          "kind": "mistakes"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie na jammerze (Jammer Chest Press)",
+      "category": "chest",
+      "pattern": "horizontal-push",
+      "isUnilateral": false,
+      "equipment": [
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Klatka piersiowa",
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "dwgsFhoF6C0",
+          "title": "Sorinex Jammer Arm Chest | Home Gym",
+          "seconds": 16,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Podciąganie (Pull-Up)",
+      "category": "back",
+      "pattern": "vertical-pull",
+      "isUnilateral": false,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Najszerszy grzbietu",
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "0aoF5fPEpns",
+          "title": "Pull up",
+          "seconds": 15,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "1G9Mronrph8",
+          "title": "wide grip pull up",
+          "seconds": 11,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Podciąganie podchwytem (Chin-Up)",
+      "category": "back",
+      "pattern": "vertical-pull",
+      "isUnilateral": false,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Najszerszy grzbietu",
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "ql5GIZNfWps",
+          "title": "chin up",
+          "seconds": 11,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Podciąganie młotkowe (Hammer Pull-Up)",
+      "category": "back",
+      "pattern": "vertical-pull",
+      "isUnilateral": false,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Najszerszy grzbietu",
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "MXTssop0Ufg",
+          "title": "hammer pull up",
+          "seconds": 12,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Podciąganie na kółkach (Ring Pull-Up)",
+      "category": "back",
+      "pattern": "vertical-pull",
+      "isUnilateral": false,
+      "equipment": [
+        "rings"
+      ],
+      "primaryMuscles": [
+        "Najszerszy grzbietu",
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "dhalIpVGju0",
+          "title": "Ring Pull-Up Technique",
+          "seconds": 23,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "59Kpdw7cqgY",
+          "title": "Pokaz ruchu – podciąganie na kółkach (chwyt ścisły/fałszywy)",
+          "seconds": 63,
+          "kind": "tip"
+        }
+      ]
+    },
+    {
+      "name": "Ściąganie drążka jednorącz (Single-Arm Lat Pulldown)",
+      "category": "back",
+      "pattern": "vertical-pull",
+      "isUnilateral": true,
+      "equipment": [
+        "cable"
+      ],
+      "primaryMuscles": [
+        "Najszerszy grzbietu",
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "Fr_G1Y6o2Us",
+          "title": "Single Arm Lat Pulldown (Exercises.com.au)",
+          "seconds": 132,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "lIYa_BzVN7s",
+          "title": "ZBUDUJ SZEROKIE PLECY 1 ĆWICZENIEM!",
+          "seconds": 31,
+          "kind": "tip"
+        }
+      ]
+    },
+    {
+      "name": "Wiosłowanie jednorącz (1-Arm Row)",
+      "category": "back",
+      "pattern": "horizontal-pull",
+      "isUnilateral": true,
+      "equipment": [
+        "dumbbell",
+        "barbell",
+        "cable",
+        "band"
+      ],
+      "primaryMuscles": [
+        "Najszerszy grzbietu",
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "Q6tg_QbznPg",
+          "title": "1-arm row",
+          "seconds": 51,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "PWv67wdYtDg",
+          "title": "1-arm row",
+          "seconds": 31,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "YpRDl2MinRk",
+          "title": "BB 1-ARM ROW - wiosło jednoracz ze sztanga",
+          "seconds": 15,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "skzYyKXijCQ",
+          "title": "1-arm row 45",
+          "seconds": 22,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "nsf8-e97BFM",
+          "title": "1-arm row 90",
+          "seconds": 9,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "PQTaw-Zp0eg",
+          "title": "1-ARM GHD ROW. Wiosło jednorącz na ghd",
+          "seconds": 37,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "mGlzyVZ29jQ",
+          "title": "Single Arm High-Cable Row",
+          "seconds": 54,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "u_86gl58qBM",
+          "title": "Single Arm Banded Rows",
+          "seconds": 14,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wiosłowanie kablem z rotacją siedząc (Cable Row with Rotation)",
+      "category": "back",
+      "pattern": "horizontal-pull",
+      "isUnilateral": false,
+      "equipment": [
+        "cable"
+      ],
+      "primaryMuscles": [
+        "Najszerszy grzbietu",
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "STom5Xs8wKw",
+          "title": "Cable Row Rotation Seated - GymCalc.com",
+          "seconds": 26,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wiosłowanie Yates (Yates Row)",
+      "category": "back",
+      "pattern": "horizontal-pull",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Najszerszy grzbietu",
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "7Co7Cp9f0nU",
+          "title": "Yates row",
+          "seconds": 26,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wiosłowanie landmine jednorącz (Single-Arm Landmine Row)",
+      "category": "back",
+      "pattern": "horizontal-pull",
+      "isUnilateral": true,
+      "equipment": [
+        "landmine",
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Najszerszy grzbietu",
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "SkeLmECvzts",
+          "title": "Single Arm Landmine Row (In front of bar)",
+          "seconds": 80,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wiosłowanie w opadzie sztangą (Bent-Over Barbell Row)",
+      "category": "back",
+      "pattern": "horizontal-pull",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Najszerszy grzbietu",
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "urGn0sY9GGY",
+          "title": "bent over bb row",
+          "seconds": 39,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "MjWlizOaEvc",
+          "title": "wide grip bent over row",
+          "seconds": 31,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wiosłowanie seal (Seal Row)",
+      "category": "back",
+      "pattern": "horizontal-pull",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Najszerszy grzbietu",
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "O7X8-_j9iso",
+          "title": "Eleiko Seal Row Review: Also A Weight Bench?!",
+          "seconds": 693,
+          "kind": "tip"
+        }
+      ]
+    },
+    {
+      "name": "Wiosłowanie Pendlay (Pendlay Row)",
+      "category": "back",
+      "pattern": "horizontal-pull",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Najszerszy grzbietu",
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "EnKPrmNuZoU",
+          "title": "pendlay row",
+          "seconds": 47,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wiosłowanie w oparciu o ławkę hantlem (Chest-Supported Dumbbell Row)",
+      "category": "back",
+      "pattern": "horizontal-pull",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Najszerszy grzbietu",
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "w1SpVoQ1o1U",
+          "title": "db chest supported row",
+          "seconds": 25,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wiosłowanie renegade (Renegade Row)",
+      "category": "back",
+      "pattern": "horizontal-pull",
+      "isUnilateral": true,
+      "equipment": [
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Najszerszy grzbietu",
+        "Core"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "SWolgUrON4Q",
+          "title": "row renegate",
+          "seconds": 39,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wiosłowanie siedząc wyciągiem (Seated Cable Row)",
+      "category": "back",
+      "pattern": "horizontal-pull",
+      "isUnilateral": false,
+      "equipment": [
+        "cable"
+      ],
+      "primaryMuscles": [
+        "Najszerszy grzbietu",
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "GZbfZ033f74",
+          "title": "Instrukcja: wiosłowanie na siedząco (kabel LF)",
+          "seconds": 127,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "G18ysBYu5Mw",
+          "title": "NAJLEPSZY samouczek wiosłowania 🔥 Wiosłowanie wyciągiem lędźwiowym",
+          "seconds": 30,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Pullover wyciągiem (Cable Lat Pullover)",
+      "category": "back",
+      "pattern": "vertical-pull",
+      "isUnilateral": false,
+      "equipment": [
+        "cable"
+      ],
+      "primaryMuscles": [
+        "Najszerszy grzbietu"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "32auHIqgEoM",
+          "title": "Jak wykonać CABLE LAT PULLOVER! | 2-minutowy samouczek",
+          "seconds": 120,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wiosłowanie odwrócone TRX (TRX Inverted Row)",
+      "category": "back",
+      "pattern": "horizontal-pull",
+      "isUnilateral": false,
+      "equipment": [
+        "trx"
+      ],
+      "primaryMuscles": [
+        "Najszerszy grzbietu",
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "utTuYn6ncGE",
+          "title": "How To Do TRX Inverted Rows | BluePhoenixFitness.com",
+          "seconds": 163,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wiosłowanie wysokie na maszynie (Plate-Loaded High Row)",
+      "category": "back",
+      "pattern": "horizontal-pull",
+      "isUnilateral": false,
+      "equipment": [
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Najszerszy grzbietu",
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "q_ZirZCpagU",
+          "title": "HOW TO USE GYM MACHINES: Plate loaded High Row",
+          "seconds": 19,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wiosłowanie T-bar (T-Bar Row)",
+      "category": "back",
+      "pattern": "horizontal-pull",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Najszerszy grzbietu",
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "YHK3InsUrfo",
+          "title": "Trik na siłownię👏 Wiosłowanie na drążku w kształcie litery T👍 #szorty",
+          "seconds": 11,
+          "kind": "tip"
+        }
+      ]
+    },
+    {
+      "name": "Motylek odwrotny (Reverse Pec Deck)",
+      "category": "back",
+      "pattern": "horizontal-pull",
+      "isUnilateral": false,
+      "equipment": [
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Tylny akton barku",
+        "Najszerszy grzbietu"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "a2IrliT3EaQ",
+          "title": "Butterfly Reverse - Rückentraining",
+          "seconds": 51,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Skłony boczne na ławce rzymskiej (Roman Chair Side Bends)",
+      "category": "core",
+      "pattern": "anti-extension",
+      "isUnilateral": false,
+      "equipment": [
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Core"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "BDw-OxRQhro",
+          "title": "Roman Chair Side Bends",
+          "seconds": 22,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Deska (Plank)",
+      "category": "core",
+      "pattern": "anti-extension",
+      "isUnilateral": false,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Core"
+      ],
+      "type": "time",
+      "defaultSets": 3,
+      "defaultReps": 1,
+      "defaultRepDurationSeconds": 45,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "tKlZpCyGQ5s",
+          "title": "plank",
+          "seconds": 24,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "PsE49CE0uqg",
+          "title": "body saw plank ball swiss",
+          "seconds": 42,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Deska boczna (Side Bridge)",
+      "category": "core",
+      "pattern": "anti-rotation",
+      "isUnilateral": true,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Core"
+      ],
+      "type": "time",
+      "defaultSets": 3,
+      "defaultReps": 1,
+      "defaultRepDurationSeconds": 45,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "D6UD3dDWdQ0",
+          "title": "side bridge",
+          "seconds": 16,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "lbBXnF35Uq0",
+          "title": "side bridge leg raise hold",
+          "seconds": 17,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "ZZkgopVBPMg",
+          "title": "Core Exercises: Side Plank With Leg Lift",
+          "seconds": 45,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Martwy robak (Dead Bug)",
+      "category": "core",
+      "pattern": "anti-extension",
+      "isUnilateral": false,
+      "equipment": [
+        "bodyweight",
+        "band"
+      ],
+      "primaryMuscles": [
+        "Core"
+      ],
+      "type": "time",
+      "defaultSets": 3,
+      "defaultReps": 1,
+      "defaultRepDurationSeconds": 45,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "Jcxa1OpFvzg",
+          "title": "dead bug",
+          "seconds": 56,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "xxerTDZFuzc",
+          "title": "banded dead bug",
+          "seconds": 33,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Marsz psoas na ławce (Psoas March)",
+      "category": "core",
+      "pattern": "anti-extension",
+      "isUnilateral": false,
+      "equipment": [
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Core",
+        "Biodra"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "PNu7EBOc0CU",
+          "title": "psoas march on bench",
+          "seconds": 15,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Koło do brzucha (Ab Wheel Rollout)",
+      "category": "core",
+      "pattern": "anti-extension",
+      "isUnilateral": false,
+      "equipment": [
+        "other",
+        "band"
+      ],
+      "primaryMuscles": [
+        "Core"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "pSyilvITOAU",
+          "title": "ab wheel",
+          "seconds": 42,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "YmrGQuqxHto",
+          "title": "ab wheel with band",
+          "seconds": 49,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Trzymanie zercher (Zercher Hold)",
+      "category": "core",
+      "pattern": "anti-extension",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Core"
+      ],
+      "type": "time",
+      "defaultSets": 3,
+      "defaultReps": 1,
+      "defaultRepDurationSeconds": 45,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "ymhkmsCYGW0",
+          "title": "zercher hold",
+          "seconds": 35,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Spacer zercher (Zercher Walk)",
+      "category": "core",
+      "pattern": "carry",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Core"
+      ],
+      "type": "distance",
+      "defaultSets": 3,
+      "defaultReps": 1,
+      "defaultDistanceMeters": 20,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "nVgZ8QOhh-U",
+          "title": "Zercher walk",
+          "seconds": 27,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Spacer walizką (Suitcase Carry)",
+      "category": "core",
+      "pattern": "carry",
+      "isUnilateral": true,
+      "equipment": [
+        "dumbbell",
+        "kettlebell"
+      ],
+      "primaryMuscles": [
+        "Core"
+      ],
+      "type": "distance",
+      "defaultSets": 3,
+      "defaultReps": 1,
+      "defaultDistanceMeters": 20,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "v3MguXumFSE",
+          "title": "suitcase walk",
+          "seconds": 31,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Spacer farmera (Farmer's Walk)",
+      "category": "core",
+      "pattern": "carry",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell",
+        "kettlebell"
+      ],
+      "primaryMuscles": [
+        "Przedramię",
+        "Core"
+      ],
+      "type": "distance",
+      "defaultSets": 3,
+      "defaultReps": 1,
+      "defaultDistanceMeters": 20,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "DXX4eplYC0k",
+          "title": "farmers walk",
+          "seconds": 27,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "oIQ2HpAtpUg",
+          "title": "Single Arm Kettlebell Overhead:Single Arm Farmer Carry Walk",
+          "seconds": 17,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Unoszenie kolan w zwisie (Garhammer Raise)",
+      "category": "core",
+      "pattern": "anti-extension",
+      "isUnilateral": false,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Core"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "8rD410sFOjk",
+          "title": "garhammer raise",
+          "seconds": 27,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Rąbanie drewna wyciągiem (Cable Wood Chop)",
+      "category": "core",
+      "pattern": "rotation",
+      "isUnilateral": true,
+      "equipment": [
+        "cable"
+      ],
+      "primaryMuscles": [
+        "Core"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "NyWfEGVLfrA",
+          "title": "cable wood chop",
+          "seconds": 38,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Rąbanie drewna z gumą (Banded Wood Chop)",
+      "category": "core",
+      "pattern": "rotation",
+      "isUnilateral": true,
+      "equipment": [
+        "band"
+      ],
+      "primaryMuscles": [
+        "Core"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "Yxe0gA6acFU",
+          "title": "banded wood chop",
+          "seconds": 38,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Stopy do drążka (Toes to Bar)",
+      "category": "core",
+      "pattern": "anti-extension",
+      "isUnilateral": false,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Core"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "pM2EPCE9JZE",
+          "title": "toes to bar",
+          "seconds": 24,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Brzuszki Janda (Janda Sit-Up)",
+      "category": "core",
+      "pattern": "anti-extension",
+      "isUnilateral": false,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Core"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "REdAjXayWJ4",
+          "title": "janda sit up",
+          "seconds": 66,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Antyrotacja z gumą (Banded Anti-Rotation)",
+      "category": "core",
+      "pattern": "anti-rotation",
+      "isUnilateral": true,
+      "equipment": [
+        "band"
+      ],
+      "primaryMuscles": [
+        "Core"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "Vql5UaGgvO8",
+          "title": "banded anti-rotation",
+          "seconds": 31,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie Pallofa (Pallof Press)",
+      "category": "core",
+      "pattern": "anti-rotation",
+      "isUnilateral": true,
+      "equipment": [
+        "cable",
+        "band"
+      ],
+      "primaryMuscles": [
+        "Core"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "z54bM-0L8n0",
+          "title": "pallof press",
+          "seconds": 32,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Rotacja landmine (Landmine Rotation)",
+      "category": "core",
+      "pattern": "rotation",
+      "isUnilateral": false,
+      "equipment": [
+        "landmine",
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Core"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "jVIHlBZrw7g",
+          "title": "landmine z obrotem",
+          "seconds": 19,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "CDz92ezthZw",
+          "title": "landmine rotation",
+          "seconds": 29,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Superman TRX (TRX Superman)",
+      "category": "core",
+      "pattern": "anti-extension",
+      "isUnilateral": false,
+      "equipment": [
+        "trx"
+      ],
+      "primaryMuscles": [
+        "Najszerszy grzbietu",
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "h1SfEQkyXSs",
+          "title": "trx superman",
+          "seconds": 58,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Spacer ze sztangą nad głową (Overhead Barbell Walk)",
+      "category": "core",
+      "pattern": "carry",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Przedni akton barku",
+        "Core"
+      ],
+      "type": "distance",
+      "defaultSets": 3,
+      "defaultReps": 1,
+      "defaultDistanceMeters": 20,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "BbdjNAmU6Fc",
+          "title": "Overhead barbell walk",
+          "seconds": 33,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Brzuszki TRX (TRX Crunch)",
+      "category": "core",
+      "pattern": "anti-extension",
+      "isUnilateral": false,
+      "equipment": [
+        "trx"
+      ],
+      "primaryMuscles": [
+        "Core"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "sa-Z0r7yogQ",
+          "title": "Crunch in sospensione al TRX/Strap Training",
+          "seconds": 129,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Pchanie sań (Sled Push)",
+      "category": "core",
+      "pattern": "carry",
+      "isUnilateral": false,
+      "equipment": [
+        "sled"
+      ],
+      "primaryMuscles": [
+        "Nogi",
+        "Core"
+      ],
+      "type": "distance",
+      "defaultSets": 3,
+      "defaultReps": 1,
+      "defaultDistanceMeters": 20,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "MbQWu3GdWfc",
+          "title": "Sled Push Exercise",
+          "seconds": 12,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Brzuszki na GHD (GHD Sit-Up)",
+      "category": "core",
+      "pattern": "anti-extension",
+      "isUnilateral": false,
+      "equipment": [
+        "ghd"
+      ],
+      "primaryMuscles": [
+        "Core",
+        "Biodra"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "drtWxWK8QOM",
+          "title": "Midline Stabilization: The GHD Sit-Up",
+          "seconds": 92,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Spięcia brzucha na wyciągu (Cable Rope Crunch)",
+      "category": "core",
+      "pattern": "anti-extension",
+      "isUnilateral": false,
+      "equipment": [
+        "cable"
+      ],
+      "primaryMuscles": [
+        "Core"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "M1HeORCwv8A",
+          "title": "Cable Rope Crunches",
+          "seconds": 33,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Brzuszki na wałku piankowym (Foam Roll Sit-Up)",
+      "category": "core",
+      "pattern": "anti-extension",
+      "isUnilateral": false,
+      "equipment": [
+        "foam-roller"
+      ],
+      "primaryMuscles": [
+        "Core"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "Cdu19VuWZOc",
+          "title": "Foam roll sit-ups",
+          "seconds": 28,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "ioMJ1hElUJA",
+          "title": "Foam Roll sit ups",
+          "seconds": 57,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Brzuszki psoas (Psoas Sit-Up)",
+      "category": "core",
+      "pattern": "anti-extension",
+      "isUnilateral": false,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Core",
+        "Biodra"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "0U_DBJBSuNw",
+          "title": "Psoas Sit-up",
+          "seconds": 16,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Nietypowe ćwiczenia na brzuch",
+      "category": "core",
+      "pattern": "anti-extension",
+      "isUnilateral": false,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Core"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "description": "Zbiór nietypowych wariantów na brzuch z playlisty treningowej.",
+      "media": [
+        {
+          "youtubeId": "5tOnTkVtLic",
+          "title": "6-PACK, ABS, NIETYPOWE ĆWICZENIA NA BRZUCH! *trenuj na kwarantannie",
+          "seconds": 178,
+          "kind": "tip"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie hantli na ławce skośnej (Incline Dumbbell Curl)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "2lWcAUYb17s",
+          "title": "db incline curl",
+          "seconds": 66,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie młotkowe naprzemiennie (Alternate Hammer Curl)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": true,
+      "equipment": [
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Biceps",
+        "Przedramię"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "UAl1KaMp-oA",
+          "title": "alternate hammer curl",
+          "seconds": 37,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie ramion ze sztangą (Barbell Curl)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "_LNjE-64Hvw",
+          "title": "biceps curl",
+          "seconds": 50,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie odwrotne (Reverse Curl)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell",
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Przedramię",
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "nRgxYX2Ve9w",
+          "title": "Jak wykonać odwrotne zginanie ramion | Trening ramion",
+          "seconds": 109,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie modlitewne (Spider Curl)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "Zxql4KCRnUs",
+          "title": "spider curl",
+          "seconds": 38,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie koncentracyjne (Concentration Curl)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": true,
+      "equipment": [
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "cG3qCFHs13U",
+          "title": "concentration curl",
+          "seconds": 16,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie na wyciągu dolnym (Low Cable Curl)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "cable"
+      ],
+      "primaryMuscles": [
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "lux96onG0r8",
+          "title": "Low Pulley Dual Cable Biceps Curl: How To",
+          "seconds": 81,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "LH05wtY1Rnk",
+          "title": "Cable curl",
+          "seconds": 36,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "s-IFXfrumCo",
+          "title": "How To: Facing Away Cable Curl | Form Tutorial",
+          "seconds": 23,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie podchwytem (Supinated Curl)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell",
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "QElP45lNAAE",
+          "title": "Supinated curl",
+          "seconds": 35,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie na modlitewniku odwrotne (Reverse Preacher Curl)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Przedramię",
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "fIeXorVXh1w",
+          "title": "EZ BAR REVERSE PREACHER  CURL",
+          "seconds": 25,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Potrójne uginanie na wyciągu (Cable Biceps Triple Threat)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "cable",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "hrcfOpjuqZs",
+          "title": "Cable Biceps Triple-Threat Using Incline Bench",
+          "seconds": 36,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie Scotta (Scott Curl)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "5YsDqn9k0Kw",
+          "title": "EZ Bar Scott Curls (Variation of Preacher Curls)",
+          "seconds": 44,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie na wyciągu wysokim (High Cable Bicep Curl)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "cable"
+      ],
+      "primaryMuscles": [
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "xnN7U7c64LQ",
+          "title": "High Cable Bicep Curl",
+          "seconds": 12,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie T na ławce skośnej (Incline T-Curl)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "RpbTVUgVRTk",
+          "title": "Incline DB T-Curl",
+          "seconds": 49,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie Browara (Browar Curl)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "N3aI8eEcou0",
+          "title": "BROWAR curl",
+          "seconds": 15,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie leniwe (Lazy Man Curl)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Biceps"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "0DM_UJG7Fdk",
+          "title": "Lazy man curl",
+          "seconds": 17,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie Zottmana (Zottman Curl)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Biceps",
+        "Przedramię"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "ZrpRBgswtHs",
+          "title": "How To: Zottman Curl",
+          "seconds": 103,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Prostowanie tricepsa na wyciągu (Cable Triceps Extension)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "cable"
+      ],
+      "primaryMuscles": [
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "9Mky7W0clLs",
+          "title": "cable triceps extension",
+          "seconds": 8,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Pullover na triceps (Triceps Pullover)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell",
+        "cable"
+      ],
+      "primaryMuscles": [
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "5ri0y8niOW8",
+          "title": "triceps pullover",
+          "seconds": 14,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie JM (JM Press)",
+      "category": "arms",
+      "pattern": "horizontal-push",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell",
+        "smith"
+      ],
+      "primaryMuscles": [
+        "Triceps",
+        "Klatka piersiowa"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "Zg97vHs_lSI",
+          "title": "jm press",
+          "seconds": 33,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "sQJzzZVqV3k",
+          "title": "JM Press on Smith Machine | PhysiqueDevelopment.com",
+          "seconds": 30,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Francuskie wyciskanie (Skull Crusher)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell",
+        "dumbbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "IPncJj5uQYU",
+          "title": "skull crusher",
+          "seconds": 7,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "ir5PsbniVSc",
+          "title": "Instrukcja: Ćwiczenie z użyciem hantli do kruszenia czaszek",
+          "seconds": 88,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "osHzkwG-9JE",
+          "title": "INCLINE DUMBBELL SKULL CRUSHER",
+          "seconds": 48,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Prostowanie tricepsa nad głową sztangą (Overhead Bar Triceps Extension)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "phjh4WVEKFI",
+          "title": "overhead bar triceps extension",
+          "seconds": 11,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Prostowanie tricepsa nad głową hantlem (Dumbbell Overhead Triceps Extension)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "xTwKez1eJKs",
+          "title": "db overhead triceps extension",
+          "seconds": 7,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "6SS6K3lAwZ8",
+          "title": "Instrukcja: Wyprost tricepsa (hantle)",
+          "seconds": 90,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Prostowanie tricepsa jednorącz (1-Arm Triceps Extension)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": true,
+      "equipment": [
+        "dumbbell",
+        "cable"
+      ],
+      "primaryMuscles": [
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "DQrzFyMCLl0",
+          "title": "1 arm triceps extension",
+          "seconds": 6,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie kalifornijskie (California Press)",
+      "category": "arms",
+      "pattern": "horizontal-push",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell",
+        "dumbbell",
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Triceps",
+        "Klatka piersiowa"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "fCUeeaWBBSs",
+          "title": "California Press",
+          "seconds": 151,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "FcLmGRxd8vo",
+          "title": "DB California Press",
+          "seconds": 10,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Prostowanie tricepsa krzyżowym wyciągiem (Cross Cable Triceps Extension)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "cable"
+      ],
+      "primaryMuscles": [
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "uID8NFK1p5Y",
+          "title": "Cross Cable Tricep Extension - Under 60s How-to - Schaum Fitness",
+          "seconds": 30,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Prostowanie katana (Tricep Katana Extension)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": true,
+      "equipment": [
+        "cable"
+      ],
+      "primaryMuscles": [
+        "Triceps"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "hrG-Wqwqo_Q",
+          "title": "Tricep Katana Extension",
+          "seconds": 75,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie nadgarstków młotkowe (Hammer Grip Wrist Curl)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Przedramię"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "lxeDTMToPBM",
+          "title": "Hammer Grip Wrist Curls",
+          "seconds": 6,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Prostowanie nadgarstków (Wrist Extension)",
+      "category": "arms",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell",
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Przedramię"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "esOfrrIx5Zk",
+          "title": "Wzmacnianie przedramion: skuteczne ćwiczenia na prostowanie nadgarstków",
+          "seconds": 311,
+          "kind": "demo"
+        }
+      ]
+    }
+  ]
+}
