@@ -69,6 +69,10 @@ jobs:
       - name: Install EF tools
         run: dotnet tool install --global dotnet-ef --version 10.0.0
 
+      - name: Restore NuGet packages
+        working-directory: ./apps/api
+        run: dotnet restore TrainerApp.Api.csproj
+
       - name: Build migration bundle
         working-directory: ./apps/api
         run: |
