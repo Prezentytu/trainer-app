@@ -14,9 +14,13 @@ Next.js 16 (App Router) + React 19 + Tailwind 4. Port 3000. Ciemny motyw, UI po 
 
 | Ścieżka | Rola |
 |---|---|
-| `app/layout.tsx` | Wspólny layout: renderuje `AppShell` |
+| `app/layout.tsx` | Root: fonty, metadata, `ClerkAppProvider` (bez sidebara) |
+| `app/(app)/layout.tsx` | Panel trenera: owija `AppShell` (klienci, ćwiczenia, plany) |
+| `app/page.tsx` | `/` — landing (gość) albo Panel w `AppShell` (zalogowany / lokal) |
 | `components/AppShell.tsx` | Sidebar (desktop) + mobilny drawer + tablica `NAV` (tu dopisujesz nowe działy) |
-| `app/{zasób}/page.tsx` | Strona listy zasobu (client component) |
+| `components/landing/` | Sekcje strony powitalnej |
+| `components/auth/AuthScreen.tsx` | Split-screen dla `/sign-in` i `/sign-up` |
+| `app/{zasób}/page.tsx` | Strona listy zasobu (client component) — w grupie `(app)` |
 | `app/{zasób}/[id]/page.tsx` | Strona szczegółów |
 | `lib/api.ts` | Typowany klient API — typy TS + obiekt `api` z metodami per zasób |
 | `components/ui.tsx` | Wspólne prymitywy UI |

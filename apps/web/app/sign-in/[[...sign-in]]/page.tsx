@@ -1,24 +1,48 @@
 "use client";
 
+import Link from "next/link";
 import { SignIn } from "@clerk/nextjs";
 import { clerkEnabled } from "@/lib/api";
+import { AuthScreen } from "@/components/auth/AuthScreen";
 
 export default function SignInPage() {
   if (!clerkEnabled) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <p className="max-w-md text-center text-sm text-muted">
-          Clerk nie jest skonfigurowany (brak{" "}
-          <code className="font-mono text-foreground-secondary">NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY</code>
-          ). Lokalnie panel działa bez logowania.
+      <AuthScreen
+        title="Logowanie wyłączone"
+        subtitle="Lokalnie panel działa bez konta Clerk."
+        switchLabel="Chcesz założyć konto?"
+        switchHref="/sign-up"
+        switchCta="Rejestracja"
+      >
+        <p className="rounded-xl border border-border bg-surface p-4 text-sm text-muted">
+          Brak{" "}
+          <code className="font-mono text-foreground-secondary">NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY</code>.
+          Otwórz{" "}
+          <Link href="/" className="font-medium text-accent hover:underline">
+            Panel
+          </Link>{" "}
+          bezpośrednio.
         </p>
-      </div>
+      </AuthScreen>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" />
-    </div>
+    <AuthScreen
+      title="Zaloguj się do studia"
+      subtitle="Witaj z powrotem. Kontynuuj pracę z klientami i planami."
+      switchLabel="Nie masz konta?"
+      switchHref="/sign-up"
+      switchCta="Utwórz konto"
+    >
+      <SignIn
+        routing="path"
+        path="/sign-in"
+        signUpUrl="/sign-up"
+        fallbackRedirectUrl="/"
+        forceRedirectUrl="/"
+      />
+    </AuthScreen>
   );
 }

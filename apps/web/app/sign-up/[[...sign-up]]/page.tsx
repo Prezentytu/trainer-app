@@ -1,20 +1,51 @@
 "use client";
 
+import Link from "next/link";
 import { SignUp } from "@clerk/nextjs";
 import { clerkEnabled } from "@/lib/api";
+import { AuthScreen } from "@/components/auth/AuthScreen";
 
 export default function SignUpPage() {
   if (!clerkEnabled) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <p className="text-sm text-muted">Rejestracja wyłączona w trybie lokalnym.</p>
-      </div>
+      <AuthScreen
+        title="Rejestracja wyłączona"
+        subtitle="W trybie lokalnym bez kluczy Clerk konto nie jest wymagane."
+        switchLabel="Masz już konto?"
+        switchHref="/sign-in"
+        switchCta="Zaloguj się"
+      >
+        <p className="rounded-xl border border-border bg-surface p-4 text-sm text-muted">
+          Otwórz{" "}
+          <Link href="/" className="font-medium text-accent hover:underline">
+            Panel
+          </Link>{" "}
+          — lokalnie działa od razu.
+        </p>
+      </AuthScreen>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" />
-    </div>
+    <AuthScreen
+      title="Utwórz konto trenera"
+      subtitle="Bez karty. Pierwsze 15 minut: klient → plan → link do portalu."
+      footerHint={
+        <p className="rounded-[10px] border border-accent-border bg-accent-dim px-3 py-2 text-xs text-accent-strong">
+          We wczesnym dostępie — bezpłatnie. Eksport danych zawsze dostępny.
+        </p>
+      }
+      switchLabel="Masz już konto?"
+      switchHref="/sign-in"
+      switchCta="Zaloguj się"
+    >
+      <SignUp
+        routing="path"
+        path="/sign-up"
+        signInUrl="/sign-in"
+        fallbackRedirectUrl="/"
+        forceRedirectUrl="/"
+      />
+    </AuthScreen>
   );
 }

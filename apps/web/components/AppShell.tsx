@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { ClipboardList, Dumbbell, Home, Menu, Users, X } from "lucide-react";
 import { api } from "@/lib/api";
 import { Avatar } from "@/components/ui";
+import { Wordmark } from "@/components/Wordmark";
 
 const NAV = [
   { href: "/", label: "Panel", icon: Home, countKey: null },
@@ -13,21 +14,6 @@ const NAV = [
   { href: "/exercises", label: "Ćwiczenia", icon: Dumbbell, countKey: null },
   { href: "/plans", label: "Plany", icon: ClipboardList, countKey: "plans" as const },
 ];
-
-function Logo({ compact = false }: { compact?: boolean }) {
-  return (
-    <Link href="/" className="flex items-center gap-2.5 px-2">
-      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-accent font-display text-sm font-bold text-accent-foreground">
-        WA
-      </span>
-      {!compact && (
-        <span className="font-display text-lg font-bold tracking-tight">
-          Workout <span className="text-accent">Alchemist</span>
-        </span>
-      )}
-    </Link>
-  );
-}
 
 function NavLinks({
   onNavigate,
@@ -132,10 +118,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     plans: null,
   });
   const pathname = usePathname();
-  // PWA klienta / auth — bez sidebara trenera.
-  const isPortal = (pathname ?? "").startsWith("/portal");
-  const isAuthPage =
-    (pathname ?? "").startsWith("/sign-in") || (pathname ?? "").startsWith("/sign-up");
   // Kreator/podgląd planu (/plans/new, /plans/[id]) potrzebuje szerokiej siatki na dni tygodnia —
   // lista planów (/plans) zostaje przy wąskim, czytelnym kontenerze jak reszta stron. Te same
   // trasy dostają "tryb skupienia": sidebar zwija się do wąskiego railu z ikonami.
@@ -143,33 +125,18 @@ export function AppShell({ children }: { children: ReactNode }) {
   const showRail = isPlanEditor && !railExpanded;
 
   useEffect(() => {
-    if (isPortal || isAuthPage) return;
     api
       .counts()
       .then((c) => setCounts({ clients: c.clients, plans: c.plans }))
       .catch(() => {
         // Liczniki nawigacji to tylko usprawnienie orientacji — brak backendu nie może wywrócić layoutu.
       });
-  }, [isPortal, isAuthPage]);
-
-  if (isPortal) {
-    return (
-      <div className="min-h-screen bg-background text-foreground">
-        <main className="mx-auto w-full max-w-lg px-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] pt-4">
-          {children}
-        </main>
-      </div>
-    );
-  }
-
-  if (isAuthPage) {
-    return <>{children}</>;
-  }
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-surface/80 p-4 backdrop-blur md:hidden">
-        <Logo />
+        <Wordmark />
         <button
           type="button"
           onClick={() => setDrawerOpen(true)}
@@ -187,7 +154,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           showRail ? "md:w-16" : "md:w-56"
         }`}
       >
-        <Logo compact={showRail} />
+        <Wordmark compact={showRail} className="px-2" />
         <NavLinks counts={counts} compact={showRail} />
         <TrainerFooter compact={showRail} clientCount={counts.clients} />
       </aside>
@@ -202,7 +169,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           />
           <aside className="relative flex h-full w-64 max-w-[80vw] flex-col gap-6 border-r border-border bg-surface p-4 shadow-modal">
             <div className="flex items-center justify-between">
-              <Logo />
+              <Wordmark />
               <button
                 type="button"
                 onClick={() => setDrawerOpen(false)}
