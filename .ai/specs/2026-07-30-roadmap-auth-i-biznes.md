@@ -4,7 +4,7 @@
 
 Spec-roadmapa **bez implementacji** — instrukcje researchu i kolejność prac dla przyszłego agenta. Grupa 2: auth + wdrożenie publiczne. Grupa 3: kalendarz, pakiety, płatności (domena WodGuru / Trainero).
 
-> Nie kodować z tego pliku, dopóki osobny plan nie wybierze zakresu i nie odpowie na Open Questions.
+> Grupa 2 (auth + deploy) wdrożona w [`2026-07-30-mvp-auth-deploy-retencja.md`](2026-07-30-mvp-auth-deploy-retencja.md) — Clerk + Neon + Azure/Vercel. Ten plik zostaje jako kontekst Grupy 3 (kalendarz/pakiety/płatności).
 
 ## Open Questions (bramka przed implementacją)
 

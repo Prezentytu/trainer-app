@@ -2,10 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { api, ClientSummary, DashboardData, PlanSummary } from "@/lib/api";
+import { api, AttentionItem, ClientSummary, DashboardData, PlanSummary } from "@/lib/api";
 import { Avatar, Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, StatBlock } from "@/components/ui";
-
-const ATTENTION_LIMIT = 5;
 
 export default function DashboardPage() {
   const [clients, setClients] = useState<ClientSummary[]>([]);
@@ -13,6 +11,7 @@ export default function DashboardPage() {
   const [dash, setDash] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
 
   useEffect(() => {
     Promise.all([api.dashboard(), api.clients.list(), api.plans.list()])
@@ -28,9 +27,22 @@ export default function DashboardPage() {
   const templates = plans.filter((p) => p.isTemplate);
   const clientPlans = plans.filter((p) => !p.isTemplate);
   const activeAssignments = clients.reduce((sum, c) => sum + c.activePlans, 0);
-  const needsAttention = clients.filter((c) => c.activePlans === 0).slice(0, ATTENTION_LIMIT);
+  const attention: AttentionItem[] = dash?.attention ?? [];
   const recentSessions = dash?.recentSessions ?? [];
   const recentPrs = dash?.recentPrs ?? [];
+  const showOnboarding = !loading && clients.length === 0;
+
+  const copyPortalLink = async (item: AttentionItem) => {
+    if (!item.portalToken) return;
+    const url = `${window.location.origin}/portal/${item.portalToken}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedId(item.clientId);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      setError("Nie udało się skopiować linku.");
+    }
+  };
 
   if (loading) return <p className="text-muted">Ładowanie…</p>;
 
@@ -40,28 +52,91 @@ export default function DashboardPage() {
         title="Panel"
         subtitle="Szybki przegląd Twojej pracy"
         action={
-          <Link href="/plans/new">
-            <Button>+ Nowa formuła</Button>
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="ghost"
+              onClick={async () => {
+                try {
+                  const data = await api.export();
+                  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+                  const a = document.createElement("a");
+                  a.href = URL.createObjectURL(blob);
+                  a.download = `workout-alchemist-export-${new Date().toISOString().slice(0, 10)}.json`;
+                  a.click();
+                  URL.revokeObjectURL(a.href);
+                } catch (e) {
+                  setError((e as Error).message);
+                }
+              }}
+            >
+              Eksportuj dane
+            </Button>
+            <Link href="/plans/new">
+              <Button>+ Nowa formuła</Button>
+            </Link>
+          </div>
         }
       />
       <ErrorBanner message={error} />
 
-      {needsAttention.length > 0 && (
-        <Card className="mb-6" eyebrow="Priorytet" title="Wymaga uwagi" meta={`${needsAttention.length} bez aktywnego planu`}>
-          <ul className="divide-y divide-border">
-            {needsAttention.map((c) => (
-              <li key={c.id} className="flex items-center justify-between gap-3 py-2.5">
-                <Link href={`/clients/${c.id}`} className="flex min-w-0 items-center gap-2.5">
-                  <Avatar name={c.name} size="sm" />
-                  <span className="min-w-0 break-words text-sm font-medium">{c.name}</span>
-                </Link>
-                <Link
-                  href={`/clients/${c.id}`}
-                  className="shrink-0 rounded-[10px] bg-accent-dim px-2.5 py-1 text-xs font-semibold text-accent-strong hover:bg-accent-border"
-                >
+      {showOnboarding && (
+        <Card className="mb-6" eyebrow="Start" title="Pierwsze 15 minut" meta="3 kroki do wartości">
+          <ol className="space-y-3 text-sm text-foreground-secondary">
+            <li className="flex items-start gap-3">
+              <span className="font-mono text-accent">1.</span>
+              <span>
+                <Link href="/clients" className="font-semibold text-accent hover:underline">
+                  Dodaj klienta
+                </Link>{" "}
+                — imię i cel wystarczą.
+              </span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="font-mono text-accent">2.</span>
+              <span>
+                <Link href="/plans" className="font-semibold text-accent hover:underline">
                   Przypisz plan
+                </Link>{" "}
+                — użyj szablonu startowego albo zbuduj własny.
+              </span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="font-mono text-accent">3.</span>
+              <span>Skopiuj link portalu z karty klienta i wyślij go podopiecznemu.</span>
+            </li>
+          </ol>
+        </Card>
+      )}
+
+      {attention.length > 0 && (
+        <Card className="mb-6" eyebrow="Priorytet" title="Wymaga uwagi" meta={`${attention.length} sygnałów`}>
+          <ul className="divide-y divide-border">
+            {attention.map((item) => (
+              <li key={`${item.clientId}-${item.reason}`} className="flex items-center justify-between gap-3 py-2.5">
+                <Link href={`/clients/${item.clientId}`} className="flex min-w-0 items-center gap-2.5">
+                  <Avatar name={item.clientName} size="sm" />
+                  <span className="min-w-0">
+                    <span className="block break-words text-sm font-medium">{item.clientName}</span>
+                    <span className="block text-xs text-muted">{item.message}</span>
+                  </span>
                 </Link>
+                {item.action === "assign_plan" ? (
+                  <Link
+                    href={`/clients/${item.clientId}`}
+                    className="shrink-0 rounded-[10px] bg-accent-dim px-2.5 py-1 text-xs font-semibold text-accent-strong hover:bg-accent-border"
+                  >
+                    Przypisz plan
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => void copyPortalLink(item)}
+                    disabled={!item.portalToken}
+                    className="shrink-0 rounded-[10px] bg-accent-dim px-2.5 py-1 text-xs font-semibold text-accent-strong hover:bg-accent-border disabled:opacity-40"
+                  >
+                    {copiedId === item.clientId ? "Skopiowano" : "Skopiuj link"}
+                  </button>
+                )}
               </li>
             ))}
           </ul>

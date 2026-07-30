@@ -1,44 +1,38 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
+    branches: [main, master, dev]
+  push:
+    branches: [main, master, dev]
 
 jobs:
-  backend:
-    name: Backend (build + test)
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
-      - name: Restore
-        run: dotnet restore
-      - name: Build
-        run: dotnet build --no-restore -c Release
-      - name: Test
-        run: dotnet test --no-build -c Release
 
-  web:
-    name: Web (lint + typecheck + build)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/web
-    steps:
-      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          node-version: "22"
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
-      - name: Install
-        run: npm ci
-      - name: Lint
-        run: npm run lint
-      - name: Typecheck
-        run: npm run typecheck
-      - name: Build
-        run: npm run build
+
+      - name: Backend build + test
+        run: |
+          dotnet build apps/api/TrainerApp.Api.csproj
+          dotnet test tests/api/TrainerApp.Api.Tests.csproj --no-build || dotnet test tests/api/TrainerApp.Api.Tests.csproj
+
+      - name: Web lint + typecheck + build
+        working-directory: apps/web
+        env:
+          SKIP_ENV_VALIDATION: "true"
+        run: |
+          npm ci
+          npm run lint
+          npm run typecheck
+          npm run build

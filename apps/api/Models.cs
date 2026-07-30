@@ -1,8 +1,20 @@
 namespace TrainerApp.Api;
 
+/// <summary>Konto trenera (Clerk). Multi-tenant light — izolacja Client/Plan.</summary>
+public class Trainer
+{
+    public int Id { get; set; }
+    public string ClerkUserId { get; set; } = "";
+    public string Email { get; set; } = "";
+    public string Name { get; set; } = "";
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
 public class Client
 {
     public int Id { get; set; }
+    public int TrainerId { get; set; }
+    public Trainer? Trainer { get; set; }
     public string Name { get; set; } = "";
     public string? Email { get; set; }
     public string? Note { get; set; }
@@ -44,6 +56,9 @@ public record ExerciseMedia(string YoutubeId, string Title, int? Seconds, string
 public class Exercise
 {
     public int Id { get; set; }
+    /// <summary>null = wspólna biblioteka; ustawione = własne ćwiczenie trenera.</summary>
+    public int? TrainerId { get; set; }
+    public Trainer? Trainer { get; set; }
     public string Name { get; set; } = "";
     public string? Description { get; set; }
 
@@ -79,6 +94,8 @@ public class Exercise
 public class Plan
 {
     public int Id { get; set; }
+    public int TrainerId { get; set; }
+    public Trainer? Trainer { get; set; }
     public string Name { get; set; } = "";
     public string? Description { get; set; }   // zasady ogólne planu
     public bool IsTemplate { get; set; }

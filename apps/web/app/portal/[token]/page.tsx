@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { api, ClientRecord, PortalHome, PortalSessionSummary } from "@/lib/api";
+import { api, ClientRecord, PortalHome, PortalSessionSummary, ProgressReport } from "@/lib/api";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { YoutubeLite } from "@/components/YoutubeLite";
 import { Badge, Button, ErrorBanner, formatRest } from "@/components/ui";
@@ -24,6 +24,7 @@ export default function PortalHomePage() {
   const [home, setHome] = useState<PortalHome | null>(null);
   const [history, setHistory] = useState<PortalSessionSummary[]>([]);
   const [records, setRecords] = useState<ClientRecord[]>([]);
+  const [progress, setProgress] = useState<ProgressReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [tab, setTab] = useState<Tab>("today");
@@ -34,11 +35,13 @@ export default function PortalHomePage() {
       api.portal.home(token),
       api.portal.sessions(token).catch(() => [] as PortalSessionSummary[]),
       api.portal.records(token).catch(() => [] as ClientRecord[]),
+      api.portal.progressReport(token).catch(() => null),
     ])
-      .then(([h, s, r]) => {
+      .then(([h, s, r, p]) => {
         setHome(h);
         setHistory(s);
         setRecords(r);
+        setProgress(p);
       })
       .catch((e: Error) => setError(e.message));
   }, [token]);
@@ -99,6 +102,20 @@ export default function PortalHomePage() {
         <h1 className="font-display text-2xl font-bold">Cześć, {home.client.name.split(" ")[0]}</h1>
       </header>
       <ErrorBanner message={error} />
+
+      {progress && progress.facts.length > 0 ? (
+        <section className="rounded-2xl border border-accent-border bg-accent-dim/40 p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-accent">Twój postęp</p>
+          <ul className="mt-2 space-y-1.5">
+            {progress.facts.slice(0, 5).map((f) => (
+              <li key={`${f.kind}-${f.text}`} className="text-sm text-foreground-secondary">
+                <span className="mr-1.5 text-accent">•</span>
+                {f.text}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <div
         role="tablist"

@@ -1,79 +1,196 @@
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using TrainerApp.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<AppDb>(o => o.UseSqlite("Data Source=trainer.db"));
+var provider = builder.Configuration["Database:Provider"]
+               ?? (string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Default"))
+                   ? "Sqlite"
+                   : "Postgres");
+var connectionString = builder.Configuration.GetConnectionString("Default")
+                       ?? "Data Source=trainer.db";
+
+builder.Services.AddDbContext<AppDb>(o =>
+{
+    if (string.Equals(provider, "Postgres", StringComparison.OrdinalIgnoreCase))
+        o.UseNpgsql(connectionString);
+    else
+        o.UseSqlite(connectionString);
+});
+
+var allowedOrigins = builder.Configuration["ALLOWED_ORIGINS"]
+    ?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    ?? ["http://localhost:3000"];
+
 builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
-    p.WithOrigins("http://localhost:3000").AllowAnyHeader().AllowAnyMethod()));
+    p.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod()));
+
+var clerkAuthority = builder.Configuration["Clerk:Authority"];
+if (!string.IsNullOrWhiteSpace(clerkAuthority))
+{
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(o =>
+        {
+            o.Authority = clerkAuthority;
+            o.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = clerkAuthority,
+                ValidateAudience = false,
+                ValidateLifetime = true,
+                NameClaimType = "sub",
+            };
+        });
+    builder.Services.AddAuthorization();
+}
+
+builder.Services.AddRateLimiter(o =>
+{
+    o.AddFixedWindowLimiter("portal", opt =>
+    {
+        opt.PermitLimit = 60;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueLimit = 0;
+    });
+    o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
 
 var app = builder.Build();
 app.UseCors();
+app.UseRateLimiter();
+
+if (!string.IsNullOrWhiteSpace(clerkAuthority))
+{
+    app.UseAuthentication();
+    app.UseAuthorization();
+}
 
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDb>();
-    db.Database.EnsureCreated();
+    if (string.Equals(provider, "Postgres", StringComparison.OrdinalIgnoreCase))
+        db.Database.Migrate();
+    else
+        db.Database.EnsureCreated();
     Seed.Run(db);
 }
 
+static async Task<IResult> UnauthorizedTrainer(Exception ex) =>
+    Results.Json(new { message = ex.Message }, statusCode: 401);
+
+// ---------- Health / me ----------
+
+app.MapGet("/api/health", () => Results.Ok(new { status = "ok", utc = DateTime.UtcNow }));
+
+app.MapGet("/api/me", async (HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainer = await TrainerAccess.RequireTrainerAsync(http, db, config);
+        return Results.Ok(new { trainer.Id, trainer.Email, trainer.Name, trainer.ClerkUserId, trainer.CreatedAt });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapGet("/api/export", async (HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        return Results.Ok(await ExportData.BuildAsync(db, trainerId));
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
 // ---------- Klienci ----------
 
-app.MapGet("/api/clients", async (AppDb db) =>
-    await db.Clients
-        .OrderBy(c => c.Name)
-        .Select(c => new
-        {
-            c.Id, c.Name, c.Email, c.Note, c.CreatedAt,
-            ActivePlans = c.Assignments.Count(a => a.Status == "active"),
-        })
-        .ToListAsync());
-
-app.MapGet("/api/clients/{id:int}", async (int id, AppDb db) =>
+app.MapGet("/api/clients", async (HttpContext http, AppDb db, IConfiguration config) =>
 {
-    var client = await db.Clients
-        .Include(c => c.Assignments).ThenInclude(a => a.Plan)
-        .FirstOrDefaultAsync(c => c.Id == id);
-    if (client is null) return Results.NotFound();
-
-    return Results.Ok(new
+    try
     {
-        client.Id, client.Name, client.Email, client.Note, client.CreatedAt,
-        Assignments = client.Assignments
-            .OrderByDescending(a => a.CreatedAt)
-            .Select(a => new
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        return Results.Ok(await db.Clients
+            .Where(c => c.TrainerId == trainerId)
+            .OrderBy(c => c.Name)
+            .Select(c => new
             {
-                a.Id, a.PlanId, PlanName = a.Plan!.Name, a.StartDate, a.Status, a.Note, a.CreatedAt,
-            }),
-    });
+                c.Id, c.Name, c.Email, c.Note, c.CreatedAt,
+                ActivePlans = c.Assignments.Count(a => a.Status == "active"),
+            })
+            .ToListAsync());
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
-app.MapPost("/api/clients", async (ClientInput input, AppDb db) =>
+app.MapGet("/api/clients/{id:int}", async (int id, HttpContext http, AppDb db, IConfiguration config) =>
 {
-    var client = new Client { Name = input.Name, Email = input.Email, Note = input.Note };
-    db.Clients.Add(client);
-    await db.SaveChangesAsync();
-    return Results.Created($"/api/clients/{client.Id}", client);
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var client = await db.Clients
+            .Include(c => c.Assignments).ThenInclude(a => a.Plan)
+            .FirstOrDefaultAsync(c => c.Id == id && c.TrainerId == trainerId);
+        if (client is null) return Results.NotFound();
+
+        return Results.Ok(new
+        {
+            client.Id, client.Name, client.Email, client.Note, client.CreatedAt,
+            Assignments = client.Assignments
+                .OrderByDescending(a => a.CreatedAt)
+                .Select(a => new
+                {
+                    a.Id, a.PlanId, PlanName = a.Plan!.Name, a.StartDate, a.Status, a.Note, a.CreatedAt,
+                }),
+        });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
-app.MapPut("/api/clients/{id:int}", async (int id, ClientInput input, AppDb db) =>
+app.MapPost("/api/clients", async (ClientInput input, HttpContext http, AppDb db, IConfiguration config) =>
 {
-    var client = await db.Clients.FindAsync(id);
-    if (client is null) return Results.NotFound();
-    client.Name = input.Name;
-    client.Email = input.Email;
-    client.Note = input.Note;
-    await db.SaveChangesAsync();
-    return Results.Ok(client);
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var client = new Client { TrainerId = trainerId, Name = input.Name, Email = input.Email, Note = input.Note };
+        db.Clients.Add(client);
+        await db.SaveChangesAsync();
+        return Results.Created($"/api/clients/{client.Id}", client);
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
-app.MapDelete("/api/clients/{id:int}", async (int id, AppDb db) =>
+app.MapPut("/api/clients/{id:int}", async (int id, ClientInput input, HttpContext http, AppDb db, IConfiguration config) =>
 {
-    var client = await db.Clients.FindAsync(id);
-    if (client is null) return Results.NotFound();
-    db.Clients.Remove(client);
-    await db.SaveChangesAsync();
-    return Results.NoContent();
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var client = await db.Clients.FirstOrDefaultAsync(c => c.Id == id && c.TrainerId == trainerId);
+        if (client is null) return Results.NotFound();
+        client.Name = input.Name;
+        client.Email = input.Email;
+        client.Note = input.Note;
+        await db.SaveChangesAsync();
+        return Results.Ok(client);
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapDelete("/api/clients/{id:int}", async (int id, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var client = await db.Clients.FirstOrDefaultAsync(c => c.Id == id && c.TrainerId == trainerId);
+        if (client is null) return Results.NotFound();
+        db.Clients.Remove(client);
+        await db.SaveChangesAsync();
+        return Results.NoContent();
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
 // ---------- Ćwiczenia ----------
@@ -114,18 +231,24 @@ app.MapGet("/api/exercises/{id:int}", async (int id, AppDb db) =>
     return exercise is null ? Results.NotFound() : Results.Ok(exercise);
 });
 
-app.MapPost("/api/exercises", async (ExerciseInput input, AppDb db) =>
+app.MapPost("/api/exercises", async (ExerciseInput input, HttpContext http, AppDb db, IConfiguration config) =>
 {
-    var name = NormalizeExerciseName(input.Name);
-    if (name.Length == 0) return Results.BadRequest(new { message = "Podaj nazwę ćwiczenia." });
-    var duplicate = await db.Exercises.AnyAsync(e => e.Name.ToLower() == name.ToLower());
-    if (duplicate) return Results.Conflict(new { message = $"Ćwiczenie „{name}” już jest w bibliotece." });
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var name = NormalizeExerciseName(input.Name);
+        if (name.Length == 0) return Results.BadRequest(new { message = "Podaj nazwę ćwiczenia." });
+        var duplicate = await db.Exercises.AnyAsync(e =>
+            e.Name.ToLower() == name.ToLower() && (e.TrainerId == null || e.TrainerId == trainerId));
+        if (duplicate) return Results.Conflict(new { message = $"Ćwiczenie „{name}” już jest w bibliotece." });
 
-    var exercise = new Exercise();
-    ApplyExerciseInput(exercise, input, name);
-    db.Exercises.Add(exercise);
-    await db.SaveChangesAsync();
-    return Results.Created($"/api/exercises/{exercise.Id}", exercise);
+        var exercise = new Exercise { TrainerId = trainerId };
+        ApplyExerciseInput(exercise, input, name);
+        db.Exercises.Add(exercise);
+        await db.SaveChangesAsync();
+        return Results.Created($"/api/exercises/{exercise.Id}", exercise);
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
 app.MapPut("/api/exercises/{id:int}", async (int id, ExerciseInput input, AppDb db) =>
@@ -255,172 +378,220 @@ static PlanDay BuildDay(PlanDayInput d) => new()
     Items = (d.Items ?? []).Select(BuildItem).ToList(),
 };
 
-app.MapGet("/api/plans", async (AppDb db) =>
-    await db.Plans
-        .OrderByDescending(p => p.CreatedAt)
-        .Select(p => new
-        {
-            p.Id, p.Name, p.Description, p.IsTemplate, p.CreatedAt,
-            WeeksCount = p.Days.Select(d => (int?)d.WeekNumber).Max() ?? 0,
-            DaysCount = p.Days.Count,
-            ExerciseCount = p.Days.SelectMany(d => d.Items).Count(),
-            AssignedCount = p.Assignments.Count(a => a.Status == "active"),
-        })
-        .ToListAsync());
-
-app.MapGet("/api/counts", async (AppDb db) => new
+app.MapGet("/api/plans", async (HttpContext http, AppDb db, IConfiguration config) =>
 {
-    clients = await db.Clients.CountAsync(),
-    plans = await db.Plans.CountAsync(),
-    exercises = await db.Exercises.CountAsync(),
-});
-
-app.MapGet("/api/dashboard", async (AppDb db) =>
-{
-    var clients = await db.Clients.CountAsync();
-    var plans = await db.Plans.CountAsync();
-    var exercises = await db.Exercises.CountAsync();
-
-    var recentSessions = await db.WorkoutSessions
-        .Where(s => s.Status == "completed")
-        .OrderByDescending(s => s.PerformedOn)
-        .ThenByDescending(s => s.Id)
-        .Take(6)
-        .Select(s => new
-        {
-            s.Id,
-            s.ClientId,
-            ClientName = s.Client!.Name,
-            s.AssignmentId,
-            s.PlanDayId,
-            s.PlanId,
-            PlanName = s.Plan != null ? s.Plan.Name : null,
-            DayLabel = s.PlanDay != null ? s.PlanDay.Label : null,
-            s.PerformedOn,
-            s.DurationSeconds,
-            s.Note,
-            s.Status,
-            s.CreatedAt,
-            TotalSets = s.Exercises.SelectMany(e => e.Sets).Count(x => !x.IsWarmup),
-            TotalVolumeKg = s.Exercises.SelectMany(e => e.Sets)
-                .Where(x => !x.IsWarmup && x.WeightKg != null && x.Reps != null)
-                .Sum(x => x.WeightKg!.Value * x.Reps!.Value),
-            ExerciseCount = s.Exercises.Count,
-        })
-        .ToListAsync();
-
-    // Ostatnie PR-y: skan ograniczony (200 serii), chronologicznie → nowy best e1RM.
-    var recentSets = await db.LoggedSets
-        .Where(s => !s.IsWarmup
-                    && s.WeightKg != null
-                    && s.Reps != null
-                    && s.LoggedExercise!.Session!.Status == "completed")
-        .OrderByDescending(s => s.LoggedExercise!.Session!.PerformedOn)
-        .ThenByDescending(s => s.Id)
-        .Take(200)
-        .Select(s => new
-        {
-            ClientId = s.LoggedExercise!.Session!.ClientId,
-            ClientName = s.LoggedExercise.Session.Client!.Name,
-            ExerciseId = s.LoggedExercise.ExerciseId,
-            ExerciseName = s.LoggedExercise.Exercise!.Name,
-            s.WeightKg,
-            s.Reps,
-            PerformedOn = s.LoggedExercise.Session.PerformedOn,
-            SessionId = s.LoggedExercise.WorkoutSessionId,
-        })
-        .ToListAsync();
-
-    var best = new Dictionary<(int ClientId, int ExerciseId), double>();
-    var recentPrs = new List<object>();
-    foreach (var row in recentSets
-        .OrderBy(x => x.PerformedOn)
-        .ThenBy(x => x.SessionId))
+    try
     {
-        var e1 = Stats.Epley1Rm(row.WeightKg, row.Reps);
-        if (e1 is null) continue;
-        var key = (row.ClientId, row.ExerciseId);
-        if (!best.TryGetValue(key, out var prev) || e1.Value > prev + 0.01)
-        {
-            best[key] = e1.Value;
-            recentPrs.Add(new
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        return Results.Ok(await db.Plans
+            .Where(p => p.TrainerId == trainerId)
+            .OrderByDescending(p => p.CreatedAt)
+            .Select(p => new
             {
-                clientId = row.ClientId,
-                clientName = row.ClientName,
-                exerciseId = row.ExerciseId,
-                exerciseName = row.ExerciseName,
-                estimated1Rm = e1.Value,
-                weightKg = row.WeightKg,
-                reps = row.Reps,
-                performedOn = row.PerformedOn,
-            });
-        }
+                p.Id, p.Name, p.Description, p.IsTemplate, p.CreatedAt,
+                WeeksCount = p.Days.Select(d => (int?)d.WeekNumber).Max() ?? 0,
+                DaysCount = p.Days.Count,
+                ExerciseCount = p.Days.SelectMany(d => d.Items).Count(),
+                AssignedCount = p.Assignments.Count(a => a.Status == "active"),
+            })
+            .ToListAsync());
     }
-    recentPrs.Reverse();
-    if (recentPrs.Count > 6) recentPrs = recentPrs.Take(6).ToList();
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
 
-    return Results.Ok(new
+app.MapGet("/api/counts", async (HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
     {
-        clients,
-        plans,
-        exercises,
-        recentSessions,
-        recentPrs,
-    });
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        return Results.Ok(new
+        {
+            clients = await db.Clients.CountAsync(c => c.TrainerId == trainerId),
+            plans = await db.Plans.CountAsync(p => p.TrainerId == trainerId),
+            exercises = await db.Exercises.CountAsync(e => e.TrainerId == null || e.TrainerId == trainerId),
+        });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
-app.MapGet("/api/plans/{id:int}", async (int id, int? clientId, AppDb db) =>
+app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration config) =>
 {
-    var plan = await db.Plans
-        .Include(p => p.Days).ThenInclude(d => d.Items).ThenInclude(i => i.Exercise)
-        .Include(p => p.Days).ThenInclude(d => d.Items).ThenInclude(i => i.PrescribedSets)
-        .Include(p => p.Assignments)
-        .FirstOrDefaultAsync(p => p.Id == id);
-    if (plan is null) return Results.NotFound();
-    Dictionary<int, double>? maxes = null;
-    if (clientId is not null)
-        maxes = await PlanLoads.LatestMaxesAsync(db, clientId.Value);
-    return Results.Ok(PlanToDto(plan, maxes));
-});
-
-app.MapPost("/api/plans", async (PlanInput input, AppDb db) =>
-{
-    var plan = new Plan
+    try
     {
-        Name = input.Name,
-        Description = input.Description,
-        IsTemplate = input.IsTemplate,
-        Days = (input.Days ?? []).Select(BuildDay).ToList(),
-    };
-    db.Plans.Add(plan);
-    await db.SaveChangesAsync();
-    return Results.Created($"/api/plans/{plan.Id}", new { plan.Id });
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var clients = await db.Clients.CountAsync(c => c.TrainerId == trainerId);
+        var plans = await db.Plans.CountAsync(p => p.TrainerId == trainerId);
+        var exercises = await db.Exercises.CountAsync(e => e.TrainerId == null || e.TrainerId == trainerId);
+
+        var recentSessions = await db.WorkoutSessions
+            .Where(s => s.Status == "completed" && s.Client!.TrainerId == trainerId)
+            .OrderByDescending(s => s.PerformedOn)
+            .ThenByDescending(s => s.Id)
+            .Take(6)
+            .Select(s => new
+            {
+                s.Id,
+                s.ClientId,
+                ClientName = s.Client!.Name,
+                s.AssignmentId,
+                s.PlanDayId,
+                s.PlanId,
+                PlanName = s.Plan != null ? s.Plan.Name : null,
+                DayLabel = s.PlanDay != null ? s.PlanDay.Label : null,
+                s.PerformedOn,
+                s.DurationSeconds,
+                s.Note,
+                s.Status,
+                s.CreatedAt,
+                TotalSets = s.Exercises.SelectMany(e => e.Sets).Count(x => !x.IsWarmup),
+                TotalVolumeKg = s.Exercises.SelectMany(e => e.Sets)
+                    .Where(x => !x.IsWarmup && x.WeightKg != null && x.Reps != null)
+                    .Sum(x => x.WeightKg!.Value * x.Reps!.Value),
+                ExerciseCount = s.Exercises.Count,
+            })
+            .ToListAsync();
+
+        var recentSets = await db.LoggedSets
+            .Where(s => !s.IsWarmup
+                        && s.WeightKg != null
+                        && s.Reps != null
+                        && s.LoggedExercise!.Session!.Status == "completed"
+                        && s.LoggedExercise.Session.Client!.TrainerId == trainerId)
+            .OrderByDescending(s => s.LoggedExercise!.Session!.PerformedOn)
+            .ThenByDescending(s => s.Id)
+            .Take(200)
+            .Select(s => new
+            {
+                ClientId = s.LoggedExercise!.Session!.ClientId,
+                ClientName = s.LoggedExercise.Session.Client!.Name,
+                ExerciseId = s.LoggedExercise.ExerciseId,
+                ExerciseName = s.LoggedExercise.Exercise!.Name,
+                s.WeightKg,
+                s.Reps,
+                PerformedOn = s.LoggedExercise.Session.PerformedOn,
+                SessionId = s.LoggedExercise.WorkoutSessionId,
+            })
+            .ToListAsync();
+
+        var best = new Dictionary<(int ClientId, int ExerciseId), double>();
+        var recentPrs = new List<object>();
+        foreach (var row in recentSets
+            .OrderBy(x => x.PerformedOn)
+            .ThenBy(x => x.SessionId))
+        {
+            var e1 = Stats.Epley1Rm(row.WeightKg, row.Reps);
+            if (e1 is null) continue;
+            var key = (row.ClientId, row.ExerciseId);
+            if (!best.TryGetValue(key, out var prev) || e1.Value > prev + 0.01)
+            {
+                best[key] = e1.Value;
+                recentPrs.Add(new
+                {
+                    clientId = row.ClientId,
+                    clientName = row.ClientName,
+                    exerciseId = row.ExerciseId,
+                    exerciseName = row.ExerciseName,
+                    estimated1Rm = e1.Value,
+                    weightKg = row.WeightKg,
+                    reps = row.Reps,
+                    performedOn = row.PerformedOn,
+                });
+            }
+        }
+        recentPrs.Reverse();
+        if (recentPrs.Count > 6) recentPrs = recentPrs.Take(6).ToList();
+
+        var attention = await ChurnRadar.BuildAttentionAsync(db, trainerId);
+
+        return Results.Ok(new
+        {
+            clients,
+            plans,
+            exercises,
+            recentSessions,
+            recentPrs,
+            attention,
+        });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
-app.MapPut("/api/plans/{id:int}", async (int id, PlanInput input, AppDb db) =>
+app.MapGet("/api/plans/{id:int}", async (int id, int? clientId, HttpContext http, AppDb db, IConfiguration config) =>
 {
-    var plan = await db.Plans.Include(p => p.Days).ThenInclude(d => d.Items).ThenInclude(i => i.PrescribedSets)
-        .FirstOrDefaultAsync(p => p.Id == id);
-    if (plan is null) return Results.NotFound();
-
-    plan.Name = input.Name;
-    plan.Description = input.Description;
-    plan.IsTemplate = input.IsTemplate;
-    db.PlanDays.RemoveRange(plan.Days);   // kaskada usuwa pozycje i serie
-    plan.Days = (input.Days ?? []).Select(BuildDay).ToList();
-    await db.SaveChangesAsync();
-    return Results.Ok(new { plan.Id });
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var plan = await db.Plans
+            .Include(p => p.Days).ThenInclude(d => d.Items).ThenInclude(i => i.Exercise)
+            .Include(p => p.Days).ThenInclude(d => d.Items).ThenInclude(i => i.PrescribedSets)
+            .Include(p => p.Assignments)
+            .FirstOrDefaultAsync(p => p.Id == id && p.TrainerId == trainerId);
+        if (plan is null) return Results.NotFound();
+        Dictionary<int, double>? maxes = null;
+        if (clientId is not null)
+        {
+            var ownsClient = await db.Clients.AnyAsync(c => c.Id == clientId && c.TrainerId == trainerId);
+            if (!ownsClient) return Results.NotFound();
+            maxes = await PlanLoads.LatestMaxesAsync(db, clientId.Value);
+        }
+        return Results.Ok(PlanToDto(plan, maxes));
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
-app.MapPost("/api/plans/{id:int}/duplicate", async (int id, DuplicateInput input, AppDb db) =>
+app.MapPost("/api/plans", async (PlanInput input, HttpContext http, AppDb db, IConfiguration config) =>
 {
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var plan = new Plan
+        {
+            TrainerId = trainerId,
+            Name = input.Name,
+            Description = input.Description,
+            IsTemplate = input.IsTemplate,
+            Days = (input.Days ?? []).Select(BuildDay).ToList(),
+        };
+        db.Plans.Add(plan);
+        await db.SaveChangesAsync();
+        return Results.Created($"/api/plans/{plan.Id}", new { plan.Id });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapPut("/api/plans/{id:int}", async (int id, PlanInput input, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var plan = await db.Plans.Include(p => p.Days).ThenInclude(d => d.Items).ThenInclude(i => i.PrescribedSets)
+            .FirstOrDefaultAsync(p => p.Id == id && p.TrainerId == trainerId);
+        if (plan is null) return Results.NotFound();
+
+        plan.Name = input.Name;
+        plan.Description = input.Description;
+        plan.IsTemplate = input.IsTemplate;
+        db.PlanDays.RemoveRange(plan.Days);   // kaskada usuwa pozycje i serie
+        plan.Days = (input.Days ?? []).Select(BuildDay).ToList();
+        await db.SaveChangesAsync();
+        return Results.Ok(new { plan.Id });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapPost("/api/plans/{id:int}/duplicate", async (int id, DuplicateInput input, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+    var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
     var source = await db.Plans
         .Include(p => p.Days).ThenInclude(d => d.Items).ThenInclude(i => i.PrescribedSets)
-        .FirstOrDefaultAsync(p => p.Id == id);
+        .FirstOrDefaultAsync(p => p.Id == id && p.TrainerId == trainerId);
     if (source is null) return Results.NotFound();
 
     var copy = new Plan
     {
+        TrainerId = trainerId,
         Name = input.Name ?? $"{source.Name} (kopia)",
         Description = source.Description,
         IsTemplate = input.IsTemplate ?? source.IsTemplate,
@@ -448,15 +619,22 @@ app.MapPost("/api/plans/{id:int}/duplicate", async (int id, DuplicateInput input
     db.Plans.Add(copy);
     await db.SaveChangesAsync();
     return Results.Created($"/api/plans/{copy.Id}", new { copy.Id });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
-app.MapDelete("/api/plans/{id:int}", async (int id, AppDb db) =>
+app.MapDelete("/api/plans/{id:int}", async (int id, HttpContext http, AppDb db, IConfiguration config) =>
 {
-    var plan = await db.Plans.FindAsync(id);
-    if (plan is null) return Results.NotFound();
-    db.Plans.Remove(plan);
-    await db.SaveChangesAsync();
-    return Results.NoContent();
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var plan = await db.Plans.FirstOrDefaultAsync(p => p.Id == id && p.TrainerId == trainerId);
+        if (plan is null) return Results.NotFound();
+        db.Plans.Remove(plan);
+        await db.SaveChangesAsync();
+        return Results.NoContent();
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
 // ---------- Maxy klienta ----------
@@ -959,7 +1137,14 @@ app.MapGet("/api/portal/{token}/records", async (string token, AppDb db) =>
     var access = await ResolvePortalToken(db, token);
     if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
     return Results.Ok(await LoadClientRecordsAsync(db, access.ClientId));
-});
+}).RequireRateLimiting("portal");
+
+app.MapGet("/api/portal/{token}/progress-report", async (string token, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    return Results.Ok(await ProgressReports.BuildForClientAsync(db, access.ClientId));
+}).RequireRateLimiting("portal");
 
 app.MapGet("/api/portal/{token}/sessions/{id:int}", async (string token, int id, AppDb db) =>
 {

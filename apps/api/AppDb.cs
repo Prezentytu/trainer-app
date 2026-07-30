@@ -7,6 +7,7 @@ namespace TrainerApp.Api;
 
 public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
 {
+    public DbSet<Trainer> Trainers => Set<Trainer>();
     public DbSet<Client> Clients => Set<Client>();
     public DbSet<Exercise> Exercises => Set<Exercise>();
     public DbSet<Plan> Plans => Set<Plan>();
@@ -27,6 +28,34 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Trainer>()
+            .HasIndex(t => t.ClerkUserId)
+            .IsUnique();
+
+        modelBuilder.Entity<Client>()
+            .HasOne(c => c.Trainer)
+            .WithMany()
+            .HasForeignKey(c => c.TrainerId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Client>()
+            .HasIndex(c => c.TrainerId);
+
+        modelBuilder.Entity<Plan>()
+            .HasOne(p => p.Trainer)
+            .WithMany()
+            .HasForeignKey(p => p.TrainerId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Plan>()
+            .HasIndex(p => p.TrainerId);
+
+        modelBuilder.Entity<Exercise>()
+            .HasOne(e => e.Trainer)
+            .WithMany()
+            .HasForeignKey(e => e.TrainerId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         modelBuilder.Entity<PlanDay>()
             .HasOne(d => d.Plan)
             .WithMany(p => p.Days)

@@ -132,8 +132,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     plans: null,
   });
   const pathname = usePathname();
-  // PWA klienta — bez sidebara trenera.
+  // PWA klienta / auth — bez sidebara trenera.
   const isPortal = (pathname ?? "").startsWith("/portal");
+  const isAuthPage =
+    (pathname ?? "").startsWith("/sign-in") || (pathname ?? "").startsWith("/sign-up");
   // Kreator/podgląd planu (/plans/new, /plans/[id]) potrzebuje szerokiej siatki na dni tygodnia —
   // lista planów (/plans) zostaje przy wąskim, czytelnym kontenerze jak reszta stron. Te same
   // trasy dostają "tryb skupienia": sidebar zwija się do wąskiego railu z ikonami.
@@ -141,14 +143,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const showRail = isPlanEditor && !railExpanded;
 
   useEffect(() => {
-    if (isPortal) return;
+    if (isPortal || isAuthPage) return;
     api
       .counts()
       .then((c) => setCounts({ clients: c.clients, plans: c.plans }))
       .catch(() => {
         // Liczniki nawigacji to tylko usprawnienie orientacji — brak backendu nie może wywrócić layoutu.
       });
-  }, [isPortal]);
+  }, [isPortal, isAuthPage]);
 
   if (isPortal) {
     return (
@@ -158,6 +160,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         </main>
       </div>
     );
+  }
+
+  if (isAuthPage) {
+    return <>{children}</>;
   }
 
   return (

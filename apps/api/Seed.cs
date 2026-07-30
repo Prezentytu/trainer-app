@@ -14,8 +14,20 @@ public static class Seed
 
     public static void Run(AppDb db)
     {
+        if (!db.Trainers.Any(t => t.ClerkUserId == TrainerAccess.LocalClerkUserId))
+        {
+            db.Trainers.Add(new Trainer
+            {
+                ClerkUserId = TrainerAccess.LocalClerkUserId,
+                Email = "trener@localhost",
+                Name = "Trener lokalny",
+            });
+            db.SaveChanges();
+        }
+
         if (db.Exercises.Any()) return;
 
+        var trainerId = db.Trainers.First(t => t.ClerkUserId == TrainerAccess.LocalClerkUserId).Id;
         var exercises = new List<Exercise>();
         exercises.AddRange(CoreExercises());
         exercises.AddRange(LoadLibraryFiles());
@@ -27,6 +39,7 @@ public static class Seed
             var key = NormalizeName(ex.Name);
             if (key.Length == 0 || byName.ContainsKey(key)) continue;
             ex.Name = key;
+            // Wspólna biblioteka (TrainerId = null).
             byName[key] = ex;
         }
 
@@ -43,12 +56,19 @@ public static class Seed
         var row = Require("Wiosłowanie sztangą");
         var plank = Require("Plank");
 
-        var client = new Client { Name = "Jan Kowalski", Email = "jan.kowalski@example.com", Note = "Cel: siła, 3x w tygodniu" };
+        var client = new Client
+        {
+            TrainerId = trainerId,
+            Name = "Jan Kowalski",
+            Email = "jan.kowalski@example.com",
+            Note = "Cel: siła, 3x w tygodniu",
+        };
         db.Clients.Add(client);
         db.SaveChanges();
 
         var template = new Plan
         {
+            TrainerId = trainerId,
             Name = "FBW A — początkujący",
             Description = "Trening całego ciała, nacisk na wzorce podstawowe.",
             IsTemplate = true,
@@ -72,6 +92,7 @@ public static class Seed
 
         var poliquin = new Plan
         {
+            TrainerId = trainerId,
             Name = "Siła — metoda 6-4-2-5-3-1 (przykład)",
             Description = "Rampa do topu, potem serie anaboliczne liczone jako % od najcięższej serii.",
             IsTemplate = true,
@@ -102,6 +123,7 @@ public static class Seed
         // Plan klienta (kopia szablonu) + przypisanie + maxy + przykładowa sesja + magic-link.
         var clientPlan = new Plan
         {
+            TrainerId = trainerId,
             Name = "Jan — FBW A",
             Description = template.Description,
             IsTemplate = false,

@@ -8,7 +8,7 @@ Ten plik jest punktem startowym dla każdego agenta. Zanim zaczniesz kodować, d
 
 | Warstwa | Technologia | Port | Wejście |
 |---|---|---|---|
-| Backend (API) | .NET 10 Minimal API + EF Core + SQLite (`trainer.db`) | 5210 | `apps/api/Program.cs` |
+| Backend (API) | .NET 10 Minimal API + EF Core (Sqlite lokalnie / Postgres Neon w prod) | 5210 | `apps/api/Program.cs` |
 | Frontend (web) | Next.js 16 (App Router) + React 19 + Tailwind 4 | 3000 | `apps/web/app/` |
 | Klient API | typowany wrapper `fetch` | — | `apps/web/lib/api.ts` |
 | Testy API | xUnit + `WebApplicationFactory` | — | `tests/api/` |

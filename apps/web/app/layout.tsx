@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, IBM_Plex_Mono, Instrument_Sans } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/AppShell";
+import { ClerkAppProvider } from "@/components/ClerkAppProvider";
 
 const fontDisplay = Bricolage_Grotesque({
   variable: "--font-bricolage",
@@ -45,7 +46,9 @@ export default function RootLayout({
       className={`${fontDisplay.variable} ${fontBody.variable} ${fontMono.variable} h-full antialiased`}
     >
       <body className="min-h-screen bg-background font-sans text-foreground">
-        <AppShell>{children}</AppShell>
+        <ClerkAppProvider>
+          <AppShell>{children}</AppShell>
+        </ClerkAppProvider>
       </body>
     </html>
   );

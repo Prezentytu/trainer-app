@@ -1,5 +1,14 @@
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5210";
 
+/** Opcjonalny getter tokenu Clerk — ustawiany przez AuthTokenBridge gdy Clerk włączony. */
+let authTokenGetter: (() => Promise<string | null>) | null = null;
+
+export function setAuthTokenGetter(getter: (() => Promise<string | null>) | null) {
+  authTokenGetter = getter;
+}
+
+export const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+
 export type ClientSummary = {
   id: number;
   name: string;
@@ -457,12 +466,40 @@ export type PortalHome = {
   inProgressSession: { id: number; planDayId: number | null; performedOn: string } | null;
 };
 
+export type AttentionItem = {
+  clientId: number;
+  clientName: string;
+  reason: "no_plan" | "never_trained" | "silent" | string;
+  message: string;
+  daysSilent: number | null;
+  portalToken: string | null;
+  action: "assign_plan" | "copy_portal_link" | string;
+};
+
 export type DashboardData = {
   clients: number;
   plans: number;
   exercises: number;
   recentSessions: (SessionSummary & { clientName: string })[];
   recentPrs: (ClientRecord & { clientId: number; clientName: string })[];
+  attention: AttentionItem[];
+};
+
+export type ProgressReport = {
+  clientId: number;
+  lastSessionOn: string | null;
+  sessionsLast7Days: number;
+  sessionsLast30Days: number;
+  newPrsLast30Days: number;
+  facts: { kind: string; text: string; exerciseId?: number; deltaKg?: number }[];
+};
+
+export type TrainerMe = {
+  id: number;
+  email: string;
+  name: string;
+  clerkUserId: string;
+  createdAt: string;
 };
 
 export type NavCounts = {
@@ -487,9 +524,17 @@ export type PlanInput = {
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(init?.headers as Record<string, string> | undefined),
+  };
+  if (authTokenGetter && !path.startsWith("/api/portal/")) {
+    const token = await authTokenGetter();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  }
   const res = await fetch(`${API}${path}`, {
     ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
+    headers,
   });
   if (!res.ok) {
     let message = `Błąd ${res.status}`;
@@ -541,6 +586,8 @@ export type WorkoutSessionInput = {
 export const api = {
   counts: () => request<NavCounts>("/api/counts"),
   dashboard: () => request<DashboardData>("/api/dashboard"),
+  me: () => request<TrainerMe>("/api/me"),
+  export: () => request<unknown>("/api/export"),
   clients: {
     list: () => request<ClientSummary[]>("/api/clients"),
     get: (id: number) => request<ClientDetails>(`/api/clients/${id}`),
@@ -640,6 +687,8 @@ export const api = {
     home: (token: string) => request<PortalHome>(`/api/portal/${token}`),
     sessions: (token: string) => request<PortalSessionSummary[]>(`/api/portal/${token}/sessions`),
     records: (token: string) => request<ClientRecord[]>(`/api/portal/${token}/records`),
+    progressReport: (token: string) =>
+      request<ProgressReport>(`/api/portal/${token}/progress-report`),
     getSession: (token: string, id: number) =>
       request<SessionDetail>(`/api/portal/${token}/sessions/${id}`),
     startSession: (
