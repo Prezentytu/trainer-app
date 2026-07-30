@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Exercise } from "@/lib/api";
 import { buildGroupLabels, computeGroupsFromLinks } from "@/lib/supersets";
 import { Badge, EmptyState, IconButton, inputClass } from "@/components/ui";
@@ -42,6 +42,13 @@ export function TableDay({
   onClearSets: (itemKey: string) => void;
 }) {
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
+  const [notesOpen, setNotesOpen] = useState(false);
+  const notesRef = useRef<HTMLInputElement>(null);
+  const showNotesEditor = notesOpen || Boolean(day.notes?.trim());
+
+  useEffect(() => {
+    if (notesOpen) notesRef.current?.focus();
+  }, [notesOpen]);
 
   const toggleExpand = (key: string) =>
     setExpandedKeys((prev) => {
@@ -64,12 +71,27 @@ export function TableDay({
             onChange={(e) => onPatchDay({ label: e.target.value })}
             placeholder="np. Poniedziałek / Trening A"
           />
-          <input
-            className={`${inputClass} w-full text-xs`}
-            value={day.notes ?? ""}
-            onChange={(e) => onPatchDay({ notes: e.target.value || null })}
-            placeholder="Notatka / rozgrzewka dnia"
-          />
+          {showNotesEditor ? (
+            <input
+              ref={notesRef}
+              className="w-full rounded-[10px] border border-dashed border-border bg-transparent px-3 py-1.5 text-xs text-foreground-secondary outline-none placeholder:text-muted-faint focus:border-border-strong focus:text-foreground"
+              value={day.notes ?? ""}
+              onChange={(e) => onPatchDay({ notes: e.target.value || null })}
+              onBlur={() => {
+                if (!day.notes?.trim()) setNotesOpen(false);
+              }}
+              placeholder="Notatka / rozgrzewka dnia"
+              aria-label="Notatka dnia"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setNotesOpen(true)}
+              className="text-xs text-muted-faint transition-colors hover:text-muted"
+            >
+              + Notatka / rozgrzewka dnia
+            </button>
+          )}
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Badge>{day.items.length} ćw.</Badge>

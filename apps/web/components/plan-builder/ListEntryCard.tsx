@@ -114,6 +114,7 @@ export function ListEntryCard({
           weekNumber={weekNumber}
           exercise={exercise}
           superLabel={superLabel}
+          onCollapse={onToggleExpand}
           onPatch={onPatch}
           onToggleWarmup={onToggleWarmup}
           onMakeSuper={onMakeSuper}

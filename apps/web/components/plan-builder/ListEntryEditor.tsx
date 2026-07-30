@@ -34,6 +34,7 @@ export function ListEntryEditor({
   weekNumber,
   exercise,
   superLabel,
+  onCollapse,
   onPatch,
   onToggleWarmup,
   onMakeSuper,
@@ -48,6 +49,7 @@ export function ListEntryEditor({
   weekNumber: number;
   exercise?: Exercise;
   superLabel: string;
+  onCollapse: () => void;
   onPatch: (patch: Partial<BuilderItem>) => void;
   onToggleWarmup: () => void;
   onMakeSuper: () => void;
@@ -85,7 +87,22 @@ export function ListEntryEditor({
   };
 
   return (
-    <div className="flex flex-col gap-3.5 rounded-2xl border border-border-strong bg-surface p-4">
+    <div
+      className="flex flex-col gap-3.5 rounded-2xl border border-border-strong bg-surface p-4"
+      onKeyDown={(e) => {
+        // PlanBuilder owija widok w <form> zapisu — tu nie wolno zagnieżdżać kolejnego.
+        if (e.key === "Escape") {
+          e.preventDefault();
+          onCollapse();
+          return;
+        }
+        if (e.key !== "Enter" || e.shiftKey || e.nativeEvent.isComposing) return;
+        const target = e.target as HTMLElement;
+        if (target.tagName !== "INPUT" && target.tagName !== "TEXTAREA") return;
+        e.preventDefault();
+        onCollapse();
+      }}
+    >
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="mr-1 w-16 text-xs text-muted">Schemat</span>
         <button type="button" className={isRamp ? segOff : segOn} onClick={pickSets}>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Exercise } from "@/lib/api";
-import { IconButton, inputClass } from "@/components/ui";
+import { IconButton } from "@/components/ui";
 import { DayTabs } from "./DayTabs";
 import { ListComposer } from "./ListComposer";
 import { ListEntryCard } from "./ListEntryCard";
@@ -57,12 +57,19 @@ export function ListView({
   const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
   const [editKey, setEditKey] = useState<string | null>(null);
   const [pendingNum, setPendingNum] = useState<number | null>(null);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const notesRef = useRef<HTMLInputElement>(null);
 
   const activeDayKey =
     selectedDayKey && days.some((d) => d.key === selectedDayKey) ? selectedDayKey : (days[0]?.key ?? null);
   const activeDay = days.find((d) => d.key === activeDayKey) ?? null;
   const dayIndex = activeDay ? days.findIndex((d) => d.key === activeDay.key) : -1;
   const groups = useMemo(() => (activeDay ? buildListGroups(activeDay.items) : []), [activeDay]);
+  const showNotesEditor = notesOpen || Boolean(activeDay?.notes?.trim());
+
+  useEffect(() => {
+    if (notesOpen) notesRef.current?.focus();
+  }, [notesOpen]);
 
   const dayMeta = useMemo(() => {
     if (!activeDay || activeDay.items.length === 0) return "";
@@ -92,6 +99,7 @@ export function ListView({
           setSelectedDayKey(key);
           setEditKey(null);
           setPendingNum(null);
+          setNotesOpen(false);
         }}
         onAddDay={onAddDay}
         metaLabel={dayMeta}
@@ -123,12 +131,48 @@ export function ListView({
               </IconButton>
             </div>
           </div>
-          <input
-            className={`${inputClass} text-sm`}
-            value={activeDay.notes ?? ""}
-            onChange={(e) => onPatchDay(activeDay.key, { notes: e.target.value || null })}
-            placeholder="Notatka / rozgrzewka dnia"
-          />
+
+          {/* Notatka jest drugorzędna — pełne pole wygląda jak composer i łapie przypadkowe wpisy ćwiczeń. */}
+          {showNotesEditor ? (
+            <div className="space-y-1">
+              <div className="flex items-center justify-between gap-2">
+                <label
+                  htmlFor={`day-notes-${activeDay.key}`}
+                  className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-faint"
+                >
+                  Notatka dnia
+                </label>
+                {!activeDay.notes?.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => setNotesOpen(false)}
+                    className="text-xs text-muted hover:text-foreground-secondary"
+                  >
+                    Anuluj
+                  </button>
+                )}
+              </div>
+              <input
+                ref={notesRef}
+                id={`day-notes-${activeDay.key}`}
+                className="w-full rounded-[10px] border border-dashed border-border bg-transparent px-3 py-2 text-sm text-foreground-secondary outline-none placeholder:text-muted-faint focus:border-border-strong focus:text-foreground"
+                value={activeDay.notes ?? ""}
+                onChange={(e) => onPatchDay(activeDay.key, { notes: e.target.value || null })}
+                onBlur={() => {
+                  if (!activeDay.notes?.trim()) setNotesOpen(false);
+                }}
+                placeholder="np. rozgrzewka ogólna, zasady tempa…"
+              />
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setNotesOpen(true)}
+              className="self-start text-xs text-muted-faint transition-colors hover:text-muted"
+            >
+              + Notatka / rozgrzewka dnia
+            </button>
+          )}
 
           <div className="flex flex-col gap-3">
             {groups.map((g) => (

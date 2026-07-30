@@ -15,6 +15,13 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Notatka dnia nie może konkurować z composerem
+
+**Kontekst**: W widoku Lista puste pole „Notatka / rozgrzewka dnia” było pełnym `inputClass` tuż nad composerem.
+**Problem**: W F-pattern wyglądało jak główne miejsce na treść — trenerzy wpisywali nazwę ćwiczenia w notatkę zamiast w composer.
+**Zasada**: Notatka dnia jest drugorzędna. Pusta = cichy link „+ Notatka…”, nie pełne pole. Otwarte pole ma label + dashed/muted border (nie hero `inputClass`). Wzorzec jak w `DayColumn` (progressive disclosure).
+**Dotyczy**: `ListView.tsx`, `TableDay.tsx`, `DayColumn.tsx`.
+
 ## Podpowiedzi composera domyślnie zwinięte
 
 **Kontekst**: Widok Lista kreatora pokazywał zawsze 6 chipów skrótów + 3-liniową legendę tempo/RIR/rampa pod polem wpisywania.
