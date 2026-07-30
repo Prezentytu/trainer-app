@@ -16,7 +16,7 @@ export default function PortalSessionPage() {
   const [error, setError] = useState<string | null>(null);
 
   const flushQueue = useCallback(async () => {
-    if (!navigator.onLine) return;
+    if (typeof navigator !== "undefined" && !navigator.onLine) return;
     for (const item of readPortalQueue().filter((q) => q.token === token)) {
       try {
         await api.portal.updateSession(token, item.sessionId, item.body as WorkoutSessionInput);
@@ -30,8 +30,11 @@ export default function PortalSessionPage() {
 
   useEffect(() => {
     void flushQueue();
-    window.addEventListener("online", () => void flushQueue());
-    return () => window.removeEventListener("online", () => void flushQueue());
+    const onOnline = () => {
+      void flushQueue();
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
   }, [flushQueue]);
 
   useEffect(() => {
@@ -53,41 +56,17 @@ export default function PortalSessionPage() {
   return (
     <div>
       <SessionLogger
+        key={session.id}
         session={session}
         portalToken={token}
-        onUpdated={(s) => {
-          setSession(s);
-          if (!navigator.onLine) {
-            enqueuePortalWrite({
-              token,
-              sessionId: s.id,
-              body: {
-                clientId: s.clientId,
-                performedOn: s.performedOn,
-                assignmentId: s.assignmentId,
-                planDayId: s.planDayId,
-                planId: s.planId,
-                durationSeconds: s.durationSeconds,
-                note: s.note,
-                status: s.status,
-                exercises: s.exercises.map((e) => ({
-                  exerciseId: e.exerciseId,
-                  order: e.order,
-                  note: e.note,
-                  sets: e.sets.map((set) => ({
-                    setNumber: set.setNumber,
-                    weightKg: set.weightKg,
-                    reps: set.reps,
-                    durationSeconds: set.durationSeconds,
-                    distanceMeters: set.distanceMeters,
-                    rir: set.rir,
-                    rpe: set.rpe,
-                    isWarmup: set.isWarmup,
-                  })),
-                })),
-              },
-            });
-          }
+        onUpdated={setSession}
+        onPersistFailed={(input, complete) => {
+          enqueuePortalWrite({
+            token,
+            sessionId,
+            body: input,
+            complete,
+          });
         }}
         onCompleted={() => router.push(`/portal/${token}`)}
       />

@@ -51,7 +51,11 @@ public static class Stats
         };
     }
 
-    public static object SessionDetail(WorkoutSession s, HashSet<(int ExerciseId, int SetId)> prSetIds)
+    public static object SessionDetail(
+        WorkoutSession s,
+        HashSet<(int ExerciseId, int SetId)> prSetIds,
+        IReadOnlyDictionary<int, List<object>>? prevSetsByExercise = null,
+        IReadOnlyDictionary<int, int?>? restSecondsByExercise = null)
     {
         var allSets = s.Exercises.SelectMany(e => e.Sets).ToList();
         var prs = s.Exercises
@@ -95,6 +99,14 @@ public static class Stats
                 Media = e.Exercise?.Media ?? [],
                 e.Order,
                 e.Note,
+                RestSeconds = restSecondsByExercise is not null
+                    && restSecondsByExercise.TryGetValue(e.ExerciseId, out var rest)
+                    ? rest
+                    : 90,
+                PrevSets = prevSetsByExercise is not null
+                    && prevSetsByExercise.TryGetValue(e.ExerciseId, out var prev)
+                    ? prev
+                    : [],
                 Sets = e.Sets.OrderBy(x => x.SetNumber).Select(x => new
                 {
                     x.Id,
@@ -106,6 +118,7 @@ public static class Stats
                     x.Rir,
                     x.Rpe,
                     x.IsWarmup,
+                    x.Completed,
                     Estimated1Rm = Epley1Rm(x.WeightKg, x.Reps),
                     IsPr = prSetIds.Contains((e.ExerciseId, x.Id)),
                 }),
@@ -114,8 +127,8 @@ public static class Stats
     }
 
     /// <summary>
-    /// Dla każdej serii w sesji: czy jest PR e1RM względem historii klienta
-    /// (wszystkie serie z wcześniejszych sesji + wcześniejsze serie w tej samej sesji).
+    /// PR e1RM względem historii + wcześniejszych ukończonych serii w tej sesji.
+    /// Tylko serie z <see cref="LoggedSet.Completed"/> = true (nagroda po checkmarku, jak Gravitus).
     /// </summary>
     public static HashSet<(int ExerciseId, int SetId)> FindPrSets(
         WorkoutSession session,
@@ -140,7 +153,8 @@ public static class Stats
                 best = 0;
             foreach (var set in ex.Sets.OrderBy(s => s.SetNumber))
             {
-                if (set.IsWarmup) continue;
+                // Prefill / niezrobione serie nie są PR — dopiero checkmark.
+                if (set.IsWarmup || !set.Completed) continue;
                 var e1 = Epley1Rm(set.WeightKg, set.Reps);
                 if (e1 is not null && e1.Value > best + 0.01)
                 {

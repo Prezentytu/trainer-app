@@ -45,6 +45,7 @@ export default function ClientSessionPage() {
         }
       />
       <SessionLogger
+        key={session.id}
         session={session}
         onUpdated={setSession}
         onCompleted={() => router.push(`/clients/${clientId}`)}

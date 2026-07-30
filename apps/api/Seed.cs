@@ -162,9 +162,9 @@ public static class Seed
                     ExerciseId = squat.Id, Order = 0,
                     Sets =
                     [
-                        new LoggedSet { SetNumber = 1, WeightKg = 70, Reps = 10, Rir = 2 },
-                        new LoggedSet { SetNumber = 2, WeightKg = 70, Reps = 10, Rir = 2 },
-                        new LoggedSet { SetNumber = 3, WeightKg = 72.5, Reps = 8, Rir = 1 },
+                        new LoggedSet { SetNumber = 1, WeightKg = 70, Reps = 10, Rir = 2, Completed = true },
+                        new LoggedSet { SetNumber = 2, WeightKg = 70, Reps = 10, Rir = 2, Completed = true },
+                        new LoggedSet { SetNumber = 3, WeightKg = 72.5, Reps = 8, Rir = 1, Completed = true },
                     ],
                 },
                 new LoggedExercise
@@ -172,9 +172,9 @@ public static class Seed
                     ExerciseId = bench.Id, Order = 1,
                     Sets =
                     [
-                        new LoggedSet { SetNumber = 1, WeightKg = 40, Reps = 10, Rir = 2 },
-                        new LoggedSet { SetNumber = 2, WeightKg = 42.5, Reps = 8, Rir = 1 },
-                        new LoggedSet { SetNumber = 3, WeightKg = 42.5, Reps = 8, Rir = 1 },
+                        new LoggedSet { SetNumber = 1, WeightKg = 40, Reps = 10, Rir = 2, Completed = true },
+                        new LoggedSet { SetNumber = 2, WeightKg = 42.5, Reps = 8, Rir = 1, Completed = true },
+                        new LoggedSet { SetNumber = 3, WeightKg = 42.5, Reps = 8, Rir = 1, Completed = true },
                     ],
                 },
             ],

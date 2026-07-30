@@ -3,14 +3,14 @@
 import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { api, Plan } from "@/lib/api";
+import { api, PlanSummary } from "@/lib/api";
 import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader } from "@/components/ui";
 
 type AssignmentSummary = { planId: number; clientName: string };
 
 export default function PlansPage() {
   const router = useRouter();
-  const [plans, setPlans] = useState<Plan[]>([]);
+  const [plans, setPlans] = useState<PlanSummary[]>([]);
   const [assignments, setAssignments] = useState<AssignmentSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,7 +35,7 @@ export default function PlansPage() {
     return map;
   }, [assignments]);
 
-  const handleDuplicate = async (plan: Plan, asClientPlan: boolean) => {
+  const handleDuplicate = async (plan: PlanSummary, asClientPlan: boolean) => {
     try {
       const created = await api.plans.duplicate(plan.id, {
         name: asClientPlan ? `${plan.name} — plan klienta` : null,
@@ -47,7 +47,7 @@ export default function PlansPage() {
     }
   };
 
-  const handleDelete = async (plan: Plan) => {
+  const handleDelete = async (plan: PlanSummary) => {
     if (!confirm(`Usunąć plan „${plan.name}” wraz z przypisaniami?`)) return;
     try {
       await api.plans.remove(plan.id);
@@ -131,7 +131,7 @@ function PlanRow({
   kind,
   children,
 }: {
-  plan: Plan;
+  plan: PlanSummary;
   clientNames: string[];
   kind: "formula" | "client";
   children: ReactNode;

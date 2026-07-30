@@ -79,6 +79,18 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
             .HasIndex(t => t.Token)
             .IsUnique();
 
+        modelBuilder.Entity<Assignment>()
+            .HasIndex(a => new { a.ClientId, a.Status });
+
+        modelBuilder.Entity<ClientMax>()
+            .HasIndex(m => new { m.ClientId, m.ExerciseId });
+
+        modelBuilder.Entity<WorkoutSession>()
+            .HasIndex(s => new { s.ClientId, s.Status });
+
+        modelBuilder.Entity<LoggedExercise>()
+            .HasIndex(e => e.ExerciseId);
+
         modelBuilder.Entity<WorkoutSession>()
             .HasOne(s => s.Client)
             .WithMany(c => c.Sessions)

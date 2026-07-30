@@ -86,6 +86,7 @@ public record StatusInput(string Status);
 public record ClientMaxInput(int ExerciseId, double MaxKg, DateOnly MeasuredOn, string? Note = null);
 
 public record LoggedSetInput(
+    int? Id = null,
     int SetNumber = 1,
     double? WeightKg = null,
     int? Reps = null,
@@ -93,10 +94,12 @@ public record LoggedSetInput(
     int? DistanceMeters = null,
     double? Rir = null,
     double? Rpe = null,
-    bool IsWarmup = false);
+    bool IsWarmup = false,
+    bool Completed = false);
 
 public record LoggedExerciseInput(
-    int ExerciseId,
+    int? Id = null,
+    int ExerciseId = 0,
     int Order = 0,
     string? Note = null,
     List<LoggedSetInput>? Sets = null);

@@ -226,4 +226,6 @@ public class LoggedSet
     public double? Rir { get; set; }
     public double? Rpe { get; set; }
     public bool IsWarmup { get; set; }
+    /// <summary>Checkmark ukończenia serii (logger Gravitus).</summary>
+    public bool Completed { get; set; }
 }

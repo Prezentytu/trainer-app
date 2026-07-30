@@ -2,42 +2,24 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { api, ClientRecord, ClientSummary, Plan, SessionSummary } from "@/lib/api";
+import { api, ClientSummary, DashboardData, PlanSummary } from "@/lib/api";
 import { Avatar, Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, StatBlock } from "@/components/ui";
 
 const ATTENTION_LIMIT = 5;
 
 export default function DashboardPage() {
   const [clients, setClients] = useState<ClientSummary[]>([]);
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [recentSessions, setRecentSessions] = useState<(SessionSummary & { clientName: string })[]>([]);
-  const [recentPrs, setRecentPrs] = useState<(ClientRecord & { clientName: string })[]>([]);
+  const [plans, setPlans] = useState<PlanSummary[]>([]);
+  const [dash, setDash] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([api.clients.list(), api.plans.list()])
-      .then(async ([c, p]) => {
+    Promise.all([api.dashboard(), api.clients.list(), api.plans.list()])
+      .then(([d, c, p]) => {
+        setDash(d);
         setClients(c);
         setPlans(p);
-        const sessionBundles = await Promise.all(
-          c.slice(0, 8).map(async (client) => {
-            const sessions = await api.clients.sessions(client.id).catch(() => [] as SessionSummary[]);
-            return sessions.slice(0, 3).map((s) => ({ ...s, clientName: client.name }));
-          }),
-        );
-        const prBundles = await Promise.all(
-          c.slice(0, 8).map(async (client) => {
-            const records = await api.clients.records(client.id).catch(() => [] as ClientRecord[]);
-            return records.slice(0, 2).map((r) => ({ ...r, clientName: client.name }));
-          }),
-        );
-        setRecentSessions(
-          sessionBundles.flat().sort((a, b) => b.performedOn.localeCompare(a.performedOn)).slice(0, 6),
-        );
-        setRecentPrs(
-          prBundles.flat().sort((a, b) => b.performedOn.localeCompare(a.performedOn)).slice(0, 6),
-        );
       })
       .catch((e: Error) => setError(`${e.message}. Czy backend działa na porcie 5210?`))
       .finally(() => setLoading(false));
@@ -47,6 +29,8 @@ export default function DashboardPage() {
   const clientPlans = plans.filter((p) => !p.isTemplate);
   const activeAssignments = clients.reduce((sum, c) => sum + c.activePlans, 0);
   const needsAttention = clients.filter((c) => c.activePlans === 0).slice(0, ATTENTION_LIMIT);
+  const recentSessions = dash?.recentSessions ?? [];
+  const recentPrs = dash?.recentPrs ?? [];
 
   if (loading) return <p className="text-muted">Ładowanie…</p>;
 
@@ -128,8 +112,11 @@ export default function DashboardPage() {
             <EmptyState>PR-y pojawią się po zalogowaniu serii z ciężarem.</EmptyState>
           ) : (
             <ul className="divide-y divide-border">
-              {recentPrs.map((r) => (
-                <li key={`${r.clientName}-${r.exerciseId}`} className="flex items-center justify-between gap-3 py-2.5">
+              {recentPrs.map((r, i) => (
+                <li
+                  key={`${r.clientId}-${r.exerciseId}-${r.performedOn}-${r.estimated1Rm}-${i}`}
+                  className="flex items-center justify-between gap-3 py-2.5"
+                >
                   <div className="min-w-0 text-sm">
                     <span className="font-medium">{r.clientName}</span>
                     <span className="mt-0.5 block break-words text-xs text-muted">{r.exerciseName}</span>

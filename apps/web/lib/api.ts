@@ -252,16 +252,20 @@ export type PlanDay = {
   items: PlanItem[];
 };
 
-export type Plan = {
+export type PlanSummary = {
   id: number;
   name: string;
   description: string | null;
   isTemplate: boolean;
-  days: PlanDay[];
+  createdAt?: string;
   weeksCount: number;
   daysCount: number;
   exerciseCount: number;
   assignedCount: number;
+};
+
+export type Plan = PlanSummary & {
+  days: PlanDay[];
 };
 
 export type PlanSetInput = {
@@ -315,6 +319,17 @@ export type ClientMax = {
   note: string | null;
 };
 
+export type PrevLoggedSet = {
+  setNumber: number;
+  weightKg: number | null;
+  reps: number | null;
+  durationSeconds: number | null;
+  distanceMeters: number | null;
+  rir: number | null;
+  rpe: number | null;
+  isWarmup: boolean;
+};
+
 export type LoggedSet = {
   id: number;
   setNumber: number;
@@ -325,6 +340,7 @@ export type LoggedSet = {
   rir: number | null;
   rpe: number | null;
   isWarmup: boolean;
+  completed: boolean;
   estimated1Rm: number | null;
   isPr: boolean;
 };
@@ -338,7 +354,17 @@ export type LoggedExercise = {
   media: ExerciseMedia[];
   order: number;
   note: string | null;
+  restSeconds: number | null;
+  prevSets: PrevLoggedSet[];
   sets: LoggedSet[];
+};
+
+export type SessionPr = {
+  exerciseId: number;
+  exerciseName: string;
+  weightKg: number | null;
+  reps: number | null;
+  estimated1Rm: number;
 };
 
 export type SessionSummary = {
@@ -357,6 +383,11 @@ export type SessionSummary = {
   totalSets: number;
   totalVolumeKg: number;
   exerciseCount: number;
+};
+
+/** Lista sesji w portalu — z PR-ami ustanowionymi w danym treningu. */
+export type PortalSessionSummary = SessionSummary & {
+  prs: SessionPr[];
 };
 
 export type SessionDetail = SessionSummary & {
@@ -387,6 +418,16 @@ export type ClientRecord = {
   weightKg: number | null;
   reps: number | null;
   performedOn: string;
+  sessionId?: number;
+};
+
+export type PortalWeekDay = {
+  id: number;
+  weekNumber: number;
+  order: number;
+  label: string;
+  completed: boolean;
+  isToday: boolean;
 };
 
 export type PortalHome = {
@@ -400,7 +441,22 @@ export type PortalHome = {
     total: number;
     percent: number;
   } | null;
+  week: PortalWeekDay[] | null;
   inProgressSession: { id: number; planDayId: number | null; performedOn: string } | null;
+};
+
+export type DashboardData = {
+  clients: number;
+  plans: number;
+  exercises: number;
+  recentSessions: (SessionSummary & { clientName: string })[];
+  recentPrs: (ClientRecord & { clientId: number; clientName: string })[];
+};
+
+export type NavCounts = {
+  clients: number;
+  plans: number;
+  exercises: number;
 };
 
 export type PlanDayInput = {
@@ -438,6 +494,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export type LoggedSetInput = {
+  id?: number | null;
   setNumber: number;
   weightKg: number | null;
   reps: number | null;
@@ -446,9 +503,11 @@ export type LoggedSetInput = {
   rir: number | null;
   rpe: number | null;
   isWarmup: boolean;
+  completed: boolean;
 };
 
 export type LoggedExerciseInput = {
+  id?: number | null;
   exerciseId: number;
   order: number;
   note: string | null;
@@ -468,11 +527,15 @@ export type WorkoutSessionInput = {
 };
 
 export const api = {
+  counts: () => request<NavCounts>("/api/counts"),
+  dashboard: () => request<DashboardData>("/api/dashboard"),
   clients: {
     list: () => request<ClientSummary[]>("/api/clients"),
     get: (id: number) => request<ClientDetails>(`/api/clients/${id}`),
     create: (input: { name: string; email: string | null; note: string | null }) =>
       request("/api/clients", { method: "POST", body: JSON.stringify(input) }),
+    update: (id: number, input: { name: string; email: string | null; note: string | null }) =>
+      request(`/api/clients/${id}`, { method: "PUT", body: JSON.stringify(input) }),
     remove: (id: number) => request(`/api/clients/${id}`, { method: "DELETE" }),
     maxes: (clientId: number) => request<ClientMax[]>(`/api/clients/${clientId}/maxes`),
     addMax: (
@@ -507,7 +570,7 @@ export const api = {
     remove: (id: number) => request(`/api/exercises/${id}`, { method: "DELETE" }),
   },
   plans: {
-    list: () => request<Plan[]>("/api/plans"),
+    list: () => request<PlanSummary[]>("/api/plans"),
     get: (id: number, clientId?: number) =>
       request<Plan>(`/api/plans/${id}${clientId != null ? `?clientId=${clientId}` : ""}`),
     create: (input: PlanInput) =>
@@ -561,6 +624,8 @@ export const api = {
   },
   portal: {
     home: (token: string) => request<PortalHome>(`/api/portal/${token}`),
+    sessions: (token: string) => request<PortalSessionSummary[]>(`/api/portal/${token}/sessions`),
+    records: (token: string) => request<ClientRecord[]>(`/api/portal/${token}/records`),
     getSession: (token: string, id: number) =>
       request<SessionDetail>(`/api/portal/${token}/sessions/${id}`),
     startSession: (

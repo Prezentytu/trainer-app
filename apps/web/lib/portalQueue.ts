@@ -22,8 +22,11 @@ export function readPortalQueue(): QueuedPortalWrite[] {
   }
 }
 
+/** Dedupe po sessionId — ostatni stan wygrywa. */
 export function enqueuePortalWrite(item: Omit<QueuedPortalWrite, "id" | "createdAt">) {
-  const queue = readPortalQueue();
+  const queue = readPortalQueue().filter(
+    (q) => !(q.token === item.token && q.sessionId === item.sessionId),
+  );
   queue.push({
     ...item,
     id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,

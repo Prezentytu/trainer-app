@@ -142,8 +142,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (isPortal) return;
-    Promise.all([api.clients.list(), api.plans.list()])
-      .then(([clients, plans]) => setCounts({ clients: clients.length, plans: plans.length }))
+    api
+      .counts()
+      .then((c) => setCounts({ clients: c.clients, plans: c.plans }))
       .catch(() => {
         // Liczniki nawigacji to tylko usprawnienie orientacji — brak backendu nie może wywrócić layoutu.
       });

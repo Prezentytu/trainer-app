@@ -160,44 +160,19 @@ app.MapDelete("/api/exercises/{id:int}", async (int id, AppDb db) =>
 
 // ---------- Plany ----------
 
-// Zaokrąglenie do 0,5 kg (najmniejszy talerzyk).
 static string NormalizeExerciseName(string? name) =>
     string.IsNullOrWhiteSpace(name) ? "" : string.Join(' ', name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries));
 
-static double RoundToHalf(double kg) => Math.Round(kg * 2, MidpointRounding.AwayFromZero) / 2;
-
-// Ciężar bazowy „top" dla pozycji: seria top/ramp, potem ciężar pozycji, potem najcięższa seria, potem default ćwiczenia.
-static double? TopLoadKg(PlanItem item)
-{
-    var byRole = item.PrescribedSets.FirstOrDefault(s => s.Role is "top" or "ramp" && s.LoadKg is not null)?.LoadKg;
-    if (byRole is not null) return byRole;
-    if (item.LoadKg is not null) return item.LoadKg;
-    var maxSet = item.PrescribedSets.Where(s => s.LoadKg is not null).Select(s => s.LoadKg!.Value);
-    if (maxSet.Any()) return maxSet.Max();
-    return item.Exercise?.DefaultLoadKg;
-}
-
-// Wyliczony ciężar serii: bezwzględny, % od topu, albo % 1RM klienta.
-static double? ComputedSetLoad(PlanSet set, double? topKg, double? oneRmKg)
-{
-    if (set.LoadKg is not null) return set.LoadKg;
-    if (set.LoadPercent is not null && set.PercentOf == "top" && topKg is not null)
-        return RoundToHalf(topKg.Value * set.LoadPercent.Value / 100.0);
-    if (set.LoadPercent is not null && set.PercentOf == "1rm" && oneRmKg is not null)
-        return RoundToHalf(oneRmKg.Value * set.LoadPercent.Value / 100.0);
-    return null;
-}
-
 static object ItemToDto(PlanItem i, IReadOnlyDictionary<int, double>? maxesByExercise = null)
 {
-    var topKg = TopLoadKg(i);
+    var topKg = PlanLoads.TopLoadKg(i);
     double? oneRmKg = maxesByExercise is not null && maxesByExercise.TryGetValue(i.ExerciseId, out var rm)
         ? rm
         : null;
     var measure = i.MeasureType ?? i.Exercise!.Type;
     double? itemComputed = null;
     if (i.LoadPercent is not null && oneRmKg is not null)
-        itemComputed = RoundToHalf(oneRmKg.Value * i.LoadPercent.Value / 100.0);
+        itemComputed = PlanLoads.RoundToHalf(oneRmKg.Value * i.LoadPercent.Value / 100.0);
     var effectiveLoad = i.LoadKg ?? itemComputed ?? i.Exercise.DefaultLoadKg;
     return new
     {
@@ -231,7 +206,7 @@ static object ItemToDto(PlanItem i, IReadOnlyDictionary<int, double>? maxesByExe
         {
             s.Id, s.Order, s.Reps, s.RepsMax, s.DurationSeconds, s.DistanceMeters,
             s.LoadKg, s.LoadPercent, s.PercentOf, s.TargetRpe, s.TargetRir, s.Tempo, s.Role, s.Note,
-            ComputedLoadKg = ComputedSetLoad(s, topKg, oneRmKg),
+            ComputedLoadKg = PlanLoads.ComputedSetLoad(s, topKg, oneRmKg),
         }),
     };
 }
@@ -252,22 +227,6 @@ static object PlanToDto(Plan plan, IReadOnlyDictionary<int, double>? maxesByExer
         ExerciseCount = days.Sum(d => d.Items.Count),
         AssignedCount = plan.Assignments.Count(a => a.Status == "active"),
     };
-}
-
-static async Task<Dictionary<int, double>> LatestMaxesAsync(AppDb db, int clientId)
-{
-    var rows = await db.ClientMaxes
-        .Where(m => m.ClientId == clientId)
-        .OrderByDescending(m => m.MeasuredOn)
-        .ThenByDescending(m => m.Id)
-        .ToListAsync();
-    var map = new Dictionary<int, double>();
-    foreach (var m in rows)
-    {
-        if (!map.ContainsKey(m.ExerciseId))
-            map[m.ExerciseId] = m.MaxKg;
-    }
-    return map;
 }
 
 // Budowa encji z DTO wejściowego (współdzielone przez POST/PUT/duplicate).
@@ -297,14 +256,117 @@ static PlanDay BuildDay(PlanDayInput d) => new()
 };
 
 app.MapGet("/api/plans", async (AppDb db) =>
-{
-    var plans = await db.Plans
-        .Include(p => p.Days).ThenInclude(d => d.Items).ThenInclude(i => i.Exercise)
-        .Include(p => p.Days).ThenInclude(d => d.Items).ThenInclude(i => i.PrescribedSets)
-        .Include(p => p.Assignments)
+    await db.Plans
         .OrderByDescending(p => p.CreatedAt)
+        .Select(p => new
+        {
+            p.Id, p.Name, p.Description, p.IsTemplate, p.CreatedAt,
+            WeeksCount = p.Days.Select(d => (int?)d.WeekNumber).Max() ?? 0,
+            DaysCount = p.Days.Count,
+            ExerciseCount = p.Days.SelectMany(d => d.Items).Count(),
+            AssignedCount = p.Assignments.Count(a => a.Status == "active"),
+        })
+        .ToListAsync());
+
+app.MapGet("/api/counts", async (AppDb db) => new
+{
+    clients = await db.Clients.CountAsync(),
+    plans = await db.Plans.CountAsync(),
+    exercises = await db.Exercises.CountAsync(),
+});
+
+app.MapGet("/api/dashboard", async (AppDb db) =>
+{
+    var clients = await db.Clients.CountAsync();
+    var plans = await db.Plans.CountAsync();
+    var exercises = await db.Exercises.CountAsync();
+
+    var recentSessions = await db.WorkoutSessions
+        .Where(s => s.Status == "completed")
+        .OrderByDescending(s => s.PerformedOn)
+        .ThenByDescending(s => s.Id)
+        .Take(6)
+        .Select(s => new
+        {
+            s.Id,
+            s.ClientId,
+            ClientName = s.Client!.Name,
+            s.AssignmentId,
+            s.PlanDayId,
+            s.PlanId,
+            PlanName = s.Plan != null ? s.Plan.Name : null,
+            DayLabel = s.PlanDay != null ? s.PlanDay.Label : null,
+            s.PerformedOn,
+            s.DurationSeconds,
+            s.Note,
+            s.Status,
+            s.CreatedAt,
+            TotalSets = s.Exercises.SelectMany(e => e.Sets).Count(x => !x.IsWarmup),
+            TotalVolumeKg = s.Exercises.SelectMany(e => e.Sets)
+                .Where(x => !x.IsWarmup && x.WeightKg != null && x.Reps != null)
+                .Sum(x => x.WeightKg!.Value * x.Reps!.Value),
+            ExerciseCount = s.Exercises.Count,
+        })
         .ToListAsync();
-    return plans.Select(p => PlanToDto(p));
+
+    // Ostatnie PR-y: skan ograniczony (200 serii), chronologicznie → nowy best e1RM.
+    var recentSets = await db.LoggedSets
+        .Where(s => !s.IsWarmup
+                    && s.WeightKg != null
+                    && s.Reps != null
+                    && s.LoggedExercise!.Session!.Status == "completed")
+        .OrderByDescending(s => s.LoggedExercise!.Session!.PerformedOn)
+        .ThenByDescending(s => s.Id)
+        .Take(200)
+        .Select(s => new
+        {
+            ClientId = s.LoggedExercise!.Session!.ClientId,
+            ClientName = s.LoggedExercise.Session.Client!.Name,
+            ExerciseId = s.LoggedExercise.ExerciseId,
+            ExerciseName = s.LoggedExercise.Exercise!.Name,
+            s.WeightKg,
+            s.Reps,
+            PerformedOn = s.LoggedExercise.Session.PerformedOn,
+            SessionId = s.LoggedExercise.WorkoutSessionId,
+        })
+        .ToListAsync();
+
+    var best = new Dictionary<(int ClientId, int ExerciseId), double>();
+    var recentPrs = new List<object>();
+    foreach (var row in recentSets
+        .OrderBy(x => x.PerformedOn)
+        .ThenBy(x => x.SessionId))
+    {
+        var e1 = Stats.Epley1Rm(row.WeightKg, row.Reps);
+        if (e1 is null) continue;
+        var key = (row.ClientId, row.ExerciseId);
+        if (!best.TryGetValue(key, out var prev) || e1.Value > prev + 0.01)
+        {
+            best[key] = e1.Value;
+            recentPrs.Add(new
+            {
+                clientId = row.ClientId,
+                clientName = row.ClientName,
+                exerciseId = row.ExerciseId,
+                exerciseName = row.ExerciseName,
+                estimated1Rm = e1.Value,
+                weightKg = row.WeightKg,
+                reps = row.Reps,
+                performedOn = row.PerformedOn,
+            });
+        }
+    }
+    recentPrs.Reverse();
+    if (recentPrs.Count > 6) recentPrs = recentPrs.Take(6).ToList();
+
+    return Results.Ok(new
+    {
+        clients,
+        plans,
+        exercises,
+        recentSessions,
+        recentPrs,
+    });
 });
 
 app.MapGet("/api/plans/{id:int}", async (int id, int? clientId, AppDb db) =>
@@ -317,7 +379,7 @@ app.MapGet("/api/plans/{id:int}", async (int id, int? clientId, AppDb db) =>
     if (plan is null) return Results.NotFound();
     Dictionary<int, double>? maxes = null;
     if (clientId is not null)
-        maxes = await LatestMaxesAsync(db, clientId.Value);
+        maxes = await PlanLoads.LatestMaxesAsync(db, clientId.Value);
     return Results.Ok(PlanToDto(plan, maxes));
 });
 
@@ -445,176 +507,58 @@ app.MapDelete("/api/maxes/{id:int}", async (int id, AppDb db) =>
 
 // ---------- Sesje treningowe ----------
 
-static WorkoutSession BuildSession(WorkoutSessionInput input) => new()
-{
-    ClientId = input.ClientId,
-    AssignmentId = input.AssignmentId,
-    PlanDayId = input.PlanDayId,
-    PlanId = input.PlanId,
-    PerformedOn = input.PerformedOn,
-    DurationSeconds = input.DurationSeconds,
-    Note = input.Note,
-    Status = string.IsNullOrWhiteSpace(input.Status) ? "completed" : input.Status,
-    Exercises = (input.Exercises ?? []).Select(e => new LoggedExercise
-    {
-        ExerciseId = e.ExerciseId,
-        Order = e.Order,
-        Note = e.Note,
-        Sets = (e.Sets ?? []).Select(s => new LoggedSet
-        {
-            SetNumber = s.SetNumber,
-            WeightKg = s.WeightKg,
-            Reps = s.Reps,
-            DurationSeconds = s.DurationSeconds,
-            DistanceMeters = s.DistanceMeters,
-            Rir = s.Rir,
-            Rpe = s.Rpe,
-            IsWarmup = s.IsWarmup,
-        }).ToList(),
-    }).ToList(),
-};
-
-static async Task<object?> LoadSessionDto(AppDb db, int id)
-{
-    var session = await db.WorkoutSessions
-        .Include(s => s.Plan)
-        .Include(s => s.PlanDay)
-        .Include(s => s.Exercises).ThenInclude(e => e.Exercise)
-        .Include(s => s.Exercises).ThenInclude(e => e.Sets)
-        .FirstOrDefaultAsync(s => s.Id == id);
-    if (session is null) return null;
-
-    var historical = await db.LoggedSets
-        .Include(s => s.LoggedExercise).ThenInclude(e => e!.Session)
-        .Where(s => s.LoggedExercise!.Session!.ClientId == session.ClientId
-                    && s.LoggedExercise.Session.Id != session.Id
-                    && (s.LoggedExercise.Session.PerformedOn < session.PerformedOn
-                        || (s.LoggedExercise.Session.PerformedOn == session.PerformedOn
-                            && s.LoggedExercise.Session.Id < session.Id)))
-        .ToListAsync();
-    var prs = Stats.FindPrSets(session, historical);
-    return Stats.SessionDetail(session, prs);
-}
-
 app.MapGet("/api/clients/{clientId:int}/sessions", async (int clientId, AppDb db) =>
 {
     if (!await db.Clients.AnyAsync(c => c.Id == clientId)) return Results.NotFound();
     var sessions = await db.WorkoutSessions
         .Where(s => s.ClientId == clientId)
-        .Include(s => s.Plan)
-        .Include(s => s.PlanDay)
-        .Include(s => s.Exercises).ThenInclude(e => e.Sets)
         .OrderByDescending(s => s.PerformedOn)
         .ThenByDescending(s => s.Id)
+        .Select(s => new
+        {
+            s.Id,
+            s.ClientId,
+            s.AssignmentId,
+            s.PlanDayId,
+            s.PlanId,
+            PlanName = s.Plan != null ? s.Plan.Name : null,
+            DayLabel = s.PlanDay != null ? s.PlanDay.Label : null,
+            s.PerformedOn,
+            s.DurationSeconds,
+            s.Note,
+            s.Status,
+            s.CreatedAt,
+            TotalSets = s.Exercises.SelectMany(e => e.Sets).Count(x => !x.IsWarmup),
+            TotalVolumeKg = s.Exercises.SelectMany(e => e.Sets)
+                .Where(x => !x.IsWarmup && x.WeightKg != null && x.Reps != null)
+                .Sum(x => x.WeightKg!.Value * x.Reps!.Value),
+            ExerciseCount = s.Exercises.Count,
+        })
         .ToListAsync();
-    return Results.Ok(sessions.Select(Stats.SessionSummary));
+    return Results.Ok(sessions);
 });
 
 app.MapGet("/api/sessions/{id:int}", async (int id, AppDb db) =>
 {
-    var dto = await LoadSessionDto(db, id);
+    var dto = await Sessions.LoadDto(db, id);
     return dto is null ? Results.NotFound() : Results.Ok(dto);
 });
 
 app.MapPost("/api/sessions/start", async (StartSessionInput input, AppDb db) =>
 {
-    if (!await db.Clients.AnyAsync(c => c.Id == input.ClientId)) return Results.NotFound();
-
-    PlanDay? day = null;
-    if (input.PlanDayId is not null)
-    {
-        day = await db.PlanDays
-            .Include(d => d.Items).ThenInclude(i => i.Exercise)
-            .Include(d => d.Items).ThenInclude(i => i.PrescribedSets)
-            .FirstOrDefaultAsync(d => d.Id == input.PlanDayId);
-        if (day is null) return Results.NotFound();
-    }
-
-    var maxes = await LatestMaxesAsync(db, input.ClientId);
-    var session = new WorkoutSession
-    {
-        ClientId = input.ClientId,
-        AssignmentId = input.AssignmentId,
-        PlanDayId = input.PlanDayId,
-        PlanId = input.PlanId ?? day?.PlanId,
-        PerformedOn = input.PerformedOn ?? DateOnly.FromDateTime(DateTime.UtcNow),
-        Status = "in_progress",
-    };
-
-    if (day is not null)
-    {
-        var order = 0;
-        foreach (var item in day.Items.OrderBy(i => i.Order))
-        {
-            maxes.TryGetValue(item.ExerciseId, out var oneRm);
-            var topKg = TopLoadKg(item);
-            var logged = new LoggedExercise
-            {
-                ExerciseId = item.ExerciseId,
-                Order = order++,
-                Note = item.Notes,
-            };
-            if (item.PrescribedSets.Count > 0)
-            {
-                foreach (var s in item.PrescribedSets.OrderBy(x => x.Order))
-                {
-                    logged.Sets.Add(new LoggedSet
-                    {
-                        SetNumber = s.Order,
-                        WeightKg = ComputedSetLoad(s, topKg, oneRm > 0 ? oneRm : null) ?? s.LoadKg,
-                        Reps = s.Reps,
-                        DurationSeconds = s.DurationSeconds,
-                        DistanceMeters = s.DistanceMeters,
-                        Rir = s.TargetRir,
-                        Rpe = s.TargetRpe,
-                        IsWarmup = s.Role == "warmup" || item.IsWarmup,
-                    });
-                }
-            }
-            else
-            {
-                var sets = item.Sets ?? item.Exercise?.DefaultSets ?? 3;
-                var load = item.LoadKg
-                    ?? (item.LoadPercent is not null && oneRm > 0
-                        ? RoundToHalf(oneRm * item.LoadPercent.Value / 100.0)
-                        : item.Exercise?.DefaultLoadKg);
-                var measure = item.MeasureType ?? item.Exercise?.Type ?? "reps";
-                for (var n = 1; n <= sets; n++)
-                {
-                    logged.Sets.Add(new LoggedSet
-                    {
-                        SetNumber = n,
-                        WeightKg = measure == "reps" ? load : null,
-                        Reps = measure == "reps" ? (item.Reps ?? item.Exercise?.DefaultReps) : null,
-                        DurationSeconds = measure == "time"
-                            ? (item.RepDurationSeconds ?? item.Exercise?.DefaultRepDurationSeconds)
-                            : null,
-                        DistanceMeters = measure == "distance"
-                            ? (item.DistanceMeters ?? item.Exercise?.DefaultDistanceMeters)
-                            : null,
-                        Rir = item.TargetRir,
-                        Rpe = item.TargetRpe,
-                        IsWarmup = item.IsWarmup,
-                    });
-                }
-            }
-            session.Exercises.Add(logged);
-        }
-    }
-
-    db.WorkoutSessions.Add(session);
-    await db.SaveChangesAsync();
-    var dto = await LoadSessionDto(db, session.Id);
+    var (session, error) = await Sessions.StartAsync(db, input);
+    if (error is not null) return error;
+    var dto = await Sessions.LoadDto(db, session!.Id);
     return Results.Created($"/api/sessions/{session.Id}", dto);
 });
 
 app.MapPost("/api/sessions", async (WorkoutSessionInput input, AppDb db) =>
 {
     if (!await db.Clients.AnyAsync(c => c.Id == input.ClientId)) return Results.NotFound();
-    var session = BuildSession(input);
+    var session = Sessions.BuildFromInput(input);
     db.WorkoutSessions.Add(session);
     await db.SaveChangesAsync();
-    var dto = await LoadSessionDto(db, session.Id);
+    var dto = await Sessions.LoadDto(db, session.Id);
     return Results.Created($"/api/sessions/{session.Id}", dto);
 });
 
@@ -624,30 +568,19 @@ app.MapPut("/api/sessions/{id:int}", async (int id, WorkoutSessionInput input, A
         .Include(s => s.Exercises).ThenInclude(e => e.Sets)
         .FirstOrDefaultAsync(s => s.Id == id);
     if (session is null) return Results.NotFound();
+    if (session.ClientId != input.ClientId) return Results.NotFound();
 
-    session.ClientId = input.ClientId;
-    session.AssignmentId = input.AssignmentId;
-    session.PlanDayId = input.PlanDayId;
-    session.PlanId = input.PlanId;
-    session.PerformedOn = input.PerformedOn;
-    session.DurationSeconds = input.DurationSeconds;
-    session.Note = input.Note;
-    session.Status = string.IsNullOrWhiteSpace(input.Status) ? session.Status : input.Status;
-    db.LoggedExercises.RemoveRange(session.Exercises);
-    session.Exercises = BuildSession(input).Exercises;
+    Sessions.ApplyUpdate(db, session, input);
     await db.SaveChangesAsync();
-    return Results.Ok(await LoadSessionDto(db, session.Id));
+    return Results.Ok(await Sessions.LoadDto(db, session.Id));
 });
 
 app.MapPatch("/api/sessions/{id:int}/complete", async (int id, AppDb db) =>
 {
     var session = await db.WorkoutSessions.FindAsync(id);
     if (session is null) return Results.NotFound();
-    session.Status = "completed";
-    if (session.DurationSeconds is null)
-        session.DurationSeconds = (int)Math.Max(60, (DateTime.UtcNow - session.CreatedAt).TotalSeconds);
-    await db.SaveChangesAsync();
-    return Results.Ok(await LoadSessionDto(db, session.Id));
+    await Sessions.CompleteAsync(db, session);
+    return Results.Ok(await Sessions.LoadDto(db, session.Id));
 });
 
 app.MapDelete("/api/sessions/{id:int}", async (int id, AppDb db) =>
@@ -719,40 +652,54 @@ app.MapGet("/api/clients/{clientId:int}/exercises/{exerciseId:int}/stats", async
     });
 });
 
-app.MapGet("/api/clients/{clientId:int}/records", async (int clientId, AppDb db) =>
+static async Task<object> LoadClientRecordsAsync(AppDb db, int clientId)
 {
-    if (!await db.Clients.AnyAsync(c => c.Id == clientId)) return Results.NotFound();
     var sets = await db.LoggedSets
-        .Include(s => s.LoggedExercise).ThenInclude(e => e!.Exercise)
-        .Include(s => s.LoggedExercise).ThenInclude(e => e!.Session)
+        .AsNoTracking()
         .Where(s => s.LoggedExercise!.Session!.ClientId == clientId
                     && s.LoggedExercise.Session.Status == "completed"
                     && !s.IsWarmup
                     && s.WeightKg != null
                     && s.Reps != null)
+        .Select(s => new
+        {
+            ExerciseId = s.LoggedExercise!.ExerciseId,
+            ExerciseName = s.LoggedExercise.Exercise!.Name,
+            s.WeightKg,
+            s.Reps,
+            PerformedOn = s.LoggedExercise.Session!.PerformedOn,
+            SessionId = s.LoggedExercise.WorkoutSessionId,
+        })
         .ToListAsync();
 
-    var records = sets
-        .GroupBy(s => s.LoggedExercise!.ExerciseId)
+    return sets
+        .GroupBy(s => s.ExerciseId)
         .Select(g =>
         {
             var best = g
                 .Select(s => new { Set = s, E1 = Stats.Epley1Rm(s.WeightKg, s.Reps)!.Value })
                 .OrderByDescending(x => x.E1)
+                .ThenByDescending(x => x.Set.PerformedOn)
                 .First();
             return new
             {
                 exerciseId = g.Key,
-                exerciseName = best.Set.LoggedExercise!.Exercise?.Name ?? "",
+                exerciseName = best.Set.ExerciseName ?? "",
                 estimated1Rm = best.E1,
                 weightKg = best.Set.WeightKg,
                 reps = best.Set.Reps,
-                performedOn = best.Set.LoggedExercise.Session!.PerformedOn,
+                performedOn = best.Set.PerformedOn,
+                sessionId = best.Set.SessionId,
             };
         })
         .OrderByDescending(r => r.estimated1Rm)
         .ToList();
-    return Results.Ok(records);
+}
+
+app.MapGet("/api/clients/{clientId:int}/records", async (int clientId, AppDb db) =>
+{
+    if (!await db.Clients.AnyAsync(c => c.Id == clientId)) return Results.NotFound();
+    return Results.Ok(await LoadClientRecordsAsync(db, clientId));
 });
 
 app.MapGet("/api/clients/{clientId:int}/progress", async (int clientId, AppDb db) =>
@@ -834,8 +781,7 @@ app.MapGet("/api/portal/{token}", async (string token, AppDb db) =>
     if (access?.Client is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
 
     var assignment = await db.Assignments
-        .Include(a => a.Plan!).ThenInclude(p => p.Days).ThenInclude(d => d.Items).ThenInclude(i => i.Exercise)
-        .Include(a => a.Plan!).ThenInclude(p => p.Days).ThenInclude(d => d.Items).ThenInclude(i => i.PrescribedSets)
+        .Include(a => a.Plan!)
         .Where(a => a.ClientId == access.ClientId && a.Status == "active")
         .OrderByDescending(a => a.CreatedAt)
         .FirstOrDefaultAsync();
@@ -854,13 +800,31 @@ app.MapGet("/api/portal/{token}", async (string token, AppDb db) =>
         .FirstOrDefaultAsync();
 
     object? today = null;
+    object? week = null;
     if (assignment?.Plan is not null)
     {
-        var days = assignment.Plan.Days.OrderBy(d => d.WeekNumber).ThenBy(d => d.Order).ToList();
-        var next = days.FirstOrDefault(d => !completedDayIds.Contains(d.Id)) ?? days.LastOrDefault();
-        if (next is not null)
+        var days = await db.PlanDays
+            .Where(d => d.PlanId == assignment.PlanId)
+            .OrderBy(d => d.WeekNumber)
+            .ThenBy(d => d.Order)
+            .Select(d => new { d.Id, d.WeekNumber, d.Order, d.Label, d.Notes })
+            .ToListAsync();
+
+        var nextMeta = days.FirstOrDefault(d => !completedDayIds.Contains(d.Id)) ?? days.LastOrDefault();
+        week = days.Select(d => new
         {
-            var maxes = await LatestMaxesAsync(db, access.ClientId);
+            d.Id, d.WeekNumber, d.Order, d.Label,
+            completed = completedDayIds.Contains(d.Id),
+            isToday = nextMeta != null && d.Id == nextMeta.Id,
+        }).ToList();
+
+        if (nextMeta is not null)
+        {
+            var next = await db.PlanDays
+                .Include(d => d.Items).ThenInclude(i => i.Exercise)
+                .Include(d => d.Items).ThenInclude(i => i.PrescribedSets)
+                .FirstAsync(d => d.Id == nextMeta.Id);
+            var maxes = await PlanLoads.LatestMaxesAsync(db, access.ClientId);
             today = new
             {
                 assignmentId = assignment.Id,
@@ -884,8 +848,117 @@ app.MapGet("/api/portal/{token}", async (string token, AppDb db) =>
     {
         client = new { access.Client.Id, access.Client.Name },
         today,
+        week,
         inProgressSession = inProgress,
     });
+});
+
+app.MapGet("/api/portal/{token}/sessions", async (string token, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+
+    var sessions = await db.WorkoutSessions
+        .Where(s => s.ClientId == access.ClientId && s.Status == "completed")
+        .OrderByDescending(s => s.PerformedOn)
+        .ThenByDescending(s => s.Id)
+        .Select(s => new
+        {
+            s.Id,
+            s.ClientId,
+            s.AssignmentId,
+            s.PlanDayId,
+            s.PlanId,
+            PlanName = s.Plan != null ? s.Plan.Name : null,
+            DayLabel = s.PlanDay != null ? s.PlanDay.Label : null,
+            s.PerformedOn,
+            s.DurationSeconds,
+            s.Note,
+            s.Status,
+            s.CreatedAt,
+            TotalSets = s.Exercises.SelectMany(e => e.Sets).Count(x => !x.IsWarmup),
+            TotalVolumeKg = s.Exercises.SelectMany(e => e.Sets)
+                .Where(x => !x.IsWarmup && x.WeightKg != null && x.Reps != null)
+                .Sum(x => x.WeightKg!.Value * x.Reps!.Value),
+            ExerciseCount = s.Exercises.Count,
+        })
+        .ToListAsync();
+
+    // PR-y ustanowione w danej sesji (skan chronologiczny e1RM — jeden przebieg).
+    var workingSets = await db.LoggedSets
+        .AsNoTracking()
+        .Where(s => s.LoggedExercise!.Session!.ClientId == access.ClientId
+                    && s.LoggedExercise.Session.Status == "completed"
+                    && !s.IsWarmup
+                    && s.WeightKg != null
+                    && s.Reps != null)
+        .Select(s => new
+        {
+            SessionId = s.LoggedExercise!.WorkoutSessionId,
+            PerformedOn = s.LoggedExercise.Session!.PerformedOn,
+            ExerciseId = s.LoggedExercise.ExerciseId,
+            ExerciseName = s.LoggedExercise.Exercise!.Name,
+            s.WeightKg,
+            s.Reps,
+            s.SetNumber,
+        })
+        .ToListAsync();
+
+    var best = new Dictionary<int, double>();
+    var prsBySession = new Dictionary<int, List<object>>();
+    foreach (var row in workingSets
+        .OrderBy(x => x.PerformedOn)
+        .ThenBy(x => x.SessionId)
+        .ThenBy(x => x.SetNumber))
+    {
+        var e1 = Stats.Epley1Rm(row.WeightKg, row.Reps);
+        if (e1 is null) continue;
+        if (!best.TryGetValue(row.ExerciseId, out var prev) || e1.Value > prev + 0.01)
+        {
+            best[row.ExerciseId] = e1.Value;
+            if (!prsBySession.TryGetValue(row.SessionId, out var list))
+            {
+                list = [];
+                prsBySession[row.SessionId] = list;
+            }
+            list.Add(new
+            {
+                exerciseId = row.ExerciseId,
+                exerciseName = row.ExerciseName,
+                weightKg = row.WeightKg,
+                reps = row.Reps,
+                estimated1Rm = e1.Value,
+            });
+        }
+    }
+
+    var result = sessions.Select(s => new
+    {
+        s.Id,
+        s.ClientId,
+        s.AssignmentId,
+        s.PlanDayId,
+        s.PlanId,
+        s.PlanName,
+        s.DayLabel,
+        s.PerformedOn,
+        s.DurationSeconds,
+        s.Note,
+        s.Status,
+        s.CreatedAt,
+        s.TotalSets,
+        s.TotalVolumeKg,
+        s.ExerciseCount,
+        Prs = prsBySession.TryGetValue(s.Id, out var prs) ? prs : [],
+    });
+    return Results.Ok(result);
+});
+
+app.MapGet("/api/portal/{token}/records", async (string token, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    return Results.Ok(await LoadClientRecordsAsync(db, access.ClientId));
 });
 
 app.MapGet("/api/portal/{token}/sessions/{id:int}", async (string token, int id, AppDb db) =>
@@ -894,7 +967,7 @@ app.MapGet("/api/portal/{token}/sessions/{id:int}", async (string token, int id,
     if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
     var session = await db.WorkoutSessions.FindAsync(id);
     if (session is null || session.ClientId != access.ClientId) return Results.NotFound();
-    return Results.Ok(await LoadSessionDto(db, id));
+    return Results.Ok(await Sessions.LoadDto(db, id));
 });
 
 app.MapPost("/api/portal/{token}/sessions/start", async (string token, StartSessionInput input, AppDb db) =>
@@ -902,89 +975,9 @@ app.MapPost("/api/portal/{token}/sessions/start", async (string token, StartSess
     var access = await ResolvePortalToken(db, token);
     if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
     input = input with { ClientId = access.ClientId };
-    // Reuse trainer start endpoint logic by calling the same builder path inline:
-    if (input.PlanDayId is not null && !await db.PlanDays.AnyAsync(d => d.Id == input.PlanDayId))
-        return Results.NotFound();
-
-    PlanDay? day = null;
-    if (input.PlanDayId is not null)
-    {
-        day = await db.PlanDays
-            .Include(d => d.Items).ThenInclude(i => i.Exercise)
-            .Include(d => d.Items).ThenInclude(i => i.PrescribedSets)
-            .FirstOrDefaultAsync(d => d.Id == input.PlanDayId);
-    }
-
-    var maxes = await LatestMaxesAsync(db, access.ClientId);
-    var session = new WorkoutSession
-    {
-        ClientId = access.ClientId,
-        AssignmentId = input.AssignmentId,
-        PlanDayId = input.PlanDayId,
-        PlanId = input.PlanId ?? day?.PlanId,
-        PerformedOn = input.PerformedOn ?? DateOnly.FromDateTime(DateTime.UtcNow),
-        Status = "in_progress",
-    };
-
-    if (day is not null)
-    {
-        var order = 0;
-        foreach (var item in day.Items.OrderBy(i => i.Order))
-        {
-            maxes.TryGetValue(item.ExerciseId, out var oneRm);
-            var topKg = TopLoadKg(item);
-            var logged = new LoggedExercise { ExerciseId = item.ExerciseId, Order = order++, Note = item.Notes };
-            if (item.PrescribedSets.Count > 0)
-            {
-                foreach (var s in item.PrescribedSets.OrderBy(x => x.Order))
-                {
-                    logged.Sets.Add(new LoggedSet
-                    {
-                        SetNumber = s.Order,
-                        WeightKg = ComputedSetLoad(s, topKg, oneRm > 0 ? oneRm : null) ?? s.LoadKg,
-                        Reps = s.Reps,
-                        DurationSeconds = s.DurationSeconds,
-                        DistanceMeters = s.DistanceMeters,
-                        Rir = s.TargetRir,
-                        Rpe = s.TargetRpe,
-                        IsWarmup = s.Role == "warmup" || item.IsWarmup,
-                    });
-                }
-            }
-            else
-            {
-                var sets = item.Sets ?? item.Exercise?.DefaultSets ?? 3;
-                var load = item.LoadKg
-                    ?? (item.LoadPercent is not null && oneRm > 0
-                        ? RoundToHalf(oneRm * item.LoadPercent.Value / 100.0)
-                        : item.Exercise?.DefaultLoadKg);
-                var measure = item.MeasureType ?? item.Exercise?.Type ?? "reps";
-                for (var n = 1; n <= sets; n++)
-                {
-                    logged.Sets.Add(new LoggedSet
-                    {
-                        SetNumber = n,
-                        WeightKg = measure == "reps" ? load : null,
-                        Reps = measure == "reps" ? (item.Reps ?? item.Exercise?.DefaultReps) : null,
-                        DurationSeconds = measure == "time"
-                            ? (item.RepDurationSeconds ?? item.Exercise?.DefaultRepDurationSeconds)
-                            : null,
-                        DistanceMeters = measure == "distance"
-                            ? (item.DistanceMeters ?? item.Exercise?.DefaultDistanceMeters)
-                            : null,
-                        Rir = item.TargetRir,
-                        Rpe = item.TargetRpe,
-                        IsWarmup = item.IsWarmup,
-                    });
-                }
-            }
-            session.Exercises.Add(logged);
-        }
-    }
-
-    db.WorkoutSessions.Add(session);
-    await db.SaveChangesAsync();
-    return Results.Created($"/api/portal/{token}/sessions/{session.Id}", await LoadSessionDto(db, session.Id));
+    var (session, error) = await Sessions.StartAsync(db, input, requireDayOwnedByClient: true);
+    if (error is not null) return error;
+    return Results.Created($"/api/portal/{token}/sessions/{session!.Id}", await Sessions.LoadDto(db, session.Id));
 });
 
 app.MapPut("/api/portal/{token}/sessions/{id:int}", async (string token, int id, WorkoutSessionInput input, AppDb db) =>
@@ -997,17 +990,9 @@ app.MapPut("/api/portal/{token}/sessions/{id:int}", async (string token, int id,
     if (session is null || session.ClientId != access.ClientId) return Results.NotFound();
 
     input = input with { ClientId = access.ClientId };
-    session.AssignmentId = input.AssignmentId;
-    session.PlanDayId = input.PlanDayId;
-    session.PlanId = input.PlanId;
-    session.PerformedOn = input.PerformedOn;
-    session.DurationSeconds = input.DurationSeconds;
-    session.Note = input.Note;
-    session.Status = string.IsNullOrWhiteSpace(input.Status) ? session.Status : input.Status;
-    db.LoggedExercises.RemoveRange(session.Exercises);
-    session.Exercises = BuildSession(input).Exercises;
+    Sessions.ApplyUpdate(db, session, input);
     await db.SaveChangesAsync();
-    return Results.Ok(await LoadSessionDto(db, session.Id));
+    return Results.Ok(await Sessions.LoadDto(db, session.Id));
 });
 
 app.MapPatch("/api/portal/{token}/sessions/{id:int}/complete", async (string token, int id, AppDb db) =>
@@ -1016,11 +1001,8 @@ app.MapPatch("/api/portal/{token}/sessions/{id:int}/complete", async (string tok
     if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
     var session = await db.WorkoutSessions.FindAsync(id);
     if (session is null || session.ClientId != access.ClientId) return Results.NotFound();
-    session.Status = "completed";
-    if (session.DurationSeconds is null)
-        session.DurationSeconds = (int)Math.Max(60, (DateTime.UtcNow - session.CreatedAt).TotalSeconds);
-    await db.SaveChangesAsync();
-    return Results.Ok(await LoadSessionDto(db, session.Id));
+    await Sessions.CompleteAsync(db, session);
+    return Results.Ok(await Sessions.LoadDto(db, session.Id));
 });
 
 // ---------- Przypisania ----------

@@ -10,7 +10,7 @@ import {
   ClientProgress,
   ClientRecord,
   Exercise,
-  Plan,
+  PlanSummary,
   SessionSummary,
 } from "@/lib/api";
 import {
@@ -28,7 +28,7 @@ import {
   useUndoToast,
 } from "@/components/ui";
 
-function PlanPickerCard({ plan, selected, onSelect }: { plan: Plan; selected: boolean; onSelect: () => void }) {
+function PlanPickerCard({ plan, selected, onSelect }: { plan: PlanSummary; selected: boolean; onSelect: () => void }) {
   return (
     <button
       type="button"
@@ -62,7 +62,7 @@ export default function ClientDetailsPage() {
 
   const [tab, setTab] = useState("plans");
   const [client, setClient] = useState<ClientDetails | null>(null);
-  const [plans, setPlans] = useState<Plan[]>([]);
+  const [plans, setPlans] = useState<PlanSummary[]>([]);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [maxes, setMaxes] = useState<ClientMax[]>([]);
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
