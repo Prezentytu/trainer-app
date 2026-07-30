@@ -17,6 +17,8 @@ type Props = {
   session: SessionDetail;
   /** Gdy podane — zapis przez api.portal.*; inaczej api.sessions.* */
   portalToken?: string;
+  /** Edycja już ukończonej sesji — statyczny czas, CTA „Zapisz zmiany”. */
+  completedEdit?: boolean;
   onUpdated: (session: SessionDetail) => void;
   onCompleted?: (session: SessionDetail) => void;
   /** Wywołane przy nieudanym zapisie (np. offline queue). */
@@ -80,6 +82,7 @@ function elapsedLabel(startedAt: number): string {
 export function SessionLogger({
   session,
   portalToken,
+  completedEdit = false,
   onUpdated,
   onCompleted,
   onPersistFailed,
@@ -102,9 +105,10 @@ export function SessionLogger({
   const startedAt = useRef(Date.parse(session.createdAt));
 
   useEffect(() => {
+    if (completedEdit) return;
     const t = setInterval(() => setClock(elapsedLabel(startedAt.current)), 1000);
     return () => clearInterval(t);
-  }, []);
+  }, [completedEdit]);
 
   useEffect(() => {
     return () => {
@@ -247,7 +251,7 @@ export function SessionLogger({
           const e1 = logged.s.estimated1Rm;
           flashPr(
             e1 != null
-              ? `PR! ${logged.ex.exerciseName} · e1RM ${e1} kg`
+              ? `PR! ${logged.ex.exerciseName} · max ${e1} kg`
               : `PR! ${logged.ex.exerciseName}`,
           );
         }
@@ -341,7 +345,9 @@ export function SessionLogger({
     return (
       <div className="space-y-4">
         <div className="rounded-xl border border-accent-border bg-accent-dim/40 px-4 py-5 text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-accent">Trening zakończony</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-accent">
+            {completedEdit ? "Zmiany zapisane" : "Trening zakończony"}
+          </p>
           <h1 className="mt-1 font-display text-2xl font-bold">{summary.dayLabel ?? "Sesja"}</h1>
           <p className="mt-1 font-mono text-sm tabular-nums text-muted">{summary.performedOn}</p>
         </div>
@@ -360,7 +366,7 @@ export function SessionLogger({
                   <span className="font-semibold">{p.exerciseName}</span>{" "}
                   <span className="font-mono tabular-nums text-muted">
                     {p.weightKg} × {p.reps}
-                    {p.estimated1Rm != null ? ` · e1RM ${p.estimated1Rm}` : ""}
+                    {p.estimated1Rm != null ? ` · max ${p.estimated1Rm}` : ""}
                   </span>
                 </li>
               ))}
@@ -401,13 +407,19 @@ export function SessionLogger({
               {draft.dayLabel ?? "Trening"}
             </p>
             <div className="flex items-baseline gap-2">
-              <h1 className="truncate font-display text-lg font-bold">Sesja</h1>
-              <span className="font-mono text-sm tabular-nums text-muted">{clock}</span>
+              <h1 className="truncate font-display text-lg font-bold">
+                {completedEdit ? "Poprawa" : "Sesja"}
+              </h1>
+              <span className="font-mono text-sm tabular-nums text-muted">
+                {completedEdit
+                  ? formatRest(draft.durationSeconds ?? 0)
+                  : clock}
+              </span>
               {saving ? <span className="text-xs text-muted">Zapis…</span> : null}
             </div>
           </div>
           <Button disabled={saving} onClick={() => void finish()}>
-            Zakończ
+            {completedEdit ? "Zapisz zmiany" : "Zakończ"}
           </Button>
         </div>
         {prCelebrate ? (

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api, SessionDetail, WorkoutSessionInput } from "@/lib/api";
 import { SessionLogger } from "@/components/SessionLogger";
+import { SessionSummaryView } from "@/components/SessionSummaryView";
 import { ErrorBanner } from "@/components/ui";
 import { enqueuePortalWrite, readPortalQueue, clearPortalQueueItem } from "@/lib/portalQueue";
 
@@ -14,6 +15,7 @@ export default function PortalSessionPage() {
   const router = useRouter();
   const [session, setSession] = useState<SessionDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [editingCompleted, setEditingCompleted] = useState(false);
 
   const flushQueue = useCallback(async () => {
     if (typeof navigator !== "undefined" && !navigator.onLine) return;
@@ -53,12 +55,28 @@ export default function PortalSessionPage() {
     );
   }
 
+  const showSummary = session.status === "completed" && !editingCompleted;
+
+  if (showSummary) {
+    return (
+      <div>
+        <ErrorBanner message={error} />
+        <SessionSummaryView
+          session={session}
+          onBack={() => router.push(`/portal/${token}`)}
+          onEdit={() => setEditingCompleted(true)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div>
       <SessionLogger
-        key={session.id}
+        key={`${session.id}-${editingCompleted ? "edit" : "live"}`}
         session={session}
         portalToken={token}
+        completedEdit={editingCompleted}
         onUpdated={setSession}
         onPersistFailed={(input, complete) => {
           enqueuePortalWrite({

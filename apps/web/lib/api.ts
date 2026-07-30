@@ -421,6 +421,18 @@ export type ClientRecord = {
   sessionId?: number;
 };
 
+export type ExerciseStats = {
+  clientId: number;
+  exerciseId: number;
+  estimated1Rm: number | null;
+  maxWeightKg: number | null;
+  maxWeightDate: string | null;
+  maxVolumeKg: number | null;
+  maxVolumeDate: string | null;
+  repMaxes: { reps: number; weightKg: number }[];
+  trend: { date: string; estimated1Rm: number }[];
+};
+
 export type PortalWeekDay = {
   id: number;
   weekNumber: number;
@@ -550,6 +562,8 @@ export const api = {
     sessions: (clientId: number) => request<SessionSummary[]>(`/api/clients/${clientId}/sessions`),
     records: (clientId: number) => request<ClientRecord[]>(`/api/clients/${clientId}/records`),
     progress: (clientId: number) => request<ClientProgress>(`/api/clients/${clientId}/progress`),
+    exerciseStats: (clientId: number, exerciseId: number) =>
+      request<ExerciseStats>(`/api/clients/${clientId}/exercises/${exerciseId}/stats`),
     accessToken: (clientId: number) =>
       request<{ token: string; createdAt: string; expiresAt: string | null }>(
         `/api/clients/${clientId}/access-token`,

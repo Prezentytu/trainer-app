@@ -7,6 +7,7 @@ import { api, ClientRecord, PortalHome, PortalSessionSummary } from "@/lib/api";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { YoutubeLite } from "@/components/YoutubeLite";
 import { Badge, Button, ErrorBanner, formatRest } from "@/components/ui";
+import { estimateDayMinutes, formatDurationApprox, formatDurationMinutes } from "@/lib/estimateDuration";
 
 type Tab = "today" | "week" | "history" | "records";
 
@@ -159,6 +160,9 @@ export default function PortalHomePage() {
                   </p>
                   <h2 className="font-display text-xl font-bold">{today.day.label}</h2>
                   <p className="text-sm text-muted">{today.planName}</p>
+                  <p className="mt-1 font-mono text-xs tabular-nums text-muted">
+                    {today.day.items.length} ćw. · {formatDurationApprox(estimateDayMinutes(today.day.items))}
+                  </p>
                 </div>
                 <div className="text-right font-mono text-xs tabular-nums text-muted">
                   {today.completed} / {today.total}
@@ -291,8 +295,14 @@ export default function PortalHomePage() {
                           {formatDay(s.performedOn)}
                         </p>
                       </div>
-                      <p className="shrink-0 font-mono text-xs tabular-nums text-muted">
-                        {Math.round(s.totalVolumeKg)} kg · {s.totalSets} serii
+                      <p className="shrink-0 text-right font-mono text-xs tabular-nums text-muted">
+                        {[
+                          formatDurationMinutes(s.durationSeconds),
+                          `${Math.round(s.totalVolumeKg)} kg`,
+                          `${s.totalSets} serii`,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
                       </p>
                     </div>
                     {sessionPrs.length > 0 ? (
@@ -311,7 +321,7 @@ export default function PortalHomePage() {
                                 ? `${r.weightKg}×${r.reps}`
                                 : "—"}
                               <span className="text-pr"> · {r.estimated1Rm}</span>
-                              <span className="text-muted"> e1RM</span>
+                              <span className="text-muted"> max</span>
                             </span>
                           </li>
                         ))}
@@ -345,6 +355,9 @@ export default function PortalHomePage() {
             </div>
           ) : (
             <>
+              <p className="text-xs text-muted">
+                Szacowany max = ile mniej więcej uniesiesz na 1 powtórzenie, wyliczone z Twoich serii.
+              </p>
               <p className="font-mono text-xs tabular-nums text-muted">
                 {records.length} {records.length === 1 ? "ćwiczenie" : "ćwiczeń"} z rekordem
               </p>
@@ -373,7 +386,7 @@ export default function PortalHomePage() {
                           {r.estimated1Rm}
                         </p>
                         <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">
-                          e1RM
+                          Szacowany max
                         </p>
                       </div>
                     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -10,9 +10,11 @@ import {
   ClientProgress,
   ClientRecord,
   Exercise,
+  ExerciseStats,
   PlanSummary,
   SessionSummary,
 } from "@/lib/api";
+import { TrendSparkline } from "@/components/TrendSparkline";
 import {
   Avatar,
   Badge,
@@ -27,6 +29,7 @@ import {
   Tabs,
   useUndoToast,
 } from "@/components/ui";
+import { formatDurationMinutes } from "@/lib/estimateDuration";
 
 function PlanPickerCard({ plan, selected, onSelect }: { plan: PlanSummary; selected: boolean; onSelect: () => void }) {
   return (
@@ -55,6 +58,33 @@ function PlanPickerCard({ plan, selected, onSelect }: { plan: PlanSummary; selec
   );
 }
 
+function daysAgo(iso: string): number {
+  const d = new Date(`${iso}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return 0;
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  return Math.max(0, Math.round((today.getTime() - d.getTime()) / 86400000));
+}
+
+function relativeDayLabel(iso: string): string {
+  const n = daysAgo(iso);
+  if (n === 0) return "dziś";
+  if (n === 1) return "wczoraj";
+  if (n < 7) return `${n} dni temu`;
+  if (n < 14) return "tydzień temu";
+  return `${n} dni temu`;
+}
+
+function formatDayShort(iso: string): string {
+  const d = new Date(`${iso}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("pl-PL", { day: "numeric", month: "short" });
+}
+
+function withinLastDays(iso: string, days: number): boolean {
+  return daysAgo(iso) <= days;
+}
+
 export default function ClientDetailsPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -76,10 +106,15 @@ export default function ClientDetailsPage() {
   const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
 
   const [maxExerciseId, setMaxExerciseId] = useState<number | "">("");
   const [maxKg, setMaxKg] = useState("");
   const [maxDate, setMaxDate] = useState(() => new Date().toISOString().slice(0, 10));
+
+  const [expandedRecordId, setExpandedRecordId] = useState<number | null>(null);
+  const [statsCache, setStatsCache] = useState<Record<number, ExerciseStats | "loading" | "error">>({});
+  const [nextDay, setNextDay] = useState<{ assignmentId: number; label: string } | null>(null);
 
   const load = useCallback(() => {
     Promise.all([
@@ -102,11 +137,64 @@ export default function ClientDetailsPage() {
         setProgress(prog);
         setPlanId((prev) => (prev === "" && assignable.length > 0 ? assignable[0].id : prev));
         setMaxExerciseId((prev) => (prev === "" && ex.length > 0 ? ex[0].id : prev));
+        const hasActive = c.assignments.some((a) => a.status === "active");
+        setAssignOpen(!hasActive);
       })
       .catch((e: Error) => setError(e.message));
   }, [clientId]);
 
   useEffect(load, [load]);
+
+  const activeAssignment = useMemo(
+    () => client?.assignments.find((a) => a.status === "active" && a.id === progress?.assignmentId)
+      ?? client?.assignments.find((a) => a.status === "active")
+      ?? null,
+    [client, progress],
+  );
+
+  useEffect(() => {
+    if (!activeAssignment) return;
+    const assignmentId = activeAssignment.id;
+    let cancelled = false;
+    api.plans
+      .get(activeAssignment.planId, clientId)
+      .then((plan) => {
+        if (cancelled) return;
+        const days = [...plan.days].sort(
+          (a, b) => a.weekNumber - b.weekNumber || a.order - b.order,
+        );
+        const doneDayIds = new Set(
+          sessions
+            .filter(
+              (s) =>
+                s.status === "completed" &&
+                s.assignmentId === assignmentId &&
+                s.planDayId != null,
+            )
+            .map((s) => s.planDayId!),
+        );
+        const next = days.find((d) => !doneDayIds.has(d.id)) ?? days[0] ?? null;
+        setNextDay(next ? { assignmentId, label: next.label } : null);
+      })
+      .catch(() => {
+        if (!cancelled) setNextDay(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeAssignment, clientId, sessions]);
+
+  const nextDayLabel =
+    activeAssignment && nextDay?.assignmentId === activeAssignment.id ? nextDay.label : null;
+
+  const completedSessions = useMemo(
+    () => sessions.filter((s) => s.status === "completed"),
+    [sessions],
+  );
+  const lastSession = completedSessions[0] ?? null;
+  const sessions30 = completedSessions.filter((s) => withinLastDays(s.performedOn, 30)).length;
+  const prs30 = records.filter((r) => withinLastDays(r.performedOn, 30)).length;
+  const lastAgo = lastSession ? daysAgo(lastSession.performedOn) : null;
 
   const handleAssign = async (e: FormEvent) => {
     e.preventDefault();
@@ -116,6 +204,7 @@ export default function ClientDetailsPage() {
     try {
       await api.assignments.create({ planId, clientId, startDate, note: note.trim() || null });
       setNote("");
+      setAssignOpen(false);
       load();
     } catch (err) {
       setError((err as Error).message);
@@ -171,10 +260,28 @@ export default function ClientDetailsPage() {
     }
   };
 
+  const resolveNextDayId = async (assignment: ClientDetails["assignments"][number]) => {
+    const plan = await api.plans.get(assignment.planId, clientId);
+    const days = [...plan.days].sort(
+      (a, b) => a.weekNumber - b.weekNumber || a.order - b.order,
+    );
+    if (days.length === 0) return null;
+    const doneDayIds = new Set(
+      sessions
+        .filter(
+          (s) =>
+            s.status === "completed" &&
+            s.assignmentId === assignment.id &&
+            s.planDayId != null,
+        )
+        .map((s) => s.planDayId!),
+    );
+    return days.find((d) => !doneDayIds.has(d.id)) ?? days[0];
+  };
+
   const handleStartSession = async (assignment: ClientDetails["assignments"][number]) => {
     try {
-      const plan = await api.plans.get(assignment.planId, clientId);
-      const day = plan.days.sort((a, b) => a.weekNumber - b.weekNumber || a.order - b.order)[0];
+      const day = await resolveNextDayId(assignment);
       if (!day) {
         setError("Plan nie ma dni treningowych.");
         return;
@@ -213,6 +320,20 @@ export default function ClientDetailsPage() {
     }
   };
 
+  const toggleRecord = (exerciseId: number) => {
+    if (expandedRecordId === exerciseId) {
+      setExpandedRecordId(null);
+      return;
+    }
+    setExpandedRecordId(exerciseId);
+    if (statsCache[exerciseId]) return;
+    setStatsCache((prev) => ({ ...prev, [exerciseId]: "loading" }));
+    api.clients
+      .exerciseStats(clientId, exerciseId)
+      .then((stats) => setStatsCache((prev) => ({ ...prev, [exerciseId]: stats })))
+      .catch(() => setStatsCache((prev) => ({ ...prev, [exerciseId]: "error" })));
+  };
+
   if (!client) {
     return (
       <div>
@@ -235,6 +356,11 @@ export default function ClientDetailsPage() {
     return [...map.values()];
   })();
 
+  const openAssignTab = () => {
+    setTab("plans");
+    setAssignOpen(true);
+  };
+
   return (
     <div>
       <PageHeader
@@ -256,27 +382,64 @@ export default function ClientDetailsPage() {
         </p>
       ) : null}
 
-      <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Card>
-          <StatBlock
-            label="Progres planu"
-            value={progress ? `${progress.completed}/${progress.total}` : "—"}
-          />
-          {progress && progress.total > 0 ? (
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-hover">
-              <div className="h-full rounded-full bg-accent" style={{ width: `${progress.percent}%` }} />
-            </div>
-          ) : null}
+      <div className="mb-6 grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <Card className="flex flex-col gap-4" eyebrow="Aktywny plan" title={activeAssignment?.planName ?? "Brak planu"}>
+          {activeAssignment && progress?.assignmentId === activeAssignment.id ? (
+            <>
+              <div>
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <p className="font-mono text-sm tabular-nums text-foreground">
+                    {progress.completed}/{progress.total} treningów
+                  </p>
+                  <p className="font-mono text-xs tabular-nums text-muted">{progress.percent}%</p>
+                </div>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-hover">
+                  <div
+                    className="h-full rounded-full bg-accent transition-[width] duration-200"
+                    style={{ width: `${Math.min(100, progress.percent)}%` }}
+                  />
+                </div>
+                {nextDayLabel ? (
+                  <p className="mt-2 text-sm text-muted">
+                    Następny: <span className="font-medium text-foreground">{nextDayLabel}</span>
+                  </p>
+                ) : null}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button onClick={() => void handleStartSession(activeAssignment)}>Loguj trening</Button>
+                <Link href={`/plans/${activeAssignment.planId}`} className="text-sm text-accent hover:text-accent-strong">
+                  Otwórz plan
+                </Link>
+              </div>
+            </>
+          ) : (
+            <EmptyState>
+              <p className="mb-3">Przypisz plan, żeby klient mógł zacząć trenować.</p>
+              <Button onClick={openAssignTab}>Przypisz plan</Button>
+            </EmptyState>
+          )}
         </Card>
-        <Card>
-          <StatBlock label="Sesje" value={sessions.length} />
-        </Card>
-        <Card>
-          <StatBlock label="Rekordy" value={records.length} />
-        </Card>
-        <Card>
-          <StatBlock label="Maxy" value={latestMaxes.length} />
-        </Card>
+
+        <div className="grid grid-cols-3 gap-3 lg:grid-cols-1">
+          <Card>
+            <StatBlock
+              label="Ostatni trening"
+              value={lastSession ? relativeDayLabel(lastSession.performedOn) : "—"}
+              delta={lastSession && lastAgo != null && lastAgo <= 7 ? formatDayShort(lastSession.performedOn) : undefined}
+            />
+            {lastAgo != null && lastAgo > 7 ? (
+              <p className="mt-1 font-mono text-xs tabular-nums text-danger">
+                {lastAgo} dni przerwy
+              </p>
+            ) : null}
+          </Card>
+          <Card>
+            <StatBlock label="Treningi (30 dni)" value={sessions30} />
+          </Card>
+          <Card>
+            <StatBlock label="Nowe PR (30 dni)" value={prs30} />
+          </Card>
+        </div>
       </div>
 
       <Tabs
@@ -293,52 +456,67 @@ export default function ClientDetailsPage() {
       <div className="mt-6">
         {tab === "plans" && (
           <>
-            <Card className="mb-6" eyebrow="Akcja" title="Przypisz plan">
-              {plans.length === 0 ? (
-                <EmptyState>
-                  Nie masz jeszcze planów klienta.{" "}
-                  <Link href="/plans/new" className="text-accent underline">
-                    Stwórz plan
-                  </Link>
-                  .
-                </EmptyState>
-              ) : (
-                <form onSubmit={handleAssign}>
-                  <Field label="Plan *">
-                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                      {plans.map((p) => (
-                        <PlanPickerCard
-                          key={p.id}
-                          plan={p}
-                          selected={planId === p.id}
-                          onSelect={() => setPlanId(p.id)}
-                        />
-                      ))}
-                    </div>
-                  </Field>
-                  <div className="mt-4 grid gap-4 sm:grid-cols-3">
-                    <Field label="Data startu">
-                      <input
-                        className={inputClass}
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                      />
-                    </Field>
-                    <Field label="Notatka">
-                      <input className={inputClass} value={note} onChange={(e) => setNote(e.target.value)} />
-                    </Field>
-                    <div className="flex items-end">
-                      <Button type="submit" disabled={saving || planId === ""}>
-                        {saving ? "Przypisywanie…" : "Przypisz plan"}
-                      </Button>
-                    </div>
-                  </div>
-                </form>
-              )}
-            </Card>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-display text-lg font-semibold">Przypisane plany</h2>
+              {!assignOpen ? (
+                <Button variant="secondary" onClick={() => setAssignOpen(true)}>
+                  Przypisz plan
+                </Button>
+              ) : null}
+            </div>
 
-            <h2 className="mb-3 font-display text-lg font-semibold">Przypisane plany</h2>
+            {assignOpen ? (
+              <Card className="mb-6" eyebrow="Akcja" title="Przypisz plan">
+                {plans.length === 0 ? (
+                  <EmptyState>
+                    Nie masz jeszcze planów klienta.{" "}
+                    <Link href="/plans/new" className="text-accent underline">
+                      Stwórz plan
+                    </Link>
+                    .
+                  </EmptyState>
+                ) : (
+                  <form onSubmit={handleAssign}>
+                    <Field label="Plan *">
+                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                        {plans.map((p) => (
+                          <PlanPickerCard
+                            key={p.id}
+                            plan={p}
+                            selected={planId === p.id}
+                            onSelect={() => setPlanId(p.id)}
+                          />
+                        ))}
+                      </div>
+                    </Field>
+                    <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                      <Field label="Data startu">
+                        <input
+                          className={inputClass}
+                          type="date"
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                        />
+                      </Field>
+                      <Field label="Notatka">
+                        <input className={inputClass} value={note} onChange={(e) => setNote(e.target.value)} />
+                      </Field>
+                      <div className="flex flex-wrap items-end gap-2">
+                        <Button type="submit" disabled={saving || planId === ""}>
+                          {saving ? "Przypisywanie…" : "Przypisz plan"}
+                        </Button>
+                        {client.assignments.some((a) => a.status === "active") ? (
+                          <Button type="button" variant="ghost" onClick={() => setAssignOpen(false)}>
+                            Anuluj
+                          </Button>
+                        ) : null}
+                      </div>
+                    </div>
+                  </form>
+                )}
+              </Card>
+            ) : null}
+
             {client.assignments.length === 0 ? (
               <EmptyState>Ten klient nie ma jeszcze żadnych przypisań.</EmptyState>
             ) : (
@@ -402,10 +580,16 @@ export default function ClientDetailsPage() {
                   <Link key={s.id} href={`/clients/${clientId}/sessions/${s.id}`}>
                     <Card className="flex flex-wrap items-center justify-between gap-3 transition-colors hover:border-border-strong">
                       <div className="min-w-0">
-                        <p className="font-semibold">
-                          {s.dayLabel ?? s.planName ?? "Trening"} · {s.performedOn}
+                        <p className="break-words font-semibold">
+                          {s.dayLabel ?? s.planName ?? "Trening"}
                         </p>
                         <p className="font-mono text-xs tabular-nums text-muted">
+                          {formatDayShort(s.performedOn)}
+                          {s.status === "completed" ? ` · ${relativeDayLabel(s.performedOn)}` : ""}
+                          {formatDurationMinutes(s.durationSeconds)
+                            ? ` · ${formatDurationMinutes(s.durationSeconds)}`
+                            : ""}
+                          {" · "}
                           {s.exerciseCount} ćw. · {s.totalSets} serii · {Math.round(s.totalVolumeKg)} kg
                           {s.status === "in_progress" ? " · w trakcie" : ""}
                         </p>
@@ -427,22 +611,60 @@ export default function ClientDetailsPage() {
               <EmptyState>Rekordy pojawią się po zalogowaniu treningów z ciężarem i powtórzeniami.</EmptyState>
             ) : (
               <div className="grid gap-2">
-                {records.map((r) => (
-                  <Card key={r.exerciseId} className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="break-words font-semibold">{r.exerciseName}</p>
-                      <p className="font-mono text-xs tabular-nums text-muted">{r.performedOn}</p>
+                <p className="mb-1 text-xs text-muted">
+                  Szacowany max (e1RM) — ile mniej więcej klient uniesie na 1 powtórzenie, z serii.
+                </p>
+                {records.map((r) => {
+                  const open = expandedRecordId === r.exerciseId;
+                  const stats = statsCache[r.exerciseId];
+                  return (
+                    <div
+                      key={r.exerciseId}
+                      className="overflow-hidden rounded-xl border border-border bg-surface shadow-card"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => toggleRecord(r.exerciseId)}
+                        className="flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                        aria-expanded={open}
+                      >
+                        <div className="min-w-0">
+                          <p className="break-words font-semibold">{r.exerciseName}</p>
+                          <p className="font-mono text-xs tabular-nums text-muted">
+                            {r.weightKg} × {r.reps} · {formatDayShort(r.performedOn)}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <p className="font-mono text-lg font-semibold tabular-nums text-pr">
+                              {r.estimated1Rm} kg
+                            </p>
+                            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">
+                              Szacowany max
+                            </p>
+                          </div>
+                          <span
+                            className={`text-muted transition-transform duration-150 ${open ? "rotate-180" : ""}`}
+                            aria-hidden
+                          >
+                            ▾
+                          </span>
+                        </div>
+                      </button>
+                      {open ? (
+                        <div className="border-t border-border px-4 py-3">
+                          {stats === "loading" || stats == null ? (
+                            <p className="text-xs text-muted">Ładowanie trendu…</p>
+                          ) : stats === "error" ? (
+                            <p className="text-xs text-danger">Nie udało się wczytać trendu.</p>
+                          ) : (
+                            <TrendSparkline points={stats.trend} />
+                          )}
+                        </div>
+                      ) : null}
                     </div>
-                    <div className="text-right">
-                      <p className="font-mono text-lg font-semibold tabular-nums text-pr">
-                        {r.estimated1Rm} kg e1RM
-                      </p>
-                      <p className="font-mono text-xs tabular-nums text-muted">
-                        {r.weightKg} × {r.reps}
-                      </p>
-                    </div>
-                  </Card>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>
