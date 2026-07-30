@@ -1,0 +1,11 @@
+# Artefakty builda — nie indeksuj (oszczędność RAM Cursora / tsserver)
+apps/web/.next/
+apps/web/node_modules/
+apps/api/bin/
+apps/api/obj/
+tests/api/bin/
+tests/api/obj/
+
+# Duże bundlowane assety design systemu
+Workout Alchemist Design System/_ds_bundle.js
+Kreator planu treningowego/_ds/

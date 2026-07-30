@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#09090b;color:#f4f4f5;font-family:'Geist',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-feature-settings:'tnum','cv01'}
+  ::selection{background:#facc15;color:#09090b}
+  a{color:#fde047;text-decoration:none}
+  a:hover{color:#facc15}
+</style>
+</helmet>
+
+<div style="padding:48px 56px 96px;display:flex;flex-direction:column;gap:24px;align-items:flex-start;min-width:2000px">
+
+  <!-- CANVAS HEADER -->
+  <div>
+    <div style="font:500 12px 'Geist Mono',monospace;letter-spacing:.12em;color:#71717a;text-transform:uppercase;margin-bottom:12px">Trainer Portal · przepływ end-to-end</div>
+    <h1 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-.01em">Proces — od utworzenia planu do treningu klienta</h1>
+    <p style="margin:8px 0 0;font-size:14px;line-height:1.5;color:#a1a1aa;max-width:720px">Siedem kroków: trener buduje plan i przypisuje go klientowi, plan ląduje w aplikacji mobilnej, klient otwiera dzień, trenuje i loguje serie — a wyniki wracają do trenera.</p>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <span style="font:600 11px 'Geist Mono',monospace;letter-spacing:.08em;color:#09090b;background:#facc15;padding:5px 10px;border-radius:999px">TRENER · desktop</span>
+      <span style="font:600 11px 'Geist Mono',monospace;letter-spacing:.08em;color:#09090b;background:#6ee7b7;padding:5px 10px;border-radius:999px">KLIENT · mobile</span>
+    </div>
+  </div>
+
+  <!-- FLOW -->
+  <div style="display:flex;align-items:flex-start;gap:24px">
+
+    <!-- ============ STEP 01 — BUDOWA PLANU ============ -->
+    <div data-screen-label="01 Trener buduje plan" style="display:flex;flex-direction:column;gap:12px;width:680px;flex:none">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font:600 12px 'Geist Mono',monospace;padding:4px 8px;background:#27272a;color:#a1a1aa;border-radius:8px">01</span>
+          <span style="font-size:14px;font-weight:600">Trener buduje plan</span>
+          <span style="font:600 10px 'Geist Mono',monospace;letter-spacing:.08em;color:#09090b;background:#facc15;padding:3px 8px;border-radius:999px">TRENER</span>
+        </div>
+        <sc-if value="{{ showDesc }}" hint-placeholder-val="{{ true }}">
+          <div style="font-size:12.5px;color:#a1a1aa;margin-top:6px;line-height:1.5">Szybkie wpisywanie jak na kartce: „0b glute…” → podpowiedź z domyślnymi parametrami, ↵ dodaje do superserii 0.</div>
+        </sc-if>
+      </div>
+      <div style="border:1px solid #27272a;border-radius:14px;background:#0c0c0e;overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid #27272a">
+          <div style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;border-radius:6px;background:#facc15;color:#09090b;font-weight:800;font-size:12px">T</span><span style="font-size:13.5px;font-weight:600">Hipertrofia PPL — Blok II</span><span style="font-size:11px;color:#71717a">D1 · Poniedziałek</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><span style="display:flex;align-items:center;gap:6px;font-size:11px;color:#6ee7b7"><span style="width:5px;height:5px;border-radius:999px;background:#6ee7b7"></span>Zapisano</span><span style="border-radius:7px;padding:7px 12px;font:600 12px 'Geist',sans-serif;background:#facc15;color:#09090b">Zapisz plan</span></div>
+        </div>
+        <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:8px"><span style="font:500 10px 'Geist Mono',monospace;letter-spacing:.14em;color:#71717a;text-transform:uppercase">Rozgrzewka · 0</span><span style="flex:1;height:1px;background:#27272a"></span></div>
+          <div style="border:1px solid rgba(250,204,21,.25);border-radius:10px;background:rgba(250,204,21,.04);padding:6px;display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;gap:8px;padding:2px 6px 0"><span style="font:500 10px 'Geist Mono',monospace;letter-spacing:.1em;color:#fde047">SUPERSERIA 0</span><span style="font-size:10px;color:#71717a">bez przerwy a → b</span></div>
+            <div style="background:#18181b;border:1px solid #27272a;border-radius:8px;padding:9px 11px">
+              <div style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;width:26px;height:20px;align-items:center;justify-content:center;border-radius:5px;background:rgba(250,204,21,.08);border:1px solid rgba(250,204,21,.25);font:600 10px 'Geist Mono',monospace;color:#fde047">0a</span><span style="font-size:12.5px;font-weight:600">FFE Split Squat</span></div>
+              <div style="margin-top:4px;padding-left:34px;font-size:11px;color:#71717a"><span style="color:#f4f4f5;font-weight:600">2 × 15</span> · <span style="font-family:'Geist Mono',monospace">3110</span> · RIR 3+ · 60s</div>
+            </div>
+            <div style="background:#18181b;border:1px solid #27272a;border-radius:8px;padding:9px 11px">
+              <div style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;width:26px;height:20px;align-items:center;justify-content:center;border-radius:5px;background:rgba(250,204,21,.08);border:1px solid rgba(250,204,21,.25);font:600 10px 'Geist Mono',monospace;color:#fde047">0b</span><span style="font-size:12.5px;font-weight:600">Glute Bridge</span></div>
+              <div style="margin-top:4px;padding-left:34px;font-size:11px;color:#71717a"><span style="color:#f4f4f5;font-weight:600">2 × 8</span> · <span style="font-family:'Geist Mono',monospace">20X0</span> · RIR 3+ · 60s</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px"><span style="font:500 10px 'Geist Mono',monospace;letter-spacing:.14em;color:#71717a;text-transform:uppercase">Część główna</span><span style="flex:1;height:1px;background:#27272a"></span></div>
+          <div style="background:#18181b;border:1px solid #27272a;border-radius:8px;padding:9px 11px">
+            <div style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;width:26px;height:20px;align-items:center;justify-content:center;border-radius:5px;background:#27272a;font:600 10px 'Geist Mono',monospace;color:#a1a1aa">1</span><span style="font-size:12.5px;font-weight:600">High Bar Squat</span></div>
+            <div style="margin-top:4px;padding-left:34px;font-size:11px;color:#71717a"><span style="color:#f4f4f5;font-weight:600">6 serii · rampa → 6RM</span> · <span style="font-family:'Geist Mono',monospace">30X0</span> · RIR 1 · 180s</div>
+          </div>
+          <!-- composer with dropdown -->
+          <div style="background:#18181b;border:1px solid #3f3f46;border-radius:12px;overflow:hidden;box-shadow:0 12px 28px rgba(0,0,0,.5)">
+            <div style="border-bottom:1px solid #27272a;padding:5px;display:flex;flex-direction:column;gap:2px">
+              <div style="display:flex;align-items:center;gap:10px;padding:8px 9px;border-radius:7px;background:#27272a"><span style="flex:1;font-size:12.5px;font-weight:500">Romanian Deadlift</span><span style="font-size:10px;color:#71717a;background:#18181b;padding:2px 7px;border-radius:999px">tył uda</span><span style="font:500 11px 'Geist Mono',monospace;color:#71717a">3×8–10 · 3010 · RIR 2</span></div>
+              <div style="display:flex;align-items:center;gap:10px;padding:8px 9px"><span style="flex:1;font-size:12.5px;font-weight:500;color:#d4d4d8">Deadlift</span><span style="font-size:10px;color:#71717a;background:#27272a;padding:2px 7px;border-radius:999px">całe ciało</span><span style="font:500 11px 'Geist Mono',monospace;color:#71717a">5×3 · 10X0 · RIR 2</span></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:9px 12px">
+              <span style="display:inline-flex;min-width:30px;height:24px;align-items:center;justify-content:center;border-radius:7px;background:#27272a;border:1px dashed #3f3f46;font:600 11px 'Geist Mono',monospace;color:#fde047;padding:0 7px">2</span>
+              <span style="flex:1;font-size:13px;color:#f4f4f5">romanian<span style="display:inline-block;width:1.5px;height:15px;background:#facc15;vertical-align:-3px;margin-left:1px"></span></span>
+              <span style="font-size:10px;color:#52525b">↵ dodaj</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="align-self:center;color:#3f3f46;font-size:28px;flex:none">→</div>
+
+    <!-- ============ STEP 02 — PRZYPISANIE ============ -->
+    <div data-screen-label="02 Przypisanie do klienta" style="display:flex;flex-direction:column;gap:12px;width:560px;flex:none">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font:600 12px 'Geist Mono',monospace;padding:4px 8px;background:#27272a;color:#a1a1aa;border-radius:8px">02</span>
+          <span style="font-size:14px;font-weight:600">Przypisanie do klienta</span>
+          <span style="font:600 10px 'Geist Mono',monospace;letter-spacing:.08em;color:#09090b;background:#facc15;padding:3px 8px;border-radius:999px">TRENER</span>
+        </div>
+        <sc-if value="{{ showDesc }}" hint-placeholder-val="{{ true }}">
+          <div style="font-size:12.5px;color:#a1a1aa;margin-top:6px;line-height:1.5">Zdjęcia zamiast ID (recognition over recall), radio po lewej (F-pattern), data startu wypełniona domyślnie (smart default).</div>
+        </sc-if>
+      </div>
+      <div style="border:1px solid #27272a;border-radius:14px;background:#0c0c0e;overflow:hidden;position:relative;height:560px">
+        <div style="position:absolute;inset:0;opacity:.25;padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+          <div style="height:40px;border-bottom:1px solid #27272a"></div>
+          <div style="height:64px;background:#18181b;border:1px solid #27272a;border-radius:10px"></div>
+          <div style="height:64px;background:#18181b;border:1px solid #27272a;border-radius:10px"></div>
+          <div style="height:64px;background:#18181b;border:1px solid #27272a;border-radius:10px"></div>
+        </div>
+        <div style="position:absolute;inset:0;background:rgba(9,9,11,.5)"></div>
+        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:420px;background:#18181b;border:1px solid #3f3f46;border-radius:16px;box-shadow:0 32px 64px rgba(0,0,0,.6);padding:20px;display:flex;flex-direction:column;gap:14px">
+          <div>
+            <div style="font-size:15px;font-weight:700;letter-spacing:-.01em">Przypisz plan klientowi</div>
+            <div style="font-size:12px;color:#71717a;margin-top:3px">Hipertrofia PPL — Blok II · 6 tygodni · 4 dni/tydz. · 24 sesje</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;border:1px solid #facc15;background:rgba(250,204,21,.06)">
+              <span style="width:16px;height:16px;border-radius:999px;border:5px solid #facc15;flex:none"></span>
+              <span style="display:inline-flex;width:36px;height:36px;align-items:center;justify-content:center;border-radius:999px;background:#3f3f46;font-weight:700;font-size:13px;color:#fde047">MK</span>
+              <div style="flex:1"><div style="font-size:13.5px;font-weight:600">Marek Kowalczyk</div><div style="font-size:11.5px;color:#71717a">poprzedni blok ukończony 28.06 · frekwencja 92%</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;border:1px solid #27272a">
+              <span style="width:16px;height:16px;border-radius:999px;border:1.5px solid #52525b;flex:none"></span>
+              <span style="display:inline-flex;width:36px;height:36px;align-items:center;justify-content:center;border-radius:999px;background:#27272a;font-weight:700;font-size:13px;color:#a1a1aa">AS</span>
+              <div style="flex:1"><div style="font-size:13.5px;font-weight:600;color:#d4d4d8">Anna Sowa</div><div style="font-size:11.5px;color:#71717a">w trakcie bloku · tydzień 4 z 8</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;border:1px solid #27272a">
+              <span style="width:16px;height:16px;border-radius:999px;border:1.5px solid #52525b;flex:none"></span>
+              <span style="display:inline-flex;width:36px;height:36px;align-items:center;justify-content:center;border-radius:999px;background:#27272a;font-weight:700;font-size:13px;color:#a1a1aa">PW</span>
+              <div style="flex:1"><div style="font-size:13.5px;font-weight:600;color:#d4d4d8">Piotr Wilk</div><div style="font-size:11.5px;color:#71717a">bez aktywnego planu od 14 dni</div></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <label style="flex:1;display:flex;flex-direction:column;gap:6px"><span style="font-size:11.5px;color:#a1a1aa">Start planu</span><div style="display:flex;align-items:center;height:38px;padding:0 12px;border-radius:8px;border:1px solid #3f3f46;background:#27272a;font-size:13px;font-weight:600">pon, 13.07.2026</div></label>
+            <label style="flex:1;display:flex;flex-direction:column;gap:6px"><span style="font-size:11.5px;color:#a1a1aa">Pierwsza sesja</span><div style="display:flex;align-items:center;height:38px;padding:0 12px;border-radius:8px;border:1px solid #3f3f46;background:#27272a;font-size:13px;font-weight:600">D1 · Poniedziałek</div></label>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid #27272a;border-radius:10px">
+            <span style="font-size:13px;font-weight:500">Powiadom klienta w aplikacji</span>
+            <span style="width:36px;height:22px;border-radius:999px;background:#facc15;position:relative;flex:none"><span style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:999px;background:#09090b"></span></span>
+          </div>
+          <button style="border:none;border-radius:10px;padding:13px;font:600 14px 'Geist',sans-serif;background:#facc15;color:#09090b;cursor:pointer">Przypisz plan → wyślij do aplikacji</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="align-self:center;color:#3f3f46;font-size:28px;flex:none">→</div>
+
+    <!-- ============ STEP 03 — PLAN W APLIKACJI ============ -->
+    <div data-screen-label="03 Plan w aplikacji klienta" style="display:flex;flex-direction:column;gap:12px;width:410px;flex:none">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font:600 12px 'Geist Mono',monospace;padding:4px 8px;background:#27272a;color:#a1a1aa;border-radius:8px">03</span>
+          <span style="font-size:14px;font-weight:600">Plan pojawia się u klienta</span>
+          <span style="font:600 10px 'Geist Mono',monospace;letter-spacing:.08em;color:#09090b;background:#6ee7b7;padding:3px 8px;border-radius:999px">KLIENT</span>
+        </div>
+        <sc-if value="{{ showDesc }}" hint-placeholder-val="{{ true }}">
+          <div style="font-size:12.5px;color:#a1a1aa;margin-top:6px;line-height:1.5">Push + karta programu. Postęp startuje z 10%, nie od zera (goal gradient); CTA w strefie kciuka.</div>
+        </sc-if>
+      </div>
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="410px,860px">
+        <div style="height:100%;display:flex;flex-direction:column;background:#0b0b0d;color:#f4f4f5;font-family:'Geist',sans-serif;padding-top:58px">
+          <div style="margin:8px 12px 0;display:flex;align-items:center;gap:10px;background:#1c1c1f;border:1px solid #3f3f46;border-radius:14px;padding:10px 12px;box-shadow:0 8px 24px rgba(0,0,0,.5)">
+            <span style="display:inline-flex;width:30px;height:30px;align-items:center;justify-content:center;border-radius:8px;background:#facc15;color:#09090b;font-weight:800;font-size:13px;flex:none">T</span>
+            <div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px"><span style="font-size:12px;font-weight:600">TrainerPortal</span><span style="font-size:11px;color:#71717a">teraz</span></div><div style="font-size:12px;color:#d4d4d8;margin-top:1px">Michał przypisał Ci nowy plan: „Hipertrofia PPL — Blok II”. Start w poniedziałek.</div></div>
+          </div>
+          <div style="padding:18px 16px 0;display:flex;align-items:center;justify-content:space-between">
+            <div><div style="font-size:12px;color:#71717a">Dzień dobry</div><div style="font-size:19px;font-weight:700;letter-spacing:-.01em">Marek</div></div>
+            <div style="display:flex;align-items:center;gap:8px;background:#18181b;border:1px solid #27272a;border-radius:999px;padding:5px 12px 5px 5px"><span style="display:inline-flex;width:26px;height:26px;align-items:center;justify-content:center;border-radius:999px;background:#3f3f46;font-weight:700;font-size:11px;color:#fde047">M</span><span style="font-size:11.5px;color:#a1a1aa">trener Michał</span></div>
+          </div>
+          <div style="padding:16px 16px 0">
+            <div style="font-size:13px;font-weight:600;color:#a1a1aa;margin-bottom:8px">Aktualny program</div>
+            <div style="border:1px solid #27272a;border-radius:16px;overflow:hidden;background:#18181b">
+              <div style="height:150px;background:repeating-linear-gradient(135deg,#1c1c1f 0 10px,#212124 10px 20px);display:flex;align-items:center;justify-content:center;position:relative">
+                <span style="font:500 11px 'Geist Mono',monospace;color:#52525b">zdjęcie programu / klienta</span>
+                <span style="position:absolute;left:12px;top:12px;font:600 10px 'Geist Mono',monospace;letter-spacing:.08em;background:#facc15;color:#09090b;padding:3px 8px;border-radius:999px">NOWY</span>
+              </div>
+              <div style="padding:14px">
+                <div style="font-size:15.5px;font-weight:700;letter-spacing:-.01em">Hipertrofia PPL — Blok II</div>
+                <div style="font-size:12px;color:#71717a;margin-top:3px">Faza 1 · Tydzień 1 · Dzień 1 · 6 tygodni</div>
+                <div style="margin-top:12px;display:flex;align-items:center;gap:10px">
+                  <div style="flex:1;height:6px;border-radius:999px;background:#27272a;overflow:hidden"><div style="width:10%;height:100%;border-radius:999px;background:#facc15"></div></div>
+                  <span style="font-size:11.5px;color:#a1a1aa"><span style="font-size:13px;font-weight:700;color:#f4f4f5">10%</span> · plan gotowy</span>
+                </div>
+                <button style="margin-top:14px;width:100%;border:none;border-radius:12px;padding:14px;font:600 14px 'Geist',sans-serif;background:#facc15;color:#09090b;cursor:pointer">Zobacz pierwszy trening →</button>
+              </div>
+            </div>
+          </div>
+          <div style="flex:1"></div>
+          <div style="border-top:1px solid #27272a;background:#101012;display:flex;padding:8px 8px 26px">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0"><span style="width:24px;height:24px;border-radius:7px;background:#facc15"></span><span style="font-size:10.5px;font-weight:600;color:#fde047">Start</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0"><span style="width:24px;height:24px;border-radius:7px;border:1.5px solid #71717a"></span><span style="font-size:10.5px;color:#a1a1aa">Plan</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0"><span style="width:24px;height:24px;border-radius:7px;border:1.5px solid #71717a"></span><span style="font-size:10.5px;color:#a1a1aa">Wyniki</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0"><span style="width:24px;height:24px;border-radius:999px;border:1.5px solid #71717a"></span><span style="font-size:10.5px;color:#a1a1aa">Profil</span></div>
+          </div>
+        </div>
+      </x-import>
+    </div>
+
+    <div style="align-self:center;color:#3f3f46;font-size:28px;flex:none">→</div>
+
+    <!-- ============ STEP 04 — WYBÓR DNIA ============ -->
+    <div data-screen-label="04 Klient wybiera dzien" style="display:flex;flex-direction:column;gap:12px;width:410px;flex:none">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font:600 12px 'Geist Mono',monospace;padding:4px 8px;background:#27272a;color:#a1a1aa;border-radius:8px">04</span>
+          <span style="font-size:14px;font-weight:600">Klient wybiera dzień</span>
+          <span style="font:600 10px 'Geist Mono',monospace;letter-spacing:.08em;color:#09090b;background:#6ee7b7;padding:3px 8px;border-radius:999px">KLIENT</span>
+        </div>
+        <sc-if value="{{ showDesc }}" hint-placeholder-val="{{ true }}">
+          <div style="font-size:12.5px;color:#a1a1aa;margin-top:6px;line-height:1.5">Dzisiejszy dzień wyróżniony (kolor + border + badge „Dziś”). Klika D1 → podgląd treningu.</div>
+        </sc-if>
+      </div>
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="410px,860px">
+        <div style="height:100%;display:flex;flex-direction:column;background:#0b0b0d;color:#f4f4f5;font-family:'Geist',sans-serif;padding-top:58px">
+          <div style="padding:14px 16px 0">
+            <div style="font-size:12px;color:#71717a">Plan</div>
+            <div style="font-size:18px;font-weight:700;letter-spacing:-.01em;margin-top:2px">Hipertrofia PPL — Blok II</div>
+            <div style="display:flex;gap:6px;margin-top:12px">
+              <span style="padding:7px 12px;border-radius:999px;font-size:12px;font-weight:600;color:#09090b;background:#facc15">Tydzień 1</span>
+              <span style="padding:7px 12px;border-radius:999px;font-size:12px;font-weight:500;color:#a1a1aa;background:#18181b;border:1px solid #27272a">2</span>
+              <span style="padding:7px 12px;border-radius:999px;font-size:12px;font-weight:500;color:#a1a1aa;background:#18181b;border:1px solid #27272a">3</span>
+              <span style="padding:7px 12px;border-radius:999px;font-size:12px;font-weight:500;color:#a1a1aa;background:#18181b;border:1px solid #27272a">4</span>
+              <span style="padding:7px 12px;border-radius:999px;font-size:12px;font-weight:500;color:#a1a1aa;background:#18181b;border:1px solid #27272a">5</span>
+              <span style="padding:7px 12px;border-radius:999px;font-size:12px;font-weight:500;color:#a1a1aa;background:#18181b;border:1px solid #27272a">6</span>
+            </div>
+          </div>
+          <div style="padding:14px 16px;display:flex;flex-direction:column;gap:8px">
+            <div style="border:1.5px solid #facc15;border-radius:14px;background:rgba(250,204,21,.05);padding:14px">
+              <div style="display:flex;align-items:center;gap:8px"><span style="font:600 12px 'Geist Mono',monospace;color:#fde047">D1</span><span style="font-size:14.5px;font-weight:700">Poniedziałek — Nogi · siła</span><span style="margin-left:auto;font:600 10px 'Geist Mono',monospace;letter-spacing:.06em;background:#facc15;color:#09090b;padding:3px 8px;border-radius:999px">DZIŚ</span></div>
+              <div style="font-size:12px;color:#a1a1aa;margin-top:6px">6 ćwiczeń · 18 serii · ≈ 52 min</div>
+              <div style="font-size:12px;color:#71717a;margin-top:2px">FFE split squat · glute bridge · high bar squat…</div>
+            </div>
+            <div style="border:1px solid #27272a;border-radius:14px;background:#18181b;padding:14px">
+              <div style="display:flex;align-items:center;gap:8px"><span style="font:600 12px 'Geist Mono',monospace;color:#71717a">D2</span><span style="font-size:14px;font-weight:600;color:#d4d4d8">Środa — Push · objętość</span></div>
+              <div style="font-size:12px;color:#71717a;margin-top:6px">7 ćwiczeń · 21 serii · ≈ 58 min</div>
+            </div>
+            <div style="border:1px solid #27272a;border-radius:14px;background:#18181b;padding:14px">
+              <div style="display:flex;align-items:center;gap:8px"><span style="font:600 12px 'Geist Mono',monospace;color:#71717a">D3</span><span style="font-size:14px;font-weight:600;color:#d4d4d8">Piątek — Pull · objętość</span></div>
+              <div style="font-size:12px;color:#71717a;margin-top:6px">7 ćwiczeń · 20 serii · ≈ 55 min</div>
+            </div>
+            <div style="border:1px solid #27272a;border-radius:14px;background:#18181b;padding:14px">
+              <div style="display:flex;align-items:center;gap:8px"><span style="font:600 12px 'Geist Mono',monospace;color:#71717a">D4</span><span style="font-size:14px;font-weight:600;color:#d4d4d8">Sobota — Nogi · pompa</span></div>
+              <div style="font-size:12px;color:#71717a;margin-top:6px">5 ćwiczeń · 15 serii · ≈ 45 min</div>
+            </div>
+          </div>
+          <div style="flex:1"></div>
+          <div style="border-top:1px solid #27272a;background:#101012;display:flex;padding:8px 8px 26px">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0"><span style="width:24px;height:24px;border-radius:7px;border:1.5px solid #71717a"></span><span style="font-size:10.5px;color:#a1a1aa">Start</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0"><span style="width:24px;height:24px;border-radius:7px;background:#facc15"></span><span style="font-size:10.5px;font-weight:600;color:#fde047">Plan</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0"><span style="width:24px;height:24px;border-radius:7px;border:1.5px solid #71717a"></span><span style="font-size:10.5px;color:#a1a1aa">Wyniki</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0"><span style="width:24px;height:24px;border-radius:999px;border:1.5px solid #71717a"></span><span style="font-size:10.5px;color:#a1a1aa">Profil</span></div>
+          </div>
+        </div>
+      </x-import>
+    </div>
+
+    <div style="align-self:center;color:#3f3f46;font-size:28px;flex:none">→</div>
+
+    <!-- ============ STEP 05 — PODGLĄD DNIA ============ -->
+    <div data-screen-label="05 Podglad dnia i start" style="display:flex;flex-direction:column;gap:12px;width:410px;flex:none">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font:600 12px 'Geist Mono',monospace;padding:4px 8px;background:#27272a;color:#a1a1aa;border-radius:8px">05</span>
+          <span style="font-size:14px;font-weight:600">Podgląd dnia → start</span>
+          <span style="font:600 10px 'Geist Mono',monospace;letter-spacing:.08em;color:#09090b;background:#6ee7b7;padding:3px 8px;border-radius:999px">KLIENT</span>
+        </div>
+        <sc-if value="{{ showDesc }}" hint-placeholder-val="{{ true }}">
+          <div style="font-size:12.5px;color:#a1a1aa;margin-top:6px;line-height:1.5">Ten sam układ 0a/0b/1 co u trenera — klient widzi superserie i rampę identycznie. CTA na dole ekranu.</div>
+        </sc-if>
+      </div>
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="410px,860px">
+        <div style="height:100%;display:flex;flex-direction:column;background:#0b0b0d;color:#f4f4f5;font-family:'Geist',sans-serif;padding-top:58px">
+          <div style="padding:14px 16px 0">
+            <div style="display:flex;align-items:center;gap:10px"><span style="color:#a1a1aa;font-size:16px">‹</span><div><div style="font-size:12px;color:#71717a">D1 · Poniedziałek · Tydzień 1</div><div style="font-size:17px;font-weight:700;letter-spacing:-.01em">Nogi · siła</div></div><span style="margin-left:auto;font-size:11.5px;color:#a1a1aa">≈ 52 min</span></div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 12px;background:#18181b;border:1px solid #27272a;border-radius:12px"><span style="display:inline-flex;width:26px;height:26px;align-items:center;justify-content:center;border-radius:999px;background:#3f3f46;font-weight:700;font-size:11px;color:#fde047">M</span><span style="font-size:12px;color:#d4d4d8;line-height:1.45">„Tempo w FFE ma boleć. Rampa w przysiadzie: dojdź do ciężaru na 6, RIR 1.” — Michał</span></div>
+          </div>
+          <div style="padding:14px 16px;display:flex;flex-direction:column;gap:8px;overflow:hidden">
+            <div style="display:flex;align-items:center;gap:8px"><span style="font:500 10px 'Geist Mono',monospace;letter-spacing:.14em;color:#71717a;text-transform:uppercase">Rozgrzewka</span><span style="flex:1;height:1px;background:#27272a"></span></div>
+            <div style="border:1px solid rgba(250,204,21,.25);border-radius:12px;background:rgba(250,204,21,.04);padding:6px;display:flex;flex-direction:column;gap:6px">
+              <div style="display:flex;align-items:center;gap:8px;padding:2px 8px 0"><span style="font:500 10px 'Geist Mono',monospace;letter-spacing:.1em;color:#fde047">SUPERSERIA</span><span style="font-size:10px;color:#71717a">0a → 0b bez przerwy</span></div>
+              <div style="background:#18181b;border-radius:9px;padding:11px 12px;display:flex;align-items:center;gap:10px"><span style="font:600 11px 'Geist Mono',monospace;color:#fde047;width:24px">0a</span><div style="flex:1"><div style="font-size:13.5px;font-weight:600">FFE Split Squat</div><div style="font-size:11.5px;color:#71717a;margin-top:1px">2 × 15 · tempo 3110 · RIR 3+</div></div><span style="color:#52525b">›</span></div>
+              <div style="background:#18181b;border-radius:9px;padding:11px 12px;display:flex;align-items:center;gap:10px"><span style="font:600 11px 'Geist Mono',monospace;color:#fde047;width:24px">0b</span><div style="flex:1"><div style="font-size:13.5px;font-weight:600">Glute Bridge</div><div style="font-size:11.5px;color:#71717a;margin-top:1px">2 × 8 · tempo 20X0 · RIR 3+</div></div><span style="color:#52525b">›</span></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px"><span style="font:500 10px 'Geist Mono',monospace;letter-spacing:.14em;color:#71717a;text-transform:uppercase">Część główna</span><span style="flex:1;height:1px;background:#27272a"></span></div>
+            <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:11px 12px;display:flex;align-items:center;gap:10px"><span style="font:600 11px 'Geist Mono',monospace;color:#a1a1aa;width:24px">1</span><div style="flex:1"><div style="font-size:13.5px;font-weight:600">High Bar Squat</div><div style="font-size:11.5px;color:#71717a;margin-top:1px">6 serii · rampa → 6RM · tempo 30X0</div></div><span style="color:#52525b">›</span></div>
+            <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:11px 12px;display:flex;align-items:center;gap:10px"><span style="font:600 11px 'Geist Mono',monospace;color:#a1a1aa;width:24px">2</span><div style="flex:1"><div style="font-size:13.5px;font-weight:600">Romanian Deadlift</div><div style="font-size:11.5px;color:#71717a;margin-top:1px">3 × 8–10 · tempo 3010 · RIR 2</div></div><span style="color:#52525b">›</span></div>
+            <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:11px 12px;display:flex;align-items:center;gap:10px"><span style="font:600 11px 'Geist Mono',monospace;color:#a1a1aa;width:24px">3</span><div style="flex:1"><div style="font-size:13.5px;font-weight:600">Leg Curl</div><div style="font-size:11.5px;color:#71717a;margin-top:1px">3 × 10–12 · tempo 3011 · RIR 2</div></div><span style="color:#52525b">›</span></div>
+          </div>
+          <div style="flex:1"></div>
+          <div style="padding:12px 16px 30px;border-top:1px solid #27272a;background:#101012">
+            <button style="width:100%;border:none;border-radius:12px;padding:15px;font:600 14.5px 'Geist',sans-serif;background:#facc15;color:#09090b;cursor:pointer">Rozpocznij trening</button>
+          </div>
+        </div>
+      </x-import>
+    </div>
+
+    <div style="align-self:center;color:#3f3f46;font-size:28px;flex:none">→</div>
+
+    <!-- ============ STEP 06 — LOGOWANIE SERII ============ -->
+    <div data-screen-label="06 Trening i logowanie serii" style="display:flex;flex-direction:column;gap:12px;width:410px;flex:none">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font:600 12px 'Geist Mono',monospace;padding:4px 8px;background:#27272a;color:#a1a1aa;border-radius:8px">06</span>
+          <span style="font-size:14px;font-weight:600">Klient ćwiczy i loguje serie</span>
+          <span style="font:600 10px 'Geist Mono',monospace;letter-spacing:.08em;color:#09090b;background:#6ee7b7;padding:3px 8px;border-radius:999px">KLIENT</span>
+        </div>
+        <sc-if value="{{ showDesc }}" hint-placeholder-val="{{ true }}">
+          <div style="font-size:12.5px;color:#a1a1aa;margin-top:6px;line-height:1.5">Kolumny CEL → WYNIK wypełnione celem (smart default — wystarczy tap ✓). PR oznaczany automatycznie, timer przerwy startuje sam.</div>
+        </sc-if>
+      </div>
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="410px,860px">
+        <div style="height:100%;display:flex;flex-direction:column;background:#0b0b0d;color:#f4f4f5;font-family:'Geist',sans-serif;padding-top:58px">
+          <div style="padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #27272a">
+            <span style="color:#a1a1aa;font-size:16px">‹</span>
+            <div><div style="font-size:13px;font-weight:700">D1 · Nogi · siła</div><div style="font-size:11px;color:#6ee7b7;margin-top:1px">trwa · <span style="font-family:'Geist Mono',monospace">27:14</span></div></div>
+            <span style="margin-left:auto;font-size:13px;font-weight:600;color:#f87171">Zakończ</span>
+          </div>
+          <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font:600 11px 'Geist Mono',monospace;color:#a1a1aa">1</span>
+              <span style="font-size:15px;font-weight:700;letter-spacing:-.01em">High Bar Squat</span>
+              <span style="margin-left:auto;font-size:11px;color:#71717a">rampa → 6RM · 30X0</span>
+            </div>
+            <div style="background:#18181b;border:1px solid #27272a;border-radius:14px;padding:6px 12px 10px">
+              <div style="display:grid;grid-template-columns:36px 1fr 1fr 44px;gap:6px;padding:8px 0 4px;font:500 10px 'Geist Mono',monospace;letter-spacing:.08em;color:#71717a"><span>SET</span><span>CEL</span><span>WYNIK</span><span></span></div>
+              <div style="display:grid;grid-template-columns:36px 1fr 1fr 44px;gap:6px;align-items:center;padding:9px 0;border-top:1px solid #1f1f23"><span style="font:500 12px 'Geist Mono',monospace;color:#52525b">1</span><span style="font-size:13px;color:#71717a">60 kg × 6</span><span style="font-size:13.5px;font-weight:600;color:#d4d4d8">60 × 6</span><span style="justify-self:end;display:inline-flex;width:26px;height:26px;align-items:center;justify-content:center;border-radius:999px;background:rgba(110,231,183,.12);color:#6ee7b7;font-size:13px">✓</span></div>
+              <div style="display:grid;grid-template-columns:36px 1fr 1fr 44px;gap:6px;align-items:center;padding:9px 0;border-top:1px solid #1f1f23"><span style="font:500 12px 'Geist Mono',monospace;color:#52525b">2</span><span style="font-size:13px;color:#71717a">80 kg × 6</span><span style="font-size:13.5px;font-weight:600;color:#d4d4d8">80 × 6</span><span style="justify-self:end;display:inline-flex;width:26px;height:26px;align-items:center;justify-content:center;border-radius:999px;background:rgba(110,231,183,.12);color:#6ee7b7;font-size:13px">✓</span></div>
+              <div style="display:grid;grid-template-columns:36px 1fr 1fr 44px;gap:6px;align-items:center;padding:9px 0;border-top:1px solid #1f1f23"><span style="font:500 12px 'Geist Mono',monospace;color:#52525b">3</span><span style="font-size:13px;color:#71717a">100 kg × 6</span><span style="display:flex;align-items:center;gap:6px"><span style="font-size:13.5px;font-weight:600">100 × 6</span><span style="font:700 9px 'Geist Mono',monospace;background:#facc15;color:#09090b;padding:2px 5px;border-radius:4px">PR</span></span><span style="justify-self:end;display:inline-flex;width:26px;height:26px;align-items:center;justify-content:center;border-radius:999px;background:rgba(110,231,183,.12);color:#6ee7b7;font-size:13px">✓</span></div>
+              <div style="display:grid;grid-template-columns:36px 1fr 1fr 44px;gap:6px;align-items:center;padding:8px 0;border-top:1px solid #1f1f23;background:rgba(250,204,21,.04);margin:0 -12px;padding-left:12px;padding-right:12px;border-left:2px solid #facc15"><span style="font:600 12px 'Geist Mono',monospace;color:#fde047">4</span><span style="font-size:13px;color:#a1a1aa">105 kg × 6</span><span style="display:flex;gap:5px"><span style="display:inline-flex;align-items:center;height:30px;padding:0 9px;border-radius:7px;border:1px solid #facc15;background:#1c1c1f;font-size:13px;font-weight:600">105</span><span style="display:inline-flex;align-items:center;height:30px;padding:0 9px;border-radius:7px;border:1px solid #3f3f46;background:#1c1c1f;font-size:13px;font-weight:600">6</span></span><span style="justify-self:end;display:inline-flex;width:30px;height:30px;align-items:center;justify-content:center;border-radius:999px;background:#facc15;color:#09090b;font-size:14px;font-weight:700">✓</span></div>
+              <div style="display:grid;grid-template-columns:36px 1fr 1fr 44px;gap:6px;align-items:center;padding:9px 0;border-top:1px solid #1f1f23;opacity:.45"><span style="font:500 12px 'Geist Mono',monospace;color:#52525b">5</span><span style="font-size:13px;color:#71717a">— × 6</span><span style="font-size:13px;color:#52525b">—</span><span></span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid #1f1f23"><span style="font-size:12px;color:#fde047;font-weight:600">+ dodaj serię</span><span style="font-size:11px;color:#71717a">RIR celu: 1</span></div>
+            </div>
+            <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px">
+              <div style="flex:1"><div style="display:flex;justify-content:space-between;font-size:11.5px;color:#a1a1aa;margin-bottom:6px"><span>Przerwa</span><span style="font:600 13px 'Geist Mono',monospace;color:#f4f4f5">1:24</span></div><div style="height:5px;border-radius:999px;background:#27272a;overflow:hidden"><div style="width:47%;height:100%;background:#facc15;border-radius:999px"></div></div></div>
+              <span style="font-size:11.5px;color:#71717a;flex:none">z 3:00</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:2px 4px"><span style="font-size:11.5px;color:#71717a">Następne:</span><span style="font-size:12px;font-weight:600;color:#d4d4d8">2 · Romanian Deadlift</span><span style="font-size:11.5px;color:#71717a">3 × 8–10</span></div>
+          </div>
+          <div style="flex:1"></div>
+          <div style="padding:0 16px 30px;font-size:11px;color:#52525b;text-align:center">wyniki zapisują się na bieżąco — nic nie przepada</div>
+        </div>
+      </x-import>
+    </div>
+
+    <sc-if value="{{ showLoop }}" hint-placeholder-val="{{ true }}">
+      <div style="align-self:center;color:#3f3f46;font-size:28px;flex:none">→</div>
+
+      <!-- ============ STEP 07 — FEEDBACK U TRENERA ============ -->
+      <div data-screen-label="07 Wyniki wracaja do trenera" style="display:flex;flex-direction:column;gap:12px;width:460px;flex:none">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font:600 12px 'Geist Mono',monospace;padding:4px 8px;background:#27272a;color:#a1a1aa;border-radius:8px">07</span>
+            <span style="font-size:14px;font-weight:600">Wyniki wracają do trenera</span>
+            <span style="font:600 10px 'Geist Mono',monospace;letter-spacing:.08em;color:#09090b;background:#facc15;padding:3px 8px;border-radius:999px">TRENER</span>
+          </div>
+          <sc-if value="{{ showDesc }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:12.5px;color:#a1a1aa;margin-top:6px;line-height:1.5">Pętla się domyka: trener widzi wykonanie na żywo i od razu koryguje D2. Wartości większe niż etykiety.</div>
+          </sc-if>
+        </div>
+        <div style="border:1px solid #27272a;border-radius:14px;background:#0c0c0e;padding:18px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="display:inline-flex;width:40px;height:40px;align-items:center;justify-content:center;border-radius:999px;background:#3f3f46;font-weight:700;font-size:14px;color:#fde047">MK</span>
+            <div style="flex:1"><div style="font-size:14.5px;font-weight:700">Marek ukończył D1 · Poniedziałek</div><div style="font-size:12px;color:#71717a;margin-top:2px">dziś 18:42 · czas sesji 61 min</div></div>
+            <span style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:#6ee7b7"><span style="width:6px;height:6px;border-radius:999px;background:#6ee7b7"></span>na żywo</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+            <div style="background:#18181b;border:1px solid #27272a;border-radius:10px;padding:12px"><div style="font-size:19px;font-weight:700;letter-spacing:-.01em">18<span style="font-size:13px;color:#71717a;font-weight:500">/18</span></div><div style="font-size:11px;color:#71717a;margin-top:3px">serie ukończone</div></div>
+            <div style="background:#18181b;border:1px solid rgba(250,204,21,.3);border-radius:10px;padding:12px"><div style="font-size:19px;font-weight:700;letter-spacing:-.01em;color:#fde047">100<span style="font-size:13px;color:#71717a;font-weight:500"> kg×6</span></div><div style="font-size:11px;color:#71717a;margin-top:3px">nowy PR · high bar squat</div></div>
+            <div style="background:#18181b;border:1px solid #27272a;border-radius:10px;padding:12px"><div style="font-size:19px;font-weight:700;letter-spacing:-.01em">1.8</div><div style="font-size:11px;color:#71717a;margin-top:3px">średni RIR (cel 1–2)</div></div>
+          </div>
+          <div style="background:#18181b;border:1px solid #27272a;border-radius:10px;padding:12px;font-size:12.5px;color:#d4d4d8;line-height:1.5">„Rampa poszła lepiej niż myślałem, 105 na 6 z RIR 1. FFE nadal boli 🙂” <span style="color:#71717a">— notatka klienta</span></div>
+          <div style="display:flex;gap:8px">
+            <button style="flex:1;border:1px solid #3f3f46;border-radius:9px;padding:11px;font:500 13px 'Geist',sans-serif;background:#27272a;color:#d4d4d8;cursor:pointer">Skomentuj</button>
+            <button style="flex:1;border:none;border-radius:9px;padding:11px;font:600 13px 'Geist',sans-serif;background:#facc15;color:#09090b;cursor:pointer">Dostosuj D2 →</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;showDescriptions&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Widok&quot;},
+  &quot;showFeedbackStep&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Widok&quot;}
+}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      showDesc: this.props.showDescriptions !== false,
+      showLoop: this.props.showFeedbackStep !== false,
+    };
+  }
+}
+</script>
+</body>
+</html>

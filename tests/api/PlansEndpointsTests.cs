@@ -79,4 +79,80 @@ public class PlansEndpointsTests : IClassFixture<TestWebAppFactory>
 
         Assert.Equal(3, item.GetProperty("targetRir").GetDouble());
     }
+
+    [Fact]
+    public async Task CreatePlan_WithMeasureType_RoundTripsAndDefaultsRespectMeasure()
+    {
+        // exerciseId 1 = Przysiad (reps); override na time nie dziedziczy DefaultRepDurationSeconds z reps
+        var postTime = await _client.PostAsJsonAsync("/api/plans", new
+        {
+            name = "Test measure time",
+            description = (string?)null,
+            isTemplate = true,
+            days = new[]
+            {
+                new
+                {
+                    weekNumber = 1,
+                    order = 1,
+                    label = "Dzień 1",
+                    notes = (string?)null,
+                    items = new[]
+                    {
+                        new
+                        {
+                            exerciseId = 1,
+                            order = 1,
+                            measureType = "time",
+                            sets = 3,
+                            repDurationSeconds = 30,
+                        },
+                    },
+                },
+            },
+        });
+        Assert.Equal(HttpStatusCode.Created, postTime.StatusCode);
+        var createdTime = await postTime.Content.ReadFromJsonAsync<CreatedPlan>();
+        Assert.NotNull(createdTime);
+
+        var getTime = await _client.GetAsync($"/api/plans/{createdTime!.Id}");
+        using var docTime = JsonDocument.Parse(await getTime.Content.ReadAsStringAsync());
+        var itemTime = docTime.RootElement.GetProperty("days")[0].GetProperty("items")[0];
+        Assert.Equal("time", itemTime.GetProperty("measureType").GetString());
+        Assert.Equal("reps", itemTime.GetProperty("exerciseType").GetString());
+        Assert.Equal(30, itemTime.GetProperty("repDurationSeconds").GetInt32());
+        Assert.Equal("time", itemTime.GetProperty("overrides").GetProperty("measureType").GetString());
+
+        // null measureType → dziedziczy Exercise.Type; pozycja reps nie dostaje defaultRepDurationSeconds
+        var postInherit = await _client.PostAsJsonAsync("/api/plans", new
+        {
+            name = "Test measure inherit",
+            description = (string?)null,
+            isTemplate = true,
+            days = new[]
+            {
+                new
+                {
+                    weekNumber = 1,
+                    order = 1,
+                    label = "Dzień 1",
+                    notes = (string?)null,
+                    items = new[]
+                    {
+                        new { exerciseId = 1, order = 1 },
+                    },
+                },
+            },
+        });
+        Assert.Equal(HttpStatusCode.Created, postInherit.StatusCode);
+        var createdInherit = await postInherit.Content.ReadFromJsonAsync<CreatedPlan>();
+        Assert.NotNull(createdInherit);
+
+        var getInherit = await _client.GetAsync($"/api/plans/{createdInherit!.Id}");
+        using var docInherit = JsonDocument.Parse(await getInherit.Content.ReadAsStringAsync());
+        var itemInherit = docInherit.RootElement.GetProperty("days")[0].GetProperty("items")[0];
+        Assert.Equal("reps", itemInherit.GetProperty("measureType").GetString());
+        Assert.Equal(JsonValueKind.Null, itemInherit.GetProperty("repDurationSeconds").ValueKind);
+        Assert.Equal(JsonValueKind.Null, itemInherit.GetProperty("overrides").GetProperty("measureType").ValueKind);
+    }
 }

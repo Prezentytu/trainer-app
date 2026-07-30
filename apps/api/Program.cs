@@ -83,9 +83,14 @@ app.MapGet("/api/exercises", async (AppDb db) =>
 
 app.MapPost("/api/exercises", async (ExerciseInput input, AppDb db) =>
 {
+    var name = NormalizeExerciseName(input.Name);
+    if (name.Length == 0) return Results.BadRequest(new { message = "Podaj nazwę ćwiczenia." });
+    var duplicate = await db.Exercises.AnyAsync(e => e.Name.ToLower() == name.ToLower());
+    if (duplicate) return Results.Conflict(new { message = $"Ćwiczenie „{name}” już jest w bibliotece." });
+
     var exercise = new Exercise
     {
-        Name = input.Name,
+        Name = name,
         Description = input.Description,
         Type = input.Type,
         DefaultSets = input.DefaultSets,
@@ -104,7 +109,13 @@ app.MapPut("/api/exercises/{id:int}", async (int id, ExerciseInput input, AppDb 
 {
     var exercise = await db.Exercises.FindAsync(id);
     if (exercise is null) return Results.NotFound();
-    exercise.Name = input.Name;
+
+    var name = NormalizeExerciseName(input.Name);
+    if (name.Length == 0) return Results.BadRequest(new { message = "Podaj nazwę ćwiczenia." });
+    var duplicate = await db.Exercises.AnyAsync(e => e.Id != id && e.Name.ToLower() == name.ToLower());
+    if (duplicate) return Results.Conflict(new { message = $"Ćwiczenie „{name}” już jest w bibliotece." });
+
+    exercise.Name = name;
     exercise.Description = input.Description;
     exercise.Type = input.Type;
     exercise.DefaultSets = input.DefaultSets;
@@ -131,6 +142,9 @@ app.MapDelete("/api/exercises/{id:int}", async (int id, AppDb db) =>
 // ---------- Plany ----------
 
 // Zaokrąglenie do 0,5 kg (najmniejszy talerzyk).
+static string NormalizeExerciseName(string? name) =>
+    string.IsNullOrWhiteSpace(name) ? "" : string.Join(' ', name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries));
+
 static double RoundToHalf(double kg) => Math.Round(kg * 2, MidpointRounding.AwayFromZero) / 2;
 
 // Ciężar bazowy „top" dla pozycji: seria top/ramp, potem ciężar pozycji, potem najcięższa seria, potem default ćwiczenia.
@@ -156,19 +170,21 @@ static double? ComputedSetLoad(PlanSet set, double? topKg)
 static object ItemToDto(PlanItem i)
 {
     var topKg = TopLoadKg(i);
+    var measure = i.MeasureType ?? i.Exercise!.Type;
     return new
     {
-        i.Id, i.ExerciseId, i.Order, i.SupersetGroup,
+        i.Id, i.ExerciseId, i.Order, i.SupersetGroup, i.IsWarmup,
         ExerciseName = i.Exercise!.Name,
         ExerciseType = i.Exercise.Type,
+        MeasureType = measure,
         ExerciseDescription = i.Exercise.Description,
         // Efektywne parametry: nadpisanie z planu albo default z ćwiczenia
         Sets = i.Sets ?? i.Exercise.DefaultSets,
         Reps = i.Reps ?? i.Exercise.DefaultReps,
         i.RepsMax,
-        RepDurationSeconds = i.RepDurationSeconds ?? i.Exercise.DefaultRepDurationSeconds,
+        RepDurationSeconds = i.RepDurationSeconds ?? (measure == "time" ? i.Exercise.DefaultRepDurationSeconds : null),
         i.RepDurationSecondsMax,
-        DistanceMeters = i.DistanceMeters ?? i.Exercise.DefaultDistanceMeters,
+        DistanceMeters = i.DistanceMeters ?? (measure == "distance" ? i.Exercise.DefaultDistanceMeters : null),
         i.Tempo,
         i.TargetRpe,
         i.TargetRir,
@@ -177,7 +193,7 @@ static object ItemToDto(PlanItem i)
         i.RestAfterExerciseSeconds,
         LoadKg = i.LoadKg ?? i.Exercise.DefaultLoadKg,
         i.Notes,
-        Overrides = new { i.Sets, i.Reps, i.RepsMax, i.RepDurationSeconds, i.RepDurationSecondsMax, i.DistanceMeters, i.RestBetweenSetsSeconds, i.LoadKg },
+        Overrides = new { i.MeasureType, i.Sets, i.Reps, i.RepsMax, i.RepDurationSeconds, i.RepDurationSecondsMax, i.DistanceMeters, i.RestBetweenSetsSeconds, i.LoadKg },
         PrescribedSets = i.PrescribedSets.OrderBy(s => s.Order).Select(s => new
         {
             s.Id, s.Order, s.Reps, s.RepsMax, s.DurationSeconds, s.DistanceMeters,
@@ -215,7 +231,8 @@ static PlanSet BuildSet(PlanSetInput s) => new()
 
 static PlanItem BuildItem(PlanItemInput i) => new()
 {
-    ExerciseId = i.ExerciseId, Order = i.Order, SupersetGroup = i.SupersetGroup,
+    ExerciseId = i.ExerciseId, Order = i.Order, SupersetGroup = i.SupersetGroup, IsWarmup = i.IsWarmup,
+    MeasureType = i.MeasureType,
     Sets = i.Sets, Reps = i.Reps, RepsMax = i.RepsMax,
     RepDurationSeconds = i.RepDurationSeconds, RepDurationSecondsMax = i.RepDurationSecondsMax,
     DistanceMeters = i.DistanceMeters, Tempo = i.Tempo, TargetRpe = i.TargetRpe, TargetRir = i.TargetRir, SetScheme = i.SetScheme,
@@ -297,7 +314,8 @@ app.MapPost("/api/plans/{id:int}/duplicate", async (int id, DuplicateInput input
             WeekNumber = d.WeekNumber, Order = d.Order, Label = d.Label, Notes = d.Notes,
             Items = d.Items.Select(i => new PlanItem
             {
-                ExerciseId = i.ExerciseId, Order = i.Order, SupersetGroup = i.SupersetGroup,
+                ExerciseId = i.ExerciseId, Order = i.Order, SupersetGroup = i.SupersetGroup, IsWarmup = i.IsWarmup,
+                MeasureType = i.MeasureType,
                 Sets = i.Sets, Reps = i.Reps, RepsMax = i.RepsMax,
                 RepDurationSeconds = i.RepDurationSeconds, RepDurationSecondsMax = i.RepDurationSecondsMax,
                 DistanceMeters = i.DistanceMeters, Tempo = i.Tempo, TargetRpe = i.TargetRpe, TargetRir = i.TargetRir, SetScheme = i.SetScheme,

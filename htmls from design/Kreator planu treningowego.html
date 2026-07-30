@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Claude Design</title>
+    <link rel="icon" type="image/png" href="/design/favicon.png" />
+    <script>
+      // FOUC guard: set data-theme before any stylesheet loads so the first
+      // paint uses the right palette. Mirrors hooks/useTheme.tsx. The stored
+      // value is JSON (usehooks-ts useLocalStorage).
+      try {
+        var raw = localStorage.getItem('om:theme');
+        // Mirror useTheme's default: usehooks-ts doesn't persist 'system'
+        // until the toggle is used, so absent = 'system'.
+        var pref = raw ? JSON.parse(raw) : 'system';
+        var dark =
+          pref === 'dark' ||
+          (pref === 'system' &&
+            matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        // Pre-CSS canvas color: until tokens.css loads, the UA paints the
+        // default white canvas, which flashes on a dark hard-reload. Inline
+        // values mirror tokens.css --om-bg-app; useTheme clears this once
+        // the app mounts so the stylesheet owns the background again.
+        document.documentElement.style.background = dark
+          ? '#1c1b19'
+          : '#faf9f5';
+      } catch (e) {
+        document.documentElement.dataset.theme = 'light';
+        document.documentElement.style.background = '#faf9f5';
+      }
+    </script>
+    <script type="module" crossorigin src="/design/assets/v1/index-CEj29pSa.js"></script>
+    <link rel="modulepreload" crossorigin href="/design/assets/v1/rolldown-runtime-CMxvf4Kt.js">
+    <link rel="modulepreload" crossorigin href="/design/assets/v1/preload-helper-7XptfjGJ.js">
+    <link rel="modulepreload" crossorigin href="/design/assets/v1/react-BthIFXYf.js">
+    <link rel="modulepreload" crossorigin href="/design/assets/v1/dist-DOmVupLo.js">
+    <link rel="modulepreload" crossorigin href="/design/assets/v1/client-lite-7wduA5zD.js">
+    <link rel="modulepreload" crossorigin href="/design/assets/v1/connect-lite-vzd2EiZc.js">
+    <link rel="modulepreload" crossorigin href="/design/assets/v1/gate-CmDAYU5o.js">
+    <link rel="modulepreload" crossorigin href="/design/assets/v1/backoff-BHgnPlwy.js">
+    <link rel="modulepreload" crossorigin href="/design/assets/v1/logout-purge-manifest-BMvWPcrO.js">
+    <link rel="modulepreload" crossorigin href="/design/assets/v1/useOrg-DPvcjg24.js">
+    <link rel="modulepreload" crossorigin href="/design/assets/v1/stock-photo-mode-H93K50jp.js">
+    <link rel="modulepreload" crossorigin href="/design/assets/v1/cn-D2uvEwJg.js">
+    <link rel="modulepreload" crossorigin href="/design/assets/v1/react-dom-B3-jr42p.js">
+    <link rel="modulepreload" crossorigin href="/design/assets/v1/jsx-runtime-DDrWIXeu.js">
+    <link rel="modulepreload" crossorigin href="/design/assets/v1/Button-C8qBX_z6.js">
+    <link rel="stylesheet" crossorigin href="/design/assets/v1/Button-B3ebv8Ia.css">
+    <link rel="stylesheet" crossorigin href="/design/assets/v1/index-Bb0dnsRl.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

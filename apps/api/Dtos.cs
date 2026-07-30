@@ -32,6 +32,8 @@ public record PlanItemInput(
     int ExerciseId,
     int Order = 0,
     int? SupersetGroup = null,
+    bool IsWarmup = false,
+    string? MeasureType = null,
     int? Sets = null,
     int? Reps = null,
     int? RepsMax = null,

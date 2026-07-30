@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ClipboardList, Dumbbell, Home, Menu, Users, X } from "lucide-react";
 import { api } from "@/lib/api";
+import { Avatar } from "@/components/ui";
 
 const NAV = [
   { href: "/", label: "Panel", icon: Home, countKey: null },
@@ -15,13 +16,13 @@ const NAV = [
 
 function Logo({ compact = false }: { compact?: boolean }) {
   return (
-    <Link href="/" className="flex items-center gap-2 px-2">
-      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent font-black text-accent-foreground">
-        T
+    <Link href="/" className="flex items-center gap-2.5 px-2">
+      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-accent font-display text-sm font-bold text-accent-foreground">
+        WA
       </span>
       {!compact && (
-        <span className="text-lg font-bold tracking-tight">
-          Trainer<span className="text-accent">Portal</span>
+        <span className="font-display text-lg font-bold tracking-tight">
+          Workout <span className="text-accent">Alchemist</span>
         </span>
       )}
     </Link>
@@ -39,7 +40,7 @@ function NavLinks({
 }) {
   const pathname = usePathname();
   return (
-    <nav className="flex flex-col gap-1.5">
+    <nav className="flex flex-col gap-1">
       {NAV.map((item) => {
         const active = item.href === "/" ? pathname === "/" : pathname?.startsWith(item.href);
         const count = item.countKey ? counts[item.countKey] : null;
@@ -50,16 +51,18 @@ function NavLinks({
             href={item.href}
             onClick={onNavigate}
             title={compact ? item.label : undefined}
-            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-              active ? "bg-surface-hover text-accent" : "text-foreground-secondary hover:bg-surface-hover hover:text-accent"
+            className={`flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] ${
+              active
+                ? "bg-accent-dim text-accent-strong"
+                : "text-foreground-secondary hover:bg-surface-hover hover:text-accent-strong"
             } ${compact ? "justify-center" : "justify-between"}`}
           >
             <span className={`flex items-center gap-3 ${compact ? "justify-center" : "min-w-0"}`}>
-              <Icon aria-hidden className="h-5 w-5 shrink-0" strokeWidth={2} />
+              <Icon aria-hidden className="h-5 w-5 shrink-0" strokeWidth={1.75} />
               {!compact && <span className="truncate">{item.label}</span>}
             </span>
             {!compact && count != null && (
-              <span className="shrink-0 rounded-full bg-surface-active px-2 py-0.5 text-xs font-semibold text-foreground-secondary">
+              <span className="shrink-0 rounded-full bg-surface-active px-2 py-0.5 font-mono text-xs font-semibold tabular-nums text-foreground-secondary">
                 {count}
               </span>
             )}
@@ -67,6 +70,27 @@ function NavLinks({
         );
       })}
     </nav>
+  );
+}
+
+function TrainerFooter({ compact, clientCount }: { compact?: boolean; clientCount: number | null }) {
+  if (compact) {
+    return (
+      <div className="mt-auto flex justify-center px-1 pt-4">
+        <Avatar name="Trener" size="sm" />
+      </div>
+    );
+  }
+  return (
+    <div className="mt-auto flex items-center gap-3 border-t border-border px-2 pt-4">
+      <Avatar name="Trener" size="md" />
+      <div className="min-w-0">
+        <div className="truncate text-sm font-medium text-foreground">Trener</div>
+        <div className="truncate font-mono text-xs tabular-nums text-muted">
+          {clientCount != null ? `${clientCount} klientów` : "—"}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -85,7 +109,13 @@ function BottomNav() {
               active ? "font-semibold text-accent" : "text-muted-strong"
             }`}
           >
-            <Icon aria-hidden className="h-6 w-6" strokeWidth={2} />
+            <span
+              className={`flex h-7 w-10 items-center justify-center rounded-lg ${
+                active ? "bg-accent-dim" : ""
+              }`}
+            >
+              <Icon aria-hidden className="h-5 w-5" strokeWidth={1.75} />
+            </span>
             {item.label}
           </Link>
         );
@@ -118,27 +148,28 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-surface/60 p-4 md:hidden">
+      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-surface/80 p-4 backdrop-blur md:hidden">
         <Logo />
         <button
           type="button"
           onClick={() => setDrawerOpen(true)}
           aria-label="Otwórz menu"
-          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-hover text-foreground-secondary hover:bg-surface-active"
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-surface-hover text-foreground-secondary hover:bg-surface-active"
         >
-          <Menu className="h-5 w-5" strokeWidth={2} />
+          <Menu className="h-5 w-5" strokeWidth={1.75} />
         </button>
       </header>
 
       <aside
         onMouseEnter={() => showRail && setRailExpanded(true)}
         onMouseLeave={() => isPlanEditor && setRailExpanded(false)}
-        className={`hidden shrink-0 flex-col gap-6 border-r border-border bg-surface/60 p-4 transition-[width] duration-150 md:sticky md:top-0 md:flex md:h-screen md:overflow-y-auto ${
+        className={`hidden shrink-0 flex-col gap-6 border-r border-border bg-surface p-4 transition-[width] duration-150 md:sticky md:top-0 md:flex md:h-screen md:overflow-y-auto ${
           showRail ? "md:w-16" : "md:w-56"
         }`}
       >
         <Logo compact={showRail} />
         <NavLinks counts={counts} compact={showRail} />
+        <TrainerFooter compact={showRail} clientCount={counts.clients} />
       </aside>
 
       {drawerOpen && (
@@ -147,26 +178,27 @@ export function AppShell({ children }: { children: ReactNode }) {
             type="button"
             aria-label="Zamknij menu"
             onClick={() => setDrawerOpen(false)}
-            className="absolute inset-0 bg-black/60"
+            className="absolute inset-0 bg-[var(--overlay-scrim)]"
           />
-          <aside className="relative flex h-full w-64 max-w-[80vw] flex-col gap-6 border-r border-border bg-surface p-4 shadow-xl">
+          <aside className="relative flex h-full w-64 max-w-[80vw] flex-col gap-6 border-r border-border bg-surface p-4 shadow-modal">
             <div className="flex items-center justify-between">
               <Logo />
               <button
                 type="button"
                 onClick={() => setDrawerOpen(false)}
                 aria-label="Zamknij menu"
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-hover text-foreground-secondary hover:bg-surface-active"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-hover text-foreground-secondary hover:bg-surface-active"
               >
-                <X className="h-5 w-5" strokeWidth={2} />
+                <X className="h-5 w-5" strokeWidth={1.75} />
               </button>
             </div>
             <NavLinks counts={counts} onNavigate={() => setDrawerOpen(false)} />
+            <TrainerFooter clientCount={counts.clients} />
           </aside>
         </div>
       )}
 
-      <main className="w-full flex-1 p-4 pb-20 md:p-8 md:pb-8">
+      <main className="w-full flex-1 bg-background p-4 pb-20 md:p-8 md:pb-8">
         <div className={`mx-auto ${isPlanEditor ? "max-w-[120rem]" : "max-w-7xl 2xl:max-w-[100rem]"}`}>{children}</div>
       </main>
 

@@ -25,20 +25,49 @@ trainer-app/
 
 ## Uruchomienie lokalne
 
-Dwa terminale:
+Jedno polecenie (API :5210 + web :3000; Ctrl+C ubija oba procesy):
 
 ```bash
-# Terminal 1 — API (http://localhost:5210)
-cd apps/api
-dotnet run
+./scripts/dev.sh
+```
 
-# Terminal 2 — portal (http://localhost:3000)
-cd apps/web
-npm install
-npm run dev
+Pierwszy raz w `apps/web` (jeśli nie masz `node_modules`):
+
+```bash
+cd apps/web && npm install && cd ../..
+./scripts/dev.sh
 ```
 
 Baza SQLite (`apps/api/trainer.db`) tworzy się automatycznie przy pierwszym starcie razem z danymi startowymi (10 ćwiczeń, przykładowy klient i szablon planu FBW). Żeby zresetować dane, usuń plik `trainer.db` i zrestartuj API.
+
+### Diagnostyka i czyszczenie
+
+```bash
+./scripts/dev-doctor.sh   # pamięć, swap, cache, porty, sieroty procesów
+./scripts/clean.sh        # usuwa apps/web/.next + bin/obj (.NET) — odzysk miejsca
+```
+
+Dev web domyślnie idzie na **Webpacku** z limitem pamięci 4 GB (`npm run dev`), bo Turbopack w Next 16.2 na Apple Silicon wycieka natywną pamięć `IOAccelerator` i potrafi zamrozić cały macOS. Turbopack zostaje na `next build` i opcjonalnie: `npm run dev:turbo` w `apps/web`. Po stabilnym Next **16.3+** wracamy na Turbopack (patrz `.ai/lessons.md`).
+
+### Higiena środowiska (macOS + antywirus)
+
+Antywirus skanujący `node_modules` / `.next` mocno obciąża CPU przy HMR. **Wykluczenia w Kaspersky** (Ustawienia → Zagrożenia i wykluczenia → Zarządzaj wykluczeniami → Folder):
+
+- `~/Documents/repos/trainer-app/apps/web/node_modules`
+- `~/Documents/repos/trainer-app/apps/web/.next`
+- `~/Documents/repos/trainer-app/apps/api/bin`
+- `~/Documents/repos/trainer-app/apps/api/obj`
+- `~/.nuget`, `~/.dotnet`, `~/.npm`
+
+**Tryb deweloperski macOS** (mniej przechwytów Gatekeepera na plikach narzędzi):
+
+```bash
+sudo spctl developer-mode enable-terminal
+```
+
+Potem: Ustawienia systemowe → Prywatność i ochrona → Narzędzia dla programistów → dodaj Terminal i Cursor.
+
+Szczegóły i checklista: [scripts/macos-dev-hygiene.md](scripts/macos-dev-hygiene.md).
 
 ## Bramka walidacyjna
 

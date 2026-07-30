@@ -1,16 +1,27 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Bricolage_Grotesque, IBM_Plex_Mono, Instrument_Sans } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/AppShell";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const fontDisplay = Bricolage_Grotesque({
+  variable: "--font-bricolage",
+  subsets: ["latin", "latin-ext"],
+});
+
+const fontBody = Instrument_Sans({
+  variable: "--font-instrument",
+  subsets: ["latin", "latin-ext"],
+});
+
+const fontMono = IBM_Plex_Mono({
+  variable: "--font-ibm-plex-mono",
+  weight: ["400", "500", "600"],
   subsets: ["latin", "latin-ext"],
 });
 
 export const metadata: Metadata = {
-  title: "Trainer Portal",
-  description: "Panel trenera — plany treningowe dla klientów",
+  title: "Workout Alchemist",
+  description: "Studio trenera — formuły treningowe dla klientów",
 };
 
 export default function RootLayout({
@@ -19,8 +30,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pl" className={`${geistSans.variable} h-full antialiased`}>
-      <body className="min-h-screen bg-zinc-950 text-zinc-100 font-sans">
+    <html
+      lang="pl"
+      className={`${fontDisplay.variable} ${fontBody.variable} ${fontMono.variable} h-full antialiased`}
+    >
+      <body className="min-h-screen bg-background font-sans text-foreground">
         <AppShell>{children}</AppShell>
       </body>
     </html>

@@ -1,14 +1,17 @@
-import { Exercise } from "@/lib/api";
+import { Exercise, ExerciseType } from "@/lib/api";
 
 // Composer „szybkie wpisywanie" — parsuje jedną linię tekstu na dopasowanie ćwiczenia
-// + opcjonalne nadpisania parametrów. Patrz .ai/specs/2026-07-08-quick-entry-composer.md.
+// + opcjonalne nadpisania parametrów. Patrz .ai/specs/2026-07-29-composer-units-and-help.md.
 
 export type ParsedQuickEntry = {
   query: string; // pozostały fragment nazwy do dopasowania
   supersetPrefix: { group: string; letter: string } | null; // "0a" -> { group: "0", letter: "a" }
   sets: number | null;
-  reps: number | null;
-  repsMax: number | null;
+  /** null = jednostka ćwiczenia / pozycji */
+  measure: ExerciseType | null;
+  /** powtórzenia | sekundy | metry */
+  value: number | null;
+  valueMax: number | null;
   tempo: string | null;
   targetRir: number | null;
 };
@@ -18,13 +21,36 @@ function cut(text: string, match: RegExpMatchArray): string {
   return (text.slice(0, start) + " " + text.slice(start + match[0].length)).trim();
 }
 
+/** Normalizuje „3 serie po 30s" → „3x30s" przed tokenizacją. */
+function normalizeSetsPhrase(text: string): string {
+  return text.replace(
+    /\b(\d+)\s*(?:x|×|ser(?:ia|ie|ii|y))\s*(?:po\s*)?(?=\d)/gi,
+    "$1x"
+  );
+}
+
+type UnitKind = "time" | "distance";
+
+/** min|minut… przed m|metr… — inaczej „2min" = 2 metry. */
+function parseUnit(unitRaw: string): { kind: UnitKind; scale: number } | null {
+  // Usuń znaki diakrytyczne bez \p{M} (szersza kompatybilność targetu TS)
+  const u = unitRaw
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  if (/^(s|sek|sekund[ay]?)$/.test(u)) return { kind: "time", scale: 1 };
+  if (/^(min|minut[ay]?)$/.test(u)) return { kind: "time", scale: 60 };
+  if (/^(km|kilometr[oyw]?)$/.test(u)) return { kind: "distance", scale: 1000 };
+  if (/^(m|metr[oyw]?)$/.test(u)) return { kind: "distance", scale: 1 };
+  return null;
+}
+
 /**
- * Parsuje jedną linię composera: `{fragment nazwy} [SxR[-Rmax]] [tempo] [rirN]`, tokeny w
- * dowolnej kolejności po nazwie, wszystkie opcjonalne. Token nierozpoznany trafia do `query`
- * (literówka nie blokuje dodania pozycji).
+ * Parsuje jedną linię composera: `{fragment nazwy} [SxR[-Rmax][jednostka]] [tempo] [rirN]`.
+ * Token z jednostką przed SxR bez jednostki. Token nierozpoznany trafia do `query`.
  */
 export function parseQuickEntry(raw: string): ParsedQuickEntry {
-  let text = raw;
+  let text = normalizeSetsPhrase(raw);
   let supersetPrefix: ParsedQuickEntry["supersetPrefix"] = null;
 
   const prefixMatch = text.match(/^\s*(\d+)([a-zA-Z])(?=\s|$)/);
@@ -41,14 +67,52 @@ export function parseQuickEntry(raw: string): ParsedQuickEntry {
   }
 
   let sets: number | null = null;
-  let reps: number | null = null;
-  let repsMax: number | null = null;
-  const setsRepsMatch = text.match(/\b(\d+)\s*[xX]\s*(\d+)(?:-(\d+))?\b/);
-  if (setsRepsMatch) {
-    sets = Number(setsRepsMatch[1]);
-    reps = Number(setsRepsMatch[2]);
-    repsMax = setsRepsMatch[3] ? Number(setsRepsMatch[3]) : null;
-    text = cut(text, setsRepsMatch);
+  let measure: ExerciseType | null = null;
+  let value: number | null = null;
+  let valueMax: number | null = null;
+
+  // Token z jednostką: [Sx]V[-Vmax]unit — min przed m
+  const unitToken =
+    /\b(?:(\d+)\s*[xX×]\s*)?(\d+(?:\.\d+)?)(?:\s*[-–]\s*(\d+(?:\.\d+)?))?\s*(s|sek(?:und[ay]?)?|min(?:ut[ay]?)?|km|kilometr[oyw]?|m|metr[oyw]?)\b/i;
+  const unitMatch = text.match(unitToken);
+  if (unitMatch) {
+    const unit = parseUnit(unitMatch[4]);
+    if (unit) {
+      if (unitMatch[1]) sets = Number(unitMatch[1]);
+      const v = Number(unitMatch[2]);
+      const vmax = unitMatch[3] ? Number(unitMatch[3]) : null;
+      if (Number.isFinite(v)) {
+        measure = unit.kind;
+        value = Math.round(v * unit.scale);
+        valueMax = vmax != null && Number.isFinite(vmax) ? Math.round(vmax * unit.scale) : null;
+        text = cut(text, unitMatch);
+      }
+    }
+  }
+
+  // mm:ss jako czas (z lub bez serii): 3x1:30 / 1:30
+  if (measure == null) {
+    const clockMatch = text.match(/\b(?:(\d+)\s*[xX×]\s*)?(\d+):(\d{1,2})(?:\s*[-–]\s*(\d+):(\d{1,2}))?\b/);
+    if (clockMatch) {
+      if (clockMatch[1]) sets = Number(clockMatch[1]);
+      measure = "time";
+      value = Number(clockMatch[2]) * 60 + Number(clockMatch[3]);
+      if (clockMatch[4] != null) {
+        valueMax = Number(clockMatch[4]) * 60 + Number(clockMatch[5]);
+      }
+      text = cut(text, clockMatch);
+    }
+  }
+
+  // SxR bez jednostki (tylko gdy nie złapano tokenu z jednostką / czasem)
+  if (measure == null) {
+    const setsRepsMatch = text.match(/\b(\d+)\s*[xX×]\s*(\d+)(?:-(\d+))?\b/);
+    if (setsRepsMatch) {
+      sets = Number(setsRepsMatch[1]);
+      value = Number(setsRepsMatch[2]);
+      valueMax = setsRepsMatch[3] ? Number(setsRepsMatch[3]) : null;
+      text = cut(text, setsRepsMatch);
+    }
   }
 
   let tempo: string | null = null;
@@ -60,7 +124,7 @@ export function parseQuickEntry(raw: string): ParsedQuickEntry {
 
   const query = text.replace(/\s+/g, " ").trim();
 
-  return { query, supersetPrefix, sets, reps, repsMax, tempo, targetRir };
+  return { query, supersetPrefix, sets, measure, value, valueMax, tempo, targetRir };
 }
 
 /**

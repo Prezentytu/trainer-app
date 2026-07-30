@@ -2,21 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { api, EXERCISE_TYPE_LABELS, Plan, PlanDay, PlanItem, rirFromRpe } from "@/lib/api";
+import { api, Plan, PlanDay, PlanItem, rirFromRpe } from "@/lib/api";
+import { formatMeasureCore, MEASURE_LABELS } from "@/lib/measure";
 import { buildGroupLabels } from "@/lib/supersets";
 import PlanBuilder from "@/components/plan-builder/PlanBuilder";
 import { Badge, Button, Card, ErrorBanner, formatRest, PageHeader, Pill } from "@/components/ui";
 
 function repsText(item: PlanItem): string {
-  if (item.exerciseType === "time") {
-    const base = item.repDurationSeconds ? `${item.repDurationSeconds}s` : "";
-    const max = item.repDurationSecondsMax ? `–${item.repDurationSecondsMax}s` : "";
-    return `${base}${max}`.trim() || "—";
-  }
-  if (item.exerciseType === "distance") {
-    return `${item.distanceMeters ?? "?"} m`;
-  }
-  return item.repsMax ? `${item.reps}–${item.repsMax}` : `${item.reps}`;
+  return formatMeasureCore(item, undefined);
 }
 
 function intensityText(item: PlanItem): string | null {
@@ -81,17 +74,18 @@ function PrescribedSets({ item }: { item: PlanItem }) {
 function ItemView({ item, label }: { item: PlanItem; label: string | null }) {
   return (
     <div
-      className={`rounded-lg border bg-surface/60 p-3 ${
-        item.supersetGroup != null ? "border-accent/40 border-l-[3px]" : "border-border"
+      className={`rounded-[10px] border bg-surface p-3 ${
+        item.supersetGroup != null ? "border-accent/50 border-l-[3px] bg-accent-dim/40" : "border-border"
       }`}
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className="min-w-0 break-words font-medium">{item.exerciseName}</span>
-        {label && <Badge tone="yellow">{label}</Badge>}
-        <span className="shrink-0 text-xs text-muted">{EXERCISE_TYPE_LABELS[item.exerciseType]}</span>
+        {item.isWarmup && <Badge tone="neutral">rozgrzewka</Badge>}
+        {label && <Badge tone="accent">{label}</Badge>}
+        <span className="shrink-0 text-xs text-muted">{MEASURE_LABELS[item.measureType]}</span>
       </div>
 
-      <div className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+      <div className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1 font-mono tabular-nums">
         <span className="text-sm font-semibold text-foreground">
           {item.sets} <span className="text-muted">×</span> {repsText(item)}
         </span>
@@ -101,7 +95,7 @@ function ItemView({ item, label }: { item: PlanItem; label: string | null }) {
         {intensityText(item) && <span className="text-sm font-semibold text-foreground">{intensityText(item)}</span>}
       </div>
 
-      <p className="mt-1 text-xs text-muted">
+      <p className="mt-1 font-mono text-xs tabular-nums text-muted">
         {item.tempo ? `tempo ${item.tempo} · ` : ""}
         {`przerwa ${formatRest(item.restBetweenSetsSeconds)}`}
         {item.setScheme ? ` · ${item.setScheme}` : ""}
@@ -114,6 +108,8 @@ function ItemView({ item, label }: { item: PlanItem; label: string | null }) {
 
 function DayView({ day }: { day: PlanDay }) {
   const labels = buildGroupLabels(day.items.map((i) => i.supersetGroup));
+  const hasWarmup = day.items.some((i) => i.isWarmup);
+  const firstMainIdx = day.items.findIndex((i) => !i.isWarmup);
   return (
     <div className="rounded-lg border border-border bg-surface-sunken/60 p-4">
       <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -121,9 +117,31 @@ function DayView({ day }: { day: PlanDay }) {
         {day.notes && <span className="break-words text-xs text-muted">— {day.notes}</span>}
       </div>
       <div className="grid gap-2">
-        {day.items.map((item, idx) => (
-          <ItemView key={item.id} item={item} label={labels[idx]} />
-        ))}
+        {day.items.map((item, idx) => {
+          const showWarmupCaption = hasWarmup && item.isWarmup && (idx === 0 || !day.items[idx - 1]?.isWarmup);
+          const showMainCaption = hasWarmup && idx === firstMainIdx;
+          return (
+            <div key={item.id} className="grid gap-2">
+              {showWarmupCaption ? (
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-faint">
+                    Rozgrzewka
+                  </span>
+                  <span className="h-px flex-1 bg-border" />
+                </div>
+              ) : null}
+              {showMainCaption ? (
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-faint">
+                    Część główna
+                  </span>
+                  <span className="h-px flex-1 bg-border" />
+                </div>
+              ) : null}
+              <ItemView item={item} label={labels[idx]} />
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -184,13 +202,17 @@ export default function PlanDetailsPage() {
       <ErrorBanner message={error} />
 
       <div className="mb-4 flex items-center gap-2">
-        <Badge tone={plan.isTemplate ? "yellow" : "neutral"}>
-          {plan.isTemplate ? "szablon" : "plan klienta"}
+        <Badge tone={plan.isTemplate ? "accent" : "neutral"}>
+          {plan.isTemplate ? "Formula" : "plan klienta"}
         </Badge>
         <Badge tone="neutral">
-          {plan.weeksCount} tyg. · {plan.daysCount} dni · {plan.exerciseCount} ćwiczeń
+          <span className="font-mono tabular-nums">
+            {plan.weeksCount} tyg. · {plan.daysCount} dni · {plan.exerciseCount} ćwiczeń
+          </span>
         </Badge>
-        {plan.assignedCount > 0 && <Badge tone="green">{plan.assignedCount} aktywne przypisania</Badge>}
+        {plan.assignedCount > 0 && (
+          <Badge tone="positive">{plan.assignedCount} aktywne przypisania</Badge>
+        )}
       </div>
 
       {weeks.length > 1 && (

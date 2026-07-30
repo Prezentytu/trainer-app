@@ -39,15 +39,13 @@ export default function NewPlanPage() {
 
   if (started) {
     return (
-      <div>
-        <PageHeader title={name || "Nowy plan"} subtitle="Krok 2 z 3 · zbuduj plan ćwiczeniami" />
-        <PlanBuilder
-          initialName={name}
-          initialIsTemplate={isTemplate}
-          initialDayCount={preset.daysPerWeek}
-          initialWeekCount={preset.weeks}
-        />
-      </div>
+      <PlanBuilder
+        initialName={name}
+        initialIsTemplate={isTemplate}
+        initialDayCount={preset.daysPerWeek}
+        initialWeekCount={preset.weeks}
+        stepLabel="Krok 2 z 3 · zbuduj plan ćwiczeniami"
+      />
     );
   }
 
@@ -69,7 +67,7 @@ export default function NewPlanPage() {
             Plan klienta
           </Pill>
           <Pill active={isTemplate} onClick={() => setIsTemplate(true)}>
-            Szablon (wielokrotnego użytku)
+            Formuła (wielokrotnego użytku)
           </Pill>
         </div>
       </Card>
@@ -82,14 +80,14 @@ export default function NewPlanPage() {
               key={p.id}
               type="button"
               onClick={() => setPresetId(p.id)}
-              className={`rounded-lg border p-3 text-left transition-colors ${
+              className={`rounded-[10px] border p-3 text-left transition-colors duration-[var(--dur-fast)] ${
                 p.id === presetId
-                  ? "border-accent bg-accent/10"
-                  : "border-border bg-surface/60 hover:border-border-strong hover:bg-surface-hover"
+                  ? "border-accent bg-accent-dim"
+                  : "border-border bg-surface hover:border-border-strong hover:bg-surface-hover"
               }`}
             >
               <p className="text-sm font-semibold text-foreground">{p.label}</p>
-              <p className="text-xs text-muted">
+              <p className="font-mono text-xs tabular-nums text-muted">
                 {p.daysPerWeek} {p.daysPerWeek === 1 ? "dzień" : "dni"}/tydz.
               </p>
             </button>

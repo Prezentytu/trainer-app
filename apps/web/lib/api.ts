@@ -110,8 +110,11 @@ export type PlanItem = {
   exerciseId: number;
   order: number;
   supersetGroup: number | null;
+  isWarmup: boolean;
   exerciseName: string;
   exerciseType: ExerciseType;
+  /** Efektywna miara pozycji (`MeasureType ?? Exercise.Type`). */
+  measureType: ExerciseType;
   sets: number;
   reps: number;
   repsMax: number | null;
@@ -127,6 +130,7 @@ export type PlanItem = {
   loadKg: number | null;
   notes: string | null;
   overrides: {
+    measureType: ExerciseType | null;
     sets: number | null;
     reps: number | null;
     repsMax: number | null;
@@ -180,6 +184,9 @@ export type PlanItemInput = {
   exerciseId: number;
   order: number;
   supersetGroup: number | null;
+  isWarmup: boolean;
+  /** null = dziedziczy z Exercise.Type przy zapisie. */
+  measureType: ExerciseType | null;
   sets: number | null;
   reps: number | null;
   repsMax: number | null;
@@ -242,9 +249,9 @@ export const api = {
   exercises: {
     list: () => request<Exercise[]>("/api/exercises"),
     create: (input: Omit<Exercise, "id">) =>
-      request("/api/exercises", { method: "POST", body: JSON.stringify(input) }),
+      request<Exercise>("/api/exercises", { method: "POST", body: JSON.stringify(input) }),
     update: (id: number, input: Omit<Exercise, "id">) =>
-      request(`/api/exercises/${id}`, { method: "PUT", body: JSON.stringify(input) }),
+      request<Exercise>(`/api/exercises/${id}`, { method: "PUT", body: JSON.stringify(input) }),
     remove: (id: number) => request(`/api/exercises/${id}`, { method: "DELETE" }),
   },
   plans: {

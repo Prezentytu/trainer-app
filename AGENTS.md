@@ -14,7 +14,7 @@ Ten plik jest punktem startowym dla każdego agenta. Zanim zaczniesz kodować, d
 | Testy API | xUnit + `WebApplicationFactory` | — | `tests/api/` |
 
 - Namespace backendu: `TrainerApp.Api`. Baza SQLite tworzona przez `EnsureCreated()` (brak migracji).
-- UI jest w całości po polsku, ciemny motyw. Kolory wyłącznie przez tokeny semantyczne z `apps/web/app/globals.css` (`@theme`, oparte na palecie `zinc` + akcent `yellow`) — zobacz skill `design-system`.
+- UI jest w całości po polsku, ciemny motyw Workout Alchemist. Kolory wyłącznie przez tokeny semantyczne z `apps/web/app/globals.css` (warstwa semantyczna + `@theme inline`; akcent teal, gold tylko PR) — zobacz skill `design-system`.
 - Monorepo, jeden git w root: deployowalne aplikacje pod `apps/`, testy pod `tests/`.
 
 ## Układ repo
@@ -53,7 +53,7 @@ trainer-app/
 ## Never
 
 - Nigdy nie wywołuj surowego `fetch` w komponentach/stronach — używaj wyłącznie obiektu `api` z `apps/web/lib/api.ts` (jedyny dozwolony `fetch` to centralny wrapper `request<T>()` w tym pliku).
-- Nigdy nie używaj surowych klas `zinc-*`/`yellow-*`/`red-*`/`emerald-*` w komponentach — wyłącznie tokeny semantyczne z `apps/web/app/globals.css` (`@theme`) i prymitywy z `apps/web/components/ui.tsx`. Zobacz skill `design-system`.
+- Nigdy nie używaj surowych klas `zinc-*`/`yellow-*`/`teal-*`/`red-*`/`emerald-*` ani hexów w komponentach — wyłącznie tokeny semantyczne z `apps/web/app/globals.css` i prymitywy z `apps/web/components/ui.tsx`. Zobacz skill `design-system`.
 - Nigdy nie dodawaj endpointów bez prefiksu `/api`.
 - Nigdy nie edytuj ręcznie `apps/api/trainer.db` ani plików w `bin`/`obj`.
 - Nigdy nie commituj sekretów, `.env`, kluczy.
@@ -75,6 +75,16 @@ npm run lint --prefix apps/web                    # ESLint (Next.js)
 npm run typecheck --prefix apps/web               # tsc --noEmit
 npm run build --prefix apps/web                   # produkcyjny build frontu
 ```
+
+### Lokalne dev (pamięć / zamrożenia macOS)
+
+```bash
+./scripts/dev.sh          # API + web, jeden Ctrl+C ubija wszystko
+./scripts/dev-doctor.sh   # footprint, swap, cache, porty, sieroty
+./scripts/clean.sh        # czyści .next + bin/obj
+```
+
+`npm run dev` w `apps/web` używa Webpacka z limitem 4 GB (nie Turbopacka) — szczegóły i warunek powrotu na Turbopack w `.ai/lessons.md`.
 
 ## Task Router — gdzie szukać szczegółów
 

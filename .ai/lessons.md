@@ -15,6 +15,25 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Podpowiedzi composera domyślnie zwinięte
+
+**Kontekst**: Widok Lista kreatora pokazywał zawsze 6 chipów skrótów + 3-liniową legendę tempo/RIR/rampa pod polem wpisywania.
+**Problem**: Ściana tekstu utrudniała fokus na dodawaniu ćwiczeń; power-userzy i tak znają skróty, a nowi potrzebują ściągawki na żądanie.
+**Zasada**: Hinty i legenda w composerze żyją w `ComposerHelp` (trigger `?`, localStorage `trainer-app:composer-help:v1`). Pod polem zostaje jedna kontekstowa linia (`↵ dodaj jako N`). Nie wracaj do zawsze widocznego bloku legendy.
+**Dotyczy**: `apps/web/components/plan-builder/ListComposer.tsx`, `ComposerHelp.tsx`, `QuickComposer.tsx`.
+
+## Dev web na Webpacku, nie Turbopacku, dopóki Next < 16.3
+
+**Kontekst**: Next 16.2 na Apple Silicon (arm64) używa Turbopacka jako domyślnego bundlera `next dev`. Binarka `@next/swc-darwin-arm64` alokuje pamięć `IOAccelerator`/`MAP_JIT` (Cranelift JIT), która rośnie monotonicznie i nie jest zwalniana — `ps` zaniża footprint, a systemowy kompresor + swap zamrażają cały macOS. Dodatkowo antywirus skanujący `.next` (często >1 GB) podbija CPU.
+**Problem**: Długa sesja `npm run dev` (Turbopack) + Kaspersky bez wykluczeń → zamrożenie komputera „po pewnym czasie”, bez czytelnego błędu w terminalu.
+**Zasada**:
+1. `apps/web`: `npm run dev` = `next dev --webpack` z `NODE_OPTIONS=--max-old-space-size=4096` (twardy sufit V8 — pada proces, nie system). `next build` zostaje na Turbopacku.
+2. Orkiestracja: `./scripts/dev.sh` (trap `kill 0`, `MSBUILDDISABLENODEREUSE=1`), diagnostyka `./scripts/dev-doctor.sh`, czyszczenie `./scripts/clean.sh`.
+3. Wykluczenia AV dla `node_modules`, `.next`, `bin`/`obj`, cache NuGet/npm — opis w `README.md`.
+4. **Warunek cofnięcia**: gdy Next **16.3+** wyjdzie jako stabilny `latest` (z `turbopackMemoryEviction`), wrócić `dev` na `next dev` (Turbopack), usunąć skrypt `dev:turbo` i zaktualizować ten wpis. Do tego czasu nie „naprawiać” limitu przez Turbopack — `--max-old-space-size` i `turbopackMemoryLimit` w 16.2 **nie limitują** IOAccelerator.
+**Źródła**: [vercel/next.js#91585](https://github.com/vercel/next.js/issues/91585), [vercel/next.js#92055](https://github.com/vercel/next.js/issues/92055), [Next 16.3 Turbopack](https://nextjs.org/blog/next-16-3-turbopack).
+**Dotyczy**: `apps/web/package.json`, `apps/web/next.config.ts`, `scripts/dev.sh`, `scripts/dev-doctor.sh`, `scripts/clean.sh`, `README.md`.
+
 ## Trzymaj typy `apps/web/lib/api.ts` zsynchronizowane z backendem
 
 **Kontekst**: Backend serializuje JSON w camelCase; frontend czyta te pola przez typy w `apps/web/lib/api.ts`.

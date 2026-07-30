@@ -2,7 +2,19 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { api, Exercise, ExerciseType, EXERCISE_TYPE_LABELS } from "@/lib/api";
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, formatRest, inputClass, PageHeader, Pill } from "@/components/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  ErrorBanner,
+  Field,
+  formatRest,
+  inputClass,
+  PageHeader,
+  SegmentedControl,
+  Tag,
+} from "@/components/ui";
 
 const TYPE_FILTERS: Array<{ id: ExerciseType | "all"; label: string }> = [
   { id: "all", label: "Wszystkie" },
@@ -203,12 +215,15 @@ export default function ExercisesPage() {
         </Card>
       )}
 
-      <div className="mb-4 inline-flex flex-wrap items-center gap-1 rounded-full bg-surface-hover p-1">
-        {TYPE_FILTERS.map((f) => (
-          <Pill key={f.id} active={typeFilter === f.id} onClick={() => setTypeFilter(f.id)}>
-            {f.label} · {typeCounts[f.id]}
-          </Pill>
-        ))}
+      <div className="mb-4">
+        <SegmentedControl
+          items={TYPE_FILTERS.map((f) => ({
+            value: f.id,
+            label: `${f.label} · ${typeCounts[f.id]}`,
+          }))}
+          value={typeFilter}
+          onChange={(v) => setTypeFilter(v as ExerciseType | "all")}
+        />
       </div>
 
       {exercises.length === 0 ? (
@@ -222,27 +237,33 @@ export default function ExercisesPage() {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="break-words font-semibold">{ex.name}</span>
-                  <Badge tone={ex.type === "reps" ? "neutral" : "yellow"}>
-                    {EXERCISE_TYPE_LABELS[ex.type]}
-                  </Badge>
+                  {ex.type === "reps" ? (
+                    <Tag>{EXERCISE_TYPE_LABELS[ex.type]}</Tag>
+                  ) : (
+                    <Badge tone="accent">{EXERCISE_TYPE_LABELS[ex.type]}</Badge>
+                  )}
                 </div>
                 {ex.description && <p className="mt-1 break-words text-xs text-muted">{ex.description}</p>}
               </div>
 
               <div className="grid grid-cols-3 gap-4 sm:flex sm:shrink-0 sm:gap-6">
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-muted">Serie×{ex.type === "reps" ? "powt." : ex.type === "time" ? "czas" : "dyst."}</p>
-                  <p className="text-sm font-semibold">
+                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">
+                    Serie×{ex.type === "reps" ? "powt." : ex.type === "time" ? "czas" : "dyst."}
+                  </p>
+                  <p className="font-mono text-sm font-semibold tabular-nums">
                     <VolumeValue exercise={ex} />
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-muted">Przerwa</p>
-                  <p className="text-sm font-semibold">{formatRest(ex.defaultRestBetweenSetsSeconds)}</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">Przerwa</p>
+                  <p className="font-mono text-sm font-semibold tabular-nums">
+                    {formatRest(ex.defaultRestBetweenSetsSeconds)}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-muted">Ciężar</p>
-                  <p className="text-sm font-semibold">
+                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">Ciężar</p>
+                  <p className="font-mono text-sm font-semibold tabular-nums">
                     {ex.defaultLoadKg ? (
                       <>
                         {ex.defaultLoadKg} <span className="text-accent">kg</span>

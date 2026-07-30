@@ -35,7 +35,7 @@ function SetsRepsCell({
     <span className="shrink-0 text-xs text-muted">×</span>
   );
 
-  if (item.exerciseType === "time") {
+  if (item.measureType === "time") {
     return (
       <div className="flex items-center gap-1">
         {setsField}
@@ -50,7 +50,7 @@ function SetsRepsCell({
       </div>
     );
   }
-  if (item.exerciseType === "distance") {
+  if (item.measureType === "distance") {
     return (
       <div className="flex items-center gap-1">
         {setsField}
@@ -129,8 +129,8 @@ export function TableExerciseRow({
 }) {
   return (
     <div
-      className={`rounded-lg border bg-surface/60 ${
-        isInSuperset ? "border-accent/40 border-l-[3px]" : "border-border"
+      className={`rounded-[10px] border bg-surface ${
+        isInSuperset ? "border-accent/50 border-l-[3px] bg-accent-dim/40" : "border-border"
       }`}
     >
       <div className={`grid ${TABLE_ROW_GRID_COLS} items-center gap-2 px-2 py-2`}>
@@ -138,13 +138,14 @@ export function TableExerciseRow({
           {expanded ? "▾" : "▸"}
         </IconButton>
 
-        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-accent/15 text-xs font-bold text-accent-strong">
-          {index + 1}
+        <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-accent-dim font-mono text-xs font-semibold tabular-nums text-accent-strong">
+          {supersetLabel ?? index + 1}
         </span>
 
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           <span className="min-w-0 break-words text-sm font-medium">{item.exerciseName}</span>
-          {supersetLabel && <Badge tone="yellow">{supersetLabel}</Badge>}
+          {item.isWarmup ? <Badge tone="neutral">rozgrzewka</Badge> : null}
+          {supersetLabel && <Badge tone="accent">{supersetLabel}</Badge>}
         </div>
 
         <SetsRepsCell item={item} exercise={exercise} onPatch={onPatch} />

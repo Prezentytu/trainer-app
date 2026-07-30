@@ -64,7 +64,7 @@ export default function PlansPage() {
     <div>
       <PageHeader
         title="Plany treningowe"
-        subtitle="Szablony wielokrotnego użytku i plany gotowe do przypisania"
+        subtitle="Formuły wielokrotnego użytku i plany gotowe do przypisania"
         action={
           <Link href="/plans/new">
             <Button>+ Nowy plan</Button>
@@ -73,15 +73,21 @@ export default function PlansPage() {
       />
       <ErrorBanner message={error} />
 
-      <Section title="Szablony" count={templates.length}>
+      <Section title="Formuły" count={templates.length}>
         {templates.length === 0 ? (
-          <EmptyState>Brak szablonów. Tworząc plan, wybierz rodzaj „Szablon”.</EmptyState>
+          <EmptyState>Brak formuł. Tworząc plan, wybierz rodzaj „Formuła”.</EmptyState>
         ) : (
           templates.map((p) => (
-            <PlanRow key={p.id} plan={p} clientNames={clientNamesByPlan.get(p.id) ?? []}>
-              <Button variant="ghost" onClick={() => handleDuplicate(p, true)}>Utwórz plan klienta</Button>
-              <Button variant="ghost" onClick={() => handleDuplicate(p, false)}>Duplikuj</Button>
-              <Button variant="danger" onClick={() => handleDelete(p)}>Usuń</Button>
+            <PlanRow key={p.id} plan={p} clientNames={clientNamesByPlan.get(p.id) ?? []} kind="formula">
+              <Button variant="ghost" onClick={() => handleDuplicate(p, true)}>
+                Utwórz plan klienta
+              </Button>
+              <Button variant="ghost" onClick={() => handleDuplicate(p, false)}>
+                Duplikuj
+              </Button>
+              <Button variant="danger" onClick={() => handleDelete(p)}>
+                Usuń
+              </Button>
             </PlanRow>
           ))
         )}
@@ -89,12 +95,16 @@ export default function PlansPage() {
 
       <Section title="Plany klientów" count={clientPlans.length}>
         {clientPlans.length === 0 ? (
-          <EmptyState>Brak planów klientów — stwórz nowy albo użyj szablonu.</EmptyState>
+          <EmptyState>Brak planów klientów — stwórz nowy albo użyj formuły.</EmptyState>
         ) : (
           clientPlans.map((p) => (
-            <PlanRow key={p.id} plan={p} clientNames={clientNamesByPlan.get(p.id) ?? []}>
-              <Button variant="ghost" onClick={() => handleDuplicate(p, false)}>Duplikuj</Button>
-              <Button variant="danger" onClick={() => handleDelete(p)}>Usuń</Button>
+            <PlanRow key={p.id} plan={p} clientNames={clientNamesByPlan.get(p.id) ?? []} kind="client">
+              <Button variant="ghost" onClick={() => handleDuplicate(p, false)}>
+                Duplikuj
+              </Button>
+              <Button variant="danger" onClick={() => handleDelete(p)}>
+                Usuń
+              </Button>
             </PlanRow>
           ))
         )}
@@ -106,15 +116,26 @@ export default function PlansPage() {
 function Section({ title, count, children }: { title: string; count: number; children: ReactNode }) {
   return (
     <div className="mb-8">
-      <h2 className="mb-3 flex items-center gap-2 font-semibold">
-        {title} <span className="text-sm font-normal text-muted">· {count}</span>
+      <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-semibold">
+        {title}{" "}
+        <span className="font-mono text-sm font-normal tabular-nums text-muted">· {count}</span>
       </h2>
       <div className="grid gap-3 xl:grid-cols-2">{children}</div>
     </div>
   );
 }
 
-function PlanRow({ plan, clientNames, children }: { plan: Plan; clientNames: string[]; children: ReactNode }) {
+function PlanRow({
+  plan,
+  clientNames,
+  kind,
+  children,
+}: {
+  plan: Plan;
+  clientNames: string[];
+  kind: "formula" | "client";
+  children: ReactNode;
+}) {
   return (
     <Card className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
@@ -122,14 +143,15 @@ function PlanRow({ plan, clientNames, children }: { plan: Plan; clientNames: str
           <Link href={`/plans/${plan.id}`} className="break-words font-semibold hover:text-accent">
             {plan.name}
           </Link>
+          <Badge tone={kind === "formula" ? "accent" : "neutral"}>{kind === "formula" ? "Formula" : "Plan"}</Badge>
           {clientNames.length > 0 && (
-            <Badge tone="green">
+            <Badge tone="positive">
               aktywny u: {clientNames.slice(0, 2).join(", ")}
               {clientNames.length > 2 ? ` +${clientNames.length - 2}` : ""}
             </Badge>
           )}
         </div>
-        <p className="mt-0.5 break-words text-xs text-muted">
+        <p className="mt-0.5 break-words font-mono text-xs tabular-nums text-muted">
           {plan.weeksCount} tyg. · {plan.daysCount} dni · {plan.exerciseCount} ćwiczeń
           {plan.description ? ` · ${plan.description}` : ""}
         </p>

@@ -6,11 +6,15 @@ export type BuilderItem = {
   key: string;
   exerciseId: number;
   exerciseName: string;
+  /** Typ ćwiczenia w bibliotece (kontekst pickera). */
   exerciseType: ExerciseType;
+  /** Efektywna miara tej pozycji w planie. */
+  measureType: ExerciseType;
   order: number;
   // Superseria jako akcja „połącz z następną pozycją”, nie surowe pole liczbowe —
   // numery grup (PlanItem.supersetGroup) są wyliczane przy zapisie, patrz lib/supersets.ts.
   linkedToNext: boolean;
+  isWarmup: boolean;
   sets: number | null;
   reps: number | null;
   repsMax: number | null;

@@ -55,7 +55,7 @@ export function TableDay({
   const labels = buildGroupLabels(groups);
 
   return (
-    <div className="rounded-xl border border-border bg-surface/60 p-4">
+    <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1 space-y-2 sm:max-w-sm">
           <input

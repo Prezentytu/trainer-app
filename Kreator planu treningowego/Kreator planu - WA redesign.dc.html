@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#0A0B0C;color:#F3F1EC;font-family:'Instrument Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:#6FBFAE;text-decoration:none} a:hover{color:#4FAE9E}
+  ::selection{background:#3E9C8F;color:#04120F}
+</style>
+</helmet>
+
+<div style="padding:48px 56px 96px;display:flex;flex-direction:column;gap:16px;align-items:flex-start;min-width:1560px">
+
+  <!-- CANVAS HEADER -->
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;width:1440px;max-width:100%;margin-bottom:8px">
+    <div>
+      <div style="font:500 12px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#66675F;text-transform:uppercase;margin-bottom:12px">Workout Alchemist · Trainer studio</div>
+      <h1 style="margin:0;font:700 24px/1.1 'Bricolage Grotesque',sans-serif;color:#F3F1EC">Kreator planu — redesign</h1>
+      <p style="margin:8px 0 0;font:400 15px/1.5 'Instrument Sans',sans-serif;color:#93958F;max-width:680px">Jeden akcent teal na region, głębia z trzech warstw ink, liczby w mono. Mniej chrome, więcej planu — wszystko edytowalne w miejscu, zero modali tam, gdzie wystarczy rozwinięcie.</p>
+    </div>
+    <div style="display:flex;gap:8px">
+      <span style="display:flex;align-items:center;gap:8px;font:500 12px 'IBM Plex Mono',monospace;color:#93958F;background:#141618;border:1px solid #22262A;padding:8px 12px;border-radius:10px"><span style="width:10px;height:10px;border-radius:3px;background:#3E9C8F"></span>teal — akcja</span>
+      <span style="display:flex;align-items:center;gap:8px;font:500 12px 'IBM Plex Mono',monospace;color:#93958F;background:#141618;border:1px solid #22262A;padding:8px 12px;border-radius:10px"><span style="width:10px;height:10px;border-radius:3px;background:#E8BB4F"></span>gold — tylko PR</span>
+    </div>
+  </div>
+
+  <!-- ============ FRAME 01 — TABLICA TYGODNIA ============ -->
+  <div style="display:flex;align-items:center;gap:12px;margin-top:24px">
+    <span style="font:600 12px 'IBM Plex Mono',monospace;padding:4px 8px;background:#242829;color:#93958F;border-radius:8px">01</span>
+    <span style="font:600 15px 'Instrument Sans',sans-serif;color:#F3F1EC">Tablica tygodnia</span>
+    <span style="font:400 15px 'Instrument Sans',sans-serif;color:#66675F">— cały tydzień jednym spojrzeniem · kolumny dni</span>
+  </div>
+
+  <div style="width:1440px;border:1px solid #22262A;border-radius:16px;overflow:hidden;background:#0A0B0C;box-shadow:inset 0 1px 0 rgba(243,241,236,.04),0 1px 2px rgba(0,0,0,.4)">
+    <div style="display:flex;height:820px">
+
+      <!-- SIDEBAR -->
+      <aside style="width:216px;flex:none;border-right:1px solid #22262A;background:#101214;padding:20px 12px;display:flex;flex-direction:column;gap:24px">
+        <div style="padding:0 8px;font:700 16px/1.2 'Bricolage Grotesque',sans-serif;color:#F3F1EC">Workout Alchemist</div>
+        <nav style="display:flex;flex-direction:column;gap:2px">
+          <span style="padding:10px 12px;border-radius:10px;font:400 15px 'Instrument Sans',sans-serif;color:#93958F;cursor:pointer">Panel</span>
+          <span style="padding:10px 12px;border-radius:10px;font:400 15px 'Instrument Sans',sans-serif;color:#93958F;cursor:pointer">Klienci</span>
+          <span style="padding:10px 12px;border-radius:10px;font:400 15px 'Instrument Sans',sans-serif;color:#93958F;cursor:pointer">Ćwiczenia</span>
+          <span style="padding:10px 12px;border-radius:10px;font:600 15px 'Instrument Sans',sans-serif;color:#6FBFAE;background:#1A1D1F;cursor:pointer">Plany</span>
+        </nav>
+        <div style="margin-top:auto;padding:14px;border:1px solid #22262A;border-radius:16px;background:#141618">
+          <div style="font:400 13px 'Instrument Sans',sans-serif;color:#66675F;margin-bottom:6px">Przypisany klient</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="width:32px;height:32px;border-radius:999px;background:#242829;display:inline-flex;align-items:center;justify-content:center;font:600 12px 'Instrument Sans',sans-serif;color:#C8C7C1;flex:none">MK</span>
+            <div style="min-width:0">
+              <div style="font:600 14px 'Instrument Sans',sans-serif;color:#F3F1EC">Marek Kowalczyk</div>
+              <div style="font:500 12px 'IBM Plex Mono',monospace;color:#93958F;margin-top:2px">start 07.07 · 6 tyg.</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- MAIN -->
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+
+        <!-- HEADER BAR -->
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;border-bottom:1px solid #22262A">
+          <div style="min-width:0">
+            <div style="display:flex;align-items:center;gap:10px">
+              <h2 style="margin:0;font:700 20px/1.2 'Bricolage Grotesque',sans-serif;color:#F3F1EC;white-space:nowrap">Hipertrofia PPL — blok II</h2>
+              <span style="font:600 11px 'Instrument Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:#242829;color:#93958F">Formula</span>
+            </div>
+            <div style="font:400 13px 'Instrument Sans',sans-serif;color:#66675F;margin-top:4px">4 dni/tydz. · periodyzacja liniowa · <span style="font:500 13px 'IBM Plex Mono',monospace;color:#93958F">tydzień 3 z 6</span></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="display:flex;align-items:center;gap:8px;font:400 13px 'Instrument Sans',sans-serif;color:#6FBFAE"><span style="width:6px;height:6px;border-radius:999px;background:#6FBFAE"></span>Zapisano</span>
+            <button style="border:1px solid #343A3B;border-radius:10px;padding:10px 16px;font:500 14px 'Instrument Sans',sans-serif;background:transparent;color:#C8C7C1;cursor:pointer" style-hover="background:#1A1D1F">Podgląd klienta</button>
+            <button style="border:none;border-radius:10px;padding:10px 18px;font:600 14px 'Instrument Sans',sans-serif;background:#3E9C8F;color:#04120F;cursor:pointer" style-hover="background:#4FAE9E">Przypisz do Marka</button>
+          </div>
+        </div>
+
+        <!-- WEEK TABS -->
+        <div style="display:flex;align-items:center;gap:8px;padding:12px 24px;border-bottom:1px solid #22262A">
+          <span style="font:600 11px 'Instrument Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#66675F;margin-right:4px">Tydzień</span>
+          <span style="min-width:36px;text-align:center;padding:8px 12px;border-radius:999px;font:500 14px 'IBM Plex Mono',monospace;color:#93958F;background:#141618;border:1px solid #22262A;cursor:pointer" style-hover="background:#1A1D1F">1</span>
+          <span style="min-width:36px;text-align:center;padding:8px 12px;border-radius:999px;font:500 14px 'IBM Plex Mono',monospace;color:#93958F;background:#141618;border:1px solid #22262A;cursor:pointer" style-hover="background:#1A1D1F">2</span>
+          <span style="min-width:36px;text-align:center;padding:8px 12px;border-radius:999px;font:600 14px 'IBM Plex Mono',monospace;color:#04120F;background:#3E9C8F;cursor:pointer">3</span>
+          <span style="display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:999px;font:500 14px 'IBM Plex Mono',monospace;color:#93958F;background:#141618;border:1px solid #22262A;cursor:pointer" style-hover="background:#1A1D1F">4 <span style="font:400 12px 'Instrument Sans',sans-serif;color:#6FBFAE">deload</span></span>
+          <span style="width:1px;height:20px;background:#22262A;margin:0 4px"></span>
+          <span style="padding:8px 14px;border-radius:999px;font:500 14px 'Instrument Sans',sans-serif;color:#C8C7C1;border:1px solid #343A3B;cursor:pointer;white-space:nowrap" style-hover="background:#1A1D1F">+ Tydzień</span>
+          <span style="padding:8px 14px;border-radius:999px;font:500 14px 'Instrument Sans',sans-serif;color:#93958F;border:1px solid #22262A;cursor:pointer;white-space:nowrap" style-hover="background:#1A1D1F">Kopiuj tydzień</span>
+          <span style="margin-left:auto;font:500 12px 'IBM Plex Mono',monospace;color:#66675F">14 ćwiczeń · ~4 h 10 min</span>
+        </div>
+
+        <!-- DAY BOARD -->
+        <div style="flex:1;overflow:hidden;position:relative;padding:20px 24px">
+          <div style="display:flex;gap:16px;height:100%;align-items:stretch">
+
+            <!-- DAY 1 -->
+            <div style="width:300px;flex:none;display:flex;flex-direction:column;background:#141618;border:1px solid #22262A;border-radius:16px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(243,241,236,.04),0 1px 2px rgba(0,0,0,.4)">
+              <div style="padding:14px 14px 12px;border-bottom:1px solid #22262A">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                  <div style="display:flex;align-items:baseline;gap:8px"><span style="font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#66675F">D1</span><span style="font:600 15px 'Instrument Sans',sans-serif;color:#F3F1EC">Poniedziałek</span></div>
+                  <span style="color:#66675F;font-size:16px;cursor:pointer;padding:2px 6px;border-radius:8px" style-hover="background:#1A1D1F">⋯</span>
+                </div>
+                <div style="font:400 13px 'Instrument Sans',sans-serif;color:#93958F;margin-top:4px">Klatka + plecy · siła</div>
+              </div>
+              <div style="flex:1;overflow:hidden;padding:12px;display:flex;flex-direction:column;gap:8px">
+
+                <!-- SUPERSET A -->
+                <div style="border:1px solid #275048;border-radius:12px;background:#10241F;overflow:hidden">
+                  <div style="display:flex;align-items:center;gap:8px;padding:8px 12px 6px"><span style="font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#6FBFAE">SUPERSERIA A</span><span style="font:400 12px 'Instrument Sans',sans-serif;color:#66675F">A1→A2 bez przerwy</span></div>
+                  <div style="padding:0 8px 8px;display:flex;flex-direction:column;gap:6px">
+                    <div style="padding:12px;background:#141618;border:1px solid #22262A;border-radius:10px;cursor:pointer" style-hover="background:#1A1D1F">
+                      <div style="display:flex;align-items:center;gap:8px"><span style="font:600 12px 'IBM Plex Mono',monospace;color:#6FBFAE">A1</span><span style="flex:1;font:500 14px/1.25 'Instrument Sans',sans-serif;color:#F3F1EC;min-width:0">Wyciskanie na ł. skośnej</span></div>
+                      <div style="margin-top:6px;padding-left:26px;font:500 13px 'IBM Plex Mono',monospace;color:#93958F">6 serii · 6-4-2-5-3-1 <span style="color:#66675F">· 90s</span></div>
+                    </div>
+                    <div style="padding:12px;background:#141618;border:1px solid #22262A;border-radius:10px;cursor:pointer" style-hover="background:#1A1D1F">
+                      <div style="display:flex;align-items:center;gap:8px"><span style="font:600 12px 'IBM Plex Mono',monospace;color:#6FBFAE">A2</span><span style="flex:1;font:500 14px/1.25 'Instrument Sans',sans-serif;color:#F3F1EC;min-width:0">Wiosłowanie sztangą</span></div>
+                      <div style="margin-top:6px;padding-left:26px;font:500 13px 'IBM Plex Mono',monospace;color:#93958F">6 serii · rampa 2RM <span style="color:#66675F">· 90s</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="padding:12px;background:#141618;border:1px solid #22262A;border-radius:10px;cursor:pointer" style-hover="background:#1A1D1F">
+                  <div style="display:flex;align-items:center;gap:8px"><span style="flex:1;font:500 14px/1.25 'Instrument Sans',sans-serif;color:#F3F1EC">Rozpiętki na skosie</span></div>
+                  <div style="margin-top:6px;font:500 13px 'IBM Plex Mono',monospace;color:#93958F">3 × 8–12 <span style="color:#66675F">· 45s</span></div>
+                </div>
+                <div style="padding:12px;background:#141618;border:1px solid #22262A;border-radius:10px;cursor:pointer" style-hover="background:#1A1D1F">
+                  <div style="display:flex;align-items:center;gap:8px"><span style="flex:1;font:500 14px/1.25 'Instrument Sans',sans-serif;color:#F3F1EC">Spacer farmera jednorącz</span></div>
+                  <div style="margin-top:6px;font:500 13px 'IBM Plex Mono',monospace;color:#93958F">2 × 15 m <span style="color:#66675F">· na stronę · 90s</span></div>
+                </div>
+
+                <button style="margin-top:auto;border:1px dashed #343A3B;background:transparent;border-radius:10px;padding:12px;font:500 14px 'Instrument Sans',sans-serif;color:#93958F;cursor:pointer" style-hover="color:#C8C7C1;border-color:#474C4C">+ Dodaj ćwiczenie</button>
+              </div>
+            </div>
+
+            <!-- DAY 2 -->
+            <div style="width:300px;flex:none;display:flex;flex-direction:column;background:#141618;border:1px solid #22262A;border-radius:16px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(243,241,236,.04),0 1px 2px rgba(0,0,0,.4)">
+              <div style="padding:14px 14px 12px;border-bottom:1px solid #22262A">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="display:flex;align-items:baseline;gap:8px"><span style="font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#66675F">D2</span><span style="font:600 15px 'Instrument Sans',sans-serif;color:#F3F1EC">Wtorek</span></div><span style="color:#66675F;font-size:16px;cursor:pointer;padding:2px 6px;border-radius:8px" style-hover="background:#1A1D1F">⋯</span></div>
+                <div style="font:400 13px 'Instrument Sans',sans-serif;color:#93958F;margin-top:4px">Nogi · siła</div>
+              </div>
+              <div style="flex:1;overflow:hidden;padding:12px;display:flex;flex-direction:column;gap:8px">
+                <div style="padding:12px;background:#1A1D1F;border:1px solid #343A3B;border-radius:10px;cursor:pointer">
+                  <div style="display:flex;align-items:center;gap:8px"><span style="flex:1;font:500 14px/1.25 'Instrument Sans',sans-serif;color:#F3F1EC">Przysiad ze sztangą</span><span style="width:6px;height:6px;border-radius:999px;background:#93958F" title="notatka dla klienta"></span></div>
+                  <div style="margin-top:6px;font:500 13px 'IBM Plex Mono',monospace;color:#93958F">5 × 5 @ 100 kg <span style="color:#66675F">· 150s</span></div>
+                </div>
+                <div style="padding:12px;background:#141618;border:1px solid #22262A;border-radius:10px;cursor:pointer" style-hover="background:#1A1D1F">
+                  <div style="display:flex;align-items:center;gap:8px"><span style="flex:1;font:500 14px/1.25 'Instrument Sans',sans-serif;color:#F3F1EC">Hip thrust</span></div>
+                  <div style="margin-top:6px;font:500 13px 'IBM Plex Mono',monospace;color:#93958F">5 × 5 · 15-10-5 <span style="color:#66675F">· top 100%</span></div>
+                </div>
+                <div style="padding:12px;background:#141618;border:1px solid #22262A;border-radius:10px;cursor:pointer" style-hover="background:#1A1D1F">
+                  <div style="display:flex;align-items:center;gap:8px"><span style="flex:1;font:500 14px/1.25 'Instrument Sans',sans-serif;color:#F3F1EC">Wykroki z hantlami</span></div>
+                  <div style="margin-top:6px;font:500 13px 'IBM Plex Mono',monospace;color:#93958F">3 × 12 @ 12 kg <span style="color:#66675F">· 90s</span></div>
+                </div>
+                <div style="padding:12px;background:#141618;border:1px solid #22262A;border-radius:10px;cursor:pointer" style-hover="background:#1A1D1F">
+                  <div style="display:flex;align-items:center;gap:8px"><span style="flex:1;font:500 14px/1.25 'Instrument Sans',sans-serif;color:#F3F1EC">Plank</span></div>
+                  <div style="margin-top:6px;font:500 13px 'IBM Plex Mono',monospace;color:#93958F">3 × 45 s <span style="color:#66675F">· 60s</span></div>
+                </div>
+                <button style="margin-top:auto;border:1px dashed #343A3B;background:transparent;border-radius:10px;padding:12px;font:500 14px 'Instrument Sans',sans-serif;color:#93958F;cursor:pointer" style-hover="color:#C8C7C1;border-color:#474C4C">+ Dodaj ćwiczenie</button>
+              </div>
+            </div>
+
+            <!-- DAY 3 -->
+            <div style="width:300px;flex:none;display:flex;flex-direction:column;background:#141618;border:1px solid #22262A;border-radius:16px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(243,241,236,.04),0 1px 2px rgba(0,0,0,.4)">
+              <div style="padding:14px 14px 12px;border-bottom:1px solid #22262A">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="display:flex;align-items:baseline;gap:8px"><span style="font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#66675F">D3</span><span style="font:600 15px 'Instrument Sans',sans-serif;color:#F3F1EC">Czwartek</span></div><span style="color:#66675F;font-size:16px;cursor:pointer;padding:2px 6px;border-radius:8px" style-hover="background:#1A1D1F">⋯</span></div>
+                <div style="font:400 13px 'Instrument Sans',sans-serif;color:#93958F;margin-top:4px">Push · objętość</div>
+              </div>
+              <div style="flex:1;overflow:hidden;padding:12px;display:flex;flex-direction:column;gap:8px">
+                <div style="padding:12px;background:#141618;border:1px solid #22262A;border-radius:10px;cursor:pointer" style-hover="background:#1A1D1F">
+                  <div style="display:flex;align-items:center;gap:8px"><span style="flex:1;font:500 14px/1.25 'Instrument Sans',sans-serif;color:#F3F1EC">Wyciskanie na ł. płaskiej</span></div>
+                  <div style="margin-top:6px;font:500 13px 'IBM Plex Mono',monospace;color:#93958F">6 serii · 6-4-2-5-3-1 <span style="color:#66675F">· rampa 2RM</span></div>
+                </div>
+                <div style="padding:12px;background:#141618;border:1px solid #22262A;border-radius:10px;cursor:pointer" style-hover="background:#1A1D1F">
+                  <div style="display:flex;align-items:center;gap:8px"><span style="flex:1;font:500 14px/1.25 'Instrument Sans',sans-serif;color:#F3F1EC">Podciąganie na drążku</span></div>
+                  <div style="margin-top:6px;font:500 13px 'IBM Plex Mono',monospace;color:#93958F">4 × 6 <span style="color:#66675F">· 120s</span></div>
+                </div>
+                <div style="padding:12px;background:#141618;border:1px solid #22262A;border-radius:10px;cursor:pointer" style-hover="background:#1A1D1F">
+                  <div style="display:flex;align-items:center;gap:8px"><span style="flex:1;font:500 14px/1.25 'Instrument Sans',sans-serif;color:#F3F1EC">Pompki</span></div>
+                  <div style="margin-top:6px;font:500 13px 'IBM Plex Mono',monospace;color:#93958F">3 × 15 <span style="color:#66675F">· 60s</span></div>
+                </div>
+                <button style="margin-top:auto;border:1px dashed #343A3B;background:transparent;border-radius:10px;padding:12px;font:500 14px 'Instrument Sans',sans-serif;color:#93958F;cursor:pointer" style-hover="color:#C8C7C1;border-color:#474C4C">+ Dodaj ćwiczenie</button>
+              </div>
+            </div>
+
+            <!-- DAY 4 -->
+            <div style="width:300px;flex:none;display:flex;flex-direction:column;background:#141618;border:1px solid #22262A;border-radius:16px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(243,241,236,.04),0 1px 2px rgba(0,0,0,.4)">
+              <div style="padding:14px 14px 12px;border-bottom:1px solid #22262A">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="display:flex;align-items:baseline;gap:8px"><span style="font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#66675F">D4</span><span style="font:600 15px 'Instrument Sans',sans-serif;color:#F3F1EC">Piątek</span></div><span style="color:#66675F;font-size:16px;cursor:pointer;padding:2px 6px;border-radius:8px" style-hover="background:#1A1D1F">⋯</span></div>
+                <div style="font:400 13px 'Instrument Sans',sans-serif;color:#93958F;margin-top:4px">Martwy ciąg · siła</div>
+              </div>
+              <div style="flex:1;overflow:hidden;padding:12px;display:flex;flex-direction:column;gap:8px">
+                <div style="padding:12px;background:#141618;border:1px solid #22262A;border-radius:10px;cursor:pointer" style-hover="background:#1A1D1F">
+                  <div style="display:flex;align-items:center;gap:8px"><span style="flex:1;font:500 14px/1.25 'Instrument Sans',sans-serif;color:#F3F1EC">Martwy ciąg</span><span style="font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.06em;color:#E8BB4F" title="ostatni PR klienta">PR 140</span></div>
+                  <div style="margin-top:6px;font:500 13px 'IBM Plex Mono',monospace;color:#93958F">5 × 3 @ 120 kg <span style="color:#66675F">· 150s</span></div>
+                </div>
+                <div style="padding:12px;background:#141618;border:1px solid #22262A;border-radius:10px;cursor:pointer" style-hover="background:#1A1D1F">
+                  <div style="display:flex;align-items:center;gap:8px"><span style="flex:1;font:500 14px/1.25 'Instrument Sans',sans-serif;color:#F3F1EC">Wiosłowanie sztangą</span></div>
+                  <div style="margin-top:6px;font:500 13px 'IBM Plex Mono',monospace;color:#93958F">4 × 8 @ 40 kg <span style="color:#66675F">· 90s</span></div>
+                </div>
+                <div style="border:1px dashed #343A3B;border-radius:10px;padding:20px 12px;text-align:center;font:400 13px/1.5 'Instrument Sans',sans-serif;color:#66675F">Przeciągnij ćwiczenie tutaj<br>albo dodaj z biblioteki</div>
+                <button style="margin-top:auto;border:1px dashed #343A3B;background:transparent;border-radius:10px;padding:12px;font:500 14px 'Instrument Sans',sans-serif;color:#93958F;cursor:pointer" style-hover="color:#C8C7C1;border-color:#474C4C">+ Dodaj ćwiczenie</button>
+              </div>
+            </div>
+
+            <!-- ADD DAY -->
+            <div style="width:120px;flex:none;display:flex;align-items:center;justify-content:center;border:1px dashed #343A3B;border-radius:16px;color:#66675F;font:500 14px 'Instrument Sans',sans-serif;text-align:center;cursor:pointer" style-hover="color:#C8C7C1;border-color:#474C4C">+ Dzień</div>
+          </div>
+          <div style="position:absolute;right:0;top:0;bottom:0;width:56px;background:linear-gradient(90deg,transparent,#0A0B0C);pointer-events:none"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ROW: 02 + 03 ============ -->
+  <div style="display:flex;gap:48px;align-items:flex-start;flex-wrap:wrap;margin-top:24px">
+
+    <!-- FRAME 02 -->
+    <div style="display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <span style="font:600 12px 'IBM Plex Mono',monospace;padding:4px 8px;background:#242829;color:#93958F;border-radius:8px">02</span>
+        <span style="font:600 15px 'Instrument Sans',sans-serif;color:#F3F1EC">Wiersz ćwiczenia — zwinięty vs rozwinięty</span>
+      </div>
+
+      <div style="width:560px;background:#141618;border:1px solid #22262A;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:16px;box-shadow:inset 0 1px 0 rgba(243,241,236,.04),0 1px 2px rgba(0,0,0,.4)">
+        <div>
+          <div style="font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#66675F;text-transform:uppercase;margin-bottom:8px">Domyślnie — zwinięty</div>
+          <div style="padding:12px;background:#141618;border:1px solid #22262A;border-radius:10px">
+            <div style="display:flex;align-items:center;gap:8px"><span style="color:#474C4C;font-size:12px;letter-spacing:-2px;cursor:grab">⠿</span><span style="flex:1;font:500 14px 'Instrument Sans',sans-serif;color:#F3F1EC">Wyciskanie na ł. skośnej</span><span style="width:6px;height:6px;border-radius:999px;background:#93958F" title="notatka"></span><span style="color:#66675F;font-size:16px;cursor:pointer">⋯</span></div>
+            <div style="margin-top:6px;padding-left:24px;font:500 13px 'IBM Plex Mono',monospace;color:#93958F">3 × 8–12 <span style="color:#66675F">· 60s · tempo 3110</span></div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;color:#474C4C;font:400 12px 'Instrument Sans',sans-serif"><span style="flex:1;height:1px;background:#22262A"></span>klik rozwija w miejscu<span style="flex:1;height:1px;background:#22262A"></span></div>
+
+        <div>
+          <div style="font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#6FBFAE;text-transform:uppercase;margin-bottom:8px">Po kliknięciu — edytor w miejscu</div>
+          <div style="background:#141618;border:1px solid #343A3B;border-radius:12px;overflow:hidden">
+            <div style="display:flex;align-items:center;gap:8px;padding:12px 14px;background:#1A1D1F;border-bottom:1px solid #22262A"><span style="color:#474C4C;font-size:12px;letter-spacing:-2px;cursor:grab">⠿</span><span style="flex:1;font:600 15px 'Instrument Sans',sans-serif;color:#F3F1EC">Wyciskanie na ł. skośnej</span><span style="font:500 13px 'Instrument Sans',sans-serif;color:#93958F;padding:6px 12px;border-radius:8px;cursor:pointer" style-hover="background:#242829">Zwiń</span></div>
+
+            <div style="padding:16px 16px 0">
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+                <label style="display:flex;flex-direction:column;gap:6px"><span style="font:400 13px 'Instrument Sans',sans-serif;color:#93958F">Serie</span><div style="display:flex;align-items:center;height:44px;padding:0 12px;border-radius:10px;border:1px solid #343A3B;background:#1A1D1F;font:600 15px 'IBM Plex Mono',monospace;color:#F3F1EC">3</div></label>
+                <label style="display:flex;flex-direction:column;gap:6px"><span style="font:400 13px 'Instrument Sans',sans-serif;color:#93958F">Powtórzenia</span><div style="display:flex;align-items:center;gap:4px;height:44px;padding:0 12px;border-radius:10px;border:1px solid #343A3B;background:#1A1D1F;font:600 15px 'IBM Plex Mono',monospace;color:#F3F1EC">8<span style="color:#474C4C;font-weight:400">–</span>12</div></label>
+                <label style="display:flex;flex-direction:column;gap:6px"><span style="font:400 13px 'Instrument Sans',sans-serif;color:#93958F">Ciężar (kg)</span><div style="display:flex;align-items:center;height:44px;padding:0 12px;border-radius:10px;border:1px solid #343A3B;background:#1A1D1F;font:400 15px 'Instrument Sans',sans-serif;color:#66675F">klient decyduje</div></label>
+              </div>
+            </div>
+
+            <div style="padding:16px 16px 0">
+              <div style="display:flex;align-items:center;gap:8px;font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#66675F;text-transform:uppercase;margin-bottom:12px;cursor:pointer">Zaawansowane <span style="color:#474C4C">▾</span></div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+                <label style="display:flex;flex-direction:column;gap:6px"><span style="font:400 13px 'Instrument Sans',sans-serif;color:#93958F">Tempo</span><div style="display:flex;align-items:center;height:44px;padding:0 12px;border-radius:10px;border:1px solid #343A3B;background:#1A1D1F;font:600 15px 'IBM Plex Mono',monospace;color:#F3F1EC">3110</div></label>
+                <label style="display:flex;flex-direction:column;gap:6px"><span style="font:400 13px 'Instrument Sans',sans-serif;color:#93958F">RPE</span><div style="display:flex;align-items:center;height:44px;padding:0 12px;border-radius:10px;border:1px solid #343A3B;background:#1A1D1F;font:600 15px 'IBM Plex Mono',monospace;color:#F3F1EC">8</div></label>
+                <label style="display:flex;flex-direction:column;gap:6px"><span style="font:400 13px 'Instrument Sans',sans-serif;color:#93958F">Przerwa serie</span><div style="display:flex;align-items:center;height:44px;padding:0 12px;border-radius:10px;border:1px solid #343A3B;background:#1A1D1F;font:600 15px 'IBM Plex Mono',monospace;color:#F3F1EC">60s</div></label>
+                <label style="display:flex;flex-direction:column;gap:6px"><span style="font:400 13px 'Instrument Sans',sans-serif;color:#93958F">Po ćwiczeniu</span><div style="display:flex;align-items:center;height:44px;padding:0 12px;border-radius:10px;border:1px solid #343A3B;background:#1A1D1F;font:600 15px 'IBM Plex Mono',monospace;color:#F3F1EC">90s</div></label>
+              </div>
+              <label style="display:flex;flex-direction:column;gap:6px;margin-top:12px"><span style="font:400 13px 'Instrument Sans',sans-serif;color:#93958F">Notatka dla klienta</span><div style="display:flex;align-items:center;height:44px;padding:0 12px;border-radius:10px;border:1px solid #343A3B;background:#1A1D1F;font:400 15px 'Instrument Sans',sans-serif;color:#C8C7C1">Łokcie pod 45°, pełen zakres na dole.</div></label>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:16px;padding:12px 14px;border:1px solid #22262A;border-radius:10px;background:#101214">
+              <div style="display:flex;align-items:center;gap:12px"><span style="width:38px;height:22px;border-radius:999px;background:#3E9C8F;position:relative;flex:none;cursor:pointer"><span style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:999px;background:#04120F"></span></span><span style="font:500 14px 'Instrument Sans',sans-serif;color:#F3F1EC">Rozpisz serie</span></div>
+              <span style="font:400 13px 'Instrument Sans',sans-serif;color:#93958F">3 serie · <a href="#" style="font-weight:500">otwórz tabelę ↓</a></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FRAME 03 -->
+    <div style="display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <span style="font:600 12px 'IBM Plex Mono',monospace;padding:4px 8px;background:#242829;color:#93958F;border-radius:8px">03</span>
+        <span style="font:600 15px 'Instrument Sans',sans-serif;color:#F3F1EC">Rozkład serii — preset 6-4-2-5-3-1 · tydzień 3</span>
+      </div>
+
+      <div style="width:640px;background:#141618;border:1px solid #22262A;border-radius:16px;padding:16px;box-shadow:inset 0 1px 0 rgba(243,241,236,.04),0 1px 2px rgba(0,0,0,.4)">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px">
+          <span style="font:600 11px 'Instrument Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#66675F;margin-right:4px">Metoda</span>
+          <span style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:10px;border:1px solid #275048;background:#10241F;font:500 14px 'IBM Plex Mono',monospace;color:#6FBFAE;cursor:pointer">6-4-2-5-3-1 <span style="color:#66675F">▾</span></span>
+          <span style="padding:8px 14px;border-radius:10px;border:1px solid #22262A;background:#141618;font:500 14px 'IBM Plex Mono',monospace;color:#93958F;cursor:pointer" style-hover="background:#1A1D1F">15-10-5</span>
+          <span style="margin-left:auto;display:flex;gap:8px"><span style="padding:8px 14px;border-radius:10px;border:1px solid #343A3B;font:500 14px 'Instrument Sans',sans-serif;color:#C8C7C1;cursor:pointer" style-hover="background:#1A1D1F">+ Seria</span><span style="padding:8px 12px;border-radius:10px;font:400 14px 'Instrument Sans',sans-serif;color:#93958F;cursor:pointer" style-hover="background:#1A1D1F">Wyczyść</span></span>
+        </div>
+        <div style="margin-bottom:12px;padding:12px 14px;border-radius:10px;background:#101214;border:1px solid #22262A;font:400 13px/1.5 'Instrument Sans',sans-serif;color:#93958F">Tydzień 3 generuje: rampa do 2RM → back-off 80% → objętość 60%. Zmiana tygodnia przelicza serie automatycznie.</div>
+
+        <div style="border:1px solid #22262A;border-radius:12px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:32px 116px 76px 60px 96px 76px 64px;background:#101214;border-bottom:1px solid #22262A;font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.06em;color:#66675F;text-transform:uppercase">
+            <div style="padding:10px 8px">#</div><div style="padding:10px 8px">Rola</div><div style="padding:10px 8px">Powt.</div><div style="padding:10px 8px">%</div><div style="padding:10px 8px">Baza</div><div style="padding:10px 8px">Ciężar</div><div style="padding:10px 8px;text-align:right">= kg</div>
+          </div>
+          <div style="display:grid;grid-template-columns:32px 116px 76px 60px 96px 76px 64px;align-items:center;border-bottom:1px solid #22262A">
+            <div style="padding:12px 8px;font:500 12px 'IBM Plex Mono',monospace;color:#66675F">1</div><div style="padding:8px"><span style="font:400 12px 'Instrument Sans',sans-serif;color:#93958F;background:#242829;padding:4px 10px;border-radius:999px">rampa</span></div><div style="padding:12px 8px;font:500 14px 'IBM Plex Mono',monospace;color:#F3F1EC">2 <span style="font-size:11px;color:#66675F">2RM</span></div><div style="padding:12px 8px;color:#474C4C">—</div><div style="padding:12px 8px;font:400 12px 'Instrument Sans',sans-serif;color:#474C4C">—</div><div style="padding:12px 8px;font:600 14px 'IBM Plex Mono',monospace;color:#F3F1EC">50</div><div style="padding:12px 8px;text-align:right;font:600 14px 'IBM Plex Mono',monospace;color:#F3F1EC">50</div>
+          </div>
+          <div style="display:grid;grid-template-columns:32px 116px 76px 60px 96px 76px 64px;align-items:center;border-bottom:1px solid #22262A;background:#10241F;box-shadow:inset 3px 0 0 #3E9C8F">
+            <div style="padding:12px 8px;font:500 12px 'IBM Plex Mono',monospace;color:#6FBFAE">2</div><div style="padding:8px"><span style="font:500 12px 'Instrument Sans',sans-serif;color:#04120F;background:#3E9C8F;padding:4px 10px;border-radius:999px">top</span></div><div style="padding:12px 8px;font:500 14px 'IBM Plex Mono',monospace;color:#F3F1EC">1</div><div style="padding:12px 8px;font:600 14px 'IBM Plex Mono',monospace;color:#6FBFAE">100</div><div style="padding:12px 8px;font:400 12px 'Instrument Sans',sans-serif;color:#93958F">% od topu</div><div style="padding:12px 8px;font:400 13px 'Instrument Sans',sans-serif;color:#66675F">auto</div><div style="padding:12px 8px;text-align:right;font:600 14px 'IBM Plex Mono',monospace;color:#6FBFAE">50</div>
+          </div>
+          <div style="display:grid;grid-template-columns:32px 116px 76px 60px 96px 76px 64px;align-items:center;border-bottom:1px solid #22262A">
+            <div style="padding:12px 8px;font:500 12px 'IBM Plex Mono',monospace;color:#66675F">3</div><div style="padding:8px"><span style="font:400 12px 'Instrument Sans',sans-serif;color:#6FBFAE;background:#10241F;padding:4px 10px;border-radius:999px">back-off</span></div><div style="padding:12px 8px;font:500 14px 'IBM Plex Mono',monospace;color:#F3F1EC">5–10</div><div style="padding:12px 8px;font:500 14px 'IBM Plex Mono',monospace;color:#F3F1EC">80</div><div style="padding:12px 8px;font:400 12px 'Instrument Sans',sans-serif;color:#93958F">% od topu</div><div style="padding:12px 8px;font:400 13px 'Instrument Sans',sans-serif;color:#66675F">auto</div><div style="padding:12px 8px;text-align:right;font:600 14px 'IBM Plex Mono',monospace;color:#F3F1EC">40</div>
+          </div>
+          <div style="display:grid;grid-template-columns:32px 116px 76px 60px 96px 76px 64px;align-items:center">
+            <div style="padding:12px 8px;font:500 12px 'IBM Plex Mono',monospace;color:#66675F">4</div><div style="padding:8px"><span style="font:400 12px 'Instrument Sans',sans-serif;color:#6FBFAE;background:#10241F;padding:4px 10px;border-radius:999px">back-off</span></div><div style="padding:12px 8px;font:500 14px 'IBM Plex Mono',monospace;color:#F3F1EC">10–15</div><div style="padding:12px 8px;font:500 14px 'IBM Plex Mono',monospace;color:#F3F1EC">60</div><div style="padding:12px 8px;font:400 12px 'Instrument Sans',sans-serif;color:#93958F">% od topu</div><div style="padding:12px 8px;font:400 13px 'Instrument Sans',sans-serif;color:#66675F">auto</div><div style="padding:12px 8px;text-align:right;font:600 14px 'IBM Plex Mono',monospace;color:#F3F1EC">30</div>
+          </div>
+        </div>
+        <div style="margin-top:12px;font:400 13px/1.5 'Instrument Sans',sans-serif;color:#66675F">„= kg" liczy się z bazy: 80% z topu 50 kg = <span style="font:500 13px 'IBM Plex Mono',monospace;color:#C8C7C1">40 kg</span>. Klient widzi gotowe liczby, nie wzory.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ROW: 04 + 05 + 06 ============ -->
+  <div style="display:flex;gap:48px;align-items:flex-start;flex-wrap:wrap;margin-top:24px">
+
+    <!-- FRAME 04 -->
+    <div style="display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <span style="font:600 12px 'IBM Plex Mono',monospace;padding:4px 8px;background:#242829;color:#93958F;border-radius:8px">04</span>
+        <span style="font:600 15px 'Instrument Sans',sans-serif;color:#F3F1EC">Superseria — łączenie zaznaczeniem</span>
+      </div>
+      <div style="width:360px;background:#141618;border:1px solid #22262A;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px;box-shadow:inset 0 1px 0 rgba(243,241,236,.04),0 1px 2px rgba(0,0,0,.4)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:10px;background:#101214;border:1px solid #343A3B">
+          <span style="font:500 14px 'Instrument Sans',sans-serif;color:#C8C7C1">Zaznaczono <span style="font:600 14px 'IBM Plex Mono',monospace;color:#F3F1EC">2</span></span>
+          <span style="padding:8px 14px;border-radius:10px;background:#3E9C8F;color:#04120F;font:600 13px 'Instrument Sans',sans-serif;cursor:pointer" style-hover="background:#4FAE9E">Połącz w superserię</span>
+        </div>
+        <div style="padding:12px;background:#1A1D1F;border:1px solid #4FAE9E;border-radius:10px">
+          <div style="display:flex;align-items:center;gap:10px"><span style="display:inline-flex;width:18px;height:18px;align-items:center;justify-content:center;border-radius:6px;background:#3E9C8F;color:#04120F;font-size:12px;font-weight:600;flex:none">✓</span><span style="flex:1;font:500 14px 'Instrument Sans',sans-serif;color:#F3F1EC">Rozpiętki na skosie</span><span style="font:500 13px 'IBM Plex Mono',monospace;color:#93958F">3 × 8–12</span></div>
+        </div>
+        <div style="padding:12px;background:#1A1D1F;border:1px solid #4FAE9E;border-radius:10px">
+          <div style="display:flex;align-items:center;gap:10px"><span style="display:inline-flex;width:18px;height:18px;align-items:center;justify-content:center;border-radius:6px;background:#3E9C8F;color:#04120F;font-size:12px;font-weight:600;flex:none">✓</span><span style="flex:1;font:500 14px 'Instrument Sans',sans-serif;color:#F3F1EC">Pullover z hantlem</span><span style="font:500 13px 'IBM Plex Mono',monospace;color:#93958F">3 × 8–12</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;color:#474C4C;font:400 12px 'Instrument Sans',sans-serif;padding:4px 0"><span style="flex:1;height:1px;background:#22262A"></span>wynik<span style="flex:1;height:1px;background:#22262A"></span></div>
+        <div style="border:1px solid #275048;border-radius:12px;background:#10241F;overflow:hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px 6px"><span style="font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#6FBFAE">SUPERSERIA D</span><span style="font:400 13px 'Instrument Sans',sans-serif;color:#93958F;cursor:pointer" style-hover="color:#C8C7C1">Rozłącz</span></div>
+          <div style="padding:0 8px 8px;display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;gap:10px;padding:12px;background:#141618;border:1px solid #22262A;border-radius:10px"><span style="font:600 12px 'IBM Plex Mono',monospace;color:#6FBFAE">D1</span><span style="font:500 14px 'Instrument Sans',sans-serif;color:#F3F1EC">Rozpiętki na skosie</span></div>
+            <div style="display:flex;align-items:center;gap:10px;padding:12px;background:#141618;border:1px solid #22262A;border-radius:10px"><span style="font:600 12px 'IBM Plex Mono',monospace;color:#6FBFAE">D2</span><span style="font:500 14px 'Instrument Sans',sans-serif;color:#F3F1EC">Pullover z hantlem</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FRAME 05 -->
+    <div style="display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <span style="font:600 12px 'IBM Plex Mono',monospace;padding:4px 8px;background:#242829;color:#93958F;border-radius:8px">05</span>
+        <span style="font:600 15px 'Instrument Sans',sans-serif;color:#F3F1EC">Stan przeciągania — reorder</span>
+      </div>
+      <div style="width:360px;background:#141618;border:1px solid #22262A;border-radius:16px;overflow:hidden;position:relative;box-shadow:inset 0 1px 0 rgba(243,241,236,.04),0 1px 2px rgba(0,0,0,.4)">
+        <div style="padding:14px;border-bottom:1px solid #22262A"><div style="display:flex;align-items:baseline;gap:8px"><span style="font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#66675F">D2</span><span style="font:600 15px 'Instrument Sans',sans-serif;color:#F3F1EC">Wtorek</span></div><div style="font:400 13px 'Instrument Sans',sans-serif;color:#93958F;margin-top:4px">Nogi · siła</div></div>
+        <div style="padding:12px;display:flex;flex-direction:column;gap:8px">
+          <div style="padding:12px;background:#141618;border:1px solid #22262A;border-radius:10px"><div style="display:flex;align-items:center;gap:8px"><span style="color:#474C4C;font-size:12px;letter-spacing:-2px">⠿</span><span style="flex:1;font:500 14px 'Instrument Sans',sans-serif;color:#F3F1EC">Przysiad ze sztangą</span></div><div style="margin-top:6px;padding-left:24px;font:500 13px 'IBM Plex Mono',monospace;color:#93958F">5 × 5 @ 100 kg</div></div>
+          <div style="height:56px;border:1px dashed #4FAE9E;border-radius:10px;background:#10241F;display:flex;align-items:center;justify-content:center;font:500 13px 'Instrument Sans',sans-serif;color:#6FBFAE">Upuść tutaj</div>
+          <div style="padding:12px;background:#141618;border:1px solid #22262A;border-radius:10px;opacity:.45"><div style="display:flex;align-items:center;gap:8px"><span style="color:#474C4C;font-size:12px;letter-spacing:-2px">⠿</span><span style="flex:1;font:500 14px 'Instrument Sans',sans-serif;color:#F3F1EC">Wykroki z hantlami</span></div><div style="margin-top:6px;padding-left:24px;font:500 13px 'IBM Plex Mono',monospace;color:#93958F">3 × 12 @ 12 kg</div></div>
+        </div>
+        <div style="position:absolute;top:104px;left:56px;width:248px;padding:12px;background:#1A1D1F;border:1px solid #4FAE9E;border-radius:10px;box-shadow:inset 0 1px 0 rgba(243,241,236,.05),0 8px 24px rgba(0,0,0,.5);transform:rotate(-2deg)"><div style="display:flex;align-items:center;gap:8px"><span style="color:#6FBFAE;font-size:12px;letter-spacing:-2px">⠿</span><span style="flex:1;font:600 14px 'Instrument Sans',sans-serif;color:#F3F1EC">Hip thrust</span></div><div style="margin-top:6px;padding-left:24px;font:500 13px 'IBM Plex Mono',monospace;color:#93958F">5 × 5 · top 100%</div></div>
+      </div>
+      <div style="width:360px;margin-top:12px;font:400 13px/1.5 'Instrument Sans',sans-serif;color:#66675F">Uchwyt <span style="color:#93958F">⠿</span> chwyta wiersz; teal placeholder pokazuje cel. Klawiatura: spacja = chwyć, strzałki = przenieś.</div>
+    </div>
+
+    <!-- FRAME 06 -->
+    <div style="display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <span style="font:600 12px 'IBM Plex Mono',monospace;padding:4px 8px;background:#242829;color:#93958F;border-radius:8px">06</span>
+        <span style="font:600 15px 'Instrument Sans',sans-serif;color:#F3F1EC">Dodawanie ćwiczenia — panel boczny</span>
+      </div>
+      <div style="width:380px;background:#141618;border:1px solid #22262A;border-radius:16px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(243,241,236,.04),0 1px 2px rgba(0,0,0,.4)">
+        <div style="padding:16px;border-bottom:1px solid #22262A">
+          <div style="display:flex;align-items:center;justify-content:space-between"><span style="font:700 17px 'Bricolage Grotesque',sans-serif;color:#F3F1EC">Dodaj ćwiczenie</span><span style="color:#66675F;font-size:16px;cursor:pointer">×</span></div>
+          <div style="display:flex;align-items:center;gap:8px;height:44px;margin-top:12px;padding:0 12px;border-radius:10px;border:1px solid #4FAE9E;background:#1A1D1F;box-shadow:0 0 0 3px rgba(62,156,143,.28)"><span style="color:#66675F">⌕</span><span style="font:400 15px 'Instrument Sans',sans-serif;color:#F3F1EC">wios</span><span style="width:1px;height:16px;background:#4FAE9E"></span></div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <span style="padding:6px 14px;border-radius:999px;font:600 13px 'Instrument Sans',sans-serif;color:#04120F;background:#3E9C8F;cursor:pointer">Wszystkie</span>
+            <span style="padding:6px 14px;border-radius:999px;font:400 13px 'Instrument Sans',sans-serif;color:#93958F;background:#242829;cursor:pointer" style-hover="color:#C8C7C1">Plecy</span>
+            <span style="padding:6px 14px;border-radius:999px;font:400 13px 'Instrument Sans',sans-serif;color:#93958F;background:#242829;cursor:pointer" style-hover="color:#C8C7C1">Nogi</span>
+            <span style="padding:6px 14px;border-radius:999px;font:400 13px 'Instrument Sans',sans-serif;color:#93958F;background:#242829;cursor:pointer" style-hover="color:#C8C7C1">Push</span>
+          </div>
+        </div>
+        <div style="padding:8px;display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;background:#1A1D1F;border:1px solid #343A3B;cursor:pointer">
+            <div style="flex:1;min-width:0"><div style="font:500 14px 'Instrument Sans',sans-serif;color:#F3F1EC">Wiosłowanie sztangą</div><div style="font:400 13px 'Instrument Sans',sans-serif;color:#66675F;margin-top:2px">Plecy · <span style="font:500 12px 'IBM Plex Mono',monospace;color:#93958F">3 × 10 @ 40 kg · 90s</span></div></div>
+            <span style="padding:8px 14px;border-radius:10px;background:#3E9C8F;color:#04120F;font:600 13px 'Instrument Sans',sans-serif" style-hover="background:#4FAE9E">Dodaj</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;background:#141618;border:1px solid #22262A;cursor:pointer" style-hover="background:#1A1D1F">
+            <div style="flex:1;min-width:0"><div style="font:500 14px 'Instrument Sans',sans-serif;color:#F3F1EC">Wiosłowanie hantlem</div><div style="font:400 13px 'Instrument Sans',sans-serif;color:#66675F;margin-top:2px">Plecy · <span style="font:500 12px 'IBM Plex Mono',monospace;color:#93958F">3 × 12 @ 16 kg</span></div></div>
+            <span style="color:#66675F;font-size:18px">+</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;background:#141618;border:1px solid #22262A;cursor:pointer" style-hover="background:#1A1D1F">
+            <div style="flex:1;min-width:0"><div style="font:500 14px 'Instrument Sans',sans-serif;color:#F3F1EC">Spacer farmera</div><div style="font:400 13px 'Instrument Sans',sans-serif;color:#66675F;margin-top:2px">Full body · <span style="font:500 12px 'IBM Plex Mono',monospace;color:#93958F">2 × 20 m</span></div></div>
+            <span style="color:#66675F;font-size:18px">+</span>
+          </div>
+          <div style="padding:12px;text-align:center;font:400 13px 'Instrument Sans',sans-serif;color:#66675F">3 z 10 · <a href="#">+ Nowe ćwiczenie w bibliotece</a></div>
+        </div>
+      </div>
+      <div style="width:380px;margin-top:12px;font:400 13px/1.5 'Instrument Sans',sans-serif;color:#66675F">Enter dodaje pierwszy wynik z domyślnymi wartościami z biblioteki — zero pustych pól.</div>
+    </div>
+  </div>
+
+  <!-- ============ DESIGN NOTES ============ -->
+  <div style="width:840px;max-width:100%;margin-top:24px;background:#141618;border:1px solid #22262A;border-radius:16px;padding:24px;box-shadow:inset 0 1px 0 rgba(243,241,236,.04),0 1px 2px rgba(0,0,0,.4)">
+    <div style="font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#66675F;text-transform:uppercase;margin-bottom:16px">Zasady redesignu</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px 32px">
+      <div><div style="font:600 15px 'Instrument Sans',sans-serif;color:#F3F1EC;margin-bottom:4px">Jeden akcent na region</div><div style="font:400 14px/1.5 'Instrument Sans',sans-serif;color:#93958F">Teal tylko dla akcji głównej, fokusu i grupowania superserii. Gold zarezerwowany dla PR-ów klienta — nigdy dla UI.</div></div>
+      <div><div style="font:600 15px 'Instrument Sans',sans-serif;color:#F3F1EC;margin-bottom:4px">Liczby mówią</div><div style="font:400 14px/1.5 'Instrument Sans',sans-serif;color:#93958F">Wszystkie wartości treningowe w IBM Plex Mono, jedna linia z „·" zamiast stosu chipów. Etykiety mniejsze i cichsze niż wartości.</div></div>
+      <div><div style="font:600 15px 'Instrument Sans',sans-serif;color:#F3F1EC;margin-bottom:4px">Smart defaults</div><div style="font:400 14px/1.5 'Instrument Sans',sans-serif;color:#93958F">Nowe ćwiczenie wchodzi z domyślnymi wartościami z biblioteki; ciężar „klient decyduje" zamiast pustego pola.</div></div>
+      <div><div style="font:600 15px 'Instrument Sans',sans-serif;color:#F3F1EC;margin-bottom:4px">Edycja w miejscu</div><div style="font:400 14px/1.5 'Instrument Sans',sans-serif;color:#93958F">Klik rozwija wiersz zamiast otwierać modal; zaawansowane pola schowane za progressive disclosure. CTA mówi o korzyści: „Przypisz do Marka".</div></div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

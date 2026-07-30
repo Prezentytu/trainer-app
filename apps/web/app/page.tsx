@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, ClientSummary, Plan } from "@/lib/api";
-import { Avatar, Badge, Button, Card, EmptyState, ErrorBanner, PageHeader } from "@/components/ui";
+import { Avatar, Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, StatBlock } from "@/components/ui";
 
 const ATTENTION_LIMIT = 5;
 
@@ -33,22 +33,18 @@ export default function DashboardPage() {
   return (
     <div>
       <PageHeader
-        title="Panel trenera"
+        title="Panel"
         subtitle="Szybki przegląd Twojej pracy"
         action={
           <Link href="/plans/new">
-            <Button>+ Nowy plan</Button>
+            <Button>+ Nowa formuła</Button>
           </Link>
         }
       />
       <ErrorBanner message={error} />
 
       {needsAttention.length > 0 && (
-        <Card className="mb-6">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="font-semibold">Wymaga uwagi</h2>
-            <span className="text-xs text-muted">{needsAttention.length} bez aktywnego planu</span>
-          </div>
+        <Card className="mb-6" eyebrow="Priorytet" title="Wymaga uwagi" meta={`${needsAttention.length} bez aktywnego planu`}>
           <ul className="divide-y divide-border">
             {needsAttention.map((c) => (
               <li key={c.id} className="flex items-center justify-between gap-3 py-2.5">
@@ -58,7 +54,7 @@ export default function DashboardPage() {
                 </Link>
                 <Link
                   href={`/clients/${c.id}`}
-                  className="shrink-0 rounded-lg bg-accent/15 px-2.5 py-1 text-xs font-semibold text-accent-strong hover:bg-accent/25"
+                  className="shrink-0 rounded-[10px] bg-accent-dim px-2.5 py-1 text-xs font-semibold text-accent-strong hover:bg-accent-border"
                 >
                   Przypisz plan
                 </Link>
@@ -70,7 +66,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Klienci" value={clients.length} href="/clients" />
-        <StatCard label="Szablony planów" value={templates.length} href="/plans" />
+        <StatCard label="Formuły" value={templates.length} href="/plans" />
         <StatCard label="Plany klientów" value={clientPlans.length} href="/plans" />
         <StatCard label="Aktywne przypisania" value={activeAssignments} href="/clients" />
       </div>
@@ -78,7 +74,7 @@ export default function DashboardPage() {
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <Card>
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-semibold">Klienci</h2>
+            <h2 className="font-display text-lg font-semibold">Klienci</h2>
             <Link href="/clients" className="text-xs font-medium text-muted-strong hover:text-accent-strong">
               Wszyscy ›
             </Link>
@@ -95,7 +91,7 @@ export default function DashboardPage() {
                     <Avatar name={c.name} size="sm" />
                     <span className="min-w-0 break-words">{c.name}</span>
                   </Link>
-                  <Badge tone={c.activePlans > 0 ? "green" : "neutral"}>
+                  <Badge tone={c.activePlans > 0 ? "positive" : "neutral"}>
                     {c.activePlans > 0 ? `${c.activePlans} aktywny plan(y)` : "brak planu"}
                   </Badge>
                 </li>
@@ -106,7 +102,7 @@ export default function DashboardPage() {
 
         <Card>
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-semibold">Ostatnie plany</h2>
+            <h2 className="font-display text-lg font-semibold">Ostatnie plany</h2>
             <Link href="/plans" className="text-xs font-medium text-muted-strong hover:text-accent-strong">
               Wszystkie ›
             </Link>
@@ -122,8 +118,8 @@ export default function DashboardPage() {
                   <Link href={`/plans/${p.id}`} className="min-w-0 break-words hover:text-accent">
                     {p.name}
                   </Link>
-                  <span className="shrink-0 text-xs text-muted">
-                    {p.isTemplate ? "szablon" : "plan klienta"} · {p.exerciseCount} ćw.
+                  <span className="shrink-0 font-mono text-xs tabular-nums text-muted">
+                    {p.isTemplate ? "formuła" : "plan"} · {p.exerciseCount} ćw.
                   </span>
                 </li>
               ))}
@@ -139,8 +135,7 @@ function StatCard({ label, value, href }: { label: string; value: number; href: 
   return (
     <Link href={href} className="block">
       <Card className="transition-colors hover:border-border-strong">
-        <p className="text-3xl font-bold text-accent">{value}</p>
-        <p className="mt-1 text-sm text-muted-strong">{label}</p>
+        <StatBlock label={label} value={value} size="lg" />
       </Card>
     </Link>
   );

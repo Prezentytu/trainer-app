@@ -72,6 +72,12 @@ public class PlanItem
     // Superserie: ta sama wartość w obrębie dnia = seria łączona (a/b/c wg Order)
     public int? SupersetGroup { get; set; }
 
+    // Rozgrzewka — pozycje na początku dnia (numeracja od 0 w widoku Lista)
+    public bool IsWarmup { get; set; }
+
+    // "reps" | "time" | "distance"; null = dziedziczy z Exercise.Type
+    public string? MeasureType { get; set; }
+
     // Nadpisania parametrów; null = weź default z ćwiczenia
     public int? Sets { get; set; }
     public int? Reps { get; set; }

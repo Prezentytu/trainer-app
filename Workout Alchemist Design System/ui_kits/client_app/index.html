@@ -1,0 +1,49 @@
+<!-- @dsCard group="Client App" viewport="390x760" subtitle="Mobile tracker — today, live logging, progress" name="Client App" -->
+<!-- @startingPoint section="Client App" subtitle="Mobile shell: today → live workout → progress" viewport="390x760" -->
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Workout Alchemist — Client App</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="data.js"></script>
+<style>body{display:flex;justify-content:center}#phone{width:390px;min-height:100vh;background:var(--bg-app);border-left:1px solid var(--border-subtle);border-right:1px solid var(--border-subtle);display:flex;flex-direction:column}</style>
+</head><body>
+<div id="phone"><div id="root" style="flex:1;display:flex;flex-direction:column"></div></div>
+<script type="text/babel" src="TodayScreen.jsx"></script>
+<script type="text/babel" src="WorkoutScreen.jsx"></script>
+<script type="text/babel" src="ProgressScreen.jsx"></script>
+<script type="text/babel" data-presets="react">
+function TabBar({ tab, onTab }) {
+  const { Icon } = window.WorkoutAlchemistDesignSystem_5f0610;
+  const items = [["today", "calendar-days", "Today"], ["progress", "trending-up", "Progress"], ["profile", "user", "Profile"]];
+  return (
+    <nav style={{ display: "flex", borderTop: "1px solid var(--border-subtle)", background: "rgba(11,12,10,0.8)", backdropFilter: "blur(12px)", position: "sticky", bottom: 0, zIndex: 20 }}>
+      {items.map(([id, ic, label]) => (
+        <button key={id} onClick={() => onTab(id)} style={{ all: "unset", cursor: "pointer", flex: 1, minHeight: 54, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, color: tab === id ? "var(--accent)" : "var(--text-faint)", font: "var(--type-label)", fontSize: 10, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+          <Icon name={ic} size={22} strokeWidth={tab === id ? 2 : 1.75} />{label}
+        </button>
+      ))}
+    </nav>
+  );
+}
+function App() {
+  const [tab, setTab] = React.useState("today");
+  const [live, setLive] = React.useState(false);
+  if (live) return <window.WAWorkoutScreen onFinish={() => setLive(false)} />;
+  return (
+    <React.Fragment>
+      <div style={{ flex: 1 }}>
+        {tab === "today" && <window.WATodayScreen onStart={() => setLive(true)} />}
+        {tab === "progress" && <window.WAProgressScreen />}
+        {tab === "profile" && <div style={{ padding: "40px 20px", textAlign: "center", font: "var(--type-caption)", color: "var(--text-faint)" }}>Profile — intentionally out of scope for this kit.</div>}
+      </div>
+      <TabBar tab={tab} onTab={setTab} />
+    </React.Fragment>
+  );
+}
+const t = setInterval(() => { if (window.WorkoutAlchemistDesignSystem_5f0610 && window.WATodayScreen && window.WAWorkoutScreen && window.WAProgressScreen) { clearInterval(t); ReactDOM.createRoot(document.getElementById("root")).render(<App />); } }, 30);
+</script>
+</body></html>

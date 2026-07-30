@@ -2,7 +2,8 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Exercise, EXERCISE_TYPE_LABELS, RIR_HELP, rirFromRpe } from "@/lib/api";
+import { Exercise, RIR_HELP, rirFromRpe } from "@/lib/api";
+import { formatMeasureCore } from "@/lib/measure";
 import { Badge, Field, IconButton, formatRest, inputClass } from "@/components/ui";
 import { NumInput } from "./NumInput";
 import { SetSchemeEditor } from "./SetSchemeEditor";
@@ -10,17 +11,8 @@ import { BuilderItem, BuilderSet } from "./types";
 
 function summaryText(item: BuilderItem, exercise?: Exercise): string {
   const sets = item.sets ?? exercise?.defaultSets ?? null;
-  let core: string;
-  if (item.exerciseType === "time") {
-    const base = item.repDurationSeconds ?? exercise?.defaultRepDurationSeconds ?? null;
-    core = base ? `${base}${item.repDurationSecondsMax ? `–${item.repDurationSecondsMax}` : ""}s` : "—";
-  } else if (item.exerciseType === "distance") {
-    const dist = item.distanceMeters ?? exercise?.defaultDistanceMeters ?? null;
-    core = dist ? `${dist} m` : "—";
-  } else {
-    const reps = item.reps ?? exercise?.defaultReps ?? null;
-    core = reps ? `${reps}${item.repsMax ? `–${item.repsMax}` : ""} powt.` : "—";
-  }
+  let core = formatMeasureCore(item, exercise);
+  if (item.measureType === "reps" && core !== "—") core = `${core} powt.`;
   const rest = item.restBetweenSetsSeconds ?? exercise?.defaultRestBetweenSetsSeconds ?? null;
   const parts = [sets ? `${sets} × ${core}` : core];
   if (rest != null) parts.push(formatRest(rest));
@@ -78,13 +70,13 @@ export function ExerciseRow({
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`rounded-lg border bg-surface/60 ${
-        isInSuperset ? "border-accent/40 border-l-[3px]" : "border-border"
+      className={`rounded-[10px] border bg-surface ${
+        isInSuperset ? "border-accent/50 border-l-[3px] bg-accent-dim/40" : "border-border"
       } ${isDragging ? "opacity-50" : ""}`}
     >
       <div className="flex flex-col gap-2 p-3">
         {isSupersetStart && (
-          <p className="pl-8 text-xs font-semibold uppercase tracking-wide text-accent-strong">Superseria</p>
+          <p className="pl-8 text-xs font-semibold uppercase tracking-[0.08em] text-accent-strong">Superseria</p>
         )}
         <div className="flex items-start gap-2">
           <button
@@ -97,8 +89,8 @@ export function ExerciseRow({
             ⋮⋮
           </button>
 
-          <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent/15 text-xs font-bold text-accent-strong">
-            {index + 1}
+          <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-accent-dim font-mono text-xs font-semibold tabular-nums text-accent-strong">
+            {supersetLabel ?? index + 1}
           </span>
 
           <button
@@ -108,12 +100,14 @@ export function ExerciseRow({
           >
             <span className="shrink-0 text-xs text-muted">{expanded ? "▾" : "▸"}</span>
             <span className="min-w-0 break-words font-medium">{item.exerciseName}</span>
-            {supersetLabel && <Badge tone="yellow">{supersetLabel}</Badge>}
+            {supersetLabel && <Badge tone="accent">{supersetLabel}</Badge>}
           </button>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-2 pl-8">
-          <span className="min-w-0 break-words text-xs text-muted">{summaryText(item, exercise)}</span>
+          <span className="min-w-0 break-words font-mono text-xs tabular-nums text-muted">
+            {summaryText(item, exercise)}
+          </span>
           <div className="flex shrink-0 flex-wrap items-center gap-1">
             <IconButton title="Przenieś wyżej" onClick={() => onMove(-1)} size="xs">
               ↑
@@ -137,7 +131,7 @@ export function ExerciseRow({
         </div>
 
         {item.notes && (
-          <p className="ml-8 break-words rounded-lg bg-accent/10 px-2 py-1 text-xs text-muted-strong">
+          <p className="ml-8 break-words rounded-[10px] bg-accent-dim px-2 py-1 text-xs text-muted-strong">
             {item.notes}
           </p>
         )}
@@ -150,7 +144,7 @@ export function ExerciseRow({
             <Field label={`Serie${exercise ? ` (dom. ${exercise.defaultSets})` : ""}`}>
               <NumInput value={item.sets} min={1} onChange={(v) => onPatch({ sets: v })} placeholder="dom." />
             </Field>
-            {item.exerciseType === "time" ? (
+            {item.measureType === "time" ? (
               <>
                 <Field label="Czas powt. (s)">
                   <NumInput value={item.repDurationSeconds} min={1} onChange={(v) => onPatch({ repDurationSeconds: v })} placeholder="dom." />
@@ -159,7 +153,7 @@ export function ExerciseRow({
                   <NumInput value={item.repDurationSecondsMax} min={1} onChange={(v) => onPatch({ repDurationSecondsMax: v })} placeholder="—" />
                 </Field>
               </>
-            ) : item.exerciseType === "distance" ? (
+            ) : item.measureType === "distance" ? (
               <Field label="Dystans (m)">
                 <NumInput value={item.distanceMeters} min={1} onChange={(v) => onPatch({ distanceMeters: v })} placeholder="dom." />
               </Field>

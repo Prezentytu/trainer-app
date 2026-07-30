@@ -4,15 +4,27 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { api, ClientDetails, Plan } from "@/lib/api";
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, inputClass, PageHeader, useUndoToast } from "@/components/ui";
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  ErrorBanner,
+  Field,
+  inputClass,
+  PageHeader,
+  StatBlock,
+  useUndoToast,
+} from "@/components/ui";
 
 function PlanPickerCard({ plan, selected, onSelect }: { plan: Plan; selected: boolean; onSelect: () => void }) {
   return (
     <button
       type="button"
       onClick={onSelect}
-      className={`flex items-start gap-2 rounded-lg border p-3 text-left transition-colors ${
-        selected ? "border-accent bg-accent/10" : "border-border bg-surface/60 hover:border-border-strong"
+      className={`flex items-start gap-2 rounded-[10px] border p-3 text-left transition-colors duration-[var(--dur-fast)] ${
+        selected ? "border-accent bg-accent-dim" : "border-border bg-surface hover:border-border-strong"
       }`}
     >
       <span
@@ -25,7 +37,7 @@ function PlanPickerCard({ plan, selected, onSelect }: { plan: Plan; selected: bo
       </span>
       <span className="min-w-0">
         <span className="block break-words text-sm font-medium">{plan.name}</span>
-        <span className="mt-0.5 block text-xs text-muted">
+        <span className="mt-0.5 block font-mono text-xs tabular-nums text-muted">
           {plan.weeksCount} tyg. · {plan.exerciseCount} ćw.
         </span>
       </span>
@@ -131,20 +143,37 @@ export default function ClientDetailsPage() {
   }
 
   const statusTone = (status: string) =>
-    status === "active" ? "green" : status === "completed" ? "yellow" : "red";
+    status === "active" ? ("positive" as const) : status === "completed" ? ("accent" as const) : ("danger" as const);
   const statusLabel = (status: string) =>
     status === "active" ? "aktywny" : status === "completed" ? "zakończony" : "anulowany";
+
+  const activeCount = client.assignments.filter((a) => a.status === "active").length;
 
   return (
     <div>
       <PageHeader
         title={client.name}
         subtitle={[client.email, client.note].filter(Boolean).join(" · ") || "Profil klienta"}
+        action={<Avatar name={client.name} size="lg" />}
       />
       <ErrorBanner message={error} />
 
-      <Card className="mb-6">
-        <h2 className="mb-4 font-semibold">Przypisz plan</h2>
+      <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <Card>
+          <StatBlock label="Przypisania" value={client.assignments.length} />
+        </Card>
+        <Card>
+          <StatBlock label="Aktywne" value={activeCount} />
+        </Card>
+        <Card>
+          <StatBlock label="Zakończone" value={client.assignments.filter((a) => a.status === "completed").length} />
+        </Card>
+        <Card>
+          <StatBlock label="Plany do wyboru" value={plans.length} />
+        </Card>
+      </div>
+
+      <Card className="mb-6" eyebrow="Akcja" title="Przypisz plan">
         {plans.length === 0 ? (
           <EmptyState>
             Nie masz jeszcze planów klienta.{" "}
@@ -177,7 +206,7 @@ export default function ClientDetailsPage() {
         )}
       </Card>
 
-      <h2 className="mb-3 font-semibold">Przypisane plany</h2>
+      <h2 className="mb-3 font-display text-lg font-semibold">Przypisane plany</h2>
       {client.assignments.length === 0 ? (
         <EmptyState>Ten klient nie ma jeszcze żadnych przypisań.</EmptyState>
       ) : (
@@ -188,7 +217,7 @@ export default function ClientDetailsPage() {
                 <Link href={`/plans/${a.planId}`} className="break-words font-semibold hover:text-accent">
                   {a.planName}
                 </Link>
-                <p className="mt-0.5 text-xs text-muted">
+                <p className="mt-0.5 font-mono text-xs tabular-nums text-muted">
                   start: {a.startDate}
                   {a.note ? ` · ${a.note}` : ""}
                 </p>

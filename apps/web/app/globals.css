@@ -1,56 +1,165 @@
 @import "tailwindcss";
 
-@theme inline {
-  --font-sans: var(--font-geist-sans);
+/*
+ * Workout Alchemist — trójwarstwowa architektura tokenów.
+ *
+ * Warstwa 1 (prymitywy): --ink-*, --bone-*, --teal-*, --gold-*, --clay-* — surowy materiał.
+ * Warstwa 2 (semantyka): --background, --surface, --accent, --pr… — themable; każdy motyw
+ *   nadpisuje TYLKO tę warstwę (np. [data-theme="…"]).
+ * Warstwa 3 (@theme inline): mapuje semantyki na klasy Tailwind (bg-surface, text-accent…).
+ *   Dzięki `inline` + var(--…) klasy reagują w runtime na zmianę motywu.
+ *
+ * Komponenty NIGDY nie odwołują się do prymitywów ani surowych hexów.
+ * Gold (--pr) wyłącznie dla rekordów (PR). Zobacz skill `design-system`.
+ */
+
+:root {
+  /* —— Warstwa 1: prymitywy WA —— */
+  --ink-950: #0a0b0c;
+  --ink-900: #101214;
+  --ink-850: #141618;
+  --ink-800: #1a1d1f;
+  --ink-700: #242829;
+  --ink-600: #313637;
+  --ink-500: #474c4c;
+
+  --bone-100: #f3f1ec;
+  --bone-300: #c8c7c1;
+  --bone-500: #93958f;
+  --bone-700: #66675f;
+
+  --teal-300: #6fbfae;
+  --teal-400: #4fae9e;
+  --teal-500: #3e9c8f;
+  --teal-600: #2f7a70;
+  --teal-700: #275048;
+  --teal-900: #10241f;
+
+  --gold-300: #f2ce72;
+  --gold-400: #e8bb4f;
+  --gold-500: #d6a335;
+  --gold-600: #b3842a;
+  --gold-900: #33280f;
+
+  --clay-400: #e08b6c;
+  --clay-500: #cf6b4b;
+  --clay-600: #b0563a;
+  --clay-900: #361a11;
+
+  /* —— Warstwa 2: semantyka (motyw domyślny WA) —— */
+  --background: var(--ink-950);
+  --surface: var(--ink-850);
+  --surface-sunken: var(--ink-950);
+  --surface-hover: var(--ink-800);
+  --surface-active: var(--ink-700);
+
+  --border: #22262a;
+  --border-strong: #343a3b;
+
+  --foreground: var(--bone-100);
+  --foreground-secondary: var(--bone-300);
+  --muted-strong: var(--bone-300);
+  --muted: var(--bone-500);
+  --muted-faint: var(--bone-700);
+
+  --accent: var(--teal-500);
+  --accent-strong: var(--teal-400);
+  --accent-foreground: #04120f;
+  --accent-dim: var(--teal-900);
+  --accent-border: var(--teal-700);
+
+  --pr: var(--gold-400);
+  --pr-dim: var(--gold-900);
+  --text-on-gold: #1a1406;
+
+  --positive: var(--teal-300);
+  --positive-dim: var(--teal-900);
+
+  --danger: var(--clay-500);
+  --danger-bg: var(--clay-900);
+  --danger-border: var(--clay-600);
+  --danger-hover: var(--clay-400);
+
+  /* Alias wsteczny — Badge tone="green" / success */
+  --success: var(--positive);
+  --success-bg: var(--positive);
+
+  /* Efekty */
+  --shadow-card: inset 0 1px 0 rgba(243, 241, 236, 0.04), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-raised: inset 0 1px 0 rgba(243, 241, 236, 0.05), 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-modal: inset 0 1px 0 rgba(243, 241, 236, 0.06), 0 24px 64px rgba(0, 0, 0, 0.65);
+  --glow-accent: 0 0 0 3px rgba(62, 156, 143, 0.28);
+  --overlay-scrim: rgba(10, 11, 12, 0.74);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 120ms;
+  --dur-med: 220ms;
 }
 
-/*
- * Nasza paleta — warstwa tokenów semantycznych.
- * Tier 1 (prymitywy) to wbudowana skala Tailwind (zinc/yellow/red/emerald) — nie definiujemy jej
- * ponownie. Tier 2 (poniżej) nazywa role, nie wygląd, żeby komponenty odwoływały się do znaczenia
- * ("surface", "accent", "danger"), a nie do konkretnego odcienia. Jedna, ciemna motywacja —
- * bez wariantu light, więc tokeny są statyczne (@theme, nie @theme inline).
- * Źródło prawdy dla kolorów w apps/web. Zobacz skill `design-system`.
- */
-@theme {
-  /* Tło i powierzchnie */
-  --color-background: var(--color-zinc-950);
-  --color-surface: var(--color-zinc-900);
-  --color-surface-sunken: var(--color-zinc-950);
-  --color-surface-hover: var(--color-zinc-800);
-  --color-surface-active: var(--color-zinc-700);
+/* —— Warstwa 3: Tailwind —— */
+@theme inline {
+  --font-sans: var(--font-instrument);
+  --font-display: var(--font-bricolage);
+  --font-mono: var(--font-ibm-plex-mono);
 
-  /* Obramowania */
-  --color-border: var(--color-zinc-800);
-  --color-border-strong: var(--color-zinc-700);
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-active: var(--surface-active);
 
-  /* Tekst */
-  --color-foreground: var(--color-zinc-100);
-  --color-foreground-secondary: var(--color-zinc-300);
-  --color-muted-strong: var(--color-zinc-400);
-  --color-muted: var(--color-zinc-500);
-  --color-muted-faint: var(--color-zinc-600);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
 
-  /* Akcent (marka) */
-  --color-accent: var(--color-yellow-400);
-  --color-accent-strong: var(--color-yellow-300);
-  --color-accent-foreground: var(--color-zinc-950);
+  --color-foreground: var(--foreground);
+  --color-foreground-secondary: var(--foreground-secondary);
+  --color-muted-strong: var(--muted-strong);
+  --color-muted: var(--muted);
+  --color-muted-faint: var(--muted-faint);
 
-  /* Status */
-  --color-danger: var(--color-red-300);
-  --color-danger-bg: var(--color-red-950);
-  --color-danger-border: var(--color-red-900);
-  --color-success: var(--color-emerald-300);
-  --color-success-bg: var(--color-emerald-400);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-dim: var(--accent-dim);
+  --color-accent-border: var(--accent-border);
+
+  --color-pr: var(--pr);
+  --color-pr-dim: var(--pr-dim);
+  --color-text-on-gold: var(--text-on-gold);
+
+  --color-positive: var(--positive);
+  --color-positive-dim: var(--positive-dim);
+
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-border: var(--danger-border);
+  --color-danger-hover: var(--danger-hover);
+
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-raised: var(--shadow-raised);
+  --shadow-modal: var(--shadow-modal);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
 }
 
 body {
-  background: var(--color-background);
-  color: var(--color-foreground);
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-instrument), system-ui, sans-serif;
 }
 
 input,
 select,
 textarea {
   color-scheme: dark;
+}
+
+::selection {
+  background: var(--accent-dim);
+  color: var(--positive);
 }
