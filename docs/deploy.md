@@ -91,7 +91,7 @@ Zapisz URL z Overview, np.:
 | Name | Value | Skąd |
 |---|---|---|
 | `Database__Provider` | `Postgres` | wpisz ręcznie |
-| `ConnectionStrings__Default` | `postgresql://…` | **ten sam** string co w sekretcie Neona (pooled) |
+| `ConnectionStrings__Default` | `postgresql://…` | **ten sam** string co w sekretcie Neona (pooled); URI jest tłumaczony na format Npgsql przez `DbConnectionString.Normalize` |
 | `Clerk__Authority` | `https://….clerk.accounts.dev` | z kroku A3 |
 | `ALLOWED_ORIGINS` | `http://localhost:3000` | na razie tylko lokal; **dopiszesz Vercel w kroku E** |
 | `ASPNETCORE_ENVIRONMENT` | `Production` | wpisz ręcznie |
@@ -276,10 +276,12 @@ Aplikacja używa **własnych** stron `/sign-in` i `/sign-up` (nie hostowanego Ac
 ### F2. Co powinno się stać (3 joby)
 
 1. **Build Docker image** — buduje i pcha do `ghcr.io/prezentytu/trainer-app-api:0.0.N`
-2. **Apply EF migrations** — odpala migracje na Neon (`DEV_DB_CONNECTION_STRING`)
+2. **Apply EF migrations** — `dotnet restore` + bundle EF + apply na Neon (`DEV_DB_CONNECTION_STRING`)
 3. **Deploy to Azure** — ustawia kontener na Web App + health check
 
 Poczekaj aż wszystkie 3 będą zielone (5–15 min).
+
+Jeśli job migracji pada na `NETSDK1004` / brak `project.assets.json` — upewnij się, że na `main` jest workflow z krokiem **Restore NuGet packages** przed `dotnet ef migrations bundle`. Awaryjnie: **Run workflow** z `skip_migrations: true` (tylko gdy schemat Neon jest już założony).
 
 ### F3. Sprawdź health
 
@@ -333,7 +335,7 @@ Jeśli pusty ekran / CORS: wróć do E1 (`ALLOWED_ORIGINS` musi być **dokładni
 | Objaw | Fix |
 |---|---|
 | Actions: `GHCR_TOKEN` / login failed | Nowy PAT z `write:packages`; secret bez spacji/enterów |
-| Actions: migracje fail | Neon string **pooled**; hasło ze znakami specjalnymi musi być URL-encoded |
+| Actions: migracje fail `Couldn't set …/neondb?sslmode` | Npgsql nie parsuje URI — wymaga formatu `klucz=wartość`, więc URI musi przejść przez `DbConnectionString.Normalize` (`apps/api/DbConnectionString.cs`). Ten błąd oznacza, że string ominął normalizację: sprawdź, czy krok „Apply migrations" nie przekazuje `--connection` (bundle ma czytać `DB_CONNECTION_STRING` przez `DesignTimeDbContextFactory`). Hasło ze znakami specjalnymi: URL-encode. Do migracji lepiej **direct** (bez `-pooler`), do Azure App Settings możesz użyć pooled. |
 | Actions: Azure login fail | Zły JSON w `AZURE_CREDENTIALS`; SP musi mieć Contributor na RG |
 | Actions: deploy OK, health fail | Poczekaj 1–2 min; sprawdź Log stream w Azure; `WEBSITES_PORT=8080` |
 | Web: CORS | `ALLOWED_ORIGINS` = dokładny Vercel origin |

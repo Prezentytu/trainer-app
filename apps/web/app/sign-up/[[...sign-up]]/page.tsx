@@ -29,10 +29,10 @@ export default function SignUpPage() {
   return (
     <AuthScreen
       title="Utwórz konto trenera"
-      subtitle="Bez karty. Pierwsze 15 minut: klient → plan → link do portalu."
+      subtitle="Bez karty. Dodaj klienta, ułóż plan, wyślij link."
       footerHint={
         <p className="rounded-[10px] border border-accent-border bg-accent-dim px-3 py-2 text-xs text-accent-strong">
-          We wczesnym dostępie — bezpłatnie. Eksport danych zawsze dostępny.
+          We wczesnym dostępie — za darmo. Twoje dane zawsze możesz wyeksportować.
         </p>
       }
       switchLabel="Masz już konto?"

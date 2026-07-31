@@ -11,8 +11,10 @@ var provider = builder.Configuration["Database:Provider"]
                ?? (string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Default"))
                    ? "Sqlite"
                    : "Postgres");
-var connectionString = builder.Configuration.GetConnectionString("Default")
-                       ?? "Data Source=trainer.db";
+var connectionString = DbConnectionString.Normalize(builder.Configuration.GetConnectionString("Default"))
+    is { Length: > 0 } configured
+    ? configured
+    : "Data Source=trainer.db";
 
 builder.Services.AddDbContext<AppDb>(o =>
 {

@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     template: "%s · Workout Alchemist",
   },
   description:
-    "Studio trenera personalnego — programuj treningi, loguj sesje i daj klientom portal bez konta.",
+    "Plany, które klienci robią. Ułóż plan w kilka minut, wyślij link — klient trenuje w telefonie bez instalacji aplikacji.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
@@ -39,15 +39,15 @@ export const metadata: Metadata = {
     type: "website",
     locale: "pl_PL",
     siteName: "Workout Alchemist",
-    title: "Workout Alchemist",
+    title: "Workout Alchemist — plany, które klienci robią",
     description:
-      "Studio trenera personalnego — programuj treningi, loguj sesje i daj klientom portal bez konta.",
+      "Ułóż plan w kilka minut i wyślij klientowi link. On trenuje w telefonie, Ty widzisz każdy trening.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Workout Alchemist",
+    title: "Workout Alchemist — plany, które klienci robią",
     description:
-      "Studio trenera personalnego — programuj treningi, loguj sesje i daj klientom portal bez konta.",
+      "Ułóż plan w kilka minut i wyślij klientowi link. On trenuje w telefonie, Ty widzisz każdy trening.",
   },
 };
 

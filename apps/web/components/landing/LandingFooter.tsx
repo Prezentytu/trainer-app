@@ -8,17 +8,17 @@ export function LandingFooter() {
         <div>
           <Wordmark />
           <p className="mt-2 max-w-sm text-xs text-muted">
-            Studio trenera personalnego — program → log → progres.
+            Plany, które klienci naprawdę robią.
           </p>
         </div>
         <div className="flex flex-wrap gap-4 text-sm text-muted-strong">
-          <Link href="/sign-in" className="hover:text-accent-strong">
+          <Link href="/sign-in" className="hover:text-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
             Zaloguj się
           </Link>
-          <Link href="/sign-up" className="hover:text-accent-strong">
-            Załóż konto
+          <Link href="/sign-up" className="hover:text-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+            Zacznij za darmo
           </Link>
-          <a href="#faq" className="hover:text-accent-strong">
+          <a href="#faq" className="hover:text-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
             FAQ
           </a>
         </div>

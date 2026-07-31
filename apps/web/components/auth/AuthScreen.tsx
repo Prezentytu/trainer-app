@@ -4,16 +4,16 @@ import { Wordmark } from "@/components/Wordmark";
 
 const PROOFS = [
   {
-    title: "Kreator keyboard-first",
-    body: "Programuj serie w tempie myślenia — bez klikania w każdą komórkę.",
+    title: "Plan w kilka minut",
+    body: "Układaj treningi jak w notatniku — serie, przerwy i ciężary w jednym miejscu.",
   },
   {
-    title: "Portal klienta bez konta",
-    body: "Jeden link — podopieczny loguje treningi, Ty widzisz wykonanie.",
+    title: "Klient bez aplikacji",
+    body: "Jeden link — podopieczny trenuje w telefonie, Ty widzisz każdy trening.",
   },
   {
-    title: "Eksport jednym klikiem",
-    body: "Twoje dane są Twoje. JSON z klientami, planami i sesjami.",
+    title: "Twoje dane zostają Twoje",
+    body: "Eksport klientów, planów i historii jednym kliknięciem.",
   },
 ];
 
@@ -50,14 +50,14 @@ export function AuthScreen({
         <div className="relative space-y-8">
           <div className="space-y-3">
             <p className="text-xs font-semibold tracking-[0.08em] text-accent uppercase">
-              Studio trenera
+              Dla trenerów personalnych
             </p>
             <h1 className="font-display text-3xl font-bold tracking-tight text-foreground xl:text-4xl">
-              Programuj treningi, nie arkusze.
+              Plany, które klienci robią.
             </h1>
             <p className="max-w-md text-sm leading-relaxed text-foreground-secondary">
-              Workout Alchemist łączy kreator planów, logger sesji i portal klienta w jednym ciemnym
-              studio — bez fragmentacji na WhatsApp + Excel.
+              Ułóż plan w kilka minut i wyślij klientowi link. On trenuje w telefonie, Ty widzisz
+              każdy trening.
             </p>
           </div>
 
@@ -81,7 +81,7 @@ export function AuthScreen({
               PR
             </span>
             <div className="min-w-0">
-              <div className="text-sm font-medium text-foreground">Przysiad · +5 kg e1RM</div>
+              <div className="text-sm font-medium text-foreground">Przysiad · +5 kg</div>
               <div className="font-mono text-xs tabular-nums text-muted">vs 4 tyg. temu</div>
             </div>
           </div>

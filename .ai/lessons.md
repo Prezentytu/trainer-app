@@ -54,3 +54,10 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Problem**: Zmiana pól/relacji istniejącej encji nie zaktualizuje `trainer.db` — nowe kolumny nie powstaną, aplikacja rzuci błędem SQLite.
 **Zasada**: Po zmianie schematu usuń `apps/api/trainer.db` i pozwól odtworzyć bazę (dev). Utratę danych zgłoś użytkownikowi z góry.
 **Dotyczy**: `apps/api/Models.cs`, `apps/api/AppDb.cs`, `apps/api/Program.cs`.
+
+## Npgsql nie parsuje URI PostgreSQL — normalizuj przez `DbConnectionString`
+
+**Kontekst**: Neon podaje connection string jako URI (`postgresql://user:pass@host/db?sslmode=require`). Trafiał on wprost do `UseNpgsql` i do `efbundle --connection` w `deploy-api.yml`.
+**Problem**: Npgsql przyjmuje **wyłącznie** format ADO.NET `klucz=wartość` — URI rozbija na pierwszym `=` (tym z `sslmode=require`), całą resztę traktuje jako nazwę parametru i pada na `Couldn't set …/neondb?sslmode`. Wcześniejsza diagnoza w `docs/deploy.md` i guard w workflow twierdziły odwrotnie (że URI jest wymagany), co utrwaliło błąd. Wsparcia URI nie będzie: [npgsql#6576](https://github.com/npgsql/npgsql/pull/6576) zamknięty przez maintainera w 2026-05.
+**Zasada**: Każdy connection string do Postgresa przechodzi przez `DbConnectionString.Normalize` (`apps/api/DbConnectionString.cs`) — jedno źródło prawdy dla runtime'u (`Program.cs`) i bundle'a migracji (`DesignTimeDbContextFactory`, czyta `DB_CONNECTION_STRING`). Nie duplikuj parsowania w bashu i nie dodawaj `--connection` do `efbundle`, bo omija normalizację.
+**Dotyczy**: `apps/api/DbConnectionString.cs`, `apps/api/Program.cs`, `apps/api/DesignTimeDbContextFactory.cs`, `.github/workflows/deploy-api.yml`, `docs/deploy.md`.

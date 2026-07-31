@@ -90,9 +90,21 @@
   --shadow-modal: inset 0 1px 0 rgba(243, 241, 236, 0.06), 0 24px 64px rgba(0, 0, 0, 0.65);
   --glow-accent: 0 0 0 3px rgba(62, 156, 143, 0.28);
   --overlay-scrim: rgba(10, 11, 12, 0.74);
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --dur-fast: 120ms;
   --dur-med: 220ms;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 /* —— Warstwa 3: Tailwind —— */
@@ -164,12 +176,51 @@ textarea {
   color: var(--positive);
 }
 
-/* Landing — wejście sekcji (tylko gdy user nie preferuje reduced motion) */
+/* Landing — scroll reveal (IO dodaje .landing-inview) */
+.landing-scroll {
+  opacity: 1;
+  transform: none;
+}
+
+/* Rotator H1 — stan spoczynkowy (reduced motion / no-js): tylko pierwsze słowo */
+.landing-rotator {
+  display: inline-grid;
+  vertical-align: baseline;
+  text-align: left;
+}
+
+.landing-rotator-word {
+  grid-area: 1 / 1;
+}
+
+.landing-rotator-word:not(:first-child) {
+  visibility: hidden;
+}
+
+/* Demo produktu — stan spoczynkowy (bez animacji) */
+.landing-demo-status-idle {
+  display: none;
+}
+
+.landing-demo-status-done {
+  display: inline-flex;
+}
+
+.landing-demo-complete {
+  opacity: 1;
+}
+
+.landing-demo-check {
+  border-color: var(--accent-border);
+  background: var(--accent-dim);
+  color: var(--accent-strong);
+}
+
 @media (prefers-reduced-motion: no-preference) {
   @keyframes landing-fade-up {
     from {
       opacity: 0;
-      transform: translateY(12px);
+      transform: translateY(16px);
     }
     to {
       opacity: 1;
@@ -178,22 +229,157 @@ textarea {
   }
 
   .landing-reveal {
-    animation: landing-fade-up 0.55s var(--ease-out) both;
+    animation: landing-fade-up 0.7s var(--ease-out) both;
   }
 
   .landing-reveal-delay-1 {
-    animation-delay: 60ms;
+    animation-delay: 80ms;
   }
 
   .landing-reveal-delay-2 {
-    animation-delay: 120ms;
+    animation-delay: 160ms;
   }
 
   .landing-reveal-delay-3 {
-    animation-delay: 180ms;
+    animation-delay: 240ms;
   }
 
   .landing-reveal-delay-4 {
-    animation-delay: 240ms;
+    animation-delay: 320ms;
+  }
+
+  .landing-scroll:not(.landing-inview) {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  .landing-scroll {
+    transition:
+      opacity 0.7s var(--ease-out),
+      transform 0.7s var(--ease-out);
+  }
+
+  /* Kinetyczne słowo w H1: robią → kończą → czują (slot ~3s) */
+  @keyframes landing-rotate-word {
+    0% {
+      opacity: 0;
+      transform: translateY(0.35em);
+    }
+    6%,
+    28% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    34%,
+    100% {
+      opacity: 0;
+      transform: translateY(-0.3em);
+    }
+  }
+
+  .landing-rotator-word {
+    visibility: visible;
+    opacity: 0;
+    animation: landing-rotate-word 9s var(--ease-out) infinite;
+  }
+
+  .landing-rotator-word:nth-child(1) {
+    animation-delay: 0s;
+  }
+
+  .landing-rotator-word:nth-child(2) {
+    animation-delay: 3s;
+  }
+
+  .landing-rotator-word:nth-child(3) {
+    animation-delay: 6s;
+  }
+
+  /* Demo: serie odhaczają się, status się zmienia — pętla ~8s */
+  @keyframes landing-set-check {
+    0%,
+    8% {
+      border-color: var(--border-strong);
+      background: transparent;
+      color: var(--muted);
+      content: none;
+    }
+    14%,
+    100% {
+      border-color: var(--accent-border);
+      background: var(--accent-dim);
+      color: var(--accent-strong);
+    }
+  }
+
+  @keyframes landing-status-swap-idle {
+    0%,
+    55% {
+      opacity: 1;
+    }
+    62%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes landing-status-swap-done {
+    0%,
+    55% {
+      opacity: 0;
+    }
+    62%,
+    100% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes landing-complete-show {
+    0%,
+    70% {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    78%,
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .landing-demo-status-idle {
+    display: inline-flex;
+    animation: landing-status-swap-idle 8s var(--ease-out) infinite;
+  }
+
+  .landing-demo-status-done {
+    display: inline-flex;
+    animation: landing-status-swap-done 8s var(--ease-out) infinite;
+  }
+
+  .landing-demo-set-1 .landing-demo-check {
+    animation: landing-set-check 8s var(--ease-out) infinite;
+    animation-delay: 0s;
+  }
+
+  .landing-demo-set-2 .landing-demo-check {
+    animation: landing-set-check 8s var(--ease-out) infinite;
+    animation-delay: 1.6s;
+  }
+
+  .landing-demo-set-3 .landing-demo-check {
+    animation: landing-set-check 8s var(--ease-out) infinite;
+    animation-delay: 3.2s;
+  }
+
+  .landing-demo-set .landing-demo-check {
+    border-color: var(--border-strong);
+    background: transparent;
+    color: var(--muted);
+  }
+
+  .landing-demo-complete {
+    opacity: 0;
+    animation: landing-complete-show 8s var(--ease-out) infinite;
   }
 }
