@@ -44,6 +44,7 @@ export function ClerkAppProvider({ children }: { children: ReactNode }) {
       signUpUrl="/sign-up"
       signInFallbackRedirectUrl="/"
       signUpFallbackRedirectUrl="/"
+      afterSignOutUrl="/sign-in"
       localization={plPL}
       appearance={clerkAppearance}
     >

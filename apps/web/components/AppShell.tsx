@@ -3,8 +3,10 @@
 import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { UserButton, useUser } from "@clerk/nextjs";
 import { ClipboardList, Dumbbell, Home, Menu, Users, X } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, clerkEnabled } from "@/lib/api";
+import { clerkAppearance } from "@/lib/clerkAppearance";
 import { Avatar } from "@/components/ui";
 import { Wordmark } from "@/components/Wordmark";
 
@@ -59,7 +61,7 @@ function NavLinks({
   );
 }
 
-function TrainerFooter({ compact, clientCount }: { compact?: boolean; clientCount: number | null }) {
+function LocalTrainerFooter({ compact, clientCount }: { compact?: boolean; clientCount: number | null }) {
   if (compact) {
     return (
       <div className="mt-auto flex justify-center px-1 pt-4">
@@ -78,6 +80,41 @@ function TrainerFooter({ compact, clientCount }: { compact?: boolean; clientCoun
       </div>
     </div>
   );
+}
+
+/** Stopka z sesją Clerk — tylko gdy ClerkProvider jest aktywny. */
+function ClerkTrainerFooter({ compact, clientCount }: { compact?: boolean; clientCount: number | null }) {
+  const { user } = useUser();
+  const displayName =
+    user?.fullName?.trim() ||
+    user?.firstName?.trim() ||
+    user?.primaryEmailAddress?.emailAddress ||
+    "Trener";
+
+  const button = <UserButton appearance={clerkAppearance} />;
+
+  if (compact) {
+    return <div className="mt-auto flex justify-center px-1 pt-4">{button}</div>;
+  }
+
+  return (
+    <div className="mt-auto flex items-center gap-3 border-t border-border px-2 pt-4">
+      {button}
+      <div className="min-w-0">
+        <div className="truncate text-sm font-medium text-foreground">{displayName}</div>
+        <div className="truncate font-mono text-xs tabular-nums text-muted">
+          {clientCount != null ? `${clientCount} klientów` : "—"}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TrainerFooter({ compact, clientCount }: { compact?: boolean; clientCount: number | null }) {
+  if (!clerkEnabled) {
+    return <LocalTrainerFooter compact={compact} clientCount={clientCount} />;
+  }
+  return <ClerkTrainerFooter compact={compact} clientCount={clientCount} />;
 }
 
 function BottomNav() {
