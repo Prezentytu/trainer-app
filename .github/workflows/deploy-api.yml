@@ -91,7 +91,17 @@ jobs:
             echo "::error::Brak connection stringa Neon (DEV_DB_CONNECTION_STRING / PROD_DB_CONNECTION_STRING)."
             exit 1
           fi
-          ./efbundle --connection "$DB_CONNECTION_STRING"
+          # Musi zaczynać się od postgres(ql):// — inaczej Npgsql traktuje string jak key=value
+          # i pada na "Couldn't set …/neondb?sslmode".
+          case "$DB_CONNECTION_STRING" in
+            postgresql://*|postgres://*) ;;
+            *)
+              echo "::error::DEV_DB_CONNECTION_STRING musi być pełnym URI Neon (postgresql://user:pass@host/db?sslmode=require). Teraz wygląda na ucięty / bez prefiksu."
+              exit 1
+              ;;
+          esac
+          # Formularz --connection=… unika problemów parsera z '=' w query stringu.
+          ./efbundle --connection="$DB_CONNECTION_STRING"
 
   deploy:
     name: Deploy to Azure
