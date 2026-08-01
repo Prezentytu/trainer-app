@@ -275,7 +275,7 @@ export function TrainerDashboard() {
                 </Link>
               }
             >
-              Wejdź w klienta i zaloguj pierwszą sesję — pojawi się tutaj.
+              Wejdź w klienta i dodaj pierwszy trening — pojawi się tutaj.
             </EmptyState>
           ) : (
             <ul className="divide-y divide-border">
@@ -309,14 +309,14 @@ export function TrainerDashboard() {
           </div>
           {recentPrs.length === 0 ? (
             <EmptyState
-              title="Zaloguj pierwszą serię z ciężarem"
+              title="Dodaj pierwszą serię z ciężarem"
               action={
                 <Link href="/clients">
                   <Button size="sm">Otwórz klientów</Button>
                 </Link>
               }
             >
-              PR-y pojawią się po zalogowaniu serii z ciężarem i powtórzeniami.
+              PR-y pojawią się po zapisaniu serii z ciężarem i powtórzeniami.
             </EmptyState>
           ) : (
             <ul className="divide-y divide-border">

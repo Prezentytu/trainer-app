@@ -15,6 +15,17 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Prosty język + forma wizualna zamiast żargonu i pustych heatmap
+
+**Kontekst**: Profil klienta miał CTA „Loguj trening” i sekcję „Zgodność klienta” (heatmapa GitHub 7×8).
+**Problem**: „Loguj” kojarzy się z logowaniem do konta; trener nie „rozpoczyna” treningu klienta. Heatmapa przy 1–3 sesjach/tydz. jest w ~95% pusta i wygląda jak zepsuty ekran; „zgodność” to żargon compliance.
+**Zasada**:
+1. CTA trenera = „Dodaj trening” (spójne z „Dodaj klienta / max / pomiar”) — opisuje skutek, nie metaforę.
+2. Unikaj „loguj/zaloguj/zgodność” w copy domenowym; mów „dodaj/zapisz/aktywność”.
+3. Heatmapa tylko przy gęstych danych. Przy rzadkich sesjach — tygodniowe mini-słupki (`WeeklyActivityBar`) + zdanie ludzkim językiem („2 treningi w tym tygodniu”).
+4. Metryki zawsze z formą wizualną: ikona w chipie, pierścień postępu (`ProgressRing`), słupek — nie sama ściana napisów.
+**Dotyczy**: `apps/web/app/(app)/clients/**`, `WeeklyActivityBar.tsx`, `TrainerDashboard.tsx`.
+
 ## Notatka dnia nie może konkurować z composerem
 
 **Kontekst**: W widoku Lista puste pole „Notatka / rozgrzewka dnia” było pełnym `inputClass` tuż nad composerem.

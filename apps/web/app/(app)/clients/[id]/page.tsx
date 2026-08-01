@@ -4,6 +4,14 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
+  Activity,
+  CalendarCheck,
+  Dumbbell,
+  Ruler,
+  Trophy,
+  Weight,
+} from "lucide-react";
+import {
   api,
   ClientDetails,
   ClientMax,
@@ -28,12 +36,13 @@ import {
   ErrorBanner,
   Field,
   inputClass,
+  ProgressRing,
   StatBlock,
   Tabs,
   useUndoToast,
 } from "@/components/ui";
 import { ClientDetailSkeleton } from "@/components/skeletons";
-import { ComplianceHeatmap } from "@/components/ComplianceHeatmap";
+import { WeeklyActivityBar } from "@/components/WeeklyActivityBar";
 import { formatDurationMinutes } from "@/lib/estimateDuration";
 
 function PlanPickerCard({ plan, selected, onSelect }: { plan: PlanSummary; selected: boolean; onSelect: () => void }) {
@@ -449,27 +458,29 @@ export default function ClientDetailsPage() {
         <Card className="flex flex-col gap-4" eyebrow="Aktywny plan" title={activeAssignment?.planName ?? "Brak planu"}>
           {activeAssignment && progress?.assignmentId === activeAssignment.id ? (
             <>
-              <div>
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <div className="flex items-center gap-4">
+                <ProgressRing
+                  value={progress.percent / 100}
+                  size={72}
+                  stroke={6}
+                  label={`${progress.percent}%`}
+                />
+                <div className="min-w-0">
                   <p className="font-mono text-sm tabular-nums text-foreground">
                     {progress.completed}/{progress.total} treningów
                   </p>
-                  <p className="font-mono text-xs tabular-nums text-muted">{progress.percent}%</p>
+                  {nextDayLabel ? (
+                    <p className="mt-2 flex items-start gap-1.5 text-sm text-muted">
+                      <Dumbbell aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" strokeWidth={1.75} />
+                      <span>
+                        Następny: <span className="font-medium text-foreground">{nextDayLabel}</span>
+                      </span>
+                    </p>
+                  ) : null}
                 </div>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-hover">
-                  <div
-                    className="h-full rounded-full bg-accent transition-[width] duration-200"
-                    style={{ width: `${Math.min(100, progress.percent)}%` }}
-                  />
-                </div>
-                {nextDayLabel ? (
-                  <p className="mt-2 text-sm text-muted">
-                    Następny: <span className="font-medium text-foreground">{nextDayLabel}</span>
-                  </p>
-                ) : null}
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Button onClick={() => void handleStartSession(activeAssignment)}>Loguj trening</Button>
+                <Button onClick={() => void handleStartSession(activeAssignment)}>Dodaj trening</Button>
                 <Link href={`/plans/${activeAssignment.planId}`} className="text-sm text-accent hover:text-accent-strong">
                   Otwórz plan
                 </Link>
@@ -484,20 +495,39 @@ export default function ClientDetailsPage() {
         </Card>
 
         <Card className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-1">
-          <StatBlock
-            label="Ostatni trening"
-            value={lastSession ? relativeDayLabel(lastSession.performedOn) : "—"}
-            delta={
-              lastAgo != null && lastAgo > 7
-                ? `${lastAgo} dni przerwy`
-                : lastSession
-                  ? formatDayShort(lastSession.performedOn)
-                  : undefined
-            }
-            valueClassName={lastAgo != null && lastAgo > 7 ? "text-danger" : undefined}
-          />
-          <StatBlock label="Treningi (30 dni)" value={sessions30} />
-          <StatBlock label="Nowe PR (30 dni)" value={prs30} valueClassName={prs30 > 0 ? "text-pr" : undefined} />
+          <div className="flex items-start gap-3">
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-hover text-foreground-secondary">
+              <CalendarCheck aria-hidden className="h-4 w-4" strokeWidth={1.75} />
+            </span>
+            <StatBlock
+              label="Ostatni trening"
+              value={lastSession ? relativeDayLabel(lastSession.performedOn) : "—"}
+              delta={
+                lastAgo != null && lastAgo > 7
+                  ? `${lastAgo} dni przerwy`
+                  : lastSession
+                    ? formatDayShort(lastSession.performedOn)
+                    : undefined
+              }
+              valueClassName={lastAgo != null && lastAgo > 7 ? "text-danger" : undefined}
+            />
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-hover text-foreground-secondary">
+              <Activity aria-hidden className="h-4 w-4" strokeWidth={1.75} />
+            </span>
+            <StatBlock label="Treningi (30 dni)" value={sessions30} />
+          </div>
+          <div className="flex items-start gap-3">
+            <span
+              className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] ${
+                prs30 > 0 ? "bg-pr-dim text-pr" : "bg-surface-hover text-foreground-secondary"
+              }`}
+            >
+              <Trophy aria-hidden className="h-4 w-4" strokeWidth={1.75} />
+            </span>
+            <StatBlock label="Nowe PR (30 dni)" value={prs30} valueClassName={prs30 > 0 ? "text-pr" : undefined} />
+          </div>
         </Card>
       </div>
 
@@ -614,43 +644,44 @@ export default function ClientDetailsPage() {
           <>
             {completedSessions.length > 0 ? (
               <Card className="mb-6">
-                <ComplianceHeatmap
-                  dates={completedSessions.map((s) => s.performedOn)}
-                  weeks={8}
-                  title="Zgodność klienta"
-                />
+                <WeeklyActivityBar dates={completedSessions.map((s) => s.performedOn)} weeks={8} />
               </Card>
             ) : null}
 
             {sessions.length === 0 ? (
               <EmptyState
-                title="Brak zalogowanych treningów"
+                title="Brak treningów"
                 action={
                   activeAssignment ? (
-                    <Button onClick={() => void handleStartSession(activeAssignment)}>Loguj trening</Button>
+                    <Button onClick={() => void handleStartSession(activeAssignment)}>Dodaj trening</Button>
                   ) : (
                     <Button onClick={openAssignTab}>Przypisz plan</Button>
                   )
                 }
               >
-                Zaloguj pierwszą sesję, żeby zobaczyć historię i zgodność.
+                Dodaj pierwszy trening — historia i aktywność pojawią się tutaj.
               </EmptyState>
             ) : (
               <div className="grid gap-2">
                 {sessions.map((s) => (
                   <Link key={s.id} href={`/clients/${clientId}/sessions/${s.id}`}>
                     <Card className="flex flex-wrap items-center justify-between gap-3 transition-colors hover:border-border-strong">
-                      <div className="min-w-0">
-                        <p className="break-words text-base font-medium">
-                          {s.dayLabel ?? s.planName ?? "Trening"}
-                        </p>
-                        <p className="mt-0.5 text-sm text-muted">
-                          {s.status === "completed" ? relativeDayLabel(s.performedOn) : formatDayShort(s.performedOn)}
-                          {` · ${s.exerciseCount} ćw.`}
-                          {formatDurationMinutes(s.durationSeconds)
-                            ? ` · ${formatDurationMinutes(s.durationSeconds)}`
-                            : ""}
-                        </p>
+                      <div className="flex min-w-0 items-start gap-3">
+                        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-hover text-foreground-secondary">
+                          <Dumbbell aria-hidden className="h-4 w-4" strokeWidth={1.75} />
+                        </span>
+                        <div className="min-w-0">
+                          <p className="break-words text-base font-medium">
+                            {s.dayLabel ?? s.planName ?? "Trening"}
+                          </p>
+                          <p className="mt-0.5 text-sm text-muted">
+                            {s.status === "completed" ? relativeDayLabel(s.performedOn) : formatDayShort(s.performedOn)}
+                            {` · ${s.exerciseCount} ćw.`}
+                            {formatDurationMinutes(s.durationSeconds)
+                              ? ` · ${formatDurationMinutes(s.durationSeconds)}`
+                              : ""}
+                          </p>
+                        </div>
                       </div>
                       <Badge tone={s.status === "completed" ? "positive" : "accent"}>
                         {s.status === "completed" ? "ukończony" : "w trakcie"}
@@ -666,9 +697,12 @@ export default function ClientDetailsPage() {
         {activeTab === "results" && (
           <div className="space-y-8">
             <section>
-              <h2 className="mb-3 font-display text-lg font-semibold">Rekordy</h2>
+              <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-semibold">
+                <Trophy aria-hidden className="h-4 w-4 text-pr" strokeWidth={1.75} />
+                Rekordy
+              </h2>
               {records.length === 0 ? (
-                <EmptyState>Rekordy pojawią się po zalogowaniu treningów z ciężarem i powtórzeniami.</EmptyState>
+                <EmptyState>Rekordy pojawią się po zapisaniu treningów z ciężarem i powtórzeniami.</EmptyState>
               ) : (
                 <div className="grid gap-2">
                   {records.map((r) => {
@@ -728,7 +762,10 @@ export default function ClientDetailsPage() {
 
             <section>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <h2 className="font-display text-lg font-semibold">Maxy (1RM)</h2>
+                <h2 className="flex items-center gap-2 font-display text-lg font-semibold">
+                  <Weight aria-hidden className="h-4 w-4 text-foreground-secondary" strokeWidth={1.75} />
+                  Maxy (1RM)
+                </h2>
                 {!showMaxForm ? (
                   <Button variant="secondary" onClick={() => setShowMaxForm(true)}>
                     Dodaj max
@@ -806,7 +843,10 @@ export default function ClientDetailsPage() {
 
             <section>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <h2 className="font-display text-lg font-semibold">Pomiary</h2>
+                <h2 className="flex items-center gap-2 font-display text-lg font-semibold">
+                  <Ruler aria-hidden className="h-4 w-4 text-foreground-secondary" strokeWidth={1.75} />
+                  Pomiary
+                </h2>
                 {!showMeasureForm ? (
                   <Button variant="secondary" onClick={() => setShowMeasureForm(true)}>
                     Dodaj pomiar

@@ -199,7 +199,19 @@ export default function ClientsPage() {
                 className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 shadow-card transition-[background-color,border-color] duration-[var(--dur-fast)] hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="flex min-w-0 items-start gap-3">
-                  <Avatar name={c.name} size="lg" />
+                  <span className="relative shrink-0">
+                    <Avatar name={c.name} size="lg" />
+                    <span
+                      aria-hidden
+                      className={`absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface ${
+                        ago == null
+                          ? "bg-muted-faint"
+                          : stale
+                            ? "bg-danger"
+                            : "bg-positive"
+                      }`}
+                    />
+                  </span>
                   <div className="min-w-0">
                     <p className="break-words text-base font-medium text-foreground">{c.name}</p>
                     <p className="mt-0.5 break-words text-sm text-muted">
