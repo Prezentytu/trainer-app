@@ -64,6 +64,8 @@ public class MaxesAndSessionsTests : IClassFixture<TestWebAppFactory>
         Assert.True(doc.RootElement.GetProperty("clients").GetInt32() >= 1);
         Assert.True(doc.RootElement.TryGetProperty("recentSessions", out _));
         Assert.True(doc.RootElement.TryGetProperty("recentPrs", out _));
+        Assert.True(doc.RootElement.TryGetProperty("clientActivity", out _));
+        Assert.True(doc.RootElement.TryGetProperty("prsLast7Days", out _));
     }
 
     [Fact]

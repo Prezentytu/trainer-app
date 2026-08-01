@@ -5,25 +5,22 @@ import { Skeleton } from "@/components/ui";
 export function DashboardSkeleton() {
   return (
     <div aria-busy aria-label="Wczytuję panel">
-      <div className="mb-8 space-y-2">
-        <Skeleton className="h-7 w-40" />
-        <Skeleton className="h-4 w-64" />
+      <div className="mb-8 flex items-center justify-between gap-3">
+        <Skeleton className="h-7 w-32" />
+        <div className="flex gap-2">
+          <Skeleton className="h-10 w-10 rounded-md" />
+          <Skeleton className="h-10 w-36 rounded-md" />
+        </div>
       </div>
-      <Skeleton className="mb-6 h-36 w-full rounded-xl" />
-      <div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-24 w-full rounded-xl" />
+      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-28 w-full rounded-xl" />
         ))}
       </div>
-      <Skeleton className="mb-6 h-48 w-full rounded-xl" />
+      <Skeleton className="mb-6 h-64 w-full rounded-xl" />
       <div className="grid gap-6 lg:grid-cols-2">
         {Array.from({ length: 2 }).map((_, i) => (
           <Skeleton key={i} className="h-56 w-full rounded-xl" />
-        ))}
-      </div>
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        {Array.from({ length: 2 }).map((_, i) => (
-          <Skeleton key={`b-${i}`} className="h-56 w-full rounded-xl" />
         ))}
       </div>
     </div>
@@ -73,7 +70,7 @@ export function ClientDetailSkeleton() {
 export function PlanListSkeleton() {
   return (
     <div aria-busy aria-label="Wczytuję plany" className="space-y-8">
-      {["Formuły", "Plany klientów"].map((section) => (
+      {["Szablony", "Plany klientów"].map((section) => (
         <div key={section}>
           <Skeleton className="mb-3 h-5 w-32" />
           <div className="grid gap-3 xl:grid-cols-2">

@@ -461,6 +461,11 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
     try
     {
         var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var weekStart = today.AddDays(-6);
+        var prevWeekStart = today.AddDays(-13);
+        var prevWeekEnd = today.AddDays(-6); // exclusive end of previous 7-day window
+
         var clients = await db.Clients.CountAsync(c => c.TrainerId == trainerId);
         var plans = await db.Plans.CountAsync(p => p.TrainerId == trainerId);
         var exercises = await db.Exercises.CountAsync(e => e.TrainerId == null || e.TrainerId == trainerId);
@@ -493,15 +498,50 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
             })
             .ToListAsync();
 
-        var recentSets = await db.LoggedSets
+        var sessionsLast7Days = await db.WorkoutSessions.CountAsync(s =>
+            s.Status == "completed"
+            && s.Client!.TrainerId == trainerId
+            && s.PerformedOn >= weekStart
+            && s.PerformedOn <= today);
+
+        var sessionsPrev7Days = await db.WorkoutSessions.CountAsync(s =>
+            s.Status == "completed"
+            && s.Client!.TrainerId == trainerId
+            && s.PerformedOn >= prevWeekStart
+            && s.PerformedOn < prevWeekEnd);
+
+        var clientActivity = await db.Clients
+            .Where(c => c.TrainerId == trainerId)
+            .OrderBy(c => c.Name)
+            .Select(c => new
+            {
+                clientId = c.Id,
+                clientName = c.Name,
+                sessions7d = c.Sessions.Count(s =>
+                    s.Status == "completed" && s.PerformedOn >= weekStart && s.PerformedOn <= today),
+                lastSessionOn = c.Sessions
+                    .Where(s => s.Status == "completed")
+                    .Max(s => (DateOnly?)s.PerformedOn),
+                activePlans = c.Assignments.Count(a => a.Status == "active"),
+                weeklyTarget = c.Assignments
+                    .Where(a => a.Status == "active")
+                    .Select(a => (int?)a.Plan!.Days.Count(d => d.WeekNumber == 1))
+                    .FirstOrDefault(),
+                portalToken = c.AccessTokens
+                    .OrderByDescending(t => t.CreatedAt)
+                    .Select(t => t.Token)
+                    .FirstOrDefault(),
+            })
+            .ToListAsync();
+
+        var allSets = await db.LoggedSets
             .Where(s => !s.IsWarmup
                         && s.WeightKg != null
                         && s.Reps != null
                         && s.LoggedExercise!.Session!.Status == "completed"
                         && s.LoggedExercise.Session.Client!.TrainerId == trainerId)
-            .OrderByDescending(s => s.LoggedExercise!.Session!.PerformedOn)
-            .ThenByDescending(s => s.Id)
-            .Take(200)
+            .OrderBy(s => s.LoggedExercise!.Session!.PerformedOn)
+            .ThenBy(s => s.Id)
             .Select(s => new
             {
                 ClientId = s.LoggedExercise!.Session!.ClientId,
@@ -516,10 +556,9 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
             .ToListAsync();
 
         var best = new Dictionary<(int ClientId, int ExerciseId), double>();
-        var recentPrs = new List<object>();
-        foreach (var row in recentSets
-            .OrderBy(x => x.PerformedOn)
-            .ThenBy(x => x.SessionId))
+        var allPrs = new List<object>();
+        var prsLast7Days = 0;
+        foreach (var row in allSets)
         {
             var e1 = Stats.Epley1Rm(row.WeightKg, row.Reps);
             if (e1 is null) continue;
@@ -527,7 +566,7 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
             if (!best.TryGetValue(key, out var prev) || e1.Value > prev + 0.01)
             {
                 best[key] = e1.Value;
-                recentPrs.Add(new
+                allPrs.Add(new
                 {
                     clientId = row.ClientId,
                     clientName = row.ClientName,
@@ -538,20 +577,13 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
                     reps = row.Reps,
                     performedOn = row.PerformedOn,
                 });
+                if (row.PerformedOn >= weekStart && row.PerformedOn <= today)
+                    prsLast7Days++;
             }
         }
-        recentPrs.Reverse();
-        if (recentPrs.Count > 6) recentPrs = recentPrs.Take(6).ToList();
+        var recentPrs = allPrs.AsEnumerable().Reverse().Take(6).ToList();
 
         var attention = await ChurnRadar.BuildAttentionAsync(db, trainerId);
-
-        var since = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-56));
-        var complianceDates = await db.WorkoutSessions
-            .Where(s => s.Status == "completed"
-                        && s.Client!.TrainerId == trainerId
-                        && s.PerformedOn >= since)
-            .Select(s => s.PerformedOn)
-            .ToListAsync();
 
         return Results.Ok(new
         {
@@ -561,7 +593,10 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
             recentSessions,
             recentPrs,
             attention,
-            complianceDates = complianceDates.Select(d => d.ToString("yyyy-MM-dd")).ToList(),
+            clientActivity,
+            sessionsLast7Days,
+            sessionsPrev7Days,
+            prsLast7Days,
         });
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }

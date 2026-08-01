@@ -274,7 +274,7 @@ export default function PlanDetailsPage() {
 
       <div className="mb-4 flex items-center gap-2">
         <Badge tone={plan.isTemplate ? "accent" : "neutral"}>
-          {plan.isTemplate ? "Formuła" : "plan klienta"}
+          {plan.isTemplate ? "Szablon" : "plan klienta"}
         </Badge>
         <Badge tone="neutral">
           <span className="font-mono tabular-nums">

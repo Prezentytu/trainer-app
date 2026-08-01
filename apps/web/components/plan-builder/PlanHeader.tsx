@@ -83,7 +83,7 @@ export function PlanHeader({
                 {name.trim() || "Bez nazwy"}
               </button>
             )}
-            <Badge tone={isTemplate ? "accent" : "neutral"}>{isTemplate ? "Formuła" : "Plan"}</Badge>
+            <Badge tone={isTemplate ? "accent" : "neutral"}>{isTemplate ? "Szablon" : "Plan"}</Badge>
           </div>
           <p className="mt-1 text-sm text-muted-strong">
             {daysPerWeek} {daysPerWeek === 1 ? "dzień" : "dni"}/tydz. ·{" "}
@@ -158,7 +158,7 @@ export function PlanHeader({
               onChange={(e) => onIsTemplateChange(e.target.value === "template")}
             >
               <option value="plan">Plan klienta (przypisywalny)</option>
-              <option value="template">Formuła (wielokrotnego użytku)</option>
+              <option value="template">Szablon (wielokrotnego użytku)</option>
             </select>
           </Field>
           <Field label="Zasady ogólne / opis">

@@ -1,50 +1,93 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { api, AttentionItem, ClientSummary, DashboardData, PlanSummary } from "@/lib/api";
-import { Avatar, Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, StatBlock } from "@/components/ui";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ClipboardX,
+  Download,
+  Trophy,
+} from "lucide-react";
+import {
+  api,
+  AttentionItem,
+  ClientActivityItem,
+  DashboardData,
+} from "@/lib/api";
+import {
+  Avatar,
+  Button,
+  Card,
+  EmptyState,
+  ErrorBanner,
+  IconButton,
+  PageHeader,
+  StatBlock,
+} from "@/components/ui";
 import { DashboardSkeleton } from "@/components/skeletons";
-import { ComplianceHeatmap } from "@/components/ComplianceHeatmap";
+
+type RowStatus = {
+  kind: "no_plan" | "attention" | "ok";
+  label: string;
+  action?: AttentionItem["action"];
+  portalToken?: string | null;
+  attention?: AttentionItem;
+};
 
 export function TrainerDashboard() {
-  const [clients, setClients] = useState<ClientSummary[]>([]);
-  const [plans, setPlans] = useState<PlanSummary[]>([]);
   const [dash, setDash] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<number | null>(null);
 
   useEffect(() => {
-    Promise.all([api.dashboard(), api.clients.list(), api.plans.list()])
-      .then(([d, c, p]) => {
-        setDash(d);
-        setClients(c);
-        setPlans(p);
-      })
+    api
+      .dashboard()
+      .then(setDash)
       .catch((e: Error) => setError(`${e.message}. Czy backend działa na porcie 5210?`))
       .finally(() => setLoading(false));
   }, []);
 
-  const templates = plans.filter((p) => p.isTemplate);
-  const clientPlans = plans.filter((p) => !p.isTemplate);
-  const activeAssignments = clients.reduce((sum, c) => sum + c.activePlans, 0);
-  const attention: AttentionItem[] = dash?.attention ?? [];
   const recentSessions = dash?.recentSessions ?? [];
   const recentPrs = dash?.recentPrs ?? [];
-  const showOnboarding = !loading && clients.length === 0;
-  const complianceDates = dash?.complianceDates ?? [];
-  const sessionsThisWeek = countSessionsInLastDays(complianceDates, 0, 7);
-  const sessionsPrevWeek = countSessionsInLastDays(complianceDates, 7, 14);
-  const sessionsDelta = sessionsThisWeek - sessionsPrevWeek;
-  const clientsWithoutPlan = clients.filter((c) => c.activePlans === 0).length;
+  const showOnboarding = !loading && (dash?.clientActivity.length ?? 0) === 0;
 
-  const copyPortalLink = async (item: AttentionItem) => {
-    if (!item.portalToken) return;
-    const url = `${window.location.origin}/portal/${item.portalToken}`;
+  const rows = useMemo(() => {
+    const activity = dash?.clientActivity ?? [];
+    const attentionList = dash?.attention ?? [];
+    const attentionByClient = new Map<number, AttentionItem>();
+    for (const item of attentionList) attentionByClient.set(item.clientId, item);
+
+    return activity
+      .map((c) => {
+        const att = attentionByClient.get(c.clientId);
+        const status = resolveStatus(c, att);
+        return { client: c, status };
+      })
+      .sort((a, b) => {
+        const rank = (s: RowStatus) => (s.kind === "no_plan" ? 0 : s.kind === "attention" ? 1 : 2);
+        const d = rank(a.status) - rank(b.status);
+        if (d !== 0) return d;
+        return a.client.clientName.localeCompare(b.client.clientName, "pl");
+      });
+  }, [dash]);
+
+  const clientActivity = dash?.clientActivity ?? [];
+
+  const needsAttention = rows.filter((r) => r.status.kind !== "ok");
+  const trainedCount = clientActivity.filter((c) => c.sessions7d > 0).length;
+  const sessionsThisWeek = dash?.sessionsLast7Days ?? 0;
+  const sessionsPrevWeek = dash?.sessionsPrev7Days ?? 0;
+  const sessionsDelta = sessionsThisWeek - sessionsPrevWeek;
+  const prsLast7Days = dash?.prsLast7Days ?? 0;
+
+  const copyPortalLink = async (clientId: number, portalToken: string | null | undefined) => {
+    if (!portalToken) return;
+    const url = `${window.location.origin}/portal/${portalToken}`;
     try {
       await navigator.clipboard.writeText(url);
-      setCopiedId(item.clientId);
+      setCopiedId(clientId);
       setTimeout(() => setCopiedId(null), 2000);
     } catch {
       setError("Nie udało się skopiować linku.");
@@ -57,11 +100,11 @@ export function TrainerDashboard() {
     <div>
       <PageHeader
         title="Panel"
-        subtitle="Klienci wymagający uwagi, ostatnie treningi i rekordy"
         action={
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="ghost"
+          <div className="flex flex-wrap items-center gap-2">
+            <IconButton
+              title="Eksportuj dane"
+              size="md"
               onClick={async () => {
                 try {
                   const data = await api.export();
@@ -76,10 +119,10 @@ export function TrainerDashboard() {
                 }
               }}
             >
-              Eksportuj dane
-            </Button>
+              <Download aria-hidden className="h-4 w-4" strokeWidth={1.75} />
+            </IconButton>
             <Link href="/plans/new">
-              <Button>+ Nowa formuła</Button>
+              <Button>+ Nowy szablon</Button>
             </Link>
           </div>
         }
@@ -87,7 +130,7 @@ export function TrainerDashboard() {
       <ErrorBanner message={error} />
 
       {showOnboarding && (
-        <Card className="mb-6" eyebrow="Start" title="Pierwsze 15 minut" meta="3 kroki do wartości">
+        <Card className="mb-6" title="Pierwsze 15 minut">
           <ol className="space-y-3 text-sm text-foreground-secondary">
             <li className="flex items-start gap-3">
               <span className="font-mono text-accent">1.</span>
@@ -115,88 +158,110 @@ export function TrainerDashboard() {
         </Card>
       )}
 
-      {/* Primary: wymaga uwagi — jedna dominanta na ekran */}
-      {attention.length > 0 ? (
-        <Card className="mb-6 border-accent-border" eyebrow="Priorytet" title="Wymaga uwagi" meta={`${attention.length} sygnałów`}>
-          <ul className="divide-y divide-border">
-            {attention.map((item) => (
-              <li key={`${item.clientId}-${item.reason}`} className="flex items-center justify-between gap-3 py-2.5 stagger-in">
-                <Link
-                  href={`/clients/${item.clientId}`}
-                  className="flex min-w-0 items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
-                >
-                  <Avatar name={item.clientName} size="sm" />
-                  <span className="min-w-0">
-                    <span className="block break-words text-sm font-medium">{item.clientName}</span>
-                    <span className="block text-xs text-muted">{item.message}</span>
-                  </span>
+      {!showOnboarding && (
+        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <StatCard
+            label="Trenowało (7 dni)"
+            value={`${trainedCount} z ${clientActivity.length}`}
+            href="/clients"
+          />
+          <StatCard
+            label="Sesje (7 dni)"
+            value={sessionsThisWeek}
+            href="/clients"
+            delta={
+              sessionsDelta === 0
+                ? "bez zmian vs poprz. tydz."
+                : `${sessionsDelta > 0 ? "+" : ""}${sessionsDelta} vs poprz. tydz.`
+            }
+          />
+          <StatCard
+            label="Nowe rekordy (7 dni)"
+            value={prsLast7Days}
+            href="/clients"
+            valueClassName="text-pr"
+          />
+        </div>
+      )}
+
+      {!showOnboarding && (
+        <Card className={`mb-6 ${needsAttention.length > 0 ? "border-accent-border" : ""}`}>
+          <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="font-display text-lg font-semibold">Klienci w tym tygodniu</h2>
+            {needsAttention.length === 0 ? (
+              <span className="inline-flex items-center gap-1.5 text-sm text-positive">
+                <CheckCircle2 aria-hidden className="h-4 w-4" strokeWidth={1.75} />
+                Wszyscy trenują zgodnie z planem
+              </span>
+            ) : (
+              <span className="font-mono text-xs tabular-nums text-muted">
+                {needsAttention.length} wymaga uwagi
+              </span>
+            )}
+          </div>
+
+          {rows.length === 0 ? (
+            <EmptyState
+              title="Brak klientów"
+              action={
+                <Link href="/clients">
+                  <Button size="sm">Dodaj pierwszego klienta</Button>
                 </Link>
-                {item.action === "assign_plan" ? (
+              }
+            >
+              Dodaj podopiecznego, żeby przypisać plan i śledzić treningi.
+            </EmptyState>
+          ) : (
+            <ul className="divide-y divide-border">
+              {rows.map(({ client, status }) => (
+                <li
+                  key={client.clientId}
+                  className="flex flex-col gap-2 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+                >
                   <Link
-                    href={`/clients/${item.clientId}`}
-                    className="shrink-0 rounded-md bg-accent-dim px-2.5 py-2 text-xs font-semibold text-accent-strong hover:bg-accent-border focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+                    href={`/clients/${client.clientId}`}
+                    className="flex min-w-0 items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
                   >
-                    Przypisz plan
+                    <StatusIcon status={status} />
+                    <Avatar name={client.clientName} size="sm" />
+                    <span className="min-w-0">
+                      <span className="block break-words text-sm font-medium">{client.clientName}</span>
+                      <span className="block text-xs text-muted">{status.label}</span>
+                    </span>
                   </Link>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => void copyPortalLink(item)}
-                    disabled={!item.portalToken}
-                    className="shrink-0 rounded-md bg-accent-dim px-2.5 py-2 text-xs font-semibold text-accent-strong hover:bg-accent-border focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] disabled:opacity-40"
-                  >
-                    {copiedId === item.clientId ? "Skopiowano" : "Skopiuj link"}
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        </Card>
-      ) : !showOnboarding ? (
-        <Card className="mb-6" eyebrow="Status" title="Wszystko pod kontrolą" meta="Brak sygnałów churn">
-          <p className="text-sm text-muted-strong">Klienci trenują zgodnie z planem. Sprawdź rekordy poniżej.</p>
-        </Card>
-      ) : null}
 
-      <div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <StatCard
-          label="Sesje (7 dni)"
-          value={sessionsThisWeek}
-          href="/clients"
-          delta={
-            sessionsDelta === 0
-              ? "bez zmian vs poprz. tydz."
-              : `${sessionsDelta > 0 ? "+" : ""}${sessionsDelta} vs poprz. tydz.`
-          }
-        />
-        <StatCard
-          label="Klienci"
-          value={clients.length}
-          href="/clients"
-          delta={
-            clientsWithoutPlan > 0
-              ? `${clientsWithoutPlan} bez planu`
-              : attention.length > 0
-                ? `${attention.length} wymaga uwagi`
-                : undefined
-          }
-        />
-        <StatCard label="Formuły" value={templates.length} href="/plans" />
-        <StatCard
-          label="Aktywne przypisania"
-          value={activeAssignments}
-          href="/clients"
-          delta={clientPlans.length > 0 ? `${clientPlans.length} planów klientów` : undefined}
-        />
-      </div>
-
-      <div className="mb-6">
-        <Card>
-          <ComplianceHeatmap dates={complianceDates} weeks={8} title="Zgodność zespołu" />
+                  <div className="flex flex-wrap items-center gap-3 pl-8 sm:pl-0">
+                    <span className="font-mono text-xs tabular-nums text-muted-strong">
+                      {formatSessions(client.sessions7d, client.weeklyTarget)}
+                      <span className="text-muted"> · </span>
+                      {formatRelativeDate(client.lastSessionOn)}
+                    </span>
+                    {status.kind === "no_plan" ? (
+                      <Link
+                        href={`/clients/${client.clientId}`}
+                        className="shrink-0 rounded-md bg-accent-dim px-2.5 py-2 text-xs font-semibold text-accent-strong hover:bg-accent-border focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+                      >
+                        Przypisz plan
+                      </Link>
+                    ) : status.kind === "attention" && status.action === "copy_portal_link" ? (
+                      <button
+                        type="button"
+                        onClick={() => void copyPortalLink(client.clientId, status.portalToken)}
+                        disabled={!status.portalToken}
+                        className="shrink-0 rounded-md bg-accent-dim px-2.5 py-2 text-xs font-semibold text-accent-strong hover:bg-accent-border focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] disabled:opacity-40"
+                      >
+                        {copiedId === client.clientId ? "Skopiowano" : "Skopiuj link"}
+                      </button>
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </Card>
-      </div>
+      )}
 
-      <div className="mt-2 grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-display text-lg font-semibold">Ostatnie sesje</h2>
@@ -224,7 +289,7 @@ export function TrainerDashboard() {
                     <span className="min-w-0">
                       <span className="font-medium">{s.clientName}</span>
                       <span className="mt-0.5 block font-mono text-xs tabular-nums text-muted">
-                        {s.dayLabel ?? "Trening"} · {s.performedOn}
+                        {s.dayLabel ?? "Trening"} · {formatRelativeDate(s.performedOn)}
                       </span>
                     </span>
                   </Link>
@@ -237,11 +302,10 @@ export function TrainerDashboard() {
           )}
         </Card>
 
-        <Card className="border-pr/30">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-display text-lg font-semibold">
-              Ostatnie rekordy <span className="text-pr">PR</span>
-            </h2>
+        <Card>
+          <div className="mb-4 flex items-center gap-2">
+            <Trophy aria-hidden className="h-4 w-4 text-pr" strokeWidth={1.75} />
+            <h2 className="font-display text-lg font-semibold">Rekordy PR</h2>
           </div>
           {recentPrs.length === 0 ? (
             <EmptyState
@@ -280,83 +344,6 @@ export function TrainerDashboard() {
           )}
         </Card>
       </div>
-
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <Card>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-display text-lg font-semibold">Klienci</h2>
-            <Link href="/clients" className="text-xs font-medium text-muted-strong hover:text-accent-strong">
-              Wszyscy ›
-            </Link>
-          </div>
-          {clients.length === 0 ? (
-            <EmptyState
-              title="Brak klientów"
-              action={
-                <Link href="/clients">
-                  <Button size="sm">Dodaj pierwszego klienta</Button>
-                </Link>
-              }
-            >
-              Dodaj podopiecznego, żeby przypisać plan i śledzić treningi.
-            </EmptyState>
-          ) : (
-            <ul className="divide-y divide-border">
-              {clients.slice(0, 6).map((c) => (
-                <li key={c.id} className="flex items-center justify-between gap-3 py-2.5">
-                  <Link
-                    href={`/clients/${c.id}`}
-                    className="flex min-w-0 items-center gap-2.5 text-sm hover:text-accent focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
-                  >
-                    <Avatar name={c.name} size="sm" />
-                    <span className="min-w-0 break-words">{c.name}</span>
-                  </Link>
-                  <Badge tone={c.activePlans > 0 ? "positive" : "neutral"}>
-                    {c.activePlans > 0 ? formatActivePlans(c.activePlans) : "brak planu"}
-                  </Badge>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-
-        <Card>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-display text-lg font-semibold">Ostatnie plany</h2>
-            <Link href="/plans" className="text-xs font-medium text-muted-strong hover:text-accent-strong">
-              Wszystkie ›
-            </Link>
-          </div>
-          {plans.length === 0 ? (
-            <EmptyState
-              title="Brak planów"
-              action={
-                <Link href="/plans/new">
-                  <Button size="sm">Utwórz pierwszy plan</Button>
-                </Link>
-              }
-            >
-              Zacznij od formuły albo planu pod konkretnego klienta.
-            </EmptyState>
-          ) : (
-            <ul className="divide-y divide-border">
-              {plans.slice(0, 6).map((p) => (
-                <li key={p.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                  <Link
-                    href={`/plans/${p.id}`}
-                    className="min-w-0 break-words hover:text-accent focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
-                  >
-                    {p.name}
-                  </Link>
-                  <span className="shrink-0 font-mono text-xs tabular-nums text-muted">
-                    {p.isTemplate ? "formuła" : "plan"} · {p.exerciseCount} ćw.
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-      </div>
     </div>
   );
 }
@@ -366,40 +353,82 @@ function StatCard({
   value,
   href,
   delta,
+  valueClassName,
 }: {
   label: string;
-  value: number;
+  value: string | number;
   href: string;
   delta?: string;
+  valueClassName?: string;
 }) {
   return (
     <Link
       href={href}
-      className="block rounded-xl focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+      className="block h-full rounded-xl focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
     >
-      <Card className="transition-colors hover:border-border-strong">
-        <StatBlock label={label} value={value} size="lg" delta={delta} />
+      <Card className="h-full transition-colors hover:border-border-strong">
+        <StatBlock
+          label={label}
+          value={value}
+          size="lg"
+          delta={delta}
+          reserveDelta
+          valueClassName={valueClassName}
+        />
       </Card>
     </Link>
   );
 }
 
-/** Liczy sesje w formie [offsetDays, offsetDays+windowDays) wstecz od dziś. */
-function countSessionsInLastDays(dates: string[], offsetDays: number, windowDays: number): number {
-  const today = new Date();
-  today.setHours(12, 0, 0, 0);
-  const end = new Date(today);
-  end.setDate(end.getDate() - offsetDays + 1);
-  const start = new Date(today);
-  start.setDate(start.getDate() - (offsetDays + windowDays - 1));
-  return dates.filter((iso) => {
-    const d = new Date(`${iso}T12:00:00`);
-    return d >= start && d < end;
-  }).length;
+function StatusIcon({ status }: { status: RowStatus }) {
+  if (status.kind === "no_plan") {
+    return <ClipboardX aria-hidden className="h-4 w-4 shrink-0 text-muted-strong" strokeWidth={1.75} />;
+  }
+  if (status.kind === "attention") {
+    return <AlertTriangle aria-hidden className="h-4 w-4 shrink-0 text-danger" strokeWidth={1.75} />;
+  }
+  return <CheckCircle2 aria-hidden className="h-4 w-4 shrink-0 text-positive" strokeWidth={1.75} />;
 }
 
-function formatActivePlans(n: number): string {
-  if (n === 1) return "1 aktywny plan";
-  if (n >= 2 && n <= 4) return `${n} aktywne plany`;
-  return `${n} aktywnych planów`;
+function resolveStatus(client: ClientActivityItem, att?: AttentionItem): RowStatus {
+  if (att?.reason === "no_plan" || client.activePlans === 0) {
+    return {
+      kind: "no_plan",
+      label: att?.message ?? "Brak planu",
+      action: "assign_plan",
+      portalToken: att?.portalToken ?? client.portalToken,
+      attention: att,
+    };
+  }
+  if (att) {
+    return {
+      kind: "attention",
+      label: att.message,
+      action: att.action,
+      portalToken: att.portalToken ?? client.portalToken,
+      attention: att,
+    };
+  }
+  return {
+    kind: "ok",
+    label: client.sessions7d > 0 ? "W normie" : "Bez sesji w tym tygodniu",
+  };
+}
+
+function formatSessions(sessions7d: number, weeklyTarget: number | null): string {
+  if (weeklyTarget != null && weeklyTarget > 0) return `${sessions7d}/${weeklyTarget} sesji`;
+  return `${sessions7d} sesji`;
+}
+
+/** Daty ISO YYYY-MM-DD → dziś / wczoraj / N dni temu / brak sesji. */
+export function formatRelativeDate(iso: string | null | undefined): string {
+  if (!iso) return "brak sesji";
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  const d = new Date(`${iso.slice(0, 10)}T12:00:00`);
+  const days = Math.round((today.getTime() - d.getTime()) / 86_400_000);
+  if (days <= 0) return "dziś";
+  if (days === 1) return "wczoraj";
+  if (days < 30) return `${days} dni temu`;
+  return iso.slice(0, 10);
 }

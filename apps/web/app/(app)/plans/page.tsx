@@ -68,7 +68,7 @@ export default function PlansPage() {
     <div>
       <PageHeader
         title="Plany treningowe"
-        subtitle="Formuły wielokrotnego użytku i plany gotowe do przypisania"
+        subtitle="Szablony wielokrotnego użytku i plany gotowe do przypisania"
         action={
           <Link href="/plans/new">
             <Button>+ Nowy plan</Button>
@@ -79,17 +79,17 @@ export default function PlansPage() {
 
       {loading ? <PlanListSkeleton /> : null}
 
-      <Section title="Formuły" count={templates.length}>
+      <Section title="Szablony" count={templates.length}>
         {!loading && templates.length === 0 ? (
           <EmptyState
-            title="Zacznij od pierwszej formuły"
+            title="Zacznij od pierwszego szablonu"
             action={
               <Link href="/plans/new">
-                <Button size="sm">Utwórz formułę</Button>
+                <Button size="sm">Utwórz szablon</Button>
               </Link>
             }
           >
-            Formuła to szablon wielokrotnego użytku — sklonujesz ją na plan klienta.
+            Szablon wielokrotnego użytku — sklonujesz go na plan klienta.
           </EmptyState>
         ) : loading ? null : (
           templates.map((p) => (
@@ -118,7 +118,7 @@ export default function PlansPage() {
               </Link>
             }
           >
-            Stwórz nowy plan albo użyj formuły → „Utwórz plan klienta”.
+            Stwórz nowy plan albo użyj szablonu → „Utwórz plan klienta”.
           </EmptyState>
         ) : loading ? null : (
           clientPlans.map((p) => (
@@ -179,7 +179,7 @@ function PlanRow({
           <Link href={`/plans/${plan.id}`} className="break-words font-semibold hover:text-accent">
             {plan.name}
           </Link>
-          <Badge tone={kind === "formula" ? "accent" : "neutral"}>{kind === "formula" ? "Formuła" : "Plan"}</Badge>
+          <Badge tone={kind === "formula" ? "accent" : "neutral"}>{kind === "formula" ? "Szablon" : "Plan"}</Badge>
           {clientNames.length > 0 && (
             <Badge tone="positive">
               aktywny u: {clientNames.slice(0, 2).join(", ")}

@@ -38,6 +38,29 @@ public class MvpRetentionTests : IClassFixture<TestWebAppFactory>
     }
 
     [Fact]
+    public async Task Dashboard_IncludesClientActivityAndWeeklyStats()
+    {
+        var res = await _client.GetAsync("/api/dashboard");
+        res.EnsureSuccessStatusCode();
+        var json = await res.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(json.TryGetProperty("clientActivity", out var activity));
+        Assert.Equal(JsonValueKind.Array, activity.ValueKind);
+        Assert.True(activity.GetArrayLength() >= 1);
+        var first = activity[0];
+        Assert.True(first.TryGetProperty("clientId", out _));
+        Assert.True(first.TryGetProperty("clientName", out _));
+        Assert.True(first.TryGetProperty("sessions7d", out _));
+        Assert.True(first.TryGetProperty("activePlans", out _));
+        Assert.True(json.TryGetProperty("sessionsLast7Days", out var s7));
+        Assert.Equal(JsonValueKind.Number, s7.ValueKind);
+        Assert.True(json.TryGetProperty("sessionsPrev7Days", out var sPrev));
+        Assert.Equal(JsonValueKind.Number, sPrev.ValueKind);
+        Assert.True(json.TryGetProperty("prsLast7Days", out var prs));
+        Assert.Equal(JsonValueKind.Number, prs.ValueKind);
+        Assert.False(json.TryGetProperty("complianceDates", out _));
+    }
+
+    [Fact]
     public async Task Export_ReturnsScopedPayload()
     {
         var res = await _client.GetAsync("/api/export");

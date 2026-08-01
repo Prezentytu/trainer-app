@@ -497,6 +497,17 @@ export type AttentionItem = {
   action: "assign_plan" | "copy_portal_link" | string;
 };
 
+export type ClientActivityItem = {
+  clientId: number;
+  clientName: string;
+  sessions7d: number;
+  lastSessionOn: string | null;
+  activePlans: number;
+  /** Liczba dni w pierwszym tygodniu aktywnego planu; null gdy brak planu. */
+  weeklyTarget: number | null;
+  portalToken: string | null;
+};
+
 export type DashboardData = {
   clients: number;
   plans: number;
@@ -504,8 +515,10 @@ export type DashboardData = {
   recentSessions: (SessionSummary & { clientName: string })[];
   recentPrs: (ClientRecord & { clientId: number; clientName: string })[];
   attention: AttentionItem[];
-  /** Daty ukończonych sesji (ostatnie ~8 tyg.) do heatmapy zgodności. */
-  complianceDates?: string[];
+  clientActivity: ClientActivityItem[];
+  sessionsLast7Days: number;
+  sessionsPrev7Days: number;
+  prsLast7Days: number;
 };
 
 export type ProgressReport = {

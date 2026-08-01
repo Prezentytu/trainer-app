@@ -321,25 +321,40 @@ export function StatBlock({
   unit,
   delta,
   size = "md",
+  valueClassName,
+  reserveDelta = false,
 }: {
   label: string;
   value: string | number;
   unit?: string;
   delta?: string;
   size?: "md" | "lg";
+  /** Nadpisanie koloru wartości (np. text-pr dla rekordów). */
+  valueClassName?: string;
+  /** Zawsze rezerwuj wiersz delty — wyrównanie wysokości kafelków w gridzie. */
+  reserveDelta?: boolean;
 }) {
+  const showDelta = Boolean(delta) || reserveDelta;
   return (
     <div className="min-w-0">
       <div className="text-xs font-semibold uppercase tracking-caps text-muted">{label}</div>
       <div className="mt-1 flex items-baseline gap-1.5">
-        <span className={`font-mono font-semibold tabular-nums text-foreground ${size === "lg" ? "text-4xl" : "text-2xl"}`}>
+        <span
+          className={`font-mono font-semibold tabular-nums ${valueClassName ?? "text-foreground"} ${
+            size === "lg" ? "text-4xl" : "text-2xl"
+          }`}
+        >
           {value}
         </span>
         {unit ? <span className="font-mono text-sm text-muted">{unit}</span> : null}
       </div>
-      {delta ? (
-        <div className={`mt-1 font-mono text-xs ${delta.trim().startsWith("+") ? "text-positive" : "text-muted"}`}>
-          {delta}
+      {showDelta ? (
+        <div
+          className={`mt-1 min-h-[1rem] font-mono text-xs ${
+            delta?.trim().startsWith("+") ? "text-positive" : "text-muted"
+          }`}
+        >
+          {delta ?? "\u00a0"}
         </div>
       ) : null}
     </div>

@@ -171,10 +171,10 @@ export default function PlanBuilder({
   const daysPerWeek = draft.visibleDays.length;
   const submitLabel = plan
     ? draft.isTemplate
-      ? "Zapisz formułę"
+      ? "Zapisz szablon"
       : "Zapisz plan"
     : draft.isTemplate
-      ? "Utwórz formułę"
+      ? "Utwórz szablon"
       : "Utwórz plan";
 
   const boardCallbacks = {

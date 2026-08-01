@@ -67,7 +67,7 @@ export default function NewPlanPage() {
             Plan klienta
           </Pill>
           <Pill active={isTemplate} onClick={() => setIsTemplate(true)}>
-            Formuła (wielokrotnego użytku)
+            Szablon (wielokrotnego użytku)
           </Pill>
         </div>
       </Card>
