@@ -3,7 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { api, ClientRecord, PortalHome, PortalSessionSummary, ProgressReport } from "@/lib/api";
+import {
+  api,
+  ClientIntake,
+  ClientRecord,
+  hasEssentialIntake,
+  PortalHome,
+  PortalSessionSummary,
+  ProgressReport,
+} from "@/lib/api";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { YoutubeLite } from "@/components/YoutubeLite";
 import { Badge, Button, ErrorBanner, formatRest } from "@/components/ui";
@@ -26,6 +34,7 @@ export default function PortalHomePage() {
   const [history, setHistory] = useState<PortalSessionSummary[]>([]);
   const [records, setRecords] = useState<ClientRecord[]>([]);
   const [progress, setProgress] = useState<ProgressReport | null>(null);
+  const [intake, setIntake] = useState<ClientIntake | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [tab, setTab] = useState<Tab>("today");
@@ -37,12 +46,14 @@ export default function PortalHomePage() {
       api.portal.sessions(token).catch(() => [] as PortalSessionSummary[]),
       api.portal.records(token).catch(() => [] as ClientRecord[]),
       api.portal.progressReport(token).catch(() => null),
+      api.portal.getIntake(token).catch(() => null),
     ])
-      .then(([h, s, r, p]) => {
+      .then(([h, s, r, p, intk]) => {
         setHome(h);
         setHistory(s);
         setRecords(r);
         setProgress(p);
+        setIntake(intk);
       })
       .catch((e: Error) => setError(e.message));
   }, [token]);
@@ -103,6 +114,21 @@ export default function PortalHomePage() {
         <h1 className="font-display text-2xl font-bold">Cześć, {home.client.name.split(" ")[0]}</h1>
       </header>
       <ErrorBanner message={error} />
+
+      {intake && !hasEssentialIntake(intake) ? (
+        <section className="rounded-2xl border border-border-strong bg-surface p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-strong">Ankieta startowa</p>
+          <p className="mt-1 text-sm font-medium text-foreground">Uzupełnij kilka informacji o sobie</p>
+          <p className="mt-1 text-sm text-muted">
+            Cele, zdrowie i styl życia — dzięki temu trener ułoży bezpieczny plan.
+          </p>
+          <div className="mt-3">
+            <Link href={`/portal/${token}/intake`}>
+              <Button>Uzupełnij ankietę</Button>
+            </Link>
+          </div>
+        </section>
+      ) : null}
 
       {progress && progress.facts.length > 0 ? (
         <section className="rounded-2xl border border-accent-border bg-accent-dim/40 p-4">

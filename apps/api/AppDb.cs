@@ -18,6 +18,7 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
     public DbSet<ClientMax> ClientMaxes => Set<ClientMax>();
     public DbSet<ClientMeasurement> ClientMeasurements => Set<ClientMeasurement>();
     public DbSet<ClientAccessToken> ClientAccessTokens => Set<ClientAccessToken>();
+    public DbSet<ClientIntake> ClientIntakes => Set<ClientIntake>();
     public DbSet<WorkoutSession> WorkoutSessions => Set<WorkoutSession>();
     public DbSet<LoggedExercise> LoggedExercises => Set<LoggedExercise>();
     public DbSet<LoggedSet> LoggedSets => Set<LoggedSet>();
@@ -123,6 +124,16 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
 
         modelBuilder.Entity<ClientMeasurement>()
             .HasIndex(m => new { m.ClientId, m.MeasuredOn });
+
+        modelBuilder.Entity<ClientIntake>()
+            .HasOne(i => i.Client)
+            .WithOne(c => c.Intake)
+            .HasForeignKey<ClientIntake>(i => i.ClientId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ClientIntake>()
+            .HasIndex(i => i.ClientId)
+            .IsUnique();
 
         modelBuilder.Entity<WorkoutSession>()
             .HasIndex(s => new { s.ClientId, s.Status });

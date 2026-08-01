@@ -14,18 +14,22 @@ import {
 import {
   api,
   ClientDetails,
+  ClientIntake,
+  ClientIntakeInput,
   ClientMax,
   ClientMeasurement,
   ClientProgress,
   ClientRecord,
   Exercise,
   ExerciseStats,
+  isIntakeBlank,
   PlanSummary,
   SessionSummary,
 } from "@/lib/api";
 import { daysAgo, formatDayShort, relativeDayLabel, withinLastDays } from "@/lib/dates";
 import { TrendSparkline } from "@/components/TrendSparkline";
 import { WeightTrendSparkline } from "@/components/WeightTrendSparkline";
+import { ClientIntakeForm, ClientIntakeView } from "@/components/ClientIntakeForm";
 import {
   Avatar,
   Badge,
@@ -109,6 +113,8 @@ export default function ClientDetailsPage() {
   const [statsCache, setStatsCache] = useState<Record<number, ExerciseStats | "loading" | "error">>({});
   const [nextDay, setNextDay] = useState<{ assignmentId: number; label: string } | null>(null);
   const [deleteClientOpen, setDeleteClientOpen] = useState(false);
+  const [intake, setIntake] = useState<ClientIntake | null>(null);
+  const [intakeEditing, setIntakeEditing] = useState(false);
 
   const load = useCallback(() => {
     Promise.all([
@@ -120,8 +126,9 @@ export default function ClientDetailsPage() {
       api.clients.sessions(clientId),
       api.clients.records(clientId),
       api.clients.progress(clientId),
+      api.clients.getIntake(clientId),
     ])
-      .then(([c, p, ex, m, meas, s, r, prog]) => {
+      .then(([c, p, ex, m, meas, s, r, prog, intk]) => {
         setClient(c);
         const assignable = p.filter((plan) => !plan.isTemplate);
         setPlans(assignable);
@@ -131,6 +138,7 @@ export default function ClientDetailsPage() {
         setSessions(s);
         setRecords(r);
         setProgress(prog);
+        setIntake(intk);
         setPlanId((prev) => (prev === "" && assignable.length > 0 ? assignable[0].id : prev));
         setMaxExerciseId((prev) => (prev === "" && ex.length > 0 ? ex[0].id : prev));
         const hasActive = c.assignments.some((a) => a.status === "active");
@@ -368,12 +376,24 @@ export default function ClientDetailsPage() {
     }
   };
 
-  const copyPortalLink = async () => {
+  const copyPortalLink = async (toastMessage = "Skopiowano link portalu") => {
     try {
       const { token } = await api.clients.accessToken(clientId);
       const url = `${window.location.origin}/portal/${token}`;
       await navigator.clipboard.writeText(url);
-      showUndoToast("Skopiowano link portalu");
+      showUndoToast(toastMessage);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
+  const handleSaveIntake = async (input: ClientIntakeInput) => {
+    setError(null);
+    try {
+      const saved = await api.clients.saveIntake(clientId, input);
+      setIntake(saved);
+      setIntakeEditing(false);
+      showUndoToast("Zapisano wywiad");
     } catch (err) {
       setError((err as Error).message);
     }
@@ -536,9 +556,13 @@ export default function ClientDetailsPage() {
           { value: "plans", label: "Plany", count: client.assignments.length },
           { value: "history", label: "Historia", count: sessions.length },
           { value: "results", label: "Wyniki", count: records.length + latestMaxes.length + measurements.length },
+          { value: "intake", label: "Wywiad" },
         ]}
         value={activeTab}
-        onChange={setTab}
+        onChange={(v) => {
+          setTab(v);
+          if (v !== "intake") setIntakeEditing(false);
+        }}
       />
 
       <div className="mt-6">
@@ -928,6 +952,48 @@ export default function ClientDetailsPage() {
               )}
             </section>
           </div>
+        )}
+
+        {activeTab === "intake" && intake && (
+          <>
+            {isIntakeBlank(intake) && !intakeEditing ? (
+              <EmptyState>
+                <p className="mb-1 font-medium text-foreground">Wywiad jeszcze pusty</p>
+                <p className="mb-4 max-w-[40ch] text-sm text-muted">
+                  Zapisz cele, zdrowie i styl życia — albo wyślij link, żeby klient uzupełnił ankietę u siebie.
+                </p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <Button onClick={() => setIntakeEditing(true)}>Przeprowadź wywiad</Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() =>
+                      void copyPortalLink("Skopiowano link — klient uzupełni ankietę w portalu")
+                    }
+                  >
+                    Wyślij klientowi do wypełnienia
+                  </Button>
+                </div>
+              </EmptyState>
+            ) : intakeEditing ? (
+              <ClientIntakeForm
+                key={intake.updatedAt ?? "new"}
+                initial={intake}
+                submitLabel="Zapisz wywiad"
+                onSubmit={handleSaveIntake}
+                onCancel={() => setIntakeEditing(false)}
+              />
+            ) : (
+              <>
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                  <h2 className="font-display text-lg font-semibold">Wywiad</h2>
+                  <Button variant="ghost" onClick={() => setIntakeEditing(true)}>
+                    Edytuj
+                  </Button>
+                </div>
+                <ClientIntakeView intake={intake} />
+              </>
+            )}
+          </>
         )}
       </div>
 

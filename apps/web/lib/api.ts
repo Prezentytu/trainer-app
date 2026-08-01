@@ -52,6 +52,105 @@ export type ClientDetails = {
 // (bez zmiany schematu backendu). Jedyne źródło prawdy dla opcji, analogicznie do EXERCISE_TYPE_LABELS.
 export const CLIENT_GOALS = ["Redukcja", "Hipertrofia", "Kondycja", "Siła", "Ogólna sprawność"] as const;
 
+/** Wywiad wstępny klienta (1:0..1). Wszystkie pola opcjonalne. */
+export type ClientIntake = {
+  clientId: number;
+  goalType: string | null;
+  goalDetails: string | null;
+  injuries: string | null;
+  pains: string | null;
+  chronicConditions: string | null;
+  medications: string | null;
+  workType: string | null;
+  stressLevel: number | null;
+  sleepHours: string | null;
+  freeTimeActivity: string | null;
+  experienceLevel: string | null;
+  pastActivities: string | null;
+  trainingHistoryNotes: string | null;
+  sessionsPerWeek: number | null;
+  availability: string | null;
+  equipment: string | null;
+  updatedAt: string | null;
+};
+
+export type ClientIntakeInput = Omit<ClientIntake, "clientId" | "updatedAt">;
+
+export const WORK_TYPES = ["siedząca", "stojąca", "fizyczna", "mieszana"] as const;
+export const EXPERIENCE_LEVELS = ["brak", "początkujący", "średniozaawansowany", "zaawansowany"] as const;
+export const SLEEP_HOURS_OPTIONS = ["poniżej 6h", "6–7h", "7–8h", "powyżej 8h"] as const;
+
+/** Istotny wpis (cel / zdrowie / doświadczenie) — baner portalu znika. */
+export function hasEssentialIntake(i: ClientIntake): boolean {
+  return Boolean(
+    i.goalType ||
+      i.goalDetails ||
+      i.injuries ||
+      i.pains ||
+      i.chronicConditions ||
+      i.medications ||
+      i.experienceLevel ||
+      i.pastActivities ||
+      i.trainingHistoryNotes,
+  );
+}
+
+/** Całkowicie pusty wywiad (brak jakiegokolwiek pola). */
+export function isIntakeBlank(i: ClientIntake): boolean {
+  return (
+    !hasEssentialIntake(i) &&
+    !i.workType &&
+    i.stressLevel == null &&
+    !i.sleepHours &&
+    !i.freeTimeActivity &&
+    i.sessionsPerWeek == null &&
+    !i.availability &&
+    !i.equipment
+  );
+}
+
+export function emptyIntakeInput(): ClientIntakeInput {
+  return {
+    goalType: null,
+    goalDetails: null,
+    injuries: null,
+    pains: null,
+    chronicConditions: null,
+    medications: null,
+    workType: null,
+    stressLevel: null,
+    sleepHours: null,
+    freeTimeActivity: null,
+    experienceLevel: null,
+    pastActivities: null,
+    trainingHistoryNotes: null,
+    sessionsPerWeek: null,
+    availability: null,
+    equipment: null,
+  };
+}
+
+export function intakeToInput(i: ClientIntake): ClientIntakeInput {
+  return {
+    goalType: i.goalType,
+    goalDetails: i.goalDetails,
+    injuries: i.injuries,
+    pains: i.pains,
+    chronicConditions: i.chronicConditions,
+    medications: i.medications,
+    workType: i.workType,
+    stressLevel: i.stressLevel,
+    sleepHours: i.sleepHours,
+    freeTimeActivity: i.freeTimeActivity,
+    experienceLevel: i.experienceLevel,
+    pastActivities: i.pastActivities,
+    trainingHistoryNotes: i.trainingHistoryNotes,
+    sessionsPerWeek: i.sessionsPerWeek,
+    availability: i.availability,
+    equipment: i.equipment,
+  };
+}
+
 export type ExerciseType = "reps" | "time" | "distance";
 export type PercentBase = "1rm" | "top";
 export type ExerciseMediaKind = "demo" | "tip" | "mistakes";
@@ -676,6 +775,12 @@ export const api = {
         `/api/clients/${clientId}/access-token/rotate`,
         { method: "POST" },
       ),
+    getIntake: (clientId: number) => request<ClientIntake>(`/api/clients/${clientId}/intake`),
+    saveIntake: (clientId: number, input: ClientIntakeInput) =>
+      request<ClientIntake>(`/api/clients/${clientId}/intake`, {
+        method: "PUT",
+        body: JSON.stringify(input),
+      }),
   },
   exercises: {
     list: () => request<Exercise[]>("/api/exercises"),
@@ -795,6 +900,12 @@ export const api = {
     ) =>
       request<{ id: number }>(`/api/portal/${token}/measurements`, {
         method: "POST",
+        body: JSON.stringify(input),
+      }),
+    getIntake: (token: string) => request<ClientIntake>(`/api/portal/${token}/intake`),
+    saveIntake: (token: string, input: ClientIntakeInput) =>
+      request<ClientIntake>(`/api/portal/${token}/intake`, {
+        method: "PUT",
         body: JSON.stringify(input),
       }),
   },

@@ -25,6 +25,38 @@ public class Client
     public List<ClientMeasurement> Measurements { get; set; } = [];
     public List<WorkoutSession> Sessions { get; set; } = [];
     public List<ClientAccessToken> AccessTokens { get; set; } = [];
+    public ClientIntake? Intake { get; set; }
+}
+
+/// <summary>Wywiad wstępny klienta (1:0..1). Wszystkie pola opcjonalne — częściowe wypełnianie.</summary>
+public class ClientIntake
+{
+    public int Id { get; set; }
+    public int ClientId { get; set; }
+    public Client? Client { get; set; }
+
+    public string? GoalType { get; set; }
+    public string? GoalDetails { get; set; }
+
+    public string? Injuries { get; set; }
+    public string? Pains { get; set; }
+    public string? ChronicConditions { get; set; }
+    public string? Medications { get; set; }
+
+    public string? WorkType { get; set; }
+    public int? StressLevel { get; set; }
+    public string? SleepHours { get; set; }
+    public string? FreeTimeActivity { get; set; }
+
+    public string? ExperienceLevel { get; set; }
+    public string? PastActivities { get; set; }
+    public string? TrainingHistoryNotes { get; set; }
+
+    public int? SessionsPerWeek { get; set; }
+    public string? Availability { get; set; }
+    public string? Equipment { get; set; }
+
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
 
 public class ClientMeasurement

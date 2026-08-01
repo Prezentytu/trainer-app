@@ -2,6 +2,24 @@ namespace TrainerApp.Api;
 
 public record ClientInput(string Name, string? Email, string? Note);
 
+public record ClientIntakeInput(
+    string? GoalType = null,
+    string? GoalDetails = null,
+    string? Injuries = null,
+    string? Pains = null,
+    string? ChronicConditions = null,
+    string? Medications = null,
+    string? WorkType = null,
+    int? StressLevel = null,
+    string? SleepHours = null,
+    string? FreeTimeActivity = null,
+    string? ExperienceLevel = null,
+    string? PastActivities = null,
+    string? TrainingHistoryNotes = null,
+    int? SessionsPerWeek = null,
+    string? Availability = null,
+    string? Equipment = null);
+
 public record ExerciseMediaInput(
     string YoutubeId,
     string Title = "",

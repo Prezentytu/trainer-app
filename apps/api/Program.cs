@@ -198,6 +198,30 @@ app.MapDelete("/api/clients/{id:int}", async (int id, HttpContext http, AppDb db
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
+app.MapGet("/api/clients/{id:int}/intake", async (int id, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, id)) return Results.NotFound();
+        var intake = await db.ClientIntakes.FirstOrDefaultAsync(i => i.ClientId == id);
+        return Results.Ok(IntakeToDto(id, intake));
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapPut("/api/clients/{id:int}/intake", async (int id, ClientIntakeInput input, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, id)) return Results.NotFound();
+        var intake = await UpsertIntakeAsync(db, id, input);
+        return Results.Ok(IntakeToDto(id, intake));
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
 // ---------- Ćwiczenia ----------
 
 static void ApplyExerciseInput(Exercise exercise, ExerciseInput input, string name)
@@ -1204,6 +1228,65 @@ static async Task<ClientAccessToken?> ResolvePortalToken(AppDb db, string token)
     return row;
 }
 
+static object IntakeToDto(int clientId, ClientIntake? i) => new
+{
+    clientId,
+    goalType = i?.GoalType,
+    goalDetails = i?.GoalDetails,
+    injuries = i?.Injuries,
+    pains = i?.Pains,
+    chronicConditions = i?.ChronicConditions,
+    medications = i?.Medications,
+    workType = i?.WorkType,
+    stressLevel = i?.StressLevel,
+    sleepHours = i?.SleepHours,
+    freeTimeActivity = i?.FreeTimeActivity,
+    experienceLevel = i?.ExperienceLevel,
+    pastActivities = i?.PastActivities,
+    trainingHistoryNotes = i?.TrainingHistoryNotes,
+    sessionsPerWeek = i?.SessionsPerWeek,
+    availability = i?.Availability,
+    equipment = i?.Equipment,
+    updatedAt = i?.UpdatedAt,
+};
+
+static int? ClampOptional(int? value, int min, int max) =>
+    value is null ? null : Math.Clamp(value.Value, min, max);
+
+static void ApplyIntakeInput(ClientIntake row, ClientIntakeInput input)
+{
+    row.GoalType = input.GoalType;
+    row.GoalDetails = input.GoalDetails;
+    row.Injuries = input.Injuries;
+    row.Pains = input.Pains;
+    row.ChronicConditions = input.ChronicConditions;
+    row.Medications = input.Medications;
+    row.WorkType = input.WorkType;
+    row.StressLevel = ClampOptional(input.StressLevel, 1, 5);
+    row.SleepHours = input.SleepHours;
+    row.FreeTimeActivity = input.FreeTimeActivity;
+    row.ExperienceLevel = input.ExperienceLevel;
+    row.PastActivities = input.PastActivities;
+    row.TrainingHistoryNotes = input.TrainingHistoryNotes;
+    row.SessionsPerWeek = ClampOptional(input.SessionsPerWeek, 1, 14);
+    row.Availability = input.Availability;
+    row.Equipment = input.Equipment;
+    row.UpdatedAt = DateTime.UtcNow;
+}
+
+static async Task<ClientIntake> UpsertIntakeAsync(AppDb db, int clientId, ClientIntakeInput input)
+{
+    var row = await db.ClientIntakes.FirstOrDefaultAsync(i => i.ClientId == clientId);
+    if (row is null)
+    {
+        row = new ClientIntake { ClientId = clientId };
+        db.ClientIntakes.Add(row);
+    }
+    ApplyIntakeInput(row, input);
+    await db.SaveChangesAsync();
+    return row;
+}
+
 app.MapGet("/api/portal/{token}", async (string token, AppDb db) =>
 {
     var access = await ResolvePortalToken(db, token);
@@ -1444,6 +1527,22 @@ app.MapPost("/api/portal/{token}/measurements", async (string token, ClientMeasu
     db.ClientMeasurements.Add(row);
     await db.SaveChangesAsync();
     return Results.Created($"/api/portal/{token}/measurements/{row.Id}", new { row.Id });
+}).RequireRateLimiting("portal");
+
+app.MapGet("/api/portal/{token}/intake", async (string token, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    var intake = await db.ClientIntakes.FirstOrDefaultAsync(i => i.ClientId == access.ClientId);
+    return Results.Ok(IntakeToDto(access.ClientId, intake));
+}).RequireRateLimiting("portal");
+
+app.MapPut("/api/portal/{token}/intake", async (string token, ClientIntakeInput input, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    var intake = await UpsertIntakeAsync(db, access.ClientId, input);
+    return Results.Ok(IntakeToDto(access.ClientId, intake));
 }).RequireRateLimiting("portal");
 
 app.MapGet("/api/portal/{token}/progress-report", async (string token, AppDb db) =>
