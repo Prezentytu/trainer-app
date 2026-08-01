@@ -122,6 +122,9 @@ app.MapGet("/api/clients", async (HttpContext http, AppDb db, IConfiguration con
             {
                 c.Id, c.Name, c.Email, c.Note, c.CreatedAt,
                 ActivePlans = c.Assignments.Count(a => a.Status == "active"),
+                LastSessionOn = c.Sessions
+                    .Where(s => s.Status == "completed")
+                    .Max(s => (DateOnly?)s.PerformedOn),
             })
             .ToListAsync());
     }

@@ -10,7 +10,7 @@ public class ClientsEndpointsTests : IClassFixture<TestWebAppFactory>
 
     public ClientsEndpointsTests(TestWebAppFactory factory) => _client = factory.CreateClient();
 
-    private record ClientDto(int Id, string Name, string? Email, string? Note, int ActivePlans);
+    private record ClientDto(int Id, string Name, string? Email, string? Note, int ActivePlans, string? LastSessionOn);
     private record CreatedClient(int Id, string Name, string? Email, string? Note);
 
     [Fact]
@@ -19,7 +19,22 @@ public class ClientsEndpointsTests : IClassFixture<TestWebAppFactory>
         var clients = await _client.GetFromJsonAsync<List<ClientDto>>("/api/clients");
 
         Assert.NotNull(clients);
-        Assert.Contains(clients!, c => c.Name == "Jan Kowalski");
+        var jan = Assert.Single(clients!, c => c.Name == "Jan Kowalski");
+        // Seed ma ukończoną sesję — lastSessionOn musi być obecne (ISO data).
+        Assert.False(string.IsNullOrWhiteSpace(jan.LastSessionOn));
+    }
+
+    [Fact]
+    public async Task GetClients_NewClient_HasNullLastSessionOn()
+    {
+        var post = await _client.PostAsJsonAsync(
+            "/api/clients",
+            new { name = "Bez sesji", email = (string?)null, note = (string?)null });
+        Assert.Equal(HttpStatusCode.Created, post.StatusCode);
+
+        var clients = await _client.GetFromJsonAsync<List<ClientDto>>("/api/clients");
+        var row = Assert.Single(clients!, c => c.Name == "Bez sesji");
+        Assert.Null(row.LastSessionOn);
     }
 
     [Fact]

@@ -1,13 +1,14 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { api, CLIENT_GOALS, ClientSummary } from "@/lib/api";
+import { daysAgo, relativeDayLabel } from "@/lib/dates";
 import {
   Avatar,
   Badge,
   Button,
-  Card,
+  Dialog,
   EmptyState,
   ErrorBanner,
   Field,
@@ -52,16 +53,19 @@ export default function ClientsPage() {
 
   useEffect(load, [load]);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) return;
+  const resetForm = () => {
+    setName("");
+    setEmail("");
+    setGoal(null);
+  };
+
+  const handleCreate = async () => {
+    if (!name.trim() || saving) return;
     setSaving(true);
     setError(null);
     try {
       await api.clients.create({ name: name.trim(), email: email.trim() || null, note: goal });
-      setName("");
-      setEmail("");
-      setGoal(null);
+      resetForm();
       setShowForm(false);
       load();
     } catch (err) {
@@ -96,54 +100,54 @@ export default function ClientsPage() {
       <PageHeader
         title="Klienci"
         subtitle="Twoi podopieczni i ich aktywne plany"
-        action={
-          <Button onClick={() => setShowForm((v) => !v)}>{showForm ? "Anuluj" : "+ Dodaj klienta"}</Button>
-        }
+        action={<Button onClick={() => setShowForm(true)}>Dodaj klienta</Button>}
       />
       <ErrorBanner message={error} />
 
-      {showForm && (
-        <Card className="mb-6" eyebrow="Nowy" title="Dodaj klienta">
-          <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-3">
-            <Field label="Imię i nazwisko *">
-              <input
-                className={inputClass}
-                name="name"
-                autoComplete="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </Field>
-            <Field label="E-mail">
-              <input
-                className={inputClass}
-                type="email"
-                name="email"
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </Field>
-            <div className="sm:col-span-3">
-              <Field label="Cel treningowy">
-                <div className="flex flex-wrap gap-1.5">
-                  {CLIENT_GOALS.map((g) => (
-                    <Pill key={g} active={goal === g} onClick={() => setGoal((prev) => (prev === g ? null : g))}>
-                      {g}
-                    </Pill>
-                  ))}
-                </div>
-              </Field>
+      <Dialog
+        open={showForm}
+        title="Dodaj klienta"
+        confirmLabel={saving ? "Dodawanie…" : "Dodaj klienta"}
+        onConfirm={() => void handleCreate()}
+        onCancel={() => {
+          if (saving) return;
+          resetForm();
+          setShowForm(false);
+        }}
+      >
+        <div className="grid gap-4">
+          <Field label="Imię i nazwisko *">
+            <input
+              className={inputClass}
+              name="name"
+              autoComplete="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              autoFocus
+            />
+          </Field>
+          <Field label="E-mail">
+            <input
+              className={inputClass}
+              type="email"
+              name="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </Field>
+          <Field label="Cel treningowy">
+            <div className="flex flex-wrap gap-1.5">
+              {CLIENT_GOALS.map((g) => (
+                <Pill key={g} active={goal === g} onClick={() => setGoal((prev) => (prev === g ? null : g))}>
+                  {g}
+                </Pill>
+              ))}
             </div>
-            <div className="sm:col-span-3">
-              <Button type="submit" loading={saving}>
-                Dodaj klienta
-              </Button>
-            </div>
-          </form>
-        </Card>
-      )}
+          </Field>
+        </div>
+      </Dialog>
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Tabs
@@ -168,9 +172,7 @@ export default function ClientsPage() {
       ) : clients.length === 0 ? (
         <EmptyState
           title="Nie masz jeszcze klientów"
-          action={
-            <Button onClick={() => setShowForm(true)}>+ Dodaj pierwszego klienta</Button>
-          }
+          action={<Button onClick={() => setShowForm(true)}>Dodaj pierwszego klienta</Button>}
         >
           Dodaj podopiecznego, żeby przypisać plan i śledzić treningi.
         </EmptyState>
@@ -186,31 +188,42 @@ export default function ClientsPage() {
           Zmień filtr albo wyszukiwanie — albo dodaj nowego klienta.
         </EmptyState>
       ) : (
-        <div className="grid gap-3 xl:grid-cols-2 2xl:grid-cols-3">
-          {filtered.map((c) => (
-            <Card key={c.id} className="flex items-center justify-between gap-4">
-              <Link href={`/clients/${c.id}`} className="flex min-w-0 items-center gap-3 hover:text-accent">
-                <Avatar name={c.name} />
-                <div className="min-w-0">
-                  <p className="break-words font-semibold">{c.name}</p>
-                  <p className="mt-0.5 truncate text-xs text-muted">
-                    {c.email ?? "brak e-maila"}
-                    {c.note ? ` · ${c.note}` : ""}
-                  </p>
+        <div className="grid gap-2">
+          {filtered.map((c) => {
+            const ago = c.lastSessionOn ? daysAgo(c.lastSessionOn) : null;
+            const stale = ago != null && ago > 7;
+            return (
+              <Link
+                key={c.id}
+                href={`/clients/${c.id}`}
+                className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 shadow-card transition-[background-color,border-color] duration-[var(--dur-fast)] hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="flex min-w-0 items-start gap-3">
+                  <Avatar name={c.name} size="lg" />
+                  <div className="min-w-0">
+                    <p className="break-words text-base font-medium text-foreground">{c.name}</p>
+                    <p className="mt-0.5 break-words text-sm text-muted">
+                      {[c.email, c.note].filter(Boolean).join(" · ") || "Brak e-maila i celu"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+                  <span
+                    className={`text-sm ${stale ? "text-danger" : "text-muted"}`}
+                  >
+                    {c.lastSessionOn
+                      ? `Ostatni trening: ${relativeDayLabel(c.lastSessionOn)}`
+                      : "Brak treningów"}
+                  </span>
+                  {c.activePlans > 0 ? (
+                    <Badge tone="positive">{activePlansLabel(c.activePlans)}</Badge>
+                  ) : (
+                    <Badge tone="neutral">bez planu</Badge>
+                  )}
                 </div>
               </Link>
-              {c.activePlans > 0 ? (
-                <Badge tone="positive">{activePlansLabel(c.activePlans)}</Badge>
-              ) : (
-                <Link
-                  href={`/clients/${c.id}`}
-                  className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-surface-hover px-3 py-2 text-xs font-medium text-foreground-secondary hover:bg-accent-dim hover:text-accent-strong"
-                >
-                  bez planu — przypisz
-                </Link>
-              )}
-            </Card>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

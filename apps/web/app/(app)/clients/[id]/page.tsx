@@ -15,6 +15,7 @@ import {
   PlanSummary,
   SessionSummary,
 } from "@/lib/api";
+import { daysAgo, formatDayShort, relativeDayLabel, withinLastDays } from "@/lib/dates";
 import { TrendSparkline } from "@/components/TrendSparkline";
 import { WeightTrendSparkline } from "@/components/WeightTrendSparkline";
 import {
@@ -27,7 +28,6 @@ import {
   ErrorBanner,
   Field,
   inputClass,
-  PageHeader,
   StatBlock,
   Tabs,
   useUndoToast,
@@ -63,39 +63,12 @@ function PlanPickerCard({ plan, selected, onSelect }: { plan: PlanSummary; selec
   );
 }
 
-function daysAgo(iso: string): number {
-  const d = new Date(`${iso}T12:00:00`);
-  if (Number.isNaN(d.getTime())) return 0;
-  const today = new Date();
-  today.setHours(12, 0, 0, 0);
-  return Math.max(0, Math.round((today.getTime() - d.getTime()) / 86400000));
-}
-
-function relativeDayLabel(iso: string): string {
-  const n = daysAgo(iso);
-  if (n === 0) return "dziś";
-  if (n === 1) return "wczoraj";
-  if (n < 7) return `${n} dni temu`;
-  if (n < 14) return "tydzień temu";
-  return `${n} dni temu`;
-}
-
-function formatDayShort(iso: string): string {
-  const d = new Date(`${iso}T12:00:00`);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("pl-PL", { day: "numeric", month: "short" });
-}
-
-function withinLastDays(iso: string, days: number): boolean {
-  return daysAgo(iso) <= days;
-}
-
 export default function ClientDetailsPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const clientId = Number(params.id);
 
-  const [tab, setTab] = useState("plans");
+  const [tab, setTab] = useState<string | null>(null);
   const [client, setClient] = useState<ClientDetails | null>(null);
   const [plans, setPlans] = useState<PlanSummary[]>([]);
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -104,7 +77,6 @@ export default function ClientDetailsPage() {
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [records, setRecords] = useState<ClientRecord[]>([]);
   const [progress, setProgress] = useState<ClientProgress | null>(null);
-  const [portalLink, setPortalLink] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { showUndoToast, toastNode } = useUndoToast();
 
@@ -117,10 +89,12 @@ export default function ClientDetailsPage() {
   const [maxExerciseId, setMaxExerciseId] = useState<number | "">("");
   const [maxKg, setMaxKg] = useState("");
   const [maxDate, setMaxDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [showMaxForm, setShowMaxForm] = useState(false);
 
   const [measureDate, setMeasureDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [measureWeight, setMeasureWeight] = useState("");
   const [measureWaist, setMeasureWaist] = useState("");
+  const [showMeasureForm, setShowMeasureForm] = useState(false);
 
   const [expandedRecordId, setExpandedRecordId] = useState<number | null>(null);
   const [statsCache, setStatsCache] = useState<Record<number, ExerciseStats | "loading" | "error">>({});
@@ -152,6 +126,7 @@ export default function ClientDetailsPage() {
         setMaxExerciseId((prev) => (prev === "" && ex.length > 0 ? ex[0].id : prev));
         const hasActive = c.assignments.some((a) => a.status === "active");
         setAssignOpen(!hasActive);
+        setTab((prev) => prev ?? (s.length > 0 ? "history" : "plans"));
       })
       .catch((e: Error) => setError(e.message));
   }, [clientId]);
@@ -159,9 +134,10 @@ export default function ClientDetailsPage() {
   useEffect(load, [load]);
 
   const activeAssignment = useMemo(
-    () => client?.assignments.find((a) => a.status === "active" && a.id === progress?.assignmentId)
-      ?? client?.assignments.find((a) => a.status === "active")
-      ?? null,
+    () =>
+      client?.assignments.find((a) => a.status === "active" && a.id === progress?.assignmentId) ??
+      client?.assignments.find((a) => a.status === "active") ??
+      null,
     [client, progress],
   );
 
@@ -173,16 +149,11 @@ export default function ClientDetailsPage() {
       .get(activeAssignment.planId, clientId)
       .then((plan) => {
         if (cancelled) return;
-        const days = [...plan.days].sort(
-          (a, b) => a.weekNumber - b.weekNumber || a.order - b.order,
-        );
+        const days = [...plan.days].sort((a, b) => a.weekNumber - b.weekNumber || a.order - b.order);
         const doneDayIds = new Set(
           sessions
             .filter(
-              (s) =>
-                s.status === "completed" &&
-                s.assignmentId === assignmentId &&
-                s.planDayId != null,
+              (s) => s.status === "completed" && s.assignmentId === assignmentId && s.planDayId != null,
             )
             .map((s) => s.planDayId!),
         );
@@ -208,28 +179,6 @@ export default function ClientDetailsPage() {
   const sessions30 = completedSessions.filter((s) => withinLastDays(s.performedOn, 30)).length;
   const prs30 = records.filter((r) => withinLastDays(r.performedOn, 30)).length;
   const lastAgo = lastSession ? daysAgo(lastSession.performedOn) : null;
-
-  const recentCheckins = completedSessions
-    .filter((s) => s.feelingScore != null)
-    .slice(0, 3);
-  const avgFeeling =
-    recentCheckins.length > 0
-      ? recentCheckins.reduce((sum, s) => sum + (s.feelingScore ?? 0), 0) / recentCheckins.length
-      : null;
-  const avgSleep =
-    recentCheckins.filter((s) => s.sleepScore != null).length > 0
-      ? recentCheckins
-          .filter((s) => s.sleepScore != null)
-          .reduce((sum, s) => sum + (s.sleepScore ?? 0), 0) /
-        recentCheckins.filter((s) => s.sleepScore != null).length
-      : null;
-  const avgEnergy =
-    recentCheckins.filter((s) => s.energyScore != null).length > 0
-      ? recentCheckins
-          .filter((s) => s.energyScore != null)
-          .reduce((sum, s) => sum + (s.energyScore ?? 0), 0) /
-        recentCheckins.filter((s) => s.energyScore != null).length
-      : null;
 
   const weightTrend = [...measurements]
     .filter((m) => m.weightKg != null)
@@ -352,6 +301,7 @@ export default function ClientDetailsPage() {
         measuredOn: maxDate,
       });
       setMaxKg("");
+      setShowMaxForm(false);
       load();
     } catch (err) {
       setError((err as Error).message);
@@ -369,6 +319,7 @@ export default function ClientDetailsPage() {
       });
       setMeasureWeight("");
       setMeasureWaist("");
+      setShowMeasureForm(false);
       load();
     } catch (err) {
       setError((err as Error).message);
@@ -377,17 +328,12 @@ export default function ClientDetailsPage() {
 
   const resolveNextDayId = async (assignment: ClientDetails["assignments"][number]) => {
     const plan = await api.plans.get(assignment.planId, clientId);
-    const days = [...plan.days].sort(
-      (a, b) => a.weekNumber - b.weekNumber || a.order - b.order,
-    );
+    const days = [...plan.days].sort((a, b) => a.weekNumber - b.weekNumber || a.order - b.order);
     if (days.length === 0) return null;
     const doneDayIds = new Set(
       sessions
         .filter(
-          (s) =>
-            s.status === "completed" &&
-            s.assignmentId === assignment.id &&
-            s.planDayId != null,
+          (s) => s.status === "completed" && s.assignmentId === assignment.id && s.planDayId != null,
         )
         .map((s) => s.planDayId!),
     );
@@ -418,7 +364,7 @@ export default function ClientDetailsPage() {
       const { token } = await api.clients.accessToken(clientId);
       const url = `${window.location.origin}/portal/${token}`;
       await navigator.clipboard.writeText(url);
-      setPortalLink(url);
+      showUndoToast("Skopiowano link portalu");
     } catch (err) {
       setError((err as Error).message);
     }
@@ -476,26 +422,28 @@ export default function ClientDetailsPage() {
     setAssignOpen(true);
   };
 
+  const activeTab = tab ?? "plans";
+
   return (
     <div>
-      <PageHeader
-        title={client.name}
-        subtitle={[client.email, client.note].filter(Boolean).join(" · ") || "Profil klienta"}
-        action={
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="ghost" onClick={() => void copyPortalLink()}>
-              Skopiuj link dla klienta
-            </Button>
-            <Avatar name={client.name} size="lg" />
+      <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <Avatar name={client.name} size="lg" />
+          <div className="min-w-0">
+            <h1 className="break-words font-display text-xl font-bold sm:text-2xl">{client.name}</h1>
+            <p className="mt-1 max-w-[70ch] break-words text-sm leading-[var(--leading-body)] text-muted-strong">
+              {[client.email, client.note].filter(Boolean).join(" · ") || "Profil klienta"}
+            </p>
           </div>
-        }
-      />
+        </div>
+        <div className="shrink-0">
+          <Button variant="ghost" onClick={() => void copyPortalLink()}>
+            Skopiuj link dla klienta
+          </Button>
+        </div>
+      </div>
+
       <ErrorBanner message={error} />
-      {portalLink ? (
-        <p className="mb-4 break-all rounded-[10px] border border-accent-border bg-accent-dim px-3 py-2 text-xs text-accent-strong">
-          Skopiowano: {portalLink}
-        </p>
-      ) : null}
 
       <div className="mb-6 grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <Card className="flex flex-col gap-4" eyebrow="Aktywny plan" title={activeAssignment?.planName ?? "Brak planu"}>
@@ -535,74 +483,41 @@ export default function ClientDetailsPage() {
           )}
         </Card>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-1">
-          <Card>
-            <StatBlock
-              label="Ostatni trening"
-              value={lastSession ? relativeDayLabel(lastSession.performedOn) : "—"}
-              delta={lastSession && lastAgo != null && lastAgo <= 7 ? formatDayShort(lastSession.performedOn) : undefined}
-            />
-            {lastAgo != null && lastAgo > 7 ? (
-              <p className="mt-1 font-mono text-xs tabular-nums text-danger">
-                {lastAgo} dni przerwy
-              </p>
-            ) : null}
-          </Card>
-          <Card>
-            <StatBlock label="Treningi (30 dni)" value={sessions30} />
-          </Card>
-          <Card>
-            <StatBlock label="Nowe PR (30 dni)" value={prs30} />
-          </Card>
-        </div>
+        <Card className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-1">
+          <StatBlock
+            label="Ostatni trening"
+            value={lastSession ? relativeDayLabel(lastSession.performedOn) : "—"}
+            delta={
+              lastAgo != null && lastAgo > 7
+                ? `${lastAgo} dni przerwy`
+                : lastSession
+                  ? formatDayShort(lastSession.performedOn)
+                  : undefined
+            }
+            valueClassName={lastAgo != null && lastAgo > 7 ? "text-danger" : undefined}
+          />
+          <StatBlock label="Treningi (30 dni)" value={sessions30} />
+          <StatBlock label="Nowe PR (30 dni)" value={prs30} valueClassName={prs30 > 0 ? "text-pr" : undefined} />
+        </Card>
       </div>
-
-      {recentCheckins.length > 0 ? (
-        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Card>
-            <StatBlock
-              label="Samopoczucie"
-              value={avgFeeling != null ? `${avgFeeling.toFixed(1)}/5` : "—"}
-            />
-          </Card>
-          <Card>
-            <StatBlock label="Sen" value={avgSleep != null ? `${avgSleep.toFixed(1)}/5` : "—"} />
-          </Card>
-          <Card>
-            <StatBlock label="Energia" value={avgEnergy != null ? `${avgEnergy.toFixed(1)}/5` : "—"} />
-          </Card>
-        </div>
-      ) : null}
-
-      <Card className="mb-6">
-        <ComplianceHeatmap
-          dates={sessions.filter((s) => s.status === "completed").map((s) => s.performedOn)}
-          weeks={8}
-          title="Zgodność klienta"
-        />
-      </Card>
 
       <Tabs
         items={[
           { value: "plans", label: "Plany", count: client.assignments.length },
           { value: "history", label: "Historia", count: sessions.length },
-          { value: "records", label: "Rekordy", count: records.length },
-          { value: "maxes", label: "Maxy", count: latestMaxes.length },
-          { value: "measurements", label: "Pomiary", count: measurements.length },
+          { value: "results", label: "Wyniki", count: records.length + latestMaxes.length + measurements.length },
         ]}
-        value={tab}
+        value={activeTab}
         onChange={setTab}
       />
 
       <div className="mt-6">
-        {tab === "plans" && (
+        {activeTab === "plans" && (
           <>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <h2 className="font-display text-lg font-semibold">Przypisane plany</h2>
               {!assignOpen ? (
-                <Button variant="secondary" onClick={() => setAssignOpen(true)}>
-                  Przypisz plan
-                </Button>
+                <Button onClick={() => setAssignOpen(true)}>Przypisz plan</Button>
               ) : null}
             </div>
 
@@ -661,39 +576,25 @@ export default function ClientDetailsPage() {
             {client.assignments.length === 0 ? (
               <EmptyState>Ten klient nie ma jeszcze żadnych przypisań.</EmptyState>
             ) : (
-              <div className="grid gap-3 xl:grid-cols-2">
+              <div className="grid gap-2">
                 {client.assignments.map((a) => (
                   <Card key={a.id} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
-                      <Link href={`/plans/${a.planId}`} className="break-words font-semibold hover:text-accent">
+                      <Link href={`/plans/${a.planId}`} className="break-words text-base font-medium hover:text-accent">
                         {a.planName}
                       </Link>
-                      <p className="mt-0.5 font-mono text-xs tabular-nums text-muted">
-                        start: {a.startDate}
+                      <p className="mt-0.5 text-sm text-muted">
+                        od {formatDayShort(a.startDate)}
                         {a.note ? ` · ${a.note}` : ""}
-                        {progress?.assignmentId === a.id
-                          ? ` · ${progress.completed} z ${progress.total} treningów (${progress.percent}%)`
-                          : ""}
                       </p>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
                       <Badge tone={statusTone(a.status)}>{statusLabel(a.status)}</Badge>
-                      {a.status === "active" && (
-                        <Button variant="secondary" onClick={() => void handleStartSession(a)}>
-                          Loguj trening
+                      {a.status === "active" ? (
+                        <Button variant="ghost" onClick={() => handleStatus(a.id, "completed")}>
+                          Zakończ
                         </Button>
-                      )}
-                      {a.status === "active" && (
-                        <>
-                          <Button variant="ghost" onClick={() => handleStatus(a.id, "completed")}>
-                            Zakończ
-                          </Button>
-                          <Button variant="ghost" onClick={() => handleStatus(a.id, "cancelled")}>
-                            Anuluj
-                          </Button>
-                        </>
-                      )}
-                      {a.status !== "active" && (
+                      ) : (
                         <Button variant="ghost" onClick={() => handleStatus(a.id, "active")}>
                           Wznów
                         </Button>
@@ -709,28 +610,46 @@ export default function ClientDetailsPage() {
           </>
         )}
 
-        {tab === "history" && (
+        {activeTab === "history" && (
           <>
+            {completedSessions.length > 0 ? (
+              <Card className="mb-6">
+                <ComplianceHeatmap
+                  dates={completedSessions.map((s) => s.performedOn)}
+                  weeks={8}
+                  title="Zgodność klienta"
+                />
+              </Card>
+            ) : null}
+
             {sessions.length === 0 ? (
-              <EmptyState>Brak zalogowanych treningów. Start z zakładki Plany → „Loguj trening”.</EmptyState>
+              <EmptyState
+                title="Brak zalogowanych treningów"
+                action={
+                  activeAssignment ? (
+                    <Button onClick={() => void handleStartSession(activeAssignment)}>Loguj trening</Button>
+                  ) : (
+                    <Button onClick={openAssignTab}>Przypisz plan</Button>
+                  )
+                }
+              >
+                Zaloguj pierwszą sesję, żeby zobaczyć historię i zgodność.
+              </EmptyState>
             ) : (
-              <div className="grid gap-3">
+              <div className="grid gap-2">
                 {sessions.map((s) => (
                   <Link key={s.id} href={`/clients/${clientId}/sessions/${s.id}`}>
                     <Card className="flex flex-wrap items-center justify-between gap-3 transition-colors hover:border-border-strong">
                       <div className="min-w-0">
-                        <p className="break-words font-semibold">
+                        <p className="break-words text-base font-medium">
                           {s.dayLabel ?? s.planName ?? "Trening"}
                         </p>
-                        <p className="font-mono text-xs tabular-nums text-muted">
-                          {formatDayShort(s.performedOn)}
-                          {s.status === "completed" ? ` · ${relativeDayLabel(s.performedOn)}` : ""}
+                        <p className="mt-0.5 text-sm text-muted">
+                          {s.status === "completed" ? relativeDayLabel(s.performedOn) : formatDayShort(s.performedOn)}
+                          {` · ${s.exerciseCount} ćw.`}
                           {formatDurationMinutes(s.durationSeconds)
                             ? ` · ${formatDurationMinutes(s.durationSeconds)}`
                             : ""}
-                          {" · "}
-                          {s.exerciseCount} ćw. · {s.totalSets} serii · {Math.round(s.totalVolumeKg)} kg
-                          {s.status === "in_progress" ? " · w trakcie" : ""}
                         </p>
                       </div>
                       <Badge tone={s.status === "completed" ? "positive" : "accent"}>
@@ -744,212 +663,237 @@ export default function ClientDetailsPage() {
           </>
         )}
 
-        {tab === "records" && (
-          <>
-            {records.length === 0 ? (
-              <EmptyState>Rekordy pojawią się po zalogowaniu treningów z ciężarem i powtórzeniami.</EmptyState>
-            ) : (
-              <div className="grid gap-2">
-                <p className="mb-1 text-xs text-muted">
-                  Szacowany max (e1RM) — ile mniej więcej klient uniesie na 1 powtórzenie, z serii.
-                </p>
-                {records.map((r) => {
-                  const open = expandedRecordId === r.exerciseId;
-                  const stats = statsCache[r.exerciseId];
-                  return (
-                    <div
-                      key={r.exerciseId}
-                      className="overflow-hidden rounded-xl border border-border bg-surface shadow-card"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => toggleRecord(r.exerciseId)}
-                        className="flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                        aria-expanded={open}
+        {activeTab === "results" && (
+          <div className="space-y-8">
+            <section>
+              <h2 className="mb-3 font-display text-lg font-semibold">Rekordy</h2>
+              {records.length === 0 ? (
+                <EmptyState>Rekordy pojawią się po zalogowaniu treningów z ciężarem i powtórzeniami.</EmptyState>
+              ) : (
+                <div className="grid gap-2">
+                  {records.map((r) => {
+                    const open = expandedRecordId === r.exerciseId;
+                    const stats = statsCache[r.exerciseId];
+                    return (
+                      <div
+                        key={r.exerciseId}
+                        className="overflow-hidden rounded-xl border border-border bg-surface shadow-card"
                       >
-                        <div className="min-w-0">
-                          <p className="break-words font-semibold">{r.exerciseName}</p>
-                          <p className="font-mono text-xs tabular-nums text-muted">
-                            {r.weightKg} × {r.reps} · {formatDayShort(r.performedOn)}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="text-right">
-                            <p className="font-mono text-lg font-semibold tabular-nums text-pr">
-                              {r.estimated1Rm} kg
-                            </p>
-                            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">
-                              Szacowany max
+                        <button
+                          type="button"
+                          onClick={() => toggleRecord(r.exerciseId)}
+                          className="flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                          aria-expanded={open}
+                        >
+                          <div className="min-w-0">
+                            <p className="break-words text-base font-medium">{r.exerciseName}</p>
+                            <p className="font-mono text-sm tabular-nums text-muted">
+                              {r.weightKg} × {r.reps} · {formatDayShort(r.performedOn)}
                             </p>
                           </div>
-                          <span
-                            className={`text-muted transition-transform duration-150 ${open ? "rotate-180" : ""}`}
-                            aria-hidden
-                          >
-                            ▾
-                          </span>
-                        </div>
-                      </button>
-                      {open ? (
-                        <div className="border-t border-border px-4 py-3">
-                          {stats === "loading" || stats == null ? (
-                            <p className="text-xs text-muted">Ładowanie trendu…</p>
-                          ) : stats === "error" ? (
-                            <p className="text-xs text-danger">Nie udało się wczytać trendu.</p>
-                          ) : (
-                            <TrendSparkline points={stats.trend} />
-                          )}
-                        </div>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </>
-        )}
-
-        {tab === "maxes" && (
-          <>
-            <Card className="mb-6" title="Dodaj max (1RM)">
-              <form onSubmit={handleAddMax} className="grid gap-3 sm:grid-cols-4">
-                <Field label="Ćwiczenie">
-                  <select
-                    className={inputClass}
-                    value={maxExerciseId}
-                    onChange={(e) => setMaxExerciseId(Number(e.target.value))}
-                  >
-                    {exercises.map((ex) => (
-                      <option key={ex.id} value={ex.id}>
-                        {ex.name}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="Kg">
-                  <input
-                    className={inputClass}
-                    value={maxKg}
-                    onChange={(e) => setMaxKg(e.target.value)}
-                    inputMode="decimal"
-                    placeholder="100"
-                  />
-                </Field>
-                <Field label="Data">
-                  <input
-                    className={inputClass}
-                    type="date"
-                    value={maxDate}
-                    onChange={(e) => setMaxDate(e.target.value)}
-                  />
-                </Field>
-                <div className="flex items-end">
-                  <Button type="submit">Dodaj max</Button>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <p className="font-mono text-lg font-semibold tabular-nums text-pr">
+                                {r.estimated1Rm} kg
+                              </p>
+                              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">
+                                Szacowany max
+                              </p>
+                            </div>
+                            <span
+                              className={`text-muted transition-transform duration-150 ${open ? "rotate-180" : ""}`}
+                              aria-hidden
+                            >
+                              ▾
+                            </span>
+                          </div>
+                        </button>
+                        {open ? (
+                          <div className="border-t border-border px-4 py-3">
+                            {stats === "loading" || stats == null ? (
+                              <p className="text-sm text-muted">Ładowanie trendu…</p>
+                            ) : stats === "error" ? (
+                              <p className="text-sm text-danger">Nie udało się wczytać trendu.</p>
+                            ) : (
+                              <TrendSparkline points={stats.trend} />
+                            )}
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
                 </div>
-              </form>
-            </Card>
-            {latestMaxes.length === 0 ? (
-              <EmptyState>Brak maxów — dodaj 1RM, żeby plany procentowe wyliczały kg.</EmptyState>
-            ) : (
-              <div className="grid gap-2">
-                {latestMaxes.map((m) => (
-                  <Card key={m.id} className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="break-words font-semibold">{m.exerciseName}</p>
-                      <p className="font-mono text-xs tabular-nums text-muted">
-                        {m.measuredOn}
-                        {m.note ? ` · ${m.note}` : ""}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono text-lg font-semibold tabular-nums text-accent">{m.maxKg} kg</span>
-                      <Button variant="ghost" onClick={() => void handleRemoveMax(m)}>
-                        Usuń
+              )}
+            </section>
+
+            <section>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h2 className="font-display text-lg font-semibold">Maxy (1RM)</h2>
+                {!showMaxForm ? (
+                  <Button variant="secondary" onClick={() => setShowMaxForm(true)}>
+                    Dodaj max
+                  </Button>
+                ) : null}
+              </div>
+
+              {showMaxForm ? (
+                <Card className="mb-4" title="Dodaj max (1RM)">
+                  <form onSubmit={handleAddMax} className="grid gap-3 sm:grid-cols-4">
+                    <Field label="Ćwiczenie">
+                      <select
+                        className={inputClass}
+                        value={maxExerciseId}
+                        onChange={(e) => setMaxExerciseId(Number(e.target.value))}
+                      >
+                        {exercises.map((ex) => (
+                          <option key={ex.id} value={ex.id}>
+                            {ex.name}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field label="Kg">
+                      <input
+                        className={inputClass}
+                        value={maxKg}
+                        onChange={(e) => setMaxKg(e.target.value)}
+                        inputMode="decimal"
+                        placeholder="100"
+                      />
+                    </Field>
+                    <Field label="Data">
+                      <input
+                        className={inputClass}
+                        type="date"
+                        value={maxDate}
+                        onChange={(e) => setMaxDate(e.target.value)}
+                      />
+                    </Field>
+                    <div className="flex flex-wrap items-end gap-2">
+                      <Button type="submit">Dodaj max</Button>
+                      <Button type="button" variant="ghost" onClick={() => setShowMaxForm(false)}>
+                        Anuluj
                       </Button>
                     </div>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </>
-        )}
+                  </form>
+                </Card>
+              ) : null}
 
-        {tab === "measurements" && (
-          <>
-            <Card className="mb-6" title="Dodaj pomiar">
-              <form onSubmit={handleAddMeasurement} className="grid gap-3 sm:grid-cols-4">
-                <Field label="Data">
-                  <input
-                    className={inputClass}
-                    type="date"
-                    value={measureDate}
-                    onChange={(e) => setMeasureDate(e.target.value)}
-                  />
-                </Field>
-                <Field label="Waga (kg)">
-                  <input
-                    className={inputClass}
-                    value={measureWeight}
-                    onChange={(e) => setMeasureWeight(e.target.value)}
-                    inputMode="decimal"
-                    placeholder="75,5"
-                  />
-                </Field>
-                <Field label="Talia (cm)">
-                  <input
-                    className={inputClass}
-                    value={measureWaist}
-                    onChange={(e) => setMeasureWaist(e.target.value)}
-                    inputMode="decimal"
-                    placeholder="82"
-                  />
-                </Field>
-                <div className="flex items-end">
-                  <Button type="submit">Dodaj pomiar</Button>
+              {latestMaxes.length === 0 ? (
+                <EmptyState>Brak maxów — dodaj 1RM, żeby plany procentowe wyliczały kg.</EmptyState>
+              ) : (
+                <div className="grid gap-2">
+                  {latestMaxes.map((m) => (
+                    <Card key={m.id} className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="break-words text-base font-medium">{m.exerciseName}</p>
+                        <p className="text-sm text-muted">
+                          {formatDayShort(m.measuredOn)}
+                          {m.note ? ` · ${m.note}` : ""}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-lg font-semibold tabular-nums text-accent">{m.maxKg} kg</span>
+                        <Button variant="ghost" onClick={() => void handleRemoveMax(m)}>
+                          Usuń
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
                 </div>
-              </form>
-            </Card>
+              )}
+            </section>
 
-            {weightTrend.length >= 2 ? (
-              <Card className="mb-6" eyebrow="Trend" title="Waga">
-                <WeightTrendSparkline points={weightTrend} />
-              </Card>
-            ) : null}
-
-            {measurements.length === 0 ? (
-              <EmptyState>Brak pomiarów — dodaj wagę lub obwód talii.</EmptyState>
-            ) : (
-              <div className="grid gap-2">
-                {measurements.map((m) => (
-                  <Card key={m.id} className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-mono text-sm font-semibold tabular-nums">{m.measuredOn}</p>
-                      <p className="font-mono text-xs tabular-nums text-muted">
-                        {[
-                          m.weightKg != null ? `${m.weightKg} kg` : null,
-                          m.waistCm != null ? `talia ${m.waistCm} cm` : null,
-                          m.chestCm != null ? `klatka ${m.chestCm} cm` : null,
-                          m.hipsCm != null ? `biodra ${m.hipsCm} cm` : null,
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")}
-                        {m.note ? ` · ${m.note}` : ""}
-                      </p>
-                    </div>
-                    <Button variant="ghost" onClick={() => void handleRemoveMeasurement(m)}>
-                      Usuń
-                    </Button>
-                  </Card>
-                ))}
+            <section>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h2 className="font-display text-lg font-semibold">Pomiary</h2>
+                {!showMeasureForm ? (
+                  <Button variant="secondary" onClick={() => setShowMeasureForm(true)}>
+                    Dodaj pomiar
+                  </Button>
+                ) : null}
               </div>
-            )}
-          </>
+
+              {showMeasureForm ? (
+                <Card className="mb-4" title="Dodaj pomiar">
+                  <form onSubmit={handleAddMeasurement} className="grid gap-3 sm:grid-cols-4">
+                    <Field label="Data">
+                      <input
+                        className={inputClass}
+                        type="date"
+                        value={measureDate}
+                        onChange={(e) => setMeasureDate(e.target.value)}
+                      />
+                    </Field>
+                    <Field label="Waga (kg)">
+                      <input
+                        className={inputClass}
+                        value={measureWeight}
+                        onChange={(e) => setMeasureWeight(e.target.value)}
+                        inputMode="decimal"
+                        placeholder="75,5"
+                      />
+                    </Field>
+                    <Field label="Talia (cm)">
+                      <input
+                        className={inputClass}
+                        value={measureWaist}
+                        onChange={(e) => setMeasureWaist(e.target.value)}
+                        inputMode="decimal"
+                        placeholder="82"
+                      />
+                    </Field>
+                    <div className="flex flex-wrap items-end gap-2">
+                      <Button type="submit">Dodaj pomiar</Button>
+                      <Button type="button" variant="ghost" onClick={() => setShowMeasureForm(false)}>
+                        Anuluj
+                      </Button>
+                    </div>
+                  </form>
+                </Card>
+              ) : null}
+
+              {weightTrend.length >= 2 ? (
+                <Card className="mb-4" eyebrow="Trend" title="Waga">
+                  <WeightTrendSparkline points={weightTrend} />
+                </Card>
+              ) : null}
+
+              {measurements.length === 0 ? (
+                <EmptyState>Brak pomiarów — dodaj wagę lub obwód talii.</EmptyState>
+              ) : (
+                <div className="grid gap-2">
+                  {measurements.map((m) => (
+                    <Card key={m.id} className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-base font-medium">{formatDayShort(m.measuredOn)}</p>
+                        <p className="font-mono text-sm tabular-nums text-muted">
+                          {[
+                            m.weightKg != null ? `${m.weightKg} kg` : null,
+                            m.waistCm != null ? `talia ${m.waistCm} cm` : null,
+                            m.chestCm != null ? `klatka ${m.chestCm} cm` : null,
+                            m.hipsCm != null ? `biodra ${m.hipsCm} cm` : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                          {m.note ? ` · ${m.note}` : ""}
+                        </p>
+                      </div>
+                      <Button variant="ghost" onClick={() => void handleRemoveMeasurement(m)}>
+                        Usuń
+                      </Button>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
         )}
       </div>
 
       <div className="mt-10 border-t border-border pt-4">
         <Button variant="ghost" onClick={() => setDeleteClientOpen(true)}>
-          Usuń klienta wraz z przypisaniami
+          Usuń klienta
         </Button>
       </div>
 

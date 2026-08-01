@@ -15,6 +15,8 @@ export type ClientSummary = {
   email: string | null;
   note: string | null;
   activePlans: number;
+  /** Data ostatniej ukończonej sesji (YYYY-MM-DD) albo null. */
+  lastSessionOn: string | null;
 };
 
 export type ClientAssignment = {

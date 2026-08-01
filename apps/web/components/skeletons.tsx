@@ -29,13 +29,22 @@ export function DashboardSkeleton() {
 
 export function ClientListSkeleton() {
   return (
-    <div aria-busy aria-label="Wczytuję klientów" className="grid gap-3 xl:grid-cols-2 2xl:grid-cols-3">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3 rounded-xl border border-border bg-surface p-4">
-          <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
-          <div className="min-w-0 flex-1 space-y-2">
-            <Skeleton className="h-4 w-2/3 max-w-[12rem]" />
-            <Skeleton className="h-3 w-1/2 max-w-[8rem]" />
+    <div aria-busy aria-label="Wczytuję klientów" className="grid gap-2">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div
+          key={i}
+          className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="flex min-w-0 items-start gap-3">
+            <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <Skeleton className="h-5 w-2/3 max-w-[14rem]" />
+              <Skeleton className="h-4 w-1/2 max-w-[12rem]" />
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Skeleton className="h-4 w-36" />
+            <Skeleton className="h-5 w-24 rounded-full" />
           </div>
         </div>
       ))}
@@ -46,23 +55,22 @@ export function ClientListSkeleton() {
 export function ClientDetailSkeleton() {
   return (
     <div aria-busy aria-label="Wczytuję profil klienta">
-      <div className="mb-8 flex items-center gap-3">
-        <Skeleton className="h-10 w-10 rounded-full" />
+      <div className="mb-8 flex items-start gap-3">
+        <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
         <div className="space-y-2">
           <Skeleton className="h-7 w-48" />
-          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-4 w-56" />
         </div>
       </div>
-      <div className="mb-6 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <Skeleton className="h-40 w-full rounded-xl" />
-        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-          <Skeleton className="h-20 rounded-xl" />
-          <Skeleton className="h-20 rounded-xl" />
-          <Skeleton className="h-20 rounded-xl" />
-        </div>
+      <div className="mb-6 grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <Skeleton className="h-44 w-full rounded-xl" />
+        <Skeleton className="h-44 w-full rounded-xl" />
       </div>
-      <Skeleton className="mb-4 h-10 w-full max-w-md rounded-md" />
-      <Skeleton className="h-56 w-full rounded-xl" />
+      <Skeleton className="mb-6 h-10 w-full max-w-sm rounded-md" />
+      <div className="grid gap-2">
+        <Skeleton className="h-20 w-full rounded-xl" />
+        <Skeleton className="h-20 w-full rounded-xl" />
+      </div>
     </div>
   );
 }
