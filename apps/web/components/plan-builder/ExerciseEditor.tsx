@@ -32,7 +32,7 @@ export function ExerciseEditor({
   onApplyPreset: (presetId: string) => void;
   onClearSets: () => void;
 }) {
-  const [advancedOpen, setAdvancedOpen] = useState(true);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [schemeOpen, setSchemeOpen] = useState(item.prescribedSets.length > 0);
 
   const repsDisplay =
@@ -64,7 +64,7 @@ export function ExerciseEditor({
       </div>
 
       <div className="space-y-4 p-4">
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Field label="Serie">
             <NumInput
               value={item.sets}

@@ -4,7 +4,7 @@ import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, PlanSummary } from "@/lib/api";
-import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader } from "@/components/ui";
+import { Badge, Button, Card, Dialog, EmptyState, ErrorBanner, PageHeader } from "@/components/ui";
 import { PlanListSkeleton } from "@/components/skeletons";
 
 type AssignmentSummary = { planId: number; clientName: string };
@@ -15,6 +15,7 @@ export default function PlansPage() {
   const [assignments, setAssignments] = useState<AssignmentSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<PlanSummary | null>(null);
 
   const load = useCallback(() => {
     Promise.all([api.plans.list(), api.assignments.list()])
@@ -51,9 +52,9 @@ export default function PlansPage() {
   };
 
   const handleDelete = async (plan: PlanSummary) => {
-    if (!confirm(`Usunąć plan „${plan.name}” wraz z przypisaniami?`)) return;
     try {
       await api.plans.remove(plan.id);
+      setDeleteTarget(null);
       load();
     } catch (err) {
       setError((err as Error).message);
@@ -81,7 +82,7 @@ export default function PlansPage() {
       <Section title="Formuły" count={templates.length}>
         {!loading && templates.length === 0 ? (
           <EmptyState
-            title="Brak formuł"
+            title="Zacznij od pierwszej formuły"
             action={
               <Link href="/plans/new">
                 <Button size="sm">Utwórz formułę</Button>
@@ -99,7 +100,7 @@ export default function PlansPage() {
               <Button variant="ghost" onClick={() => handleDuplicate(p, false)}>
                 Duplikuj
               </Button>
-              <Button variant="danger" onClick={() => handleDelete(p)}>
+              <Button variant="danger" onClick={() => setDeleteTarget(p)}>
                 Usuń
               </Button>
             </PlanRow>
@@ -110,7 +111,7 @@ export default function PlansPage() {
       <Section title="Plany klientów" count={clientPlans.length}>
         {!loading && clientPlans.length === 0 ? (
           <EmptyState
-            title="Brak planów klientów"
+            title="Zacznij od planu klienta"
             action={
               <Link href="/plans/new">
                 <Button size="sm">Utwórz plan klienta</Button>
@@ -125,13 +126,25 @@ export default function PlansPage() {
               <Button variant="ghost" onClick={() => handleDuplicate(p, false)}>
                 Duplikuj
               </Button>
-              <Button variant="danger" onClick={() => handleDelete(p)}>
+              <Button variant="danger" onClick={() => setDeleteTarget(p)}>
                 Usuń
               </Button>
             </PlanRow>
           ))
         )}
       </Section>
+
+      <Dialog
+        open={!!deleteTarget}
+        title={deleteTarget ? `Usunąć „${deleteTarget.name}"?` : "Usunąć plan?"}
+        description="Plan i powiązane przypisania zostaną usunięte na stałe. Tej operacji nie można cofnąć."
+        confirmLabel="Usuń plan"
+        danger
+        onConfirm={() => {
+          if (deleteTarget) void handleDelete(deleteTarget);
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }
@@ -166,7 +179,7 @@ function PlanRow({
           <Link href={`/plans/${plan.id}`} className="break-words font-semibold hover:text-accent">
             {plan.name}
           </Link>
-          <Badge tone={kind === "formula" ? "accent" : "neutral"}>{kind === "formula" ? "Formula" : "Plan"}</Badge>
+          <Badge tone={kind === "formula" ? "accent" : "neutral"}>{kind === "formula" ? "Formuła" : "Plan"}</Badge>
           {clientNames.length > 0 && (
             <Badge tone="positive">
               aktywny u: {clientNames.slice(0, 2).join(", ")}

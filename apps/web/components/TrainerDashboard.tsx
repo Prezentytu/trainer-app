@@ -33,6 +33,11 @@ export function TrainerDashboard() {
   const recentSessions = dash?.recentSessions ?? [];
   const recentPrs = dash?.recentPrs ?? [];
   const showOnboarding = !loading && clients.length === 0;
+  const complianceDates = dash?.complianceDates ?? [];
+  const sessionsThisWeek = countSessionsInLastDays(complianceDates, 0, 7);
+  const sessionsPrevWeek = countSessionsInLastDays(complianceDates, 7, 14);
+  const sessionsDelta = sessionsThisWeek - sessionsPrevWeek;
+  const clientsWithoutPlan = clients.filter((c) => c.activePlans === 0).length;
 
   const copyPortalLink = async (item: AttentionItem) => {
     if (!item.portalToken) return;
@@ -116,7 +121,10 @@ export function TrainerDashboard() {
           <ul className="divide-y divide-border">
             {attention.map((item) => (
               <li key={`${item.clientId}-${item.reason}`} className="flex items-center justify-between gap-3 py-2.5 stagger-in">
-                <Link href={`/clients/${item.clientId}`} className="flex min-w-0 items-center gap-2.5">
+                <Link
+                  href={`/clients/${item.clientId}`}
+                  className="flex min-w-0 items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+                >
                   <Avatar name={item.clientName} size="sm" />
                   <span className="min-w-0">
                     <span className="block break-words text-sm font-medium">{item.clientName}</span>
@@ -126,7 +134,7 @@ export function TrainerDashboard() {
                 {item.action === "assign_plan" ? (
                   <Link
                     href={`/clients/${item.clientId}`}
-                    className="shrink-0 rounded-md bg-accent-dim px-2.5 py-1 text-xs font-semibold text-accent-strong hover:bg-accent-border"
+                    className="shrink-0 rounded-md bg-accent-dim px-2.5 py-2 text-xs font-semibold text-accent-strong hover:bg-accent-border focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
                   >
                     Przypisz plan
                   </Link>
@@ -135,7 +143,7 @@ export function TrainerDashboard() {
                     type="button"
                     onClick={() => void copyPortalLink(item)}
                     disabled={!item.portalToken}
-                    className="shrink-0 rounded-md bg-accent-dim px-2.5 py-1 text-xs font-semibold text-accent-strong hover:bg-accent-border disabled:opacity-40"
+                    className="shrink-0 rounded-md bg-accent-dim px-2.5 py-2 text-xs font-semibold text-accent-strong hover:bg-accent-border focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] disabled:opacity-40"
                   >
                     {copiedId === item.clientId ? "Skopiowano" : "Skopiuj link"}
                   </button>
@@ -150,20 +158,42 @@ export function TrainerDashboard() {
         </Card>
       ) : null}
 
-      <div className="mb-6 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+      <div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <StatCard
+          label="Sesje (7 dni)"
+          value={sessionsThisWeek}
+          href="/clients"
+          delta={
+            sessionsDelta === 0
+              ? "bez zmian vs poprz. tydz."
+              : `${sessionsDelta > 0 ? "+" : ""}${sessionsDelta} vs poprz. tydz.`
+          }
+        />
+        <StatCard
+          label="Klienci"
+          value={clients.length}
+          href="/clients"
+          delta={
+            clientsWithoutPlan > 0
+              ? `${clientsWithoutPlan} bez planu`
+              : attention.length > 0
+                ? `${attention.length} wymaga uwagi`
+                : undefined
+          }
+        />
+        <StatCard label="Formuły" value={templates.length} href="/plans" />
+        <StatCard
+          label="Aktywne przypisania"
+          value={activeAssignments}
+          href="/clients"
+          delta={clientPlans.length > 0 ? `${clientPlans.length} planów klientów` : undefined}
+        />
+      </div>
+
+      <div className="mb-6">
         <Card>
-          <ComplianceHeatmap
-            dates={dash?.complianceDates ?? []}
-            weeks={8}
-            title="Zgodność zespołu"
-          />
+          <ComplianceHeatmap dates={complianceDates} weeks={8} title="Zgodność zespołu" />
         </Card>
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard label="Klienci" value={clients.length} href="/clients" />
-          <StatCard label="Formuły" value={templates.length} href="/plans" />
-          <StatCard label="Plany klientów" value={clientPlans.length} href="/plans" />
-          <StatCard label="Aktywne przypisania" value={activeAssignments} href="/clients" />
-        </div>
       </div>
 
       <div className="mt-2 grid gap-6 lg:grid-cols-2">
@@ -188,11 +218,14 @@ export function TrainerDashboard() {
                 <li key={s.id} className="flex items-center justify-between gap-3 py-2.5">
                   <Link
                     href={`/clients/${s.clientId}/sessions/${s.id}`}
-                    className="min-w-0 text-sm hover:text-accent"
+                    className="flex min-w-0 items-center gap-2.5 text-sm hover:text-accent focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
                   >
-                    <span className="font-medium">{s.clientName}</span>
-                    <span className="mt-0.5 block font-mono text-xs tabular-nums text-muted">
-                      {s.dayLabel ?? "Trening"} · {s.performedOn}
+                    <Avatar name={s.clientName} size="sm" />
+                    <span className="min-w-0">
+                      <span className="font-medium">{s.clientName}</span>
+                      <span className="mt-0.5 block font-mono text-xs tabular-nums text-muted">
+                        {s.dayLabel ?? "Trening"} · {s.performedOn}
+                      </span>
                     </span>
                   </Link>
                   <span className="shrink-0 font-mono text-xs tabular-nums text-muted">
@@ -211,7 +244,14 @@ export function TrainerDashboard() {
             </h2>
           </div>
           {recentPrs.length === 0 ? (
-            <EmptyState title="Brak rekordów">
+            <EmptyState
+              title="Zaloguj pierwszą serię z ciężarem"
+              action={
+                <Link href="/clients">
+                  <Button size="sm">Otwórz klientów</Button>
+                </Link>
+              }
+            >
               PR-y pojawią się po zalogowaniu serii z ciężarem i powtórzeniami.
             </EmptyState>
           ) : (
@@ -221,10 +261,16 @@ export function TrainerDashboard() {
                   key={`${r.clientId}-${r.exerciseId}-${r.performedOn}-${r.estimated1Rm}-${i}`}
                   className="flex items-center justify-between gap-3 py-2.5"
                 >
-                  <div className="min-w-0 text-sm">
-                    <span className="font-medium">{r.clientName}</span>
-                    <span className="mt-0.5 block break-words text-xs text-muted">{r.exerciseName}</span>
-                  </div>
+                  <Link
+                    href={`/clients/${r.clientId}`}
+                    className="flex min-w-0 items-center gap-2.5 text-sm hover:text-accent focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+                  >
+                    <Avatar name={r.clientName} size="sm" />
+                    <span className="min-w-0">
+                      <span className="font-medium">{r.clientName}</span>
+                      <span className="mt-0.5 block break-words text-xs text-muted">{r.exerciseName}</span>
+                    </span>
+                  </Link>
                   <span className="shrink-0 rounded-full bg-pr-dim px-2.5 py-0.5 font-mono text-sm font-semibold tabular-nums text-pr">
                     {r.estimated1Rm} kg
                   </span>
@@ -258,12 +304,15 @@ export function TrainerDashboard() {
             <ul className="divide-y divide-border">
               {clients.slice(0, 6).map((c) => (
                 <li key={c.id} className="flex items-center justify-between gap-3 py-2.5">
-                  <Link href={`/clients/${c.id}`} className="flex min-w-0 items-center gap-2.5 text-sm hover:text-accent">
+                  <Link
+                    href={`/clients/${c.id}`}
+                    className="flex min-w-0 items-center gap-2.5 text-sm hover:text-accent focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+                  >
                     <Avatar name={c.name} size="sm" />
                     <span className="min-w-0 break-words">{c.name}</span>
                   </Link>
                   <Badge tone={c.activePlans > 0 ? "positive" : "neutral"}>
-                    {c.activePlans > 0 ? `${c.activePlans} aktywny plan(y)` : "brak planu"}
+                    {c.activePlans > 0 ? formatActivePlans(c.activePlans) : "brak planu"}
                   </Badge>
                 </li>
               ))}
@@ -293,7 +342,10 @@ export function TrainerDashboard() {
             <ul className="divide-y divide-border">
               {plans.slice(0, 6).map((p) => (
                 <li key={p.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                  <Link href={`/plans/${p.id}`} className="min-w-0 break-words hover:text-accent">
+                  <Link
+                    href={`/plans/${p.id}`}
+                    className="min-w-0 break-words hover:text-accent focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+                  >
                     {p.name}
                   </Link>
                   <span className="shrink-0 font-mono text-xs tabular-nums text-muted">
@@ -309,12 +361,45 @@ export function TrainerDashboard() {
   );
 }
 
-function StatCard({ label, value, href }: { label: string; value: number; href: string }) {
+function StatCard({
+  label,
+  value,
+  href,
+  delta,
+}: {
+  label: string;
+  value: number;
+  href: string;
+  delta?: string;
+}) {
   return (
-    <Link href={href} className="block">
+    <Link
+      href={href}
+      className="block rounded-xl focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+    >
       <Card className="transition-colors hover:border-border-strong">
-        <StatBlock label={label} value={value} size="lg" />
+        <StatBlock label={label} value={value} size="lg" delta={delta} />
       </Card>
     </Link>
   );
+}
+
+/** Liczy sesje w formie [offsetDays, offsetDays+windowDays) wstecz od dziś. */
+function countSessionsInLastDays(dates: string[], offsetDays: number, windowDays: number): number {
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  const end = new Date(today);
+  end.setDate(end.getDate() - offsetDays + 1);
+  const start = new Date(today);
+  start.setDate(start.getDate() - (offsetDays + windowDays - 1));
+  return dates.filter((iso) => {
+    const d = new Date(`${iso}T12:00:00`);
+    return d >= start && d < end;
+  }).length;
+}
+
+function formatActivePlans(n: number): string {
+  if (n === 1) return "1 aktywny plan";
+  if (n >= 2 && n <= 4) return `${n} aktywne plany`;
+  return `${n} aktywnych planów`;
 }

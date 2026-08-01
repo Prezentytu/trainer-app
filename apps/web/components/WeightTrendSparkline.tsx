@@ -34,14 +34,15 @@ export function WeightTrendSparkline({
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min || 1;
-  const padX = 8;
+  const padL = 36;
+  const padR = 8;
   const padY = 10;
   const w = 240;
   const innerH = height - padY * 2;
-  const innerW = w - padX * 2;
+  const innerW = w - padL - padR;
 
   const coords = points.map((p, i) => {
-    const x = padX + (points.length === 1 ? innerW / 2 : (i / (points.length - 1)) * innerW);
+    const x = padL + (points.length === 1 ? innerW / 2 : (i / (points.length - 1)) * innerW);
     const y = padY + innerH - ((p.value - min) / range) * innerH;
     return { x, y, ...p };
   });
@@ -49,12 +50,13 @@ export function WeightTrendSparkline({
   const line = coords.map((c) => `${c.x},${c.y}`).join(" ");
   const last = coords[coords.length - 1];
   const first = coords[0];
-  const area = `${padX},${padY + innerH} ${line} ${padX + innerW},${padY + innerH}`;
+  const area = `${padL},${padY + innerH} ${line} ${padL + innerW},${padY + innerH}`;
   const delta = last.value - first.value;
   const deltaLabel =
     delta === 0
       ? `bez zmian od ${formatDayShort(first.date)}`
       : `${delta > 0 ? "+" : ""}${formatValue(delta, unit)} od ${formatDayShort(first.date)}`;
+  const yTicks = [min, (min + max) / 2, max];
 
   return (
     <div className="min-w-0">
@@ -71,6 +73,32 @@ export function WeightTrendSparkline({
             <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
           </linearGradient>
         </defs>
+        {yTicks.map((tick) => {
+          const y = padY + innerH - ((tick - min) / range) * innerH;
+          return (
+            <g key={tick}>
+              <line
+                x1={padL}
+                x2={padL + innerW}
+                y1={y}
+                y2={y}
+                stroke="currentColor"
+                strokeOpacity="0.12"
+                strokeWidth="1"
+                vectorEffect="non-scaling-stroke"
+              />
+              <text
+                x={padL - 4}
+                y={y + 3}
+                textAnchor="end"
+                className="fill-muted"
+                style={{ fontSize: 9, fontFamily: "var(--font-mono)" }}
+              >
+                {Number.isInteger(tick) ? tick : tick.toFixed(1)}
+              </text>
+            </g>
+          );
+        })}
         <polygon points={area} fill="url(#weightTrendFill)" />
         <polyline
           points={line}
@@ -90,13 +118,7 @@ export function WeightTrendSparkline({
         </span>
         <span className="font-mono text-xs tabular-nums text-muted">{formatDayShort(last.date)}</span>
       </div>
-      <p
-        className={`mt-1 font-mono text-xs tabular-nums ${
-          delta > 0 ? "text-positive" : delta < 0 ? "text-muted" : "text-muted"
-        }`}
-      >
-        {deltaLabel}
-      </p>
+      <p className="mt-1 font-mono text-xs tabular-nums text-muted">{deltaLabel}</p>
     </div>
   );
 }

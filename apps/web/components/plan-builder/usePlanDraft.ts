@@ -333,20 +333,37 @@ export function usePlanDraft({
   );
 
   const removeItem = useCallback(
-    (dayKey: string, itemKey: string) =>
-      setDays((prev) =>
-        prev.map((d) =>
+    (dayKey: string, itemKey: string) => {
+      setDays((prev) => {
+        const day = prev.find((d) => d.key === dayKey);
+        const removedIndex = day?.items.findIndex((i) => i.key === itemKey) ?? -1;
+        const removed = removedIndex >= 0 && day ? day.items[removedIndex] : null;
+        if (removed) {
+          showUndoToast(`Usunięto „${removed.exerciseName}"`, () => {
+            setDays((cur) =>
+              cur.map((d) => {
+                if (d.key !== dayKey) return d;
+                if (d.items.some((i) => i.key === removed.key)) return d;
+                const next = [...d.items];
+                next.splice(Math.min(removedIndex, next.length), 0, removed);
+                return { ...d, items: next.map((i, o) => ({ ...i, order: o + 1 })) };
+              }),
+            );
+          });
+        }
+        return prev.map((d) =>
           d.key !== dayKey
             ? d
             : {
                 ...d,
                 items: detachLinks(d.items, itemKey)
                   .filter((i) => i.key !== itemKey)
-                  .map((i, idx) => ({ ...i, order: idx + 1 })),
-              }
-        )
-      ),
-    []
+                  .map((i, o) => ({ ...i, order: o + 1 })),
+              },
+        );
+      });
+    },
+    [showUndoToast],
   );
 
   const moveItem = useCallback(
@@ -434,6 +451,7 @@ export function usePlanDraft({
             ...d,
             items: d.items.map((item) => {
               if (item.key !== itemKey) return item;
+              const last = item.prescribedSets[item.prescribedSets.length - 1];
               return {
                 ...item,
                 prescribedSets: [
@@ -441,17 +459,17 @@ export function usePlanDraft({
                   {
                     key: newKey(),
                     order: item.prescribedSets.length + 1,
-                    reps: null,
-                    repsMax: null,
-                    durationSeconds: null,
-                    distanceMeters: null,
-                    loadKg: null,
-                    loadPercent: null,
-                    percentOf: null,
-                    targetRpe: null,
-                    targetRir: null,
-                    tempo: null,
-                    role: "work",
+                    reps: last?.reps ?? null,
+                    repsMax: last?.repsMax ?? null,
+                    durationSeconds: last?.durationSeconds ?? null,
+                    distanceMeters: last?.distanceMeters ?? null,
+                    loadKg: last?.loadKg ?? null,
+                    loadPercent: last?.loadPercent ?? null,
+                    percentOf: last?.percentOf ?? null,
+                    targetRpe: last?.targetRpe ?? null,
+                    targetRir: last?.targetRir ?? null,
+                    tempo: last?.tempo ?? null,
+                    role: last?.role ?? "work",
                     note: null,
                   },
                 ],
@@ -486,27 +504,53 @@ export function usePlanDraft({
     []
   );
 
-  const removeSet = useCallback((dayKey: string, itemKey: string, setKey: string) => {
-    setDays((prev) =>
-      prev.map((d) =>
-        d.key !== dayKey
-          ? d
-          : {
-              ...d,
-              items: d.items.map((i) =>
-                i.key !== itemKey
-                  ? i
-                  : {
-                      ...i,
-                      prescribedSets: i.prescribedSets
-                        .filter((s) => s.key !== setKey)
-                        .map((s, idx) => ({ ...s, order: idx + 1 })),
-                    }
-              ),
-            }
-      )
-    );
-  }, []);
+  const removeSet = useCallback(
+    (dayKey: string, itemKey: string, setKey: string) => {
+      setDays((prev) => {
+        const day = prev.find((d) => d.key === dayKey);
+        const item = day?.items.find((i) => i.key === itemKey);
+        const removedIndex = item?.prescribedSets.findIndex((s) => s.key === setKey) ?? -1;
+        const removed = removedIndex >= 0 && item ? item.prescribedSets[removedIndex] : null;
+        if (removed) {
+          showUndoToast("Usunięto serię", () => {
+            setDays((cur) =>
+              cur.map((d) => {
+                if (d.key !== dayKey) return d;
+                return {
+                  ...d,
+                  items: d.items.map((i) => {
+                    if (i.key !== itemKey) return i;
+                    if (i.prescribedSets.some((s) => s.key === removed.key)) return i;
+                    const next = [...i.prescribedSets];
+                    next.splice(Math.min(removedIndex, next.length), 0, removed);
+                    return { ...i, prescribedSets: next.map((s, o) => ({ ...s, order: o + 1 })) };
+                  }),
+                };
+              }),
+            );
+          });
+        }
+        return prev.map((d) =>
+          d.key !== dayKey
+            ? d
+            : {
+                ...d,
+                items: d.items.map((i) =>
+                  i.key !== itemKey
+                    ? i
+                    : {
+                        ...i,
+                        prescribedSets: i.prescribedSets
+                          .filter((s) => s.key !== setKey)
+                          .map((s, o) => ({ ...s, order: o + 1 })),
+                      },
+                ),
+              },
+        );
+      });
+    },
+    [showUndoToast],
+  );
 
   const applyPreset = useCallback((dayKey: string, itemKey: string, presetId: string) => {
     setDays((prev) =>

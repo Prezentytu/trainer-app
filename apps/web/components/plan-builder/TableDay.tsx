@@ -105,7 +105,9 @@ export function TableDay({
       </div>
 
       {day.items.length === 0 ? (
-        <EmptyState>Dzień jest pusty.</EmptyState>
+        <EmptyState title="Pusty dzień">
+          Dodaj ćwiczenie poniżej — tu pojawi się arkusz serii i powtórzeń.
+        </EmptyState>
       ) : (
         <div className="overflow-x-auto">
           <div className="min-w-[1040px]">

@@ -241,7 +241,7 @@ export function Pill({
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] ${
+      className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
         active
           ? "bg-accent text-accent-foreground"
           : "bg-surface-hover text-foreground-secondary hover:bg-surface-active"
@@ -398,7 +398,7 @@ export function Tabs({
             role="tab"
             aria-selected={active}
             onClick={() => onChange(v)}
-            className={`-mb-px inline-flex items-center gap-2 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] ${
+            className={`-mb-px inline-flex items-center gap-2 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
               active
                 ? "border-accent text-accent"
                 : "border-transparent text-muted-strong hover:text-foreground-secondary"
@@ -437,11 +437,11 @@ export function SegmentedControl({
             key={v}
             type="button"
             onClick={() => onChange(v)}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] ${
+            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
               full ? "flex-1" : ""
             } ${
               active
-                ? "bg-surface-active text-foreground shadow-[inset_0_1px_0_rgba(243,241,236,0.05)]"
+                ? "bg-surface-active text-foreground shadow-[var(--shadow-segment-active)]"
                 : "text-muted-strong hover:text-foreground-secondary"
             }`}
           >
@@ -477,7 +477,7 @@ export function Switch({
         aria-checked={!!checked}
         disabled={disabled}
         onClick={() => onChange?.(!checked)}
-        className={`relative h-6 w-10 shrink-0 rounded-full transition-colors duration-[var(--dur-fast)] ${
+        className={`relative h-6 w-10 shrink-0 rounded-full transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
           checked ? "bg-accent" : "bg-surface-active"
         }`}
       >
@@ -513,13 +513,48 @@ export function Dialog({
   onCancel?: () => void;
   children?: ReactNode;
 }) {
+  const panelRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!open) return;
+    const panel = panelRef.current;
+    const focusables = () =>
+      panel
+        ? Array.from(
+            panel.querySelectorAll<HTMLElement>(
+              'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+            ),
+          )
+        : [];
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const first = focusables()[0];
+    first?.focus();
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCancel?.();
+      if (e.key === "Escape") {
+        onCancel?.();
+        return;
+      }
+      if (e.key !== "Tab" || !panel) return;
+      const nodes = focusables();
+      if (nodes.length === 0) return;
+      const firstNode = nodes[0];
+      const lastNode = nodes[nodes.length - 1];
+      if (e.shiftKey && document.activeElement === firstNode) {
+        e.preventDefault();
+        lastNode.focus();
+      } else if (!e.shiftKey && document.activeElement === lastNode) {
+        e.preventDefault();
+        firstNode.focus();
+      }
     };
+
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      previouslyFocused?.focus?.();
+    };
   }, [open, onCancel]);
 
   if (!open) return null;
@@ -532,6 +567,7 @@ export function Dialog({
         onClick={onCancel}
       />
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal
         aria-labelledby="dialog-title"
@@ -620,7 +656,11 @@ export function useUndoToast() {
   }, []);
 
   const toastNode = toast ? (
-    <div className="fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-md border border-border-strong bg-surface px-4 py-3 text-sm shadow-raised">
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-md border border-border-strong bg-surface px-4 py-3 text-sm shadow-raised"
+    >
       <span className="text-foreground-secondary">{toast.message}</span>
       {toast.onUndo && (
         <button
@@ -629,7 +669,7 @@ export function useUndoToast() {
             toast.onUndo?.();
             dismiss();
           }}
-          className="font-semibold text-accent hover:text-accent-strong"
+          className="font-semibold text-accent hover:text-accent-strong focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
         >
           Cofnij
         </button>

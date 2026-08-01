@@ -83,8 +83,39 @@ export function usePlanPersistence({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
   /** Snapshot ostatnio wysłanego payloadu — pomija PUT gdy treść się nie zmieniła. */
   const lastSavedPayloadRef = useRef<string | null>(null);
+  const seededRef = useRef(false);
+
+  // Snapshot startowy dla istniejącego planu — „Niezapisane zmiany” tylko gdy draft ≠ zapis.
+  useEffect(() => {
+    if (!plan || seededRef.current) return;
+    lastSavedPayloadRef.current = JSON.stringify(
+      buildPlanInput(name, description, isTemplate, days),
+    );
+    seededRef.current = true;
+    setIsDirty(false);
+  }, [plan, name, description, isTemplate, days]);
+
+  useEffect(() => {
+    const payload = JSON.stringify(buildPlanInput(name, description, isTemplate, days));
+    if (lastSavedPayloadRef.current == null) {
+      setIsDirty(Boolean(plan) || name.trim().length > 0 || days.some((d) => d.items.length > 0));
+      return;
+    }
+    setIsDirty(payload !== lastSavedPayloadRef.current);
+  }, [plan, name, description, isTemplate, days]);
+
+  useEffect(() => {
+    if (!isDirty) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [isDirty]);
 
   const handleSubmit = useCallback(
     async (e: FormEvent) => {
@@ -101,10 +132,12 @@ export function usePlanPersistence({
         if (plan) {
           await api.plans.update(plan.id, input);
           lastSavedPayloadRef.current = JSON.stringify(input);
+          setIsDirty(false);
           router.push(`/plans/${plan.id}`);
         } else {
           const created = await api.plans.create(input);
           lastSavedPayloadRef.current = JSON.stringify(input);
+          setIsDirty(false);
           router.push(`/plans/${created.id}`);
         }
         router.refresh();
@@ -129,6 +162,7 @@ export function usePlanPersistence({
         .then(() => {
           lastSavedPayloadRef.current = payload;
           setLastSavedAt(new Date());
+          setIsDirty(false);
         })
         .catch(() => {
           /* ciche fail — manualny zapis zostaje fallbackiem */
@@ -137,5 +171,5 @@ export function usePlanPersistence({
     return () => clearTimeout(timer);
   }, [plan, name, description, isTemplate, days]);
 
-  return { saving, error, setError, lastSavedAt, handleSubmit };
+  return { saving, error, setError, lastSavedAt, isDirty, handleSubmit };
 }

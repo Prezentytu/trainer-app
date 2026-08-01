@@ -12,7 +12,16 @@ import {
 } from "@/lib/api";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { YoutubeLite } from "@/components/YoutubeLite";
-import { Badge, Button, ErrorBanner, formatRest, inputClass } from "@/components/ui";
+import {
+  Badge,
+  Button,
+  EmptyState,
+  ErrorBanner,
+  formatRest,
+  inputClass,
+  inputNumericClass,
+  useUndoToast,
+} from "@/components/ui";
 import { demoMedia } from "@/lib/youtube";
 
 type Props = {
@@ -107,6 +116,7 @@ export function SessionLogger({
   const [videoTitle, setVideoTitle] = useState("");
   const [clock, setClock] = useState(() => elapsedLabel(Date.parse(session.createdAt)));
   const [prCelebrate, setPrCelebrate] = useState<string | null>(null);
+  const { showUndoToast, toastNode } = useUndoToast();
 
   const draftRef = useRef(session);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -320,6 +330,10 @@ export function SessionLogger({
   };
 
   const removeSet = (exIdx: number, setIdx: number) => {
+    const exercise = draft.exercises[exIdx];
+    const removed = exercise?.sets[setIdx];
+    if (!exercise || !removed || exercise.sets.length <= 1) return;
+
     updateDraft((prev) => ({
       ...prev,
       exercises: prev.exercises.map((ex, i) => {
@@ -333,7 +347,26 @@ export function SessionLogger({
         };
       }),
     }));
+
+    showUndoToast("Usunięto serię", () => {
+      updateDraft((prev) => ({
+        ...prev,
+        exercises: prev.exercises.map((ex, i) => {
+          if (i !== exIdx) return ex;
+          const next = [...ex.sets];
+          next.splice(setIdx, 0, removed);
+          return {
+            ...ex,
+            sets: next.map((s, j) => ({ ...s, setNumber: j + 1 })),
+          };
+        }),
+      }));
+    });
   };
+
+  const currentExerciseIdx = draft.exercises.findIndex((ex) =>
+    ex.sets.some((s) => !s.completed),
+  );
 
   const patchNote = (exIdx: number, note: string) => {
     updateDraft((prev) => ({
@@ -419,7 +452,7 @@ export function SessionLogger({
         <ScorePicker label="Energia" value={energyScore} onChange={setEnergyScore} />
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button className="flex-1" disabled={saving} onClick={() => void saveCheckin(false)}>
-            {saving ? "Zapis…" : "Zapisz check-in"}
+            {saving ? "Zapis…" : "Zakończ i zobacz podsumowanie"}
           </Button>
           <Button className="flex-1" variant="ghost" disabled={saving} onClick={() => void saveCheckin(true)}>
             Pomiń
@@ -469,7 +502,7 @@ export function SessionLogger({
             onCompleted?.(summary);
           }}
         >
-          Wróć do home
+          Wróć do panelu
         </Button>
       </div>
     );
@@ -479,10 +512,15 @@ export function SessionLogger({
     return (
       <div>
         <ErrorBanner message={error} />
-        <p className="text-muted">Brak ćwiczeń w tej sesji.</p>
+        <EmptyState title="Brak ćwiczeń w tej sesji">
+          Sesja nie ma pozycji do zalogowania — wróć i wybierz dzień z planu.
+        </EmptyState>
       </div>
     );
   }
+
+  const nextExercise =
+    currentExerciseIdx >= 0 ? draft.exercises[currentExerciseIdx] : null;
 
   return (
     <div className="space-y-4 pb-24">
@@ -507,17 +545,23 @@ export function SessionLogger({
             </div>
           </div>
           <Button disabled={saving} onClick={() => void finish()}>
-            {completedEdit ? "Zapisz zmiany" : "Zakończ"}
+            {completedEdit ? "Zapisz zmiany" : "Zakończ trening"}
           </Button>
         </div>
         {prCelebrate ? (
           <div
-            className="pr-celebrate-in mt-2 rounded-md border border-pr/50 bg-pr-dim px-3 py-2.5 text-center shadow-[0_0_24px_rgba(232,187,79,0.18)]"
+            className="pr-celebrate-in mt-2 rounded-md border border-pr/50 bg-pr-dim px-3 py-2.5 text-center shadow-[var(--glow-pr)]"
             role="status"
           >
             <div className="text-xs font-semibold uppercase tracking-caps text-pr">Nowy rekord</div>
             <div className="mt-0.5 font-display text-sm font-semibold text-pr">{prCelebrate}</div>
           </div>
+        ) : null}
+        {nextExercise && !completedEdit ? (
+          <p className="mt-2 text-xs text-muted">
+            Teraz:{" "}
+            <span className="font-medium text-accent-strong">{nextExercise.exerciseName}</span>
+          </p>
         ) : null}
       </div>
 
@@ -539,12 +583,23 @@ export function SessionLogger({
 
       {draft.exercises.map((exercise, exIdx) => {
         const thumb = demoMedia({ media: exercise.media, category: exercise.category });
+        const isCurrent = exIdx === currentExerciseIdx;
+        const allDone = exercise.sets.every((s) => s.completed);
         return (
-          <section key={exercise.id} className="overflow-hidden rounded-xl border border-border bg-surface">
+          <section
+            key={exercise.id}
+            className={`overflow-hidden rounded-xl border bg-surface ${
+              isCurrent
+                ? "border-accent-border ring-1 ring-accent-border/60"
+                : allDone
+                  ? "border-border opacity-70"
+                  : "border-border"
+            }`}
+          >
             <div className="flex items-center gap-3 border-b border-border px-3 py-3">
               <button
                 type="button"
-                className="h-12 w-12 shrink-0"
+                className="h-12 w-12 shrink-0 rounded-md focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
                 onClick={() => {
                   if (!thumb.youtubeId) return;
                   setVideoId(thumb.youtubeId);
@@ -560,8 +615,9 @@ export function SessionLogger({
                 />
               </button>
               <div className="min-w-0 flex-1">
-                <h2 className="truncate font-display text-base font-bold">{exercise.exerciseName}</h2>
+                <h2 className="break-words font-display text-base font-bold">{exercise.exerciseName}</h2>
                 <p className="font-mono text-xs tabular-nums text-muted">
+                  {isCurrent ? "Teraz · " : allDone ? "Gotowe · " : ""}
                   przerwa {formatRest(exercise.restSeconds ?? 90)}
                 </p>
               </div>
@@ -609,7 +665,7 @@ export function SessionLogger({
               </div>
             ) : null}
 
-            <div className="grid grid-cols-[2.25rem_minmax(0,1fr)_minmax(0,1.4fr)_2.25rem] gap-1 border-b border-border px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted">
+            <div className="grid grid-cols-[2.25rem_minmax(0,1fr)_minmax(0,1.4fr)_2.75rem] gap-1 border-b border-border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted">
               <span>Seria</span>
               <span>Poprz.</span>
               <span>Dziś</span>
@@ -621,13 +677,13 @@ export function SessionLogger({
               return (
                 <div
                   key={s.id || setIdx}
-                  className={`grid grid-cols-[2.25rem_minmax(0,1fr)_minmax(0,1.4fr)_2.25rem] items-center gap-1 border-b border-border px-3 py-2 last:border-b-0 ${
+                  className={`grid grid-cols-[2.25rem_minmax(0,1fr)_minmax(0,1.4fr)_2.75rem] items-center gap-1 border-b border-border px-3 py-2 last:border-b-0 ${
                     s.completed ? "bg-accent-dim/25" : ""
                   } ${s.completed && s.isPr ? "bg-pr-dim/40" : ""}`}
                 >
                   <div className="font-mono text-sm tabular-nums text-muted">
                     {s.setNumber}
-                    {s.isWarmup ? <span className="block text-[9px]">W</span> : null}
+                    {s.isWarmup ? <span className="block text-xs">W</span> : null}
                     {s.completed && s.isPr ? (
                       <span className="mt-0.5 inline-block">
                         <Badge tone="pr">PR</Badge>
@@ -636,7 +692,7 @@ export function SessionLogger({
                   </div>
                   <button
                     type="button"
-                    className="truncate text-left font-mono text-xs tabular-nums text-muted hover:text-accent"
+                    className="min-h-11 truncate text-left font-mono text-xs tabular-nums text-muted hover:text-accent focus-visible:outline-none focus-visible:text-accent"
                     onClick={() => copyPrev(exIdx, setIdx)}
                     title="Skopiuj do Dziś"
                   >
@@ -644,7 +700,7 @@ export function SessionLogger({
                   </button>
                   <div className="flex min-w-0 items-center gap-1">
                     <input
-                      className={`${inputClass} min-w-0 flex-1 px-1.5 py-1.5 text-center text-sm`}
+                      className={`${inputNumericClass} h-11 min-w-0 flex-1 px-1.5 text-center text-base`}
                       value={s.weightKg ?? ""}
                       onChange={(e) => patchSet(exIdx, setIdx, { weightKg: parseNum(e.target.value) })}
                       inputMode="decimal"
@@ -653,7 +709,7 @@ export function SessionLogger({
                     />
                     <span className="text-muted-faint">×</span>
                     <input
-                      className={`${inputClass} min-w-0 flex-1 px-1.5 py-1.5 text-center text-sm`}
+                      className={`${inputNumericClass} h-11 min-w-0 flex-1 px-1.5 text-center text-base`}
                       value={s.reps ?? ""}
                       onChange={(e) => patchSet(exIdx, setIdx, { reps: parseNum(e.target.value) })}
                       inputMode="numeric"
@@ -664,7 +720,7 @@ export function SessionLogger({
                   <button
                     type="button"
                     onClick={() => toggleComplete(exIdx, setIdx)}
-                    className={`mx-auto flex h-8 w-8 items-center justify-center rounded-lg border text-sm font-bold ${
+                    className={`mx-auto flex h-11 w-11 items-center justify-center rounded-lg border text-base font-bold transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
                       s.completed
                         ? "border-accent-border bg-accent text-accent-foreground"
                         : "border-border-strong text-muted hover:border-accent-border"
@@ -680,7 +736,7 @@ export function SessionLogger({
             <div className="flex flex-wrap items-center gap-2 px-3 py-2">
               <button
                 type="button"
-                className="font-mono text-lg font-bold text-pr hover:text-pr"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center font-mono text-xl font-bold text-accent hover:text-accent-strong focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
                 onClick={() => addSet(exIdx)}
                 aria-label="Dodaj serię"
               >
@@ -689,7 +745,7 @@ export function SessionLogger({
               {exercise.sets.length > 1 ? (
                 <button
                   type="button"
-                  className="text-xs text-muted hover:text-danger"
+                  className="inline-flex min-h-11 items-center px-2 text-sm text-muted hover:text-danger focus-visible:outline-none focus-visible:text-danger"
                   onClick={() => removeSet(exIdx, exercise.sets.length - 1)}
                 >
                   Usuń ostatnią
@@ -710,21 +766,33 @@ export function SessionLogger({
       })}
 
       {restLeft != null ? (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-accent-border bg-accent-dim px-4 py-3 text-center font-mono text-lg font-semibold tabular-nums text-accent-strong">
-          Przerwa {formatRest(restLeft)}
-          <button
-            type="button"
-            className="ml-3 text-xs font-sans font-semibold uppercase tracking-[0.08em] text-muted-strong"
-            onClick={() => {
-              if (restInterval.current) clearInterval(restInterval.current);
-              restInterval.current = null;
-              setRestLeft(null);
-            }}
-          >
-            Pomiń
-          </button>
+        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-accent-border bg-accent-dim px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center">
+          <p className="font-mono text-2xl font-semibold tabular-nums text-accent-strong">
+            Przerwa {formatRest(restLeft)}
+          </p>
+          <div className="mt-2 flex items-center justify-center gap-3">
+            <button
+              type="button"
+              className="min-h-11 rounded-md px-3 text-sm font-semibold text-accent-strong hover:text-accent focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+              onClick={() => setRestLeft((prev) => (prev == null ? 30 : prev + 30))}
+            >
+              +30 s
+            </button>
+            <button
+              type="button"
+              className="min-h-11 rounded-md px-3 text-xs font-semibold uppercase tracking-[0.08em] text-muted-strong hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+              onClick={() => {
+                if (restInterval.current) clearInterval(restInterval.current);
+                restInterval.current = null;
+                setRestLeft(null);
+              }}
+            >
+              Pomiń
+            </button>
+          </div>
         </div>
       ) : null}
+      {toastNode}
     </div>
   );
 }

@@ -39,7 +39,8 @@ function NavLinks({
             href={item.href}
             onClick={onNavigate}
             title={compact ? item.label : undefined}
-            className={`flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] ${
+            aria-current={active ? "page" : undefined}
+            className={`flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
               active
                 ? "bg-accent-dim text-accent-strong"
                 : "text-foreground-secondary hover:bg-surface-hover hover:text-accent-strong"
@@ -128,7 +129,8 @@ function BottomNav() {
           <Link
             key={item.href}
             href={item.href}
-            className={`flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 py-1.5 text-xs transition-colors ${
+            aria-current={active ? "page" : undefined}
+            className={`flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 py-1.5 text-xs transition-colors focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
               active ? "font-semibold text-accent" : "text-muted-strong"
             }`}
           >
@@ -178,7 +180,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           type="button"
           onClick={() => setDrawerOpen(true)}
           aria-label="Otwórz menu"
-          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-surface-hover text-foreground-secondary hover:bg-surface-active"
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-surface-hover text-foreground-secondary hover:bg-surface-active focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
         >
           <Menu className="h-5 w-5" strokeWidth={1.75} />
         </button>
@@ -211,7 +213,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 type="button"
                 onClick={() => setDrawerOpen(false)}
                 aria-label="Zamknij menu"
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-hover text-foreground-secondary hover:bg-surface-active"
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-surface-hover text-foreground-secondary hover:bg-surface-active focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
               >
                 <X className="h-5 w-5" strokeWidth={1.75} />
               </button>

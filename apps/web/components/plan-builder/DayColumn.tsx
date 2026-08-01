@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Exercise } from "@/lib/api";
-import { IconButton, inputClass } from "@/components/ui";
+import { Button, EmptyState, IconButton, inputClass } from "@/components/ui";
 import { dayContainerId } from "./dnd";
 import { DropIndicator } from "./DropIndicator";
 import { ExerciseCard } from "./ExerciseCard";
@@ -131,7 +131,7 @@ export function DayColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`flex w-[300px] shrink-0 flex-col rounded-2xl border bg-surface p-0 shadow-card ${
+      className={`flex w-full shrink-0 flex-col rounded-2xl border bg-surface p-0 shadow-card md:w-[300px] ${
         isOver ? "border-accent" : "border-border"
       }`}
     >
@@ -243,12 +243,20 @@ export function DayColumn({
         />
 
         {day.items.length === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center rounded-[10px] border border-dashed border-border-strong px-3 py-5 text-center text-sm text-muted-faint">
+          <div className="flex flex-1 flex-col">
             {dropHere === 0 ? (
               <div className="mb-2 w-full"><DropIndicator /></div>
             ) : null}
-            <p>Przeciągnij ćwiczenie tutaj</p>
-            <p className="mt-0.5">albo dodaj z biblioteki</p>
+            <EmptyState
+              title="Pusty dzień"
+              action={
+                <Button type="button" size="sm" onClick={onOpenDrawer}>
+                  Dodaj ćwiczenie
+                </Button>
+              }
+            >
+              Przeciągnij z biblioteki albo dodaj pierwsze ćwiczenie — tu pojawi się lista serii.
+            </EmptyState>
           </div>
         ) : (
           <SortableContext items={day.items.map((i) => i.key)} strategy={verticalListSortingStrategy}>

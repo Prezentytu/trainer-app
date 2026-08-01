@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { api, Exercise, SessionDetail } from "@/lib/api";
 import { SessionLogger } from "@/components/SessionLogger";
+import { SessionLoggerSkeleton } from "@/components/skeletons";
 import { Button, ErrorBanner, PageHeader } from "@/components/ui";
 
 export default function ClientSessionPage() {
@@ -31,7 +32,7 @@ export default function ClientSessionPage() {
     return (
       <div>
         <ErrorBanner message={error} />
-        <p className="text-muted">Ładowanie sesji…</p>
+        {error ? null : <SessionLoggerSkeleton />}
       </div>
     );
   }

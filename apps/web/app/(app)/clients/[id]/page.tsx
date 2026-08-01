@@ -22,6 +22,7 @@ import {
   Badge,
   Button,
   Card,
+  Dialog,
   EmptyState,
   ErrorBanner,
   Field,
@@ -124,6 +125,7 @@ export default function ClientDetailsPage() {
   const [expandedRecordId, setExpandedRecordId] = useState<number | null>(null);
   const [statsCache, setStatsCache] = useState<Record<number, ExerciseStats | "loading" | "error">>({});
   const [nextDay, setNextDay] = useState<{ assignmentId: number; label: string } | null>(null);
+  const [deleteClientOpen, setDeleteClientOpen] = useState(false);
 
   const load = useCallback(() => {
     Promise.all([
@@ -252,10 +254,20 @@ export default function ClientDetailsPage() {
   };
 
   const handleStatus = async (assignmentId: number, status: string) => {
+    if (!client) return;
+    const snapshot = client.assignments;
+    setClient((c) =>
+      c
+        ? {
+            ...c,
+            assignments: c.assignments.map((a) => (a.id === assignmentId ? { ...a, status } : a)),
+          }
+        : c,
+    );
     try {
       await api.assignments.setStatus(assignmentId, status);
-      load();
     } catch (err) {
+      setClient((c) => (c ? { ...c, assignments: snapshot } : c));
       setError((err as Error).message);
     }
   };
@@ -279,6 +291,54 @@ export default function ClientDetailsPage() {
       });
     } catch (err) {
       setError((err as Error).message);
+    }
+  };
+
+  const handleRemoveMax = async (m: ClientMax) => {
+    setMaxes((prev) => prev.filter((x) => x.id !== m.id));
+    try {
+      await api.clients.removeMax(m.id);
+      showUndoToast(`Usunięto max „${m.exerciseName}”`, async () => {
+        try {
+          await api.clients.addMax(clientId, {
+            exerciseId: m.exerciseId,
+            maxKg: m.maxKg,
+            measuredOn: m.measuredOn,
+            note: m.note,
+          });
+          load();
+        } catch (err) {
+          setError((err as Error).message);
+        }
+      });
+    } catch (err) {
+      setError((err as Error).message);
+      load();
+    }
+  };
+
+  const handleRemoveMeasurement = async (m: ClientMeasurement) => {
+    setMeasurements((prev) => prev.filter((x) => x.id !== m.id));
+    try {
+      await api.clients.removeMeasurement(m.id);
+      showUndoToast(`Usunięto pomiar z ${m.measuredOn}`, async () => {
+        try {
+          await api.clients.addMeasurement(clientId, {
+            measuredOn: m.measuredOn,
+            weightKg: m.weightKg,
+            waistCm: m.waistCm,
+            chestCm: m.chestCm,
+            hipsCm: m.hipsCm,
+            note: m.note,
+          });
+          load();
+        } catch (err) {
+          setError((err as Error).message);
+        }
+      });
+    } catch (err) {
+      setError((err as Error).message);
+      load();
     }
   };
 
@@ -366,7 +426,7 @@ export default function ClientDetailsPage() {
 
   const handleDeleteClient = async () => {
     if (!client) return;
-    if (!confirm(`Usunąć klienta „${client.name}” wraz z przypisaniami? Tej operacji nie można cofnąć.`)) return;
+    setDeleteClientOpen(false);
     try {
       await api.clients.remove(client.id);
       router.push("/clients");
@@ -475,7 +535,7 @@ export default function ClientDetailsPage() {
           )}
         </Card>
 
-        <div className="grid grid-cols-3 gap-3 lg:grid-cols-1">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-1">
           <Card>
             <StatBlock
               label="Ostatni trening"
@@ -498,7 +558,7 @@ export default function ClientDetailsPage() {
       </div>
 
       {recentCheckins.length > 0 ? (
-        <div className="mb-6 grid grid-cols-3 gap-3">
+        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Card>
             <StatBlock
               label="Samopoczucie"
@@ -619,7 +679,9 @@ export default function ClientDetailsPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge tone={statusTone(a.status)}>{statusLabel(a.status)}</Badge>
                       {a.status === "active" && (
-                        <Button onClick={() => void handleStartSession(a)}>Loguj trening</Button>
+                        <Button variant="secondary" onClick={() => void handleStartSession(a)}>
+                          Loguj trening
+                        </Button>
                       )}
                       {a.status === "active" && (
                         <>
@@ -636,13 +698,9 @@ export default function ClientDetailsPage() {
                           Wznów
                         </Button>
                       )}
-                      <button
-                        type="button"
-                        onClick={() => handleRemove(a)}
-                        className="text-sm text-muted-strong hover:text-danger"
-                      >
+                      <Button variant="ghost" onClick={() => void handleRemove(a)}>
                         Usuń
-                      </button>
+                      </Button>
                     </div>
                   </Card>
                 ))}
@@ -786,7 +844,7 @@ export default function ClientDetailsPage() {
                   />
                 </Field>
                 <div className="flex items-end">
-                  <Button type="submit">Zapisz max</Button>
+                  <Button type="submit">Dodaj max</Button>
                 </div>
               </form>
             </Card>
@@ -805,18 +863,9 @@ export default function ClientDetailsPage() {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="font-mono text-lg font-semibold tabular-nums text-accent">{m.maxKg} kg</span>
-                      <button
-                        type="button"
-                        className="text-sm text-muted hover:text-danger"
-                        onClick={() =>
-                          api.clients
-                            .removeMax(m.id)
-                            .then(load)
-                            .catch((err: Error) => setError(err.message))
-                        }
-                      >
+                      <Button variant="ghost" onClick={() => void handleRemoveMax(m)}>
                         Usuń
-                      </button>
+                      </Button>
                     </div>
                   </Card>
                 ))}
@@ -856,7 +905,7 @@ export default function ClientDetailsPage() {
                   />
                 </Field>
                 <div className="flex items-end">
-                  <Button type="submit">Zapisz pomiar</Button>
+                  <Button type="submit">Dodaj pomiar</Button>
                 </div>
               </form>
             </Card>
@@ -887,18 +936,9 @@ export default function ClientDetailsPage() {
                         {m.note ? ` · ${m.note}` : ""}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      className="text-sm text-muted hover:text-danger"
-                      onClick={() =>
-                        api.clients
-                          .removeMeasurement(m.id)
-                          .then(load)
-                          .catch((err: Error) => setError(err.message))
-                      }
-                    >
+                    <Button variant="ghost" onClick={() => void handleRemoveMeasurement(m)}>
                       Usuń
-                    </button>
+                    </Button>
                   </Card>
                 ))}
               </div>
@@ -908,10 +948,24 @@ export default function ClientDetailsPage() {
       </div>
 
       <div className="mt-10 border-t border-border pt-4">
-        <button type="button" onClick={handleDeleteClient} className="text-xs text-muted hover:text-danger">
+        <Button variant="ghost" onClick={() => setDeleteClientOpen(true)}>
           Usuń klienta wraz z przypisaniami
-        </button>
+        </Button>
       </div>
+
+      <Dialog
+        open={deleteClientOpen}
+        title="Usunąć klienta?"
+        description={
+          client
+            ? `Klient „${client.name}” i wszystkie przypisania zostaną trwale usunięte. Tej operacji nie można cofnąć.`
+            : undefined
+        }
+        confirmLabel="Usuń klienta"
+        danger
+        onConfirm={() => void handleDeleteClient()}
+        onCancel={() => setDeleteClientOpen(false)}
+      />
 
       {toastNode}
     </div>

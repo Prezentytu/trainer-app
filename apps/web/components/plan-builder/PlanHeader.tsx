@@ -22,6 +22,7 @@ export function PlanHeader({
   activeWeek,
   weeksCount,
   lastSavedAt,
+  isDirty,
   planId,
   assigned,
   onAssigned,
@@ -39,6 +40,7 @@ export function PlanHeader({
   activeWeek: number;
   weeksCount: number;
   lastSavedAt: Date | null;
+  isDirty?: boolean;
   planId?: number;
   assigned: AssignedClientInfo;
   onAssigned: (info: AssignedClientInfo) => void;
@@ -81,7 +83,7 @@ export function PlanHeader({
                 {name.trim() || "Bez nazwy"}
               </button>
             )}
-            <Badge tone={isTemplate ? "accent" : "neutral"}>{isTemplate ? "Formula" : "Plan"}</Badge>
+            <Badge tone={isTemplate ? "accent" : "neutral"}>{isTemplate ? "Formuła" : "Plan"}</Badge>
           </div>
           <p className="mt-1 text-sm text-muted-strong">
             {daysPerWeek} {daysPerWeek === 1 ? "dzień" : "dni"}/tydz. ·{" "}
@@ -98,13 +100,13 @@ export function PlanHeader({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {lastSavedAt ? (
+          {isDirty ? (
+            <span className="text-sm text-muted">Niezapisane zmiany</span>
+          ) : lastSavedAt ? (
             <span className="inline-flex items-center gap-1.5 text-sm text-positive">
               <span className="h-1.5 w-1.5 rounded-full bg-positive" />
               Zapisano
             </span>
-          ) : planId ? (
-            <span className="text-sm text-muted">Niezapisane zmiany</span>
           ) : null}
 
           {assigned && (
@@ -112,7 +114,7 @@ export function PlanHeader({
               <Avatar name={assigned.name} size="sm" />
               <div className="min-w-0">
                 <p className="text-xs text-muted-faint">Przypisany klient</p>
-                <p className="truncate text-sm font-semibold">{assigned.name}</p>
+                <p className="break-words text-sm font-semibold">{assigned.name}</p>
                 <p className="font-mono text-xs tabular-nums text-muted">
                   start {assigned.startDate.slice(5).replace("-", ".")} · {assigned.weeksCount} tyg.
                 </p>

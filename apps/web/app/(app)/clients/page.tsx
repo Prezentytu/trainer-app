@@ -20,6 +20,16 @@ import { ClientListSkeleton } from "@/components/skeletons";
 
 type TabFilter = "all" | "active" | "idle";
 
+function activePlansLabel(count: number): string {
+  if (count === 1) return "1 aktywny plan";
+  const lastDigit = count % 10;
+  const lastTwo = count % 100;
+  if (lastDigit >= 2 && lastDigit <= 4 && (lastTwo < 12 || lastTwo > 14)) {
+    return `${count} aktywne plany`;
+  }
+  return `${count} aktywnych planów`;
+}
+
 export default function ClientsPage() {
   const [clients, setClients] = useState<ClientSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +86,11 @@ export default function ClientsPage() {
     });
   }, [clients, query, tab]);
 
+  const clearFilters = () => {
+    setQuery("");
+    setTab("all");
+  };
+
   return (
     <div>
       <PageHeader
@@ -91,10 +106,24 @@ export default function ClientsPage() {
         <Card className="mb-6" eyebrow="Nowy" title="Dodaj klienta">
           <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-3">
             <Field label="Imię i nazwisko *">
-              <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} required />
+              <input
+                className={inputClass}
+                name="name"
+                autoComplete="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
             </Field>
             <Field label="E-mail">
-              <input className={inputClass} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <input
+                className={inputClass}
+                type="email"
+                name="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </Field>
             <div className="sm:col-span-3">
               <Field label="Cel treningowy">
@@ -146,7 +175,16 @@ export default function ClientsPage() {
           Dodaj podopiecznego, żeby przypisać plan i śledzić treningi.
         </EmptyState>
       ) : filtered.length === 0 ? (
-        <EmptyState title="Brak wyników">Zmień filtr albo wyszukiwanie — albo dodaj nowego klienta.</EmptyState>
+        <EmptyState
+          title="Brak wyników"
+          action={
+            <Button variant="secondary" onClick={clearFilters}>
+              Wyczyść filtry
+            </Button>
+          }
+        >
+          Zmień filtr albo wyszukiwanie — albo dodaj nowego klienta.
+        </EmptyState>
       ) : (
         <div className="grid gap-3 xl:grid-cols-2 2xl:grid-cols-3">
           {filtered.map((c) => (
@@ -162,13 +200,11 @@ export default function ClientsPage() {
                 </div>
               </Link>
               {c.activePlans > 0 ? (
-                <Badge tone="positive">
-                  <span className="font-mono tabular-nums">{c.activePlans}</span> aktywny plan(y)
-                </Badge>
+                <Badge tone="positive">{activePlansLabel(c.activePlans)}</Badge>
               ) : (
                 <Link
                   href={`/clients/${c.id}`}
-                  className="shrink-0 rounded-full bg-surface-hover px-2.5 py-0.5 text-xs font-medium text-foreground-secondary hover:bg-accent-dim hover:text-accent-strong"
+                  className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-surface-hover px-3 py-2 text-xs font-medium text-foreground-secondary hover:bg-accent-dim hover:text-accent-strong"
                 >
                   bez planu — przypisz
                 </Link>

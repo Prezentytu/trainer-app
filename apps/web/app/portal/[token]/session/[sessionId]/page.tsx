@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { api, Exercise, SessionDetail, WorkoutSessionInput } from "@/lib/api";
 import { SessionLogger } from "@/components/SessionLogger";
 import { SessionSummaryView } from "@/components/SessionSummaryView";
+import { SessionLoggerSkeleton } from "@/components/skeletons";
 import { ErrorBanner } from "@/components/ui";
 import { enqueuePortalWrite, readPortalQueue, clearPortalQueueItem } from "@/lib/portalQueue";
 
@@ -53,7 +54,7 @@ export default function PortalSessionPage() {
     return (
       <div>
         <ErrorBanner message={error} />
-        <p className="text-muted">Ładowanie…</p>
+        {error ? null : <SessionLoggerSkeleton />}
       </div>
     );
   }

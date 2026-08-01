@@ -56,7 +56,7 @@ export function DayBoard({
 }) {
   return (
     <div className="relative -mx-1">
-      <div className="flex gap-4 overflow-x-auto px-1 pb-2">
+      <div className="flex flex-col gap-4 px-1 pb-2 md:flex-row md:overflow-x-auto">
         {days.map((day, idx) => (
           <DayColumn
             key={day.key}

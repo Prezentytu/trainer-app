@@ -210,6 +210,7 @@ export default function PlanBuilder({
           activeWeek={draft.activeWeek}
           weeksCount={draft.weeks.length}
           lastSavedAt={persistence.lastSavedAt}
+          isDirty={persistence.isDirty}
           planId={plan?.id}
           assigned={assigned}
           onAssigned={setAssigned}

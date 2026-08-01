@@ -7,7 +7,8 @@ import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { formatMeasureCore, MEASURE_LABELS } from "@/lib/measure";
 import { buildGroupLabels } from "@/lib/supersets";
 import PlanBuilder from "@/components/plan-builder/PlanBuilder";
-import { Badge, Button, Card, ErrorBanner, formatRest, PageHeader, Pill } from "@/components/ui";
+import { PlanDetailSkeleton } from "@/components/skeletons";
+import { Badge, Button, Card, Dialog, ErrorBanner, formatRest, PageHeader, Pill } from "@/components/ui";
 
 function repsText(item: PlanItem): string {
   return formatMeasureCore(item, undefined);
@@ -208,6 +209,7 @@ export default function PlanDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [activeWeek, setActiveWeek] = useState<number | null>(null);
+  const [cancelOpen, setCancelOpen] = useState(false);
 
   useEffect(() => {
     api.plans
@@ -223,7 +225,7 @@ export default function PlanDetailsPage() {
     return (
       <div>
         <ErrorBanner message={error} />
-        <p className="text-muted">Ładowanie…</p>
+        {error ? null : <PlanDetailSkeleton />}
       </div>
     );
   }
@@ -233,9 +235,26 @@ export default function PlanDetailsPage() {
       <div>
         <PageHeader
           title={`Edycja: ${plan.name}`}
-          action={<Button variant="ghost" onClick={() => setEditing(false)}>Anuluj edycję</Button>}
+          action={
+            <Button variant="ghost" onClick={() => setCancelOpen(true)}>
+              Anuluj edycję
+            </Button>
+          }
         />
         <PlanBuilder plan={plan} />
+        <Dialog
+          open={cancelOpen}
+          title="Opuścić edycję?"
+          description="Niezapisane zmiany w tym widoku mogą zostać utracone. Autosave zapisuje istniejący plan w tle — upewnij się, że widzisz status „Zapisano”, albo wyjdź świadomie."
+          confirmLabel="Opuść edycję"
+          cancelLabel="Zostań"
+          danger
+          onConfirm={() => {
+            setCancelOpen(false);
+            setEditing(false);
+          }}
+          onCancel={() => setCancelOpen(false)}
+        />
       </div>
     );
   }
@@ -243,7 +262,6 @@ export default function PlanDetailsPage() {
   const weeks = [...new Set(plan.days.map((d) => d.weekNumber))].sort((a, b) => a - b);
   const currentWeek = activeWeek ?? weeks[0] ?? 1;
   const currentIndex = Math.max(weeks.indexOf(currentWeek), 0);
-  const progressPercent = weeks.length > 1 ? Math.round((currentIndex / (weeks.length - 1)) * 100) : 100;
 
   return (
     <div>
@@ -256,7 +274,7 @@ export default function PlanDetailsPage() {
 
       <div className="mb-4 flex items-center gap-2">
         <Badge tone={plan.isTemplate ? "accent" : "neutral"}>
-          {plan.isTemplate ? "Formula" : "plan klienta"}
+          {plan.isTemplate ? "Formuła" : "plan klienta"}
         </Badge>
         <Badge tone="neutral">
           <span className="font-mono tabular-nums">
@@ -270,19 +288,13 @@ export default function PlanDetailsPage() {
 
       {weeks.length > 1 && (
         <Card className="mb-4">
-          <div className="mb-2 flex items-center justify-between text-xs text-muted">
-            <span>
-              Tydzień {currentIndex + 1} z {weeks.length}
-            </span>
-            <span>{progressPercent}%</span>
-          </div>
-          <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-surface-hover">
-            <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${progressPercent}%` }} />
+          <div className="mb-3 text-xs text-muted">
+            Tydzień {currentIndex + 1} z {weeks.length}
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
-            {weeks.map((week, idx) => (
+            {weeks.map((week) => (
               <Pill key={week} active={week === currentWeek} onClick={() => setActiveWeek(week)}>
-                {idx < currentIndex ? "✓ " : ""}Tydzień {week}
+                Tydzień {week}
               </Pill>
             ))}
           </div>

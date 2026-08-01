@@ -1,6 +1,6 @@
 "use client";
 
-import { inputClass } from "@/components/ui";
+import { inputNumericClass } from "@/components/ui";
 
 export function NumInput({
   value,
@@ -23,8 +23,9 @@ export function NumInput({
 }) {
   return (
     <input
-      className={`${inputClass} ${className}`}
+      className={`${inputNumericClass} ${className}`}
       type="number"
+      inputMode="decimal"
       min={min}
       step={step}
       placeholder={placeholder}

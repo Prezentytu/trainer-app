@@ -9,14 +9,21 @@ export function DashboardSkeleton() {
         <Skeleton className="h-7 w-40" />
         <Skeleton className="h-4 w-64" />
       </div>
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <Skeleton className="mb-6 h-36 w-full rounded-xl" />
+      <div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Skeleton key={i} className="h-24 w-full rounded-xl" />
         ))}
       </div>
-      <div className="grid gap-4 lg:grid-cols-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-48 w-full rounded-xl" />
+      <Skeleton className="mb-6 h-48 w-full rounded-xl" />
+      <div className="grid gap-6 lg:grid-cols-2">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <Skeleton key={i} className="h-56 w-full rounded-xl" />
+        ))}
+      </div>
+      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <Skeleton key={`b-${i}`} className="h-56 w-full rounded-xl" />
         ))}
       </div>
     </div>
@@ -66,14 +73,16 @@ export function ClientDetailSkeleton() {
 export function PlanListSkeleton() {
   return (
     <div aria-busy aria-label="Wczytuję plany" className="space-y-8">
-      <div>
-        <Skeleton className="mb-3 h-5 w-24" />
-        <div className="grid gap-3 xl:grid-cols-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 w-full rounded-xl" />
-          ))}
+      {["Formuły", "Plany klientów"].map((section) => (
+        <div key={section}>
+          <Skeleton className="mb-3 h-5 w-32" />
+          <div className="grid gap-3 xl:grid-cols-2">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <Skeleton key={i} className="h-24 w-full rounded-xl" />
+            ))}
+          </div>
         </div>
-      </div>
+      ))}
     </div>
   );
 }
@@ -102,6 +111,59 @@ export function PortalHomeSkeleton() {
       <Skeleton className="h-10 w-full rounded-md" />
       <Skeleton className="h-64 w-full rounded-xl" />
       <Skeleton className="h-12 w-full rounded-md" />
+    </div>
+  );
+}
+
+export function SessionLoggerSkeleton() {
+  return (
+    <div aria-busy aria-label="Wczytuję sesję" className="space-y-4 pb-24">
+      <div className="flex items-center justify-between gap-3 border-b border-border py-3">
+        <div className="space-y-2">
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="h-6 w-36" />
+        </div>
+        <Skeleton className="h-10 w-24 rounded-md" />
+      </div>
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="overflow-hidden rounded-xl border border-border bg-surface">
+          <div className="flex items-center gap-3 border-b border-border px-3 py-3">
+            <Skeleton className="h-12 w-12 shrink-0 rounded-md" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <Skeleton className="h-4 w-2/3 max-w-[14rem]" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+          </div>
+          {Array.from({ length: 3 }).map((_, j) => (
+            <div key={j} className="flex items-center gap-2 border-b border-border px-3 py-3 last:border-b-0">
+              <Skeleton className="h-4 w-6" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-11 flex-1 rounded-md" />
+              <Skeleton className="h-11 w-11 shrink-0 rounded-lg" />
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function PlanDetailSkeleton() {
+  return (
+    <div aria-busy aria-label="Wczytuję plan" className="space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-56" />
+          <Skeleton className="h-4 w-40" />
+        </div>
+        <Skeleton className="h-10 w-32 rounded-md" />
+      </div>
+      <Skeleton className="h-10 w-full max-w-md rounded-md" />
+      <div className="space-y-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-40 w-full rounded-xl" />
+        ))}
+      </div>
     </div>
   );
 }

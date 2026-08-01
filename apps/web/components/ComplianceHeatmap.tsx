@@ -74,6 +74,11 @@ export function ComplianceHeatmap({
           {total} sesji · {weeks} tyg.
         </span>
       </div>
+      {total === 0 ? (
+        <p className="mb-3 text-sm text-muted">
+          Brak ukończonych sesji w tym okresie — zaloguj pierwszą sesję u klienta, żeby zobaczyć zgodność.
+        </p>
+      ) : null}
       <div className="flex gap-1.5 overflow-x-auto pb-1">
         <div className="flex shrink-0 flex-col justify-around gap-1 pr-1">
           {DAY_LABELS.map((l) => (

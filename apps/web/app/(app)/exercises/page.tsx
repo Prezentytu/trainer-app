@@ -27,6 +27,7 @@ import {
   inputClass,
   PageHeader,
   Pill,
+  SegmentedControl,
   Tag,
   useUndoToast,
 } from "@/components/ui";
@@ -155,7 +156,6 @@ export default function ExercisesPage() {
   const [typeFilter, setTypeFilter] = useState<ExerciseType | "all">("all");
   const [moreFilters, setMoreFilters] = useState(false);
   const [preview, setPreview] = useState<Exercise | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Exercise | null>(null);
   const [loading, setLoading] = useState(true);
   const { showUndoToast, toastNode } = useUndoToast();
 
@@ -186,6 +186,10 @@ export default function ExercisesPage() {
 
   const handleSubmit = async (e?: FormEvent) => {
     e?.preventDefault();
+    if (!form.name.trim()) {
+      setError("Podaj nazwę ćwiczenia.");
+      return;
+    }
     setSaving(true);
     setError(null);
     const payload = payloadFromForm(form);
@@ -203,13 +207,10 @@ export default function ExercisesPage() {
     }
   };
 
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
-    const removed = deleteTarget;
-    setDeleteTarget(null);
+  const handleDelete = async (removed: Exercise) => {
+    setExercises((list) => list.filter((e) => e.id !== removed.id));
     try {
       await api.exercises.remove(removed.id);
-      setExercises((list) => list.filter((e) => e.id !== removed.id));
       showUndoToast(`Usunięto „${removed.name}”`, () => {
         void api.exercises
           .create({
@@ -472,7 +473,7 @@ export default function ExercisesPage() {
                       <Button variant="ghost" size="sm" onClick={() => startEdit(ex)}>
                         Edytuj
                       </Button>
-                      <Button variant="danger" size="sm" onClick={() => setDeleteTarget(ex)}>
+                      <Button variant="danger" size="md" onClick={() => void handleDelete(ex)}>
                         Usuń
                       </Button>
                     </div>
@@ -487,7 +488,9 @@ export default function ExercisesPage() {
       <Dialog
         open={showForm}
         title={editingId === null ? "Nowe ćwiczenie" : "Edycja ćwiczenia"}
-        confirmLabel={saving ? "Zapisywanie…" : "Zapisz ćwiczenie"}
+        confirmLabel={
+          saving ? "Zapisywanie…" : editingId === null ? "Dodaj ćwiczenie" : "Zapisz ćwiczenie"
+        }
         onConfirm={() => void handleSubmit()}
         onCancel={() => {
           setShowForm(false);
@@ -510,15 +513,16 @@ export default function ExercisesPage() {
             </Field>
           </div>
           <Field label="Typ">
-            <select
-              className={inputClass}
+            <SegmentedControl
+              full
+              items={[
+                { value: "reps", label: EXERCISE_TYPE_LABELS.reps },
+                { value: "time", label: EXERCISE_TYPE_LABELS.time },
+                { value: "distance", label: EXERCISE_TYPE_LABELS.distance },
+              ]}
               value={form.type}
-              onChange={(e) => set("type", e.target.value as ExerciseType)}
-            >
-              <option value="reps">Powtórzenia</option>
-              <option value="time">Czas</option>
-              <option value="distance">Dystans</option>
-            </select>
+              onChange={(v) => set("type", v as ExerciseType)}
+            />
           </Field>
           <Field label="Partia">
             <select className={inputClass} value={form.category} onChange={(e) => set("category", e.target.value)}>
@@ -534,6 +538,7 @@ export default function ExercisesPage() {
             <input
               className={inputClass}
               type="number"
+              inputMode="numeric"
               min={1}
               value={form.defaultSets}
               onChange={(e) => set("defaultSets", Number(e.target.value))}
@@ -543,6 +548,7 @@ export default function ExercisesPage() {
             <input
               className={inputClass}
               type="number"
+              inputMode="numeric"
               min={1}
               value={form.defaultReps}
               onChange={(e) => set("defaultReps", Number(e.target.value))}
@@ -553,6 +559,7 @@ export default function ExercisesPage() {
               <input
                 className={inputClass}
                 type="number"
+                inputMode="numeric"
                 min={5}
                 value={form.defaultRepDurationSeconds}
                 onChange={(e) => set("defaultRepDurationSeconds", Number(e.target.value))}
@@ -564,6 +571,7 @@ export default function ExercisesPage() {
               <input
                 className={inputClass}
                 type="number"
+                inputMode="decimal"
                 min={1}
                 value={form.defaultDistanceMeters}
                 onChange={(e) => set("defaultDistanceMeters", Number(e.target.value))}
@@ -574,6 +582,7 @@ export default function ExercisesPage() {
             <input
               className={inputClass}
               type="number"
+              inputMode="numeric"
               min={0}
               value={form.defaultRestBetweenSetsSeconds}
               onChange={(e) => set("defaultRestBetweenSetsSeconds", Number(e.target.value))}
@@ -583,6 +592,7 @@ export default function ExercisesPage() {
             <input
               className={inputClass}
               type="number"
+              inputMode="decimal"
               min={0}
               step={0.5}
               value={form.defaultLoadKg}
@@ -590,7 +600,10 @@ export default function ExercisesPage() {
               placeholder="brak"
             />
           </Field>
-          <Field label="YouTube ID (opcjonalnie)">
+          <Field
+            label="YouTube ID (opcjonalnie)"
+            hint="ID z URL YouTube — film demo w karcie ćwiczenia"
+          >
             <input
               className={inputClass}
               value={form.youtubeId}
@@ -603,7 +616,7 @@ export default function ExercisesPage() {
               className={inputClass}
               value={form.equipment}
               onChange={(e) => set("equipment", e.target.value)}
-              placeholder="barbell, dumbbell"
+              placeholder="sztanga, hantle"
             />
           </Field>
           <div className="sm:col-span-2">
@@ -618,20 +631,6 @@ export default function ExercisesPage() {
           </div>
         </form>
       </Dialog>
-
-      <Dialog
-        open={Boolean(deleteTarget)}
-        title="Usunąć ćwiczenie?"
-        description={
-          deleteTarget
-            ? `Ćwiczenie „${deleteTarget.name}” zniknie z biblioteki. Jeśli jest w planie, usunięcie się nie uda.`
-            : undefined
-        }
-        confirmLabel="Usuń"
-        danger
-        onConfirm={() => void confirmDelete()}
-        onCancel={() => setDeleteTarget(null)}
-      />
 
       {preview && previewMedia ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
