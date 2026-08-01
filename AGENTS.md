@@ -13,7 +13,7 @@ Ten plik jest punktem startowym dla każdego agenta. Zanim zaczniesz kodować, d
 | Klient API | typowany wrapper `fetch` | — | `apps/web/lib/api.ts` |
 | Testy API | xUnit + `WebApplicationFactory` | — | `tests/api/` |
 
-- Namespace backendu: `TrainerApp.Api`. Baza SQLite tworzona przez `EnsureCreated()` (brak migracji).
+- Namespace backendu: `TrainerApp.Api`. Lokalnie (SQLite) schemat powstaje przez `EnsureCreated()`; na produkcji (Postgres) przez migracje EF z `apps/api/Migrations/`. Zmiana encji wymaga **obu**: nowej migracji i usunięcia `apps/api/trainer.db`.
 - UI jest w całości po polsku, ciemny motyw Workout Alchemist. Kolory wyłącznie przez tokeny semantyczne z `apps/web/app/globals.css` (warstwa semantyczna + `@theme inline`; akcent teal, gold tylko PR) — zobacz skill `design-system`.
 - Monorepo, jeden git w root: deployowalne aplikacje pod `apps/`, testy pod `tests/`.
 
@@ -47,7 +47,7 @@ trainer-app/
 
 - Przed dodaniem nowej zależności produkcyjnej (NuGet lub npm).
 - Przed zmianą kontraktu API używanego już przez istniejące strony (sygnatury endpointów, kształt odpowiedzi, typy w `apps/web/lib/api.ts`).
-- Przed zmianą schematu bazy (pola encji, relacje). `EnsureCreated()` **nie migruje** istniejącej bazy — zmiana schematu wymaga usunięcia `apps/api/trainer.db`, co kasuje dane.
+- Przed zmianą schematu bazy (pola encji, relacje). Lokalnie `EnsureCreated()` **nie migruje** istniejącej bazy — zmiana schematu wymaga usunięcia `apps/api/trainer.db`, co kasuje dane. Na produkcji potrzebna jest dodatkowo migracja EF.
 - Przed zmianą architektury, układu katalogów lub dotknięciem wielu obszarów naraz w sposób nieopisany w istniejącym specu.
 
 ## Never

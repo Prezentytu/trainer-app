@@ -9,6 +9,9 @@ cd "$ROOT"
 
 export MSBUILDDISABLENODEREUSE=1
 export DOTNET_CLI_TELEMETRY_OPTOUT=1
+# --no-launch-profile pomija launchSettings.json, więc środowisko ustawiamy tutaj.
+# Bez tego ASP.NET wybrałby Production → appsettings.Production.json → provider Postgres.
+export ASPNETCORE_ENVIRONMENT=Development
 
 API_PORT=5210
 WEB_PORT=3000
@@ -67,6 +70,7 @@ echo
   # Bez --watch: jeden proces, mniej I/O i mniej MSBuild node reuse
   exec dotnet run --no-launch-profile --urls "http://localhost:$API_PORT"
 ) 2>&1 | prefix "api" &
+API_PID=$!
 
 (
   cd "$ROOT/apps/web"
@@ -76,6 +80,18 @@ echo
   fi
   exec npm run dev
 ) 2>&1 | prefix "web" &
+WEB_PID=$!
 
-# Czekaj na oba joby; wyjście jednego kończy skrypt (trap sprząta resztę)
-wait
+# Padnięcie jednej strony kończy skrypt (trap sprząta resztę).
+# Pętla zamiast `wait -n`, bo systemowy bash na macOS to 3.2.
+while true; do
+  if ! kill -0 "$API_PID" 2>/dev/null; then
+    echo "==> API zakończyło się — zatrzymuję web."
+    break
+  fi
+  if ! kill -0 "$WEB_PID" 2>/dev/null; then
+    echo "==> Web zakończył się — zatrzymuję API."
+    break
+  fi
+  sleep 1
+done

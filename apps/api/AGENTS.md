@@ -28,7 +28,7 @@
 
 ## Never
 
-- Nigdy nie zakładaj, że EF zmigruje istniejącą bazę — `EnsureCreated()` tworzy schemat tylko, gdy `trainer.db` nie istnieje.
+- Nigdy nie zakładaj, że lokalna baza się zmigruje — na SQLite `EnsureCreated()` tworzy schemat tylko, gdy `trainer.db` nie istnieje (migracje działają wyłącznie na Postgresie).
 - Nigdy nie zwracaj encji z cyklicznymi nawigacjami wprost bez rzutowania na anonimowy/DTO kształt (ryzyko pętli serializacji) — patrz `PlanToDto`.
 - Nigdy nie commituj `trainer.db`, `bin/`, `obj/`.
 
@@ -58,12 +58,18 @@ app.MapPost("/api/clients", async (ClientInput input, AppDb db) =>
 3. `Dtos.cs` — rekord `record NazwaInput(...)`.
 4. `Program.cs` — sekcja endpointów `GET/POST/PUT/DELETE /api/{zasób}` wg wzorca wyżej.
 5. `Seed.cs` — opcjonalne dane startowe.
-6. **Usuń `apps/api/trainer.db`** i zrestartuj backend, aby schemat się przebudował.
-7. Dodaj test integracyjny (patrz `tests/api/`) na wzór `ClientsEndpointsTests`.
+6. `dotnet ef migrations add <Nazwa> --project apps/api` — migracja dla Postgresa (produkcja).
+7. **Usuń `apps/api/trainer.db`** i zrestartuj backend, aby lokalny schemat się przebudował.
+8. Dodaj test integracyjny (patrz `tests/api/`) na wzór `ClientsEndpointsTests`.
 
-## Uwaga o bazie (`EnsureCreated`)
+## Uwaga o bazie (dwa tory: SQLite vs Postgres)
 
-Zmiana kształtu istniejącej encji **nie** zaktualizuje `trainer.db`. Podczas dev: usuń `apps/api/trainer.db` i pozwól, by `EnsureCreated()` + `Seed.Run` odtworzyły bazę. Jeśli projekt urośnie, rozważ migracje EF Core (`dotnet ef migrations`) — ale to decyzja „Ask First”.
+`Program.cs` wybiera tor po `Database:Provider`:
+
+- **Lokalnie (SQLite, `Development`)** — `EnsureCreated()` + `Seed.Run`. Zmiana kształtu encji **nie** zaktualizuje istniejącego `trainer.db`: usuń plik i zrestartuj backend.
+- **Produkcja (Postgres)** — `Database.Migrate()` z migracji w `apps/api/Migrations/`.
+
+Konsekwencja: migracje **nie wykonują się lokalnie**, więc świeżo wygenerowana migracja pierwszy raz uruchomi się dopiero na produkcji. Po zmianie encji zawsze wygeneruj migrację (`dotnet ef migrations add <Nazwa> --project apps/api`) i sprawdź wygenerowany SQL, zanim uznasz zadanie za skończone.
 
 ## Testowanie
 

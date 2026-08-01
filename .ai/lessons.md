@@ -50,10 +50,17 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ## `EnsureCreated()` nie migruje istniejącej bazy
 
-**Kontekst**: Schemat tworzy `db.Database.EnsureCreated()` w `apps/api/Program.cs`.
-**Problem**: Zmiana pól/relacji istniejącej encji nie zaktualizuje `trainer.db` — nowe kolumny nie powstaną, aplikacja rzuci błędem SQLite.
-**Zasada**: Po zmianie schematu usuń `apps/api/trainer.db` i pozwól odtworzyć bazę (dev). Utratę danych zgłoś użytkownikowi z góry.
-**Dotyczy**: `apps/api/Models.cs`, `apps/api/AppDb.cs`, `apps/api/Program.cs`.
+**Kontekst**: `apps/api/Program.cs` ma dwa tory: SQLite (dev) → `EnsureCreated()`, Postgres (prod) → `Database.Migrate()`.
+**Problem**: Zmiana pól/relacji istniejącej encji nie zaktualizuje `trainer.db` — nowe kolumny nie powstaną, aplikacja rzuci błędem SQLite. Odwrotnie na produkcji: bez wygenerowanej migracji Postgres zostanie ze starym schematem.
+**Zasada**: Po zmianie schematu zrób **oba**: wygeneruj migrację (`dotnet ef migrations add …`) i usuń `apps/api/trainer.db`, żeby lokalna baza się odtworzyła. Utratę danych zgłoś użytkownikowi z góry. Pamiętaj, że migracje nie wykonują się lokalnie — pierwszy realny przebieg jest na produkcji, więc przejrzyj wygenerowany SQL.
+**Dotyczy**: `apps/api/Models.cs`, `apps/api/AppDb.cs`, `apps/api/Program.cs`, `apps/api/Migrations/`.
+
+## `--no-launch-profile` wymaga jawnego `ASPNETCORE_ENVIRONMENT`
+
+**Kontekst**: `scripts/dev.sh` startuje API przez `dotnet run --no-launch-profile`, co świadomie pomija `launchSettings.json` — a to tam ustawione było `ASPNETCORE_ENVIRONMENT=Development`.
+**Problem**: Po dodaniu `appsettings.Production.json` (provider `Postgres`) domyślne środowisko Production sprawiło, że dev-owy SQLite-owy connection string trafiał do Npgsql i API padało na starcie: `Couldn't set data source`. Objaw był niewidoczny, bo gołe `wait` w skrypcie nie kończyło go po śmierci jednego procesu — web żył dalej i wyglądało to na „działa”.
+**Zasada**: Każde uruchomienie z `--no-launch-profile` ustawia środowisko jawnie (`export ASPNETCORE_ENVIRONMENT=Development`). Dodając plik `appsettings.{Environment}.json`, sprawdź, czy któryś skrypt nie ominie profilu. W orkiestratorze dev padnięcie jednego procesu musi kończyć cały skrypt — inaczej awaria backendu jest niewidoczna.
+**Dotyczy**: `scripts/dev.sh`, `apps/api/Properties/launchSettings.json`, `apps/api/appsettings.Production.json`.
 
 ## Każdy endpoint trenera musi przejść przez `TrainerAccess`
 
