@@ -6,6 +6,7 @@ import { ClerkAppProvider } from "@/components/ClerkAppProvider";
 const fontDisplay = Bricolage_Grotesque({
   variable: "--font-bricolage",
   subsets: ["latin", "latin-ext"],
+  axes: ["opsz"],
 });
 
 const fontBody = Instrument_Sans({

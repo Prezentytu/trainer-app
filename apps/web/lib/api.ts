@@ -328,6 +328,24 @@ export type ClientMax = {
   note: string | null;
 };
 
+export type ClientMeasurement = {
+  id: number;
+  clientId: number;
+  measuredOn: string;
+  weightKg: number | null;
+  waistCm: number | null;
+  chestCm: number | null;
+  hipsCm: number | null;
+  note: string | null;
+  createdAt: string;
+};
+
+export type SessionCheckinInput = {
+  feelingScore: number | null;
+  sleepScore: number | null;
+  energyScore: number | null;
+};
+
 export type PrevLoggedSet = {
   setNumber: number;
   weightKg: number | null;
@@ -387,6 +405,9 @@ export type SessionSummary = {
   performedOn: string;
   durationSeconds: number | null;
   note: string | null;
+  feelingScore: number | null;
+  sleepScore: number | null;
+  energyScore: number | null;
   status: string;
   createdAt: string;
   totalSets: number;
@@ -483,6 +504,8 @@ export type DashboardData = {
   recentSessions: (SessionSummary & { clientName: string })[];
   recentPrs: (ClientRecord & { clientId: number; clientName: string })[];
   attention: AttentionItem[];
+  /** Daty ukończonych sesji (ostatnie ~8 tyg.) do heatmapy zgodności. */
+  complianceDates?: string[];
 };
 
 export type ProgressReport = {
@@ -606,6 +629,24 @@ export const api = {
         body: JSON.stringify(input),
       }),
     removeMax: (id: number) => request(`/api/maxes/${id}`, { method: "DELETE" }),
+    measurements: (clientId: number) =>
+      request<ClientMeasurement[]>(`/api/clients/${clientId}/measurements`),
+    addMeasurement: (
+      clientId: number,
+      input: {
+        measuredOn: string;
+        weightKg?: number | null;
+        waistCm?: number | null;
+        chestCm?: number | null;
+        hipsCm?: number | null;
+        note?: string | null;
+      },
+    ) =>
+      request<{ id: number }>(`/api/clients/${clientId}/measurements`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    removeMeasurement: (id: number) => request(`/api/measurements/${id}`, { method: "DELETE" }),
     sessions: (clientId: number) => request<SessionSummary[]>(`/api/clients/${clientId}/sessions`),
     records: (clientId: number) => request<ClientRecord[]>(`/api/clients/${clientId}/records`),
     progress: (clientId: number) => request<ClientProgress>(`/api/clients/${clientId}/progress`),
@@ -681,6 +722,11 @@ export const api = {
       }),
     complete: (id: number) =>
       request<SessionDetail>(`/api/sessions/${id}/complete`, { method: "PATCH" }),
+    checkin: (id: number, input: SessionCheckinInput) =>
+      request<SessionDetail>(`/api/sessions/${id}/checkin`, {
+        method: "PATCH",
+        body: JSON.stringify(input),
+      }),
     remove: (id: number) => request(`/api/sessions/${id}`, { method: "DELETE" }),
   },
   portal: {
@@ -713,6 +759,28 @@ export const api = {
     completeSession: (token: string, id: number) =>
       request<SessionDetail>(`/api/portal/${token}/sessions/${id}/complete`, {
         method: "PATCH",
+      }),
+    checkinSession: (token: string, id: number, input: SessionCheckinInput) =>
+      request<SessionDetail>(`/api/portal/${token}/sessions/${id}/checkin`, {
+        method: "PATCH",
+        body: JSON.stringify(input),
+      }),
+    exercises: (token: string) => request<Exercise[]>(`/api/portal/${token}/exercises`),
+    measurements: (token: string) => request<ClientMeasurement[]>(`/api/portal/${token}/measurements`),
+    addMeasurement: (
+      token: string,
+      input: {
+        measuredOn: string;
+        weightKg?: number | null;
+        waistCm?: number | null;
+        chestCm?: number | null;
+        hipsCm?: number | null;
+        note?: string | null;
+      },
+    ) =>
+      request<{ id: number }>(`/api/portal/${token}/measurements`, {
+        method: "POST",
+        body: JSON.stringify(input),
       }),
   },
 };

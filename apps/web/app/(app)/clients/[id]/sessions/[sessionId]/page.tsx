@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { api, SessionDetail } from "@/lib/api";
+import { api, Exercise, SessionDetail } from "@/lib/api";
 import { SessionLogger } from "@/components/SessionLogger";
 import { Button, ErrorBanner, PageHeader } from "@/components/ui";
 
@@ -13,12 +13,15 @@ export default function ClientSessionPage() {
   const clientId = Number(params.id);
   const sessionId = Number(params.sessionId);
   const [session, setSession] = useState<SessionDetail | null>(null);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    api.sessions
-      .get(sessionId)
-      .then(setSession)
+    Promise.all([api.sessions.get(sessionId), api.exercises.list()])
+      .then(([s, ex]) => {
+        setSession(s);
+        setExercises(ex);
+      })
       .catch((e: Error) => setError(e.message));
   }, [sessionId]);
 
@@ -47,6 +50,7 @@ export default function ClientSessionPage() {
       <SessionLogger
         key={session.id}
         session={session}
+        libraryExercises={exercises}
         onUpdated={setSession}
         onCompleted={() => router.push(`/clients/${clientId}`)}
       />

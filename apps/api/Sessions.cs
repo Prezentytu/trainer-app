@@ -226,6 +226,24 @@ public static class Sessions
         await db.SaveChangesAsync();
     }
 
+    public static IResult? ValidateCheckinScores(SessionCheckinInput input)
+    {
+        foreach (var (score, label) in new[] { (input.FeelingScore, "Samopoczucie"), (input.SleepScore, "Sen"), (input.EnergyScore, "Energia") })
+        {
+            if (score is int v && (v < 1 || v > 5))
+                return Results.BadRequest(new { message = $"{label} musi być w skali 1–5." });
+        }
+        return null;
+    }
+
+    public static async Task CheckinAsync(AppDb db, WorkoutSession session, SessionCheckinInput input)
+    {
+        session.FeelingScore = input.FeelingScore;
+        session.SleepScore = input.SleepScore;
+        session.EnergyScore = input.EnergyScore;
+        await db.SaveChangesAsync();
+    }
+
     public static async Task<object?> LoadDto(AppDb db, int id)
     {
         var session = await db.WorkoutSessions

@@ -16,12 +16,14 @@ import {
   Pill,
   Tabs,
 } from "@/components/ui";
+import { ClientListSkeleton } from "@/components/skeletons";
 
 type TabFilter = "all" | "active" | "idle";
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<ClientSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -34,7 +36,8 @@ export default function ClientsPage() {
     api.clients
       .list()
       .then(setClients)
-      .catch((e: Error) => setError(e.message));
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(load, [load]);
@@ -105,8 +108,8 @@ export default function ClientsPage() {
               </Field>
             </div>
             <div className="sm:col-span-3">
-              <Button type="submit" disabled={saving}>
-                {saving ? "Zapisywanie…" : "Dodaj klienta"}
+              <Button type="submit" loading={saving}>
+                Dodaj klienta
               </Button>
             </div>
           </form>
@@ -131,10 +134,19 @@ export default function ClientsPage() {
         />
       </div>
 
-      {clients.length === 0 ? (
-        <EmptyState>Brak klientów — dodaj pierwszego przyciskiem powyżej.</EmptyState>
+      {loading ? (
+        <ClientListSkeleton />
+      ) : clients.length === 0 ? (
+        <EmptyState
+          title="Nie masz jeszcze klientów"
+          action={
+            <Button onClick={() => setShowForm(true)}>+ Dodaj pierwszego klienta</Button>
+          }
+        >
+          Dodaj podopiecznego, żeby przypisać plan i śledzić treningi.
+        </EmptyState>
       ) : filtered.length === 0 ? (
-        <EmptyState>Brak wyników dla wybranych filtrów.</EmptyState>
+        <EmptyState title="Brak wyników">Zmień filtr albo wyszukiwanie — albo dodaj nowego klienta.</EmptyState>
       ) : (
         <div className="grid gap-3 xl:grid-cols-2 2xl:grid-cols-3">
           {filtered.map((c) => (

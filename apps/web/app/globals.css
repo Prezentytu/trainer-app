@@ -91,8 +91,17 @@
   --glow-accent: 0 0 0 3px rgba(62, 156, 143, 0.28);
   --overlay-scrim: rgba(10, 11, 12, 0.74);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
   --dur-fast: 120ms;
   --dur-med: 220ms;
+  --dur-slow: 360ms;
+
+  /* Typografia — tracking + leading systemowe */
+  --tracking-caps: 0.08em;
+  --tracking-display: -0.015em;
+  --leading-display: 1.15;
+  --leading-body: 1.5;
+  --leading-label: 1.4;
 }
 
 .sr-only {
@@ -163,6 +172,70 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-instrument), system-ui, sans-serif;
+  line-height: var(--leading-body);
+}
+
+.font-display {
+  font-optical-sizing: auto;
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-display);
+}
+
+.tracking-caps {
+  letter-spacing: var(--tracking-caps);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes skeleton-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.45;
+    }
+  }
+
+  .skeleton-pulse {
+    animation: skeleton-pulse 1.4s var(--ease-out) infinite;
+  }
+
+  @keyframes stagger-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .stagger-in {
+    animation: stagger-in var(--dur-med) var(--ease-out) both;
+  }
+
+  @keyframes pr-celebrate-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .pr-celebrate-in {
+    animation: pr-celebrate-in var(--dur-med) var(--ease-out) both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-pulse,
+  .stagger-in {
+    animation: none;
+  }
 }
 
 input,

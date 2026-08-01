@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, AttentionItem, ClientSummary, DashboardData, PlanSummary } from "@/lib/api";
 import { Avatar, Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, StatBlock } from "@/components/ui";
+import { DashboardSkeleton } from "@/components/skeletons";
+import { ComplianceHeatmap } from "@/components/ComplianceHeatmap";
 
 export function TrainerDashboard() {
   const [clients, setClients] = useState<ClientSummary[]>([]);
@@ -44,13 +46,13 @@ export function TrainerDashboard() {
     }
   };
 
-  if (loading) return <p className="text-muted">Ładowanie…</p>;
+  if (loading) return <DashboardSkeleton />;
 
   return (
     <div>
       <PageHeader
         title="Panel"
-        subtitle="Szybki przegląd Twojej pracy"
+        subtitle="Klienci wymagający uwagi, ostatnie treningi i rekordy"
         action={
           <div className="flex flex-wrap gap-2">
             <Button
@@ -108,11 +110,12 @@ export function TrainerDashboard() {
         </Card>
       )}
 
-      {attention.length > 0 && (
-        <Card className="mb-6" eyebrow="Priorytet" title="Wymaga uwagi" meta={`${attention.length} sygnałów`}>
+      {/* Primary: wymaga uwagi — jedna dominanta na ekran */}
+      {attention.length > 0 ? (
+        <Card className="mb-6 border-accent-border" eyebrow="Priorytet" title="Wymaga uwagi" meta={`${attention.length} sygnałów`}>
           <ul className="divide-y divide-border">
             {attention.map((item) => (
-              <li key={`${item.clientId}-${item.reason}`} className="flex items-center justify-between gap-3 py-2.5">
+              <li key={`${item.clientId}-${item.reason}`} className="flex items-center justify-between gap-3 py-2.5 stagger-in">
                 <Link href={`/clients/${item.clientId}`} className="flex min-w-0 items-center gap-2.5">
                   <Avatar name={item.clientName} size="sm" />
                   <span className="min-w-0">
@@ -123,7 +126,7 @@ export function TrainerDashboard() {
                 {item.action === "assign_plan" ? (
                   <Link
                     href={`/clients/${item.clientId}`}
-                    className="shrink-0 rounded-[10px] bg-accent-dim px-2.5 py-1 text-xs font-semibold text-accent-strong hover:bg-accent-border"
+                    className="shrink-0 rounded-md bg-accent-dim px-2.5 py-1 text-xs font-semibold text-accent-strong hover:bg-accent-border"
                   >
                     Przypisz plan
                   </Link>
@@ -132,7 +135,7 @@ export function TrainerDashboard() {
                     type="button"
                     onClick={() => void copyPortalLink(item)}
                     disabled={!item.portalToken}
-                    className="shrink-0 rounded-[10px] bg-accent-dim px-2.5 py-1 text-xs font-semibold text-accent-strong hover:bg-accent-border disabled:opacity-40"
+                    className="shrink-0 rounded-md bg-accent-dim px-2.5 py-1 text-xs font-semibold text-accent-strong hover:bg-accent-border disabled:opacity-40"
                   >
                     {copiedId === item.clientId ? "Skopiowano" : "Skopiuj link"}
                   </button>
@@ -141,22 +144,44 @@ export function TrainerDashboard() {
             ))}
           </ul>
         </Card>
-      )}
+      ) : !showOnboarding ? (
+        <Card className="mb-6" eyebrow="Status" title="Wszystko pod kontrolą" meta="Brak sygnałów churn">
+          <p className="text-sm text-muted-strong">Klienci trenują zgodnie z planem. Sprawdź rekordy poniżej.</p>
+        </Card>
+      ) : null}
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Klienci" value={clients.length} href="/clients" />
-        <StatCard label="Formuły" value={templates.length} href="/plans" />
-        <StatCard label="Plany klientów" value={clientPlans.length} href="/plans" />
-        <StatCard label="Aktywne przypisania" value={activeAssignments} href="/clients" />
+      <div className="mb-6 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+        <Card>
+          <ComplianceHeatmap
+            dates={dash?.complianceDates ?? []}
+            weeks={8}
+            title="Zgodność zespołu"
+          />
+        </Card>
+        <div className="grid grid-cols-2 gap-3">
+          <StatCard label="Klienci" value={clients.length} href="/clients" />
+          <StatCard label="Formuły" value={templates.length} href="/plans" />
+          <StatCard label="Plany klientów" value={clientPlans.length} href="/plans" />
+          <StatCard label="Aktywne przypisania" value={activeAssignments} href="/clients" />
+        </div>
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+      <div className="mt-2 grid gap-6 lg:grid-cols-2">
         <Card>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-display text-lg font-semibold">Ostatnie sesje</h2>
           </div>
           {recentSessions.length === 0 ? (
-            <EmptyState>Brak zalogowanych treningów. Wejdź w klienta → Loguj trening.</EmptyState>
+            <EmptyState
+              title="Brak treningów"
+              action={
+                <Link href="/clients">
+                  <Button size="sm">Otwórz klientów</Button>
+                </Link>
+              }
+            >
+              Wejdź w klienta i zaloguj pierwszą sesję — pojawi się tutaj.
+            </EmptyState>
           ) : (
             <ul className="divide-y divide-border">
               {recentSessions.map((s) => (
@@ -179,12 +204,16 @@ export function TrainerDashboard() {
           )}
         </Card>
 
-        <Card>
+        <Card className="border-pr/30">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-display text-lg font-semibold">Ostatnie rekordy</h2>
+            <h2 className="font-display text-lg font-semibold">
+              Ostatnie rekordy <span className="text-pr">PR</span>
+            </h2>
           </div>
           {recentPrs.length === 0 ? (
-            <EmptyState>PR-y pojawią się po zalogowaniu serii z ciężarem.</EmptyState>
+            <EmptyState title="Brak rekordów">
+              PR-y pojawią się po zalogowaniu serii z ciężarem i powtórzeniami.
+            </EmptyState>
           ) : (
             <ul className="divide-y divide-border">
               {recentPrs.map((r, i) => (
@@ -196,7 +225,7 @@ export function TrainerDashboard() {
                     <span className="font-medium">{r.clientName}</span>
                     <span className="mt-0.5 block break-words text-xs text-muted">{r.exerciseName}</span>
                   </div>
-                  <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-pr">
+                  <span className="shrink-0 rounded-full bg-pr-dim px-2.5 py-0.5 font-mono text-sm font-semibold tabular-nums text-pr">
                     {r.estimated1Rm} kg
                   </span>
                 </li>
@@ -215,8 +244,15 @@ export function TrainerDashboard() {
             </Link>
           </div>
           {clients.length === 0 ? (
-            <EmptyState>
-              Brak klientów. <Link className="text-accent underline" href="/clients">Dodaj pierwszego</Link>.
+            <EmptyState
+              title="Brak klientów"
+              action={
+                <Link href="/clients">
+                  <Button size="sm">Dodaj pierwszego klienta</Button>
+                </Link>
+              }
+            >
+              Dodaj podopiecznego, żeby przypisać plan i śledzić treningi.
             </EmptyState>
           ) : (
             <ul className="divide-y divide-border">
@@ -243,8 +279,15 @@ export function TrainerDashboard() {
             </Link>
           </div>
           {plans.length === 0 ? (
-            <EmptyState>
-              Brak planów. <Link className="text-accent underline" href="/plans/new">Stwórz pierwszy</Link>.
+            <EmptyState
+              title="Brak planów"
+              action={
+                <Link href="/plans/new">
+                  <Button size="sm">Utwórz pierwszy plan</Button>
+                </Link>
+              }
+            >
+              Zacznij od formuły albo planu pod konkretnego klienta.
             </EmptyState>
           ) : (
             <ul className="divide-y divide-border">

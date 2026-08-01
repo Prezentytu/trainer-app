@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { api, SessionDetail, WorkoutSessionInput } from "@/lib/api";
+import { api, Exercise, SessionDetail, WorkoutSessionInput } from "@/lib/api";
 import { SessionLogger } from "@/components/SessionLogger";
 import { SessionSummaryView } from "@/components/SessionSummaryView";
 import { ErrorBanner } from "@/components/ui";
@@ -14,6 +14,7 @@ export default function PortalSessionPage() {
   const sessionId = Number(params.sessionId);
   const router = useRouter();
   const [session, setSession] = useState<SessionDetail | null>(null);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [editingCompleted, setEditingCompleted] = useState(false);
 
@@ -40,9 +41,11 @@ export default function PortalSessionPage() {
   }, [flushQueue]);
 
   useEffect(() => {
-    api.portal
-      .getSession(token, sessionId)
-      .then(setSession)
+    Promise.all([api.portal.getSession(token, sessionId), api.portal.exercises(token)])
+      .then(([s, ex]) => {
+        setSession(s);
+        setExercises(ex);
+      })
       .catch((e: Error) => setError(e.message));
   }, [token, sessionId]);
 
@@ -76,6 +79,7 @@ export default function PortalSessionPage() {
         key={`${session.id}-${editingCompleted ? "edit" : "live"}`}
         session={session}
         portalToken={token}
+        libraryExercises={exercises}
         completedEdit={editingCompleted}
         onUpdated={setSession}
         onPersistFailed={(input, complete) => {

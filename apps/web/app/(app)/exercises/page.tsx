@@ -30,6 +30,7 @@ import {
   Tag,
   useUndoToast,
 } from "@/components/ui";
+import { ExerciseListSkeleton } from "@/components/skeletons";
 
 type FormState = {
   name: string;
@@ -155,13 +156,15 @@ export default function ExercisesPage() {
   const [moreFilters, setMoreFilters] = useState(false);
   const [preview, setPreview] = useState<Exercise | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Exercise | null>(null);
+  const [loading, setLoading] = useState(true);
   const { showUndoToast, toastNode } = useUndoToast();
 
   const load = useCallback(() => {
     api.exercises
       .list()
       .then(setExercises)
-      .catch((e: Error) => setError(e.message));
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(load, [load]);
@@ -376,28 +379,36 @@ export default function ExercisesPage() {
         </div>
       </div>
 
-      {exercises.length === 0 ? (
-        <EmptyState>
-          <p className="mb-3">Biblioteka jest pusta.</p>
-          <Button onClick={() => startCreate()}>+ Dodaj pierwsze ćwiczenie</Button>
+      {loading ? (
+        <ExerciseListSkeleton />
+      ) : exercises.length === 0 ? (
+        <EmptyState
+          title="Biblioteka jest pusta"
+          action={<Button onClick={() => startCreate()}>+ Dodaj pierwsze ćwiczenie</Button>}
+        >
+          Dodaj własne ćwiczenie albo poczekaj na seed wspólnej biblioteki.
         </EmptyState>
       ) : filtered.length === 0 ? (
-        <EmptyState>
-          <p className="mb-3">Brak ćwiczeń dla wybranych filtrów.</p>
-          <div className="flex flex-wrap justify-center gap-2">
-            {hasActiveFilters ? (
-              <Button variant="secondary" onClick={clearFilters}>
-                Wyczyść filtry
-              </Button>
-            ) : null}
-            {query.trim() ? (
-              <Button onClick={() => startCreate(query.trim())}>
-                Utwórz ćwiczenie „{query.trim()}”
-              </Button>
-            ) : (
-              <Button onClick={() => startCreate()}>+ Nowe ćwiczenie</Button>
-            )}
-          </div>
+        <EmptyState
+          title="Brak ćwiczeń dla filtrów"
+          action={
+            <div className="flex flex-wrap justify-center gap-2">
+              {hasActiveFilters ? (
+                <Button variant="secondary" onClick={clearFilters}>
+                  Wyczyść filtry
+                </Button>
+              ) : null}
+              {query.trim() ? (
+                <Button onClick={() => startCreate(query.trim())}>
+                  Utwórz ćwiczenie „{query.trim()}”
+                </Button>
+              ) : (
+                <Button onClick={() => startCreate()}>+ Nowe ćwiczenie</Button>
+              )}
+            </div>
+          }
+        >
+          Zmień filtry albo utwórz ćwiczenie o tej nazwie.
         </EmptyState>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

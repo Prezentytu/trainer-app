@@ -7,6 +7,7 @@ import {
   api,
   ClientDetails,
   ClientMax,
+  ClientMeasurement,
   ClientProgress,
   ClientRecord,
   Exercise,
@@ -15,6 +16,7 @@ import {
   SessionSummary,
 } from "@/lib/api";
 import { TrendSparkline } from "@/components/TrendSparkline";
+import { WeightTrendSparkline } from "@/components/WeightTrendSparkline";
 import {
   Avatar,
   Badge,
@@ -29,6 +31,8 @@ import {
   Tabs,
   useUndoToast,
 } from "@/components/ui";
+import { ClientDetailSkeleton } from "@/components/skeletons";
+import { ComplianceHeatmap } from "@/components/ComplianceHeatmap";
 import { formatDurationMinutes } from "@/lib/estimateDuration";
 
 function PlanPickerCard({ plan, selected, onSelect }: { plan: PlanSummary; selected: boolean; onSelect: () => void }) {
@@ -95,6 +99,7 @@ export default function ClientDetailsPage() {
   const [plans, setPlans] = useState<PlanSummary[]>([]);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [maxes, setMaxes] = useState<ClientMax[]>([]);
+  const [measurements, setMeasurements] = useState<ClientMeasurement[]>([]);
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [records, setRecords] = useState<ClientRecord[]>([]);
   const [progress, setProgress] = useState<ClientProgress | null>(null);
@@ -112,6 +117,10 @@ export default function ClientDetailsPage() {
   const [maxKg, setMaxKg] = useState("");
   const [maxDate, setMaxDate] = useState(() => new Date().toISOString().slice(0, 10));
 
+  const [measureDate, setMeasureDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [measureWeight, setMeasureWeight] = useState("");
+  const [measureWaist, setMeasureWaist] = useState("");
+
   const [expandedRecordId, setExpandedRecordId] = useState<number | null>(null);
   const [statsCache, setStatsCache] = useState<Record<number, ExerciseStats | "loading" | "error">>({});
   const [nextDay, setNextDay] = useState<{ assignmentId: number; label: string } | null>(null);
@@ -122,16 +131,18 @@ export default function ClientDetailsPage() {
       api.plans.list(),
       api.exercises.list(),
       api.clients.maxes(clientId),
+      api.clients.measurements(clientId),
       api.clients.sessions(clientId),
       api.clients.records(clientId),
       api.clients.progress(clientId),
     ])
-      .then(([c, p, ex, m, s, r, prog]) => {
+      .then(([c, p, ex, m, meas, s, r, prog]) => {
         setClient(c);
         const assignable = p.filter((plan) => !plan.isTemplate);
         setPlans(assignable);
         setExercises(ex);
         setMaxes(m);
+        setMeasurements(meas);
         setSessions(s);
         setRecords(r);
         setProgress(prog);
@@ -196,6 +207,33 @@ export default function ClientDetailsPage() {
   const prs30 = records.filter((r) => withinLastDays(r.performedOn, 30)).length;
   const lastAgo = lastSession ? daysAgo(lastSession.performedOn) : null;
 
+  const recentCheckins = completedSessions
+    .filter((s) => s.feelingScore != null)
+    .slice(0, 3);
+  const avgFeeling =
+    recentCheckins.length > 0
+      ? recentCheckins.reduce((sum, s) => sum + (s.feelingScore ?? 0), 0) / recentCheckins.length
+      : null;
+  const avgSleep =
+    recentCheckins.filter((s) => s.sleepScore != null).length > 0
+      ? recentCheckins
+          .filter((s) => s.sleepScore != null)
+          .reduce((sum, s) => sum + (s.sleepScore ?? 0), 0) /
+        recentCheckins.filter((s) => s.sleepScore != null).length
+      : null;
+  const avgEnergy =
+    recentCheckins.filter((s) => s.energyScore != null).length > 0
+      ? recentCheckins
+          .filter((s) => s.energyScore != null)
+          .reduce((sum, s) => sum + (s.energyScore ?? 0), 0) /
+        recentCheckins.filter((s) => s.energyScore != null).length
+      : null;
+
+  const weightTrend = [...measurements]
+    .filter((m) => m.weightKg != null)
+    .sort((a, b) => a.measuredOn.localeCompare(b.measuredOn) || a.id - b.id)
+    .map((m) => ({ date: m.measuredOn, value: m.weightKg! }));
+
   const handleAssign = async (e: FormEvent) => {
     e.preventDefault();
     if (planId === "") return;
@@ -254,6 +292,23 @@ export default function ClientDetailsPage() {
         measuredOn: maxDate,
       });
       setMaxKg("");
+      load();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
+  const handleAddMeasurement = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!measureWeight && !measureWaist) return;
+    try {
+      await api.clients.addMeasurement(clientId, {
+        measuredOn: measureDate,
+        weightKg: measureWeight ? Number(measureWeight.replace(",", ".")) : null,
+        waistCm: measureWaist ? Number(measureWaist.replace(",", ".")) : null,
+      });
+      setMeasureWeight("");
+      setMeasureWaist("");
       load();
     } catch (err) {
       setError((err as Error).message);
@@ -338,7 +393,7 @@ export default function ClientDetailsPage() {
     return (
       <div>
         <ErrorBanner message={error} />
-        <p className="text-muted">Ładowanie…</p>
+        {error ? null : <ClientDetailSkeleton />}
       </div>
     );
   }
@@ -442,12 +497,38 @@ export default function ClientDetailsPage() {
         </div>
       </div>
 
+      {recentCheckins.length > 0 ? (
+        <div className="mb-6 grid grid-cols-3 gap-3">
+          <Card>
+            <StatBlock
+              label="Samopoczucie"
+              value={avgFeeling != null ? `${avgFeeling.toFixed(1)}/5` : "—"}
+            />
+          </Card>
+          <Card>
+            <StatBlock label="Sen" value={avgSleep != null ? `${avgSleep.toFixed(1)}/5` : "—"} />
+          </Card>
+          <Card>
+            <StatBlock label="Energia" value={avgEnergy != null ? `${avgEnergy.toFixed(1)}/5` : "—"} />
+          </Card>
+        </div>
+      ) : null}
+
+      <Card className="mb-6">
+        <ComplianceHeatmap
+          dates={sessions.filter((s) => s.status === "completed").map((s) => s.performedOn)}
+          weeks={8}
+          title="Zgodność klienta"
+        />
+      </Card>
+
       <Tabs
         items={[
           { value: "plans", label: "Plany", count: client.assignments.length },
           { value: "history", label: "Historia", count: sessions.length },
           { value: "records", label: "Rekordy", count: records.length },
           { value: "maxes", label: "Maxy", count: latestMaxes.length },
+          { value: "measurements", label: "Pomiary", count: measurements.length },
         ]}
         value={tab}
         onChange={setTab}
@@ -737,6 +818,87 @@ export default function ClientDetailsPage() {
                         Usuń
                       </button>
                     </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {tab === "measurements" && (
+          <>
+            <Card className="mb-6" title="Dodaj pomiar">
+              <form onSubmit={handleAddMeasurement} className="grid gap-3 sm:grid-cols-4">
+                <Field label="Data">
+                  <input
+                    className={inputClass}
+                    type="date"
+                    value={measureDate}
+                    onChange={(e) => setMeasureDate(e.target.value)}
+                  />
+                </Field>
+                <Field label="Waga (kg)">
+                  <input
+                    className={inputClass}
+                    value={measureWeight}
+                    onChange={(e) => setMeasureWeight(e.target.value)}
+                    inputMode="decimal"
+                    placeholder="75,5"
+                  />
+                </Field>
+                <Field label="Talia (cm)">
+                  <input
+                    className={inputClass}
+                    value={measureWaist}
+                    onChange={(e) => setMeasureWaist(e.target.value)}
+                    inputMode="decimal"
+                    placeholder="82"
+                  />
+                </Field>
+                <div className="flex items-end">
+                  <Button type="submit">Zapisz pomiar</Button>
+                </div>
+              </form>
+            </Card>
+
+            {weightTrend.length >= 2 ? (
+              <Card className="mb-6" eyebrow="Trend" title="Waga">
+                <WeightTrendSparkline points={weightTrend} />
+              </Card>
+            ) : null}
+
+            {measurements.length === 0 ? (
+              <EmptyState>Brak pomiarów — dodaj wagę lub obwód talii.</EmptyState>
+            ) : (
+              <div className="grid gap-2">
+                {measurements.map((m) => (
+                  <Card key={m.id} className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-mono text-sm font-semibold tabular-nums">{m.measuredOn}</p>
+                      <p className="font-mono text-xs tabular-nums text-muted">
+                        {[
+                          m.weightKg != null ? `${m.weightKg} kg` : null,
+                          m.waistCm != null ? `talia ${m.waistCm} cm` : null,
+                          m.chestCm != null ? `klatka ${m.chestCm} cm` : null,
+                          m.hipsCm != null ? `biodra ${m.hipsCm} cm` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                        {m.note ? ` · ${m.note}` : ""}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="text-sm text-muted hover:text-danger"
+                      onClick={() =>
+                        api.clients
+                          .removeMeasurement(m.id)
+                          .then(load)
+                          .catch((err: Error) => setError(err.message))
+                      }
+                    >
+                      Usuń
+                    </button>
                   </Card>
                 ))}
               </div>

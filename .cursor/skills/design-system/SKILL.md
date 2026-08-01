@@ -96,7 +96,7 @@ Zasady:
 | 4px | `gap-1`, `p-1` | mikro |
 | 8px | `gap-2`, `p-2` | wewnątrz komponentu |
 | 12px | `gap-3`, `p-3` | pola formularza |
-| 16px | `gap-4`, `p-4` | padding karty |
+| 16px | `gap-4`, `p-4` | padding karty (`Card` = `p-4`) |
 | 24px | `mb-6`, `gap-6` | pod-sekcje |
 | 32px | `mb-8`, `p-8` | sekcje / main |
 
@@ -151,6 +151,20 @@ Wymagania:
 - Mobile-first (skill responsive-ui); nazwy nie ucinane.
 </component_spec>
 ```
+
+## Tone of voice (UX writing)
+
+Głos marki: **konkretny · ekspercki · spokojny · po stronie trenera**.
+
+| Typ | Zasada | Dobrze | Źle |
+|---|---|---|---|
+| CTA | czasownik + rezultat, 1–4 słowa | „Dodaj klienta”, „Utwórz plan”, „Usuń klienta” | „OK”, „Potwierdź”, „Dalej” |
+| Błąd | co się stało + jak naprawić | „Ćwiczenie jest w planie — najpierw usuń je z planów.” | „Error 409” |
+| Loading | kontekstowa czynność | „Wczytuję plan…”, „Zapisuję serię…” | „Ładowanie…” |
+| Empty | wyjaśnienie + następny krok | tytuł + CTA w `EmptyState` | „Brak danych” |
+| Potwierdzenie | nazwij skutek | „Skopiowano link portalu” | „Sukces!” |
+
+Unikaj wykrzykników, infantylizacji i slangu AI („Super!”, „Zróbmy to razem 💪”). Gold (`pr`) w copy tylko przy prawdziwych rekordach osobistych.
 
 ## Powiązane
 

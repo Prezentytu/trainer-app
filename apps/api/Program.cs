@@ -224,13 +224,29 @@ static void ApplyExerciseInput(Exercise exercise, ExerciseInput input, string na
         .ToList();
 }
 
-app.MapGet("/api/exercises", async (AppDb db) =>
-    await db.Exercises.OrderBy(e => e.Name).ToListAsync());
-
-app.MapGet("/api/exercises/{id:int}", async (int id, AppDb db) =>
+app.MapGet("/api/exercises", async (HttpContext http, AppDb db, IConfiguration config) =>
 {
-    var exercise = await db.Exercises.FindAsync(id);
-    return exercise is null ? Results.NotFound() : Results.Ok(exercise);
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        return Results.Ok(await db.Exercises
+            .Where(e => e.TrainerId == null || e.TrainerId == trainerId)
+            .OrderBy(e => e.Name)
+            .ToListAsync());
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapGet("/api/exercises/{id:int}", async (int id, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var exercise = await db.Exercises
+            .FirstOrDefaultAsync(e => e.Id == id && (e.TrainerId == null || e.TrainerId == trainerId));
+        return exercise is null ? Results.NotFound() : Results.Ok(exercise);
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
 app.MapPost("/api/exercises", async (ExerciseInput input, HttpContext http, AppDb db, IConfiguration config) =>
@@ -253,34 +269,58 @@ app.MapPost("/api/exercises", async (ExerciseInput input, HttpContext http, AppD
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
-app.MapPut("/api/exercises/{id:int}", async (int id, ExerciseInput input, AppDb db) =>
+app.MapPut("/api/exercises/{id:int}", async (int id, ExerciseInput input, HttpContext http, AppDb db, IConfiguration config) =>
 {
-    var exercise = await db.Exercises.FindAsync(id);
-    if (exercise is null) return Results.NotFound();
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var exercise = await db.Exercises.FirstOrDefaultAsync(e => e.Id == id && e.TrainerId == trainerId);
+        if (exercise is null)
+        {
+            var shared = await db.Exercises.AnyAsync(e => e.Id == id && e.TrainerId == null);
+            if (shared)
+                return Results.Conflict(new { message = "Wspólnej biblioteki nie edytujesz — skopiuj ćwiczenie jako własne." });
+            return Results.NotFound();
+        }
 
-    var name = NormalizeExerciseName(input.Name);
-    if (name.Length == 0) return Results.BadRequest(new { message = "Podaj nazwę ćwiczenia." });
-    var duplicate = await db.Exercises.AnyAsync(e => e.Id != id && e.Name.ToLower() == name.ToLower());
-    if (duplicate) return Results.Conflict(new { message = $"Ćwiczenie „{name}” już jest w bibliotece." });
+        var name = NormalizeExerciseName(input.Name);
+        if (name.Length == 0) return Results.BadRequest(new { message = "Podaj nazwę ćwiczenia." });
+        var duplicate = await db.Exercises.AnyAsync(e =>
+            e.Id != id && e.Name.ToLower() == name.ToLower() && (e.TrainerId == null || e.TrainerId == trainerId));
+        if (duplicate) return Results.Conflict(new { message = $"Ćwiczenie „{name}” już jest w bibliotece." });
 
-    ApplyExerciseInput(exercise, input, name);
-    await db.SaveChangesAsync();
-    return Results.Ok(exercise);
+        ApplyExerciseInput(exercise, input, name);
+        await db.SaveChangesAsync();
+        return Results.Ok(exercise);
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
-app.MapDelete("/api/exercises/{id:int}", async (int id, AppDb db) =>
+app.MapDelete("/api/exercises/{id:int}", async (int id, HttpContext http, AppDb db, IConfiguration config) =>
 {
-    var used = await db.PlanItems.AnyAsync(i => i.ExerciseId == id);
-    if (used) return Results.Conflict(new { message = "Ćwiczenie jest używane w planie — najpierw usuń je z planów." });
-    var hasMaxes = await db.ClientMaxes.AnyAsync(m => m.ExerciseId == id);
-    if (hasMaxes) return Results.Conflict(new { message = "Ćwiczenie ma zapisane maxy klientów — najpierw je usuń." });
-    var hasLogs = await db.LoggedExercises.AnyAsync(e => e.ExerciseId == id);
-    if (hasLogs) return Results.Conflict(new { message = "Ćwiczenie ma historię treningów — nie można go usunąć." });
-    var exercise = await db.Exercises.FindAsync(id);
-    if (exercise is null) return Results.NotFound();
-    db.Exercises.Remove(exercise);
-    await db.SaveChangesAsync();
-    return Results.NoContent();
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var exercise = await db.Exercises.FirstOrDefaultAsync(e => e.Id == id && e.TrainerId == trainerId);
+        if (exercise is null)
+        {
+            var shared = await db.Exercises.AnyAsync(e => e.Id == id && e.TrainerId == null);
+            if (shared)
+                return Results.Conflict(new { message = "Wspólnej biblioteki nie usuwasz." });
+            return Results.NotFound();
+        }
+
+        var used = await db.PlanItems.AnyAsync(i => i.ExerciseId == id);
+        if (used) return Results.Conflict(new { message = "Ćwiczenie jest używane w planie — najpierw usuń je z planów." });
+        var hasMaxes = await db.ClientMaxes.AnyAsync(m => m.ExerciseId == id);
+        if (hasMaxes) return Results.Conflict(new { message = "Ćwiczenie ma zapisane maxy klientów — najpierw je usuń." });
+        var hasLogs = await db.LoggedExercises.AnyAsync(e => e.ExerciseId == id);
+        if (hasLogs) return Results.Conflict(new { message = "Ćwiczenie ma historię treningów — nie można go usunąć." });
+        db.Exercises.Remove(exercise);
+        await db.SaveChangesAsync();
+        return Results.NoContent();
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
 // ---------- Plany ----------
@@ -505,6 +545,14 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
 
         var attention = await ChurnRadar.BuildAttentionAsync(db, trainerId);
 
+        var since = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-56));
+        var complianceDates = await db.WorkoutSessions
+            .Where(s => s.Status == "completed"
+                        && s.Client!.TrainerId == trainerId
+                        && s.PerformedOn >= since)
+            .Select(s => s.PerformedOn)
+            .ToListAsync();
+
         return Results.Ok(new
         {
             clients,
@@ -513,6 +561,7 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
             recentSessions,
             recentPrs,
             attention,
+            complianceDates = complianceDates.Select(d => d.ToString("yyyy-MM-dd")).ToList(),
         });
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
@@ -641,140 +690,280 @@ app.MapDelete("/api/plans/{id:int}", async (int id, HttpContext http, AppDb db, 
 
 // ---------- Maxy klienta ----------
 
-app.MapGet("/api/clients/{clientId:int}/maxes", async (int clientId, AppDb db) =>
+app.MapGet("/api/clients/{clientId:int}/maxes", async (int clientId, HttpContext http, AppDb db, IConfiguration config) =>
 {
-    if (!await db.Clients.AnyAsync(c => c.Id == clientId)) return Results.NotFound();
-    var rows = await db.ClientMaxes
-        .Where(m => m.ClientId == clientId)
-        .Include(m => m.Exercise)
-        .OrderByDescending(m => m.MeasuredOn)
-        .ThenByDescending(m => m.Id)
-        .Select(m => new
-        {
-            m.Id, m.ClientId, m.ExerciseId, ExerciseName = m.Exercise!.Name, m.MaxKg, m.MeasuredOn, m.Note,
-        })
-        .ToListAsync();
-    return Results.Ok(rows);
-});
-
-app.MapPost("/api/clients/{clientId:int}/maxes", async (int clientId, ClientMaxInput input, AppDb db) =>
-{
-    if (!await db.Clients.AnyAsync(c => c.Id == clientId)) return Results.NotFound();
-    if (!await db.Exercises.AnyAsync(e => e.Id == input.ExerciseId)) return Results.NotFound();
-    if (input.MaxKg <= 0) return Results.BadRequest(new { message = "Max musi być większy od 0." });
-
-    var row = new ClientMax
+    try
     {
-        ClientId = clientId,
-        ExerciseId = input.ExerciseId,
-        MaxKg = Stats.RoundToHalf(input.MaxKg),
-        MeasuredOn = input.MeasuredOn,
-        Note = input.Note,
-    };
-    db.ClientMaxes.Add(row);
-    await db.SaveChangesAsync();
-    return Results.Created($"/api/maxes/{row.Id}", new { row.Id });
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        var rows = await db.ClientMaxes
+            .Where(m => m.ClientId == clientId)
+            .Include(m => m.Exercise)
+            .OrderByDescending(m => m.MeasuredOn)
+            .ThenByDescending(m => m.Id)
+            .Select(m => new
+            {
+                m.Id, m.ClientId, m.ExerciseId, ExerciseName = m.Exercise!.Name, m.MaxKg, m.MeasuredOn, m.Note,
+            })
+            .ToListAsync();
+        return Results.Ok(rows);
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
-app.MapDelete("/api/maxes/{id:int}", async (int id, AppDb db) =>
+app.MapPost("/api/clients/{clientId:int}/maxes", async (int clientId, ClientMaxInput input, HttpContext http, AppDb db, IConfiguration config) =>
 {
-    var row = await db.ClientMaxes.FindAsync(id);
-    if (row is null) return Results.NotFound();
-    db.ClientMaxes.Remove(row);
-    await db.SaveChangesAsync();
-    return Results.NoContent();
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        if (!await db.Exercises.AnyAsync(e => e.Id == input.ExerciseId && (e.TrainerId == null || e.TrainerId == trainerId)))
+            return Results.NotFound();
+        if (input.MaxKg <= 0) return Results.BadRequest(new { message = "Max musi być większy od 0." });
+
+        var row = new ClientMax
+        {
+            ClientId = clientId,
+            ExerciseId = input.ExerciseId,
+            MaxKg = Stats.RoundToHalf(input.MaxKg),
+            MeasuredOn = input.MeasuredOn,
+            Note = input.Note,
+        };
+        db.ClientMaxes.Add(row);
+        await db.SaveChangesAsync();
+        return Results.Created($"/api/maxes/{row.Id}", new { row.Id });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapDelete("/api/maxes/{id:int}", async (int id, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var row = await TrainerAccess.OwnedMaxAsync(db, trainerId, id);
+        if (row is null) return Results.NotFound();
+        db.ClientMaxes.Remove(row);
+        await db.SaveChangesAsync();
+        return Results.NoContent();
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+// ---------- Pomiary klienta ----------
+
+app.MapGet("/api/clients/{clientId:int}/measurements", async (int clientId, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        var rows = await db.ClientMeasurements
+            .Where(m => m.ClientId == clientId)
+            .OrderByDescending(m => m.MeasuredOn)
+            .ThenByDescending(m => m.Id)
+            .Select(m => new
+            {
+                m.Id, m.ClientId, m.MeasuredOn, m.WeightKg, m.WaistCm, m.ChestCm, m.HipsCm, m.Note, m.CreatedAt,
+            })
+            .ToListAsync();
+        return Results.Ok(rows);
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapPost("/api/clients/{clientId:int}/measurements", async (int clientId, ClientMeasurementInput input, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        if (input.WeightKg is null && input.WaistCm is null && input.ChestCm is null && input.HipsCm is null)
+            return Results.BadRequest(new { message = "Podaj co najmniej jedną wartość pomiaru." });
+
+        var row = new ClientMeasurement
+        {
+            ClientId = clientId,
+            MeasuredOn = input.MeasuredOn,
+            WeightKg = input.WeightKg,
+            WaistCm = input.WaistCm,
+            ChestCm = input.ChestCm,
+            HipsCm = input.HipsCm,
+            Note = input.Note,
+        };
+        db.ClientMeasurements.Add(row);
+        await db.SaveChangesAsync();
+        return Results.Created($"/api/measurements/{row.Id}", new { row.Id });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapDelete("/api/measurements/{id:int}", async (int id, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var row = await TrainerAccess.OwnedMeasurementAsync(db, trainerId, id);
+        if (row is null) return Results.NotFound();
+        db.ClientMeasurements.Remove(row);
+        await db.SaveChangesAsync();
+        return Results.NoContent();
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
 // ---------- Sesje treningowe ----------
 
-app.MapGet("/api/clients/{clientId:int}/sessions", async (int clientId, AppDb db) =>
+app.MapGet("/api/clients/{clientId:int}/sessions", async (int clientId, HttpContext http, AppDb db, IConfiguration config) =>
 {
-    if (!await db.Clients.AnyAsync(c => c.Id == clientId)) return Results.NotFound();
-    var sessions = await db.WorkoutSessions
-        .Where(s => s.ClientId == clientId)
-        .OrderByDescending(s => s.PerformedOn)
-        .ThenByDescending(s => s.Id)
-        .Select(s => new
-        {
-            s.Id,
-            s.ClientId,
-            s.AssignmentId,
-            s.PlanDayId,
-            s.PlanId,
-            PlanName = s.Plan != null ? s.Plan.Name : null,
-            DayLabel = s.PlanDay != null ? s.PlanDay.Label : null,
-            s.PerformedOn,
-            s.DurationSeconds,
-            s.Note,
-            s.Status,
-            s.CreatedAt,
-            TotalSets = s.Exercises.SelectMany(e => e.Sets).Count(x => !x.IsWarmup),
-            TotalVolumeKg = s.Exercises.SelectMany(e => e.Sets)
-                .Where(x => !x.IsWarmup && x.WeightKg != null && x.Reps != null)
-                .Sum(x => x.WeightKg!.Value * x.Reps!.Value),
-            ExerciseCount = s.Exercises.Count,
-        })
-        .ToListAsync();
-    return Results.Ok(sessions);
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        var sessions = await db.WorkoutSessions
+            .Where(s => s.ClientId == clientId)
+            .OrderByDescending(s => s.PerformedOn)
+            .ThenByDescending(s => s.Id)
+            .Select(s => new
+            {
+                s.Id,
+                s.ClientId,
+                s.AssignmentId,
+                s.PlanDayId,
+                s.PlanId,
+                PlanName = s.Plan != null ? s.Plan.Name : null,
+                DayLabel = s.PlanDay != null ? s.PlanDay.Label : null,
+                s.PerformedOn,
+                s.DurationSeconds,
+                s.Note,
+                s.FeelingScore,
+                s.SleepScore,
+                s.EnergyScore,
+                s.Status,
+                s.CreatedAt,
+                TotalSets = s.Exercises.SelectMany(e => e.Sets).Count(x => !x.IsWarmup),
+                TotalVolumeKg = s.Exercises.SelectMany(e => e.Sets)
+                    .Where(x => !x.IsWarmup && x.WeightKg != null && x.Reps != null)
+                    .Sum(x => x.WeightKg!.Value * x.Reps!.Value),
+                ExerciseCount = s.Exercises.Count,
+            })
+            .ToListAsync();
+        return Results.Ok(sessions);
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
-app.MapGet("/api/sessions/{id:int}", async (int id, AppDb db) =>
+app.MapGet("/api/sessions/{id:int}", async (int id, HttpContext http, AppDb db, IConfiguration config) =>
 {
-    var dto = await Sessions.LoadDto(db, id);
-    return dto is null ? Results.NotFound() : Results.Ok(dto);
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (await TrainerAccess.OwnedSessionAsync(db, trainerId, id) is null) return Results.NotFound();
+        var dto = await Sessions.LoadDto(db, id);
+        return dto is null ? Results.NotFound() : Results.Ok(dto);
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
-app.MapPost("/api/sessions/start", async (StartSessionInput input, AppDb db) =>
+app.MapPost("/api/sessions/start", async (StartSessionInput input, HttpContext http, AppDb db, IConfiguration config) =>
 {
-    var (session, error) = await Sessions.StartAsync(db, input);
-    if (error is not null) return error;
-    var dto = await Sessions.LoadDto(db, session!.Id);
-    return Results.Created($"/api/sessions/{session.Id}", dto);
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, input.ClientId)) return Results.NotFound();
+        var (session, error) = await Sessions.StartAsync(db, input);
+        if (error is not null) return error;
+        var dto = await Sessions.LoadDto(db, session!.Id);
+        return Results.Created($"/api/sessions/{session.Id}", dto);
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
-app.MapPost("/api/sessions", async (WorkoutSessionInput input, AppDb db) =>
+app.MapPost("/api/sessions", async (WorkoutSessionInput input, HttpContext http, AppDb db, IConfiguration config) =>
 {
-    if (!await db.Clients.AnyAsync(c => c.Id == input.ClientId)) return Results.NotFound();
-    var session = Sessions.BuildFromInput(input);
-    db.WorkoutSessions.Add(session);
-    await db.SaveChangesAsync();
-    var dto = await Sessions.LoadDto(db, session.Id);
-    return Results.Created($"/api/sessions/{session.Id}", dto);
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, input.ClientId)) return Results.NotFound();
+        var session = Sessions.BuildFromInput(input);
+        db.WorkoutSessions.Add(session);
+        await db.SaveChangesAsync();
+        var dto = await Sessions.LoadDto(db, session.Id);
+        return Results.Created($"/api/sessions/{session.Id}", dto);
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
-app.MapPut("/api/sessions/{id:int}", async (int id, WorkoutSessionInput input, AppDb db) =>
+app.MapPut("/api/sessions/{id:int}", async (int id, WorkoutSessionInput input, HttpContext http, AppDb db, IConfiguration config) =>
 {
-    var session = await db.WorkoutSessions
-        .Include(s => s.Exercises).ThenInclude(e => e.Sets)
-        .FirstOrDefaultAsync(s => s.Id == id);
-    if (session is null) return Results.NotFound();
-    if (session.ClientId != input.ClientId) return Results.NotFound();
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, input.ClientId)) return Results.NotFound();
+        var session = await db.WorkoutSessions
+            .Include(s => s.Exercises).ThenInclude(e => e.Sets)
+            .Include(s => s.Client)
+            .FirstOrDefaultAsync(s => s.Id == id && s.Client!.TrainerId == trainerId);
+        if (session is null) return Results.NotFound();
+        if (session.ClientId != input.ClientId) return Results.NotFound();
 
-    Sessions.ApplyUpdate(db, session, input);
-    await db.SaveChangesAsync();
-    return Results.Ok(await Sessions.LoadDto(db, session.Id));
+        Sessions.ApplyUpdate(db, session, input);
+        await db.SaveChangesAsync();
+        return Results.Ok(await Sessions.LoadDto(db, session.Id));
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
-app.MapPatch("/api/sessions/{id:int}/complete", async (int id, AppDb db) =>
+app.MapPatch("/api/sessions/{id:int}/complete", async (int id, HttpContext http, AppDb db, IConfiguration config) =>
 {
-    var session = await db.WorkoutSessions.FindAsync(id);
-    if (session is null) return Results.NotFound();
-    await Sessions.CompleteAsync(db, session);
-    return Results.Ok(await Sessions.LoadDto(db, session.Id));
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var session = await TrainerAccess.OwnedSessionAsync(db, trainerId, id);
+        if (session is null) return Results.NotFound();
+        await Sessions.CompleteAsync(db, session);
+        return Results.Ok(await Sessions.LoadDto(db, session.Id));
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
-app.MapDelete("/api/sessions/{id:int}", async (int id, AppDb db) =>
+app.MapPatch("/api/sessions/{id:int}/checkin", async (int id, SessionCheckinInput input, HttpContext http, AppDb db, IConfiguration config) =>
 {
-    var session = await db.WorkoutSessions.FindAsync(id);
-    if (session is null) return Results.NotFound();
-    db.WorkoutSessions.Remove(session);
-    await db.SaveChangesAsync();
-    return Results.NoContent();
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var session = await TrainerAccess.OwnedSessionAsync(db, trainerId, id);
+        if (session is null) return Results.NotFound();
+        if (session.Status != "completed")
+            return Results.Conflict(new { message = "Check-in możliwy tylko po ukończeniu sesji." });
+        var validation = Sessions.ValidateCheckinScores(input);
+        if (validation is not null) return validation;
+        await Sessions.CheckinAsync(db, session, input);
+        return Results.Ok(await Sessions.LoadDto(db, session.Id));
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
-app.MapGet("/api/clients/{clientId:int}/exercises/{exerciseId:int}/stats", async (int clientId, int exerciseId, AppDb db) =>
+app.MapDelete("/api/sessions/{id:int}", async (int id, HttpContext http, AppDb db, IConfiguration config) =>
 {
-    if (!await db.Clients.AnyAsync(c => c.Id == clientId)) return Results.NotFound();
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var session = await TrainerAccess.OwnedSessionAsync(db, trainerId, id);
+        if (session is null) return Results.NotFound();
+        db.WorkoutSessions.Remove(session);
+        await db.SaveChangesAsync();
+        return Results.NoContent();
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapGet("/api/clients/{clientId:int}/exercises/{exerciseId:int}/stats", async (int clientId, int exerciseId, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+    var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+    if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
     var sets = await db.LoggedSets
         .Include(s => s.LoggedExercise).ThenInclude(e => e!.Session)
         .Where(s => s.LoggedExercise!.Session!.ClientId == clientId
@@ -830,6 +1019,8 @@ app.MapGet("/api/clients/{clientId:int}/exercises/{exerciseId:int}/stats", async
         repMaxes,
         trend,
     });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
 static async Task<object> LoadClientRecordsAsync(AppDb db, int clientId)
@@ -876,71 +1067,91 @@ static async Task<object> LoadClientRecordsAsync(AppDb db, int clientId)
         .ToList();
 }
 
-app.MapGet("/api/clients/{clientId:int}/records", async (int clientId, AppDb db) =>
+app.MapGet("/api/clients/{clientId:int}/records", async (int clientId, HttpContext http, AppDb db, IConfiguration config) =>
 {
-    if (!await db.Clients.AnyAsync(c => c.Id == clientId)) return Results.NotFound();
-    return Results.Ok(await LoadClientRecordsAsync(db, clientId));
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        return Results.Ok(await LoadClientRecordsAsync(db, clientId));
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
-app.MapGet("/api/clients/{clientId:int}/progress", async (int clientId, AppDb db) =>
+app.MapGet("/api/clients/{clientId:int}/progress", async (int clientId, HttpContext http, AppDb db, IConfiguration config) =>
 {
-    if (!await db.Clients.AnyAsync(c => c.Id == clientId)) return Results.NotFound();
-    var assignment = await db.Assignments
-        .Include(a => a.Plan!).ThenInclude(p => p.Days)
-        .Where(a => a.ClientId == clientId && a.Status == "active")
-        .OrderByDescending(a => a.CreatedAt)
-        .FirstOrDefaultAsync();
-    if (assignment?.Plan is null)
-        return Results.Ok(new { assignmentId = (int?)null, completed = 0, total = 0, percent = 0 });
-
-    var total = assignment.Plan.Days.Count;
-    var completed = await db.WorkoutSessions.CountAsync(s =>
-        s.ClientId == clientId
-        && s.AssignmentId == assignment.Id
-        && s.Status == "completed");
-    var percent = total > 0 ? (int)Math.Round(100.0 * Math.Min(completed, total) / total) : 0;
-    return Results.Ok(new
+    try
     {
-        assignmentId = assignment.Id,
-        planId = assignment.PlanId,
-        planName = assignment.Plan.Name,
-        completed,
-        total,
-        percent,
-    });
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        var assignment = await db.Assignments
+            .Include(a => a.Plan!).ThenInclude(p => p.Days)
+            .Where(a => a.ClientId == clientId && a.Status == "active")
+            .OrderByDescending(a => a.CreatedAt)
+            .FirstOrDefaultAsync();
+        if (assignment?.Plan is null)
+            return Results.Ok(new { assignmentId = (int?)null, completed = 0, total = 0, percent = 0 });
+
+        var total = assignment.Plan.Days.Count;
+        var completed = await db.WorkoutSessions.CountAsync(s =>
+            s.ClientId == clientId
+            && s.AssignmentId == assignment.Id
+            && s.Status == "completed");
+        var percent = total > 0 ? (int)Math.Round(100.0 * Math.Min(completed, total) / total) : 0;
+        return Results.Ok(new
+        {
+            assignmentId = assignment.Id,
+            planId = assignment.PlanId,
+            planName = assignment.Plan.Name,
+            completed,
+            total,
+            percent,
+        });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
 // ---------- Token dostępu klienta (magic-link) ----------
 
-app.MapGet("/api/clients/{clientId:int}/access-token", async (int clientId, AppDb db) =>
+app.MapGet("/api/clients/{clientId:int}/access-token", async (int clientId, HttpContext http, AppDb db, IConfiguration config) =>
 {
-    if (!await db.Clients.AnyAsync(c => c.Id == clientId)) return Results.NotFound();
-    var existing = await db.ClientAccessTokens
-        .Where(t => t.ClientId == clientId && (t.ExpiresAt == null || t.ExpiresAt > DateTime.UtcNow))
-        .OrderByDescending(t => t.CreatedAt)
-        .FirstOrDefaultAsync();
-    if (existing is not null)
-        return Results.Ok(new { existing.Token, existing.CreatedAt, existing.ExpiresAt });
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        var existing = await db.ClientAccessTokens
+            .Where(t => t.ClientId == clientId && (t.ExpiresAt == null || t.ExpiresAt > DateTime.UtcNow))
+            .OrderByDescending(t => t.CreatedAt)
+            .FirstOrDefaultAsync();
+        if (existing is not null)
+            return Results.Ok(new { existing.Token, existing.CreatedAt, existing.ExpiresAt });
 
-    var token = Convert.ToBase64String(Guid.NewGuid().ToByteArray())
-        .Replace("+", "").Replace("/", "").Replace("=", "");
-    var row = new ClientAccessToken { ClientId = clientId, Token = token };
-    db.ClientAccessTokens.Add(row);
-    await db.SaveChangesAsync();
-    return Results.Ok(new { row.Token, row.CreatedAt, row.ExpiresAt });
+        var token = Convert.ToBase64String(Guid.NewGuid().ToByteArray())
+            .Replace("+", "").Replace("/", "").Replace("=", "");
+        var row = new ClientAccessToken { ClientId = clientId, Token = token };
+        db.ClientAccessTokens.Add(row);
+        await db.SaveChangesAsync();
+        return Results.Ok(new { row.Token, row.CreatedAt, row.ExpiresAt });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
-app.MapPost("/api/clients/{clientId:int}/access-token/rotate", async (int clientId, AppDb db) =>
+app.MapPost("/api/clients/{clientId:int}/access-token/rotate", async (int clientId, HttpContext http, AppDb db, IConfiguration config) =>
 {
-    if (!await db.Clients.AnyAsync(c => c.Id == clientId)) return Results.NotFound();
-    var old = await db.ClientAccessTokens.Where(t => t.ClientId == clientId).ToListAsync();
-    db.ClientAccessTokens.RemoveRange(old);
-    var token = Convert.ToBase64String(Guid.NewGuid().ToByteArray())
-        .Replace("+", "").Replace("/", "").Replace("=", "");
-    var row = new ClientAccessToken { ClientId = clientId, Token = token };
-    db.ClientAccessTokens.Add(row);
-    await db.SaveChangesAsync();
-    return Results.Ok(new { row.Token, row.CreatedAt, row.ExpiresAt });
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        var old = await db.ClientAccessTokens.Where(t => t.ClientId == clientId).ToListAsync();
+        db.ClientAccessTokens.RemoveRange(old);
+        var token = Convert.ToBase64String(Guid.NewGuid().ToByteArray())
+            .Replace("+", "").Replace("/", "").Replace("=", "");
+        var row = new ClientAccessToken { ClientId = clientId, Token = token };
+        db.ClientAccessTokens.Add(row);
+        await db.SaveChangesAsync();
+        return Results.Ok(new { row.Token, row.CreatedAt, row.ExpiresAt });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
 // ---------- Portal klienta (scoped po tokenie) ----------
@@ -1054,6 +1265,9 @@ app.MapGet("/api/portal/{token}/sessions", async (string token, AppDb db) =>
             s.PerformedOn,
             s.DurationSeconds,
             s.Note,
+            s.FeelingScore,
+            s.SleepScore,
+            s.EnergyScore,
             s.Status,
             s.CreatedAt,
             TotalSets = s.Exercises.SelectMany(e => e.Sets).Count(x => !x.IsWarmup),
@@ -1124,6 +1338,9 @@ app.MapGet("/api/portal/{token}/sessions", async (string token, AppDb db) =>
         s.PerformedOn,
         s.DurationSeconds,
         s.Note,
+        s.FeelingScore,
+        s.SleepScore,
+        s.EnergyScore,
         s.Status,
         s.CreatedAt,
         s.TotalSets,
@@ -1139,6 +1356,56 @@ app.MapGet("/api/portal/{token}/records", async (string token, AppDb db) =>
     var access = await ResolvePortalToken(db, token);
     if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
     return Results.Ok(await LoadClientRecordsAsync(db, access.ClientId));
+}).RequireRateLimiting("portal");
+
+app.MapGet("/api/portal/{token}/exercises", async (string token, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access?.Client is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    var trainerId = access.Client.TrainerId;
+    var rows = await db.Exercises
+        .Where(e => e.TrainerId == null || e.TrainerId == trainerId)
+        .OrderBy(e => e.Name)
+        .ToListAsync();
+    return Results.Ok(rows);
+}).RequireRateLimiting("portal");
+
+app.MapGet("/api/portal/{token}/measurements", async (string token, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    var rows = await db.ClientMeasurements
+        .Where(m => m.ClientId == access.ClientId)
+        .OrderByDescending(m => m.MeasuredOn)
+        .ThenByDescending(m => m.Id)
+        .Select(m => new
+        {
+            m.Id, m.ClientId, m.MeasuredOn, m.WeightKg, m.WaistCm, m.ChestCm, m.HipsCm, m.Note, m.CreatedAt,
+        })
+        .ToListAsync();
+    return Results.Ok(rows);
+}).RequireRateLimiting("portal");
+
+app.MapPost("/api/portal/{token}/measurements", async (string token, ClientMeasurementInput input, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    if (input.WeightKg is null && input.WaistCm is null && input.ChestCm is null && input.HipsCm is null)
+        return Results.BadRequest(new { message = "Podaj co najmniej jedną wartość pomiaru." });
+
+    var row = new ClientMeasurement
+    {
+        ClientId = access.ClientId,
+        MeasuredOn = input.MeasuredOn,
+        WeightKg = input.WeightKg,
+        WaistCm = input.WaistCm,
+        ChestCm = input.ChestCm,
+        HipsCm = input.HipsCm,
+        Note = input.Note,
+    };
+    db.ClientMeasurements.Add(row);
+    await db.SaveChangesAsync();
+    return Results.Created($"/api/portal/{token}/measurements/{row.Id}", new { row.Id });
 }).RequireRateLimiting("portal");
 
 app.MapGet("/api/portal/{token}/progress-report", async (string token, AppDb db) =>
@@ -1192,57 +1459,94 @@ app.MapPatch("/api/portal/{token}/sessions/{id:int}/complete", async (string tok
     return Results.Ok(await Sessions.LoadDto(db, session.Id));
 });
 
+app.MapPatch("/api/portal/{token}/sessions/{id:int}/checkin", async (string token, int id, SessionCheckinInput input, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    var session = await db.WorkoutSessions.FindAsync(id);
+    if (session is null || session.ClientId != access.ClientId) return Results.NotFound();
+    if (session.Status != "completed")
+        return Results.Conflict(new { message = "Check-in możliwy tylko po ukończeniu sesji." });
+    var validation = Sessions.ValidateCheckinScores(input);
+    if (validation is not null) return validation;
+    await Sessions.CheckinAsync(db, session, input);
+    return Results.Ok(await Sessions.LoadDto(db, session.Id));
+});
+
 // ---------- Przypisania ----------
 
-app.MapGet("/api/assignments", async (AppDb db) =>
-    await db.Assignments
-        .OrderByDescending(a => a.CreatedAt)
-        .Select(a => new
-        {
-            a.Id, a.PlanId, a.ClientId, a.StartDate, a.Status, a.Note, a.CreatedAt,
-            PlanName = a.Plan!.Name,
-            ClientName = a.Client!.Name,
-        })
-        .ToListAsync());
-
-app.MapPost("/api/assignments", async (AssignmentInput input, AppDb db) =>
+app.MapGet("/api/assignments", async (HttpContext http, AppDb db, IConfiguration config) =>
 {
-    var planExists = await db.Plans.AnyAsync(p => p.Id == input.PlanId);
-    var clientExists = await db.Clients.AnyAsync(c => c.Id == input.ClientId);
-    if (!planExists || !clientExists) return Results.NotFound();
-
-    var duplicate = await db.Assignments.AnyAsync(a =>
-        a.PlanId == input.PlanId && a.ClientId == input.ClientId && a.Status == "active");
-    if (duplicate) return Results.Conflict(new { message = "Ten plan jest już aktywnie przypisany do tego klienta." });
-
-    var assignment = new Assignment
+    try
     {
-        PlanId = input.PlanId,
-        ClientId = input.ClientId,
-        StartDate = input.StartDate,
-        Note = input.Note,
-    };
-    db.Assignments.Add(assignment);
-    await db.SaveChangesAsync();
-    return Results.Created($"/api/assignments/{assignment.Id}", new { assignment.Id });
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        return Results.Ok(await db.Assignments
+            .Where(a => a.Client!.TrainerId == trainerId)
+            .OrderByDescending(a => a.CreatedAt)
+            .Select(a => new
+            {
+                a.Id, a.PlanId, a.ClientId, a.StartDate, a.Status, a.Note, a.CreatedAt,
+                PlanName = a.Plan!.Name,
+                ClientName = a.Client!.Name,
+            })
+            .ToListAsync());
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
-app.MapPatch("/api/assignments/{id:int}/status", async (int id, StatusInput input, AppDb db) =>
+app.MapPost("/api/assignments", async (AssignmentInput input, HttpContext http, AppDb db, IConfiguration config) =>
 {
-    var assignment = await db.Assignments.FindAsync(id);
-    if (assignment is null) return Results.NotFound();
-    assignment.Status = input.Status;
-    await db.SaveChangesAsync();
-    return Results.Ok(new { assignment.Id, assignment.Status });
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var planExists = await db.Plans.AnyAsync(p => p.Id == input.PlanId && p.TrainerId == trainerId);
+        var clientExists = await TrainerAccess.OwnsClientAsync(db, trainerId, input.ClientId);
+        if (!planExists || !clientExists) return Results.NotFound();
+
+        var duplicate = await db.Assignments.AnyAsync(a =>
+            a.PlanId == input.PlanId && a.ClientId == input.ClientId && a.Status == "active");
+        if (duplicate) return Results.Conflict(new { message = "Ten plan jest już aktywnie przypisany do tego klienta." });
+
+        var assignment = new Assignment
+        {
+            PlanId = input.PlanId,
+            ClientId = input.ClientId,
+            StartDate = input.StartDate,
+            Note = input.Note,
+        };
+        db.Assignments.Add(assignment);
+        await db.SaveChangesAsync();
+        return Results.Created($"/api/assignments/{assignment.Id}", new { assignment.Id });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
-app.MapDelete("/api/assignments/{id:int}", async (int id, AppDb db) =>
+app.MapPatch("/api/assignments/{id:int}/status", async (int id, StatusInput input, HttpContext http, AppDb db, IConfiguration config) =>
 {
-    var assignment = await db.Assignments.FindAsync(id);
-    if (assignment is null) return Results.NotFound();
-    db.Assignments.Remove(assignment);
-    await db.SaveChangesAsync();
-    return Results.NoContent();
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var assignment = await TrainerAccess.OwnedAssignmentAsync(db, trainerId, id);
+        if (assignment is null) return Results.NotFound();
+        assignment.Status = input.Status;
+        await db.SaveChangesAsync();
+        return Results.Ok(new { assignment.Id, assignment.Status });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapDelete("/api/assignments/{id:int}", async (int id, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var assignment = await TrainerAccess.OwnedAssignmentAsync(db, trainerId, id);
+        if (assignment is null) return Results.NotFound();
+        db.Assignments.Remove(assignment);
+        await db.SaveChangesAsync();
+        return Results.NoContent();
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
 app.Run();

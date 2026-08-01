@@ -69,4 +69,34 @@ public static class TrainerAccess
 
     public static async Task<int> TrainerIdAsync(HttpContext http, AppDb db, IConfiguration config) =>
         (await RequireTrainerAsync(http, db, config)).Id;
+
+    public static Task<bool> OwnsClientAsync(AppDb db, int trainerId, int clientId) =>
+        db.Clients.AnyAsync(c => c.Id == clientId && c.TrainerId == trainerId);
+
+    public static Task<Client?> OwnedClientAsync(AppDb db, int trainerId, int clientId) =>
+        db.Clients.FirstOrDefaultAsync(c => c.Id == clientId && c.TrainerId == trainerId);
+
+    /// <summary>Sesja należy do klienta tego trenera (NotFound gdy brak / cudza).</summary>
+    public static async Task<WorkoutSession?> OwnedSessionAsync(AppDb db, int trainerId, int sessionId) =>
+        await db.WorkoutSessions
+            .Include(s => s.Client)
+            .FirstOrDefaultAsync(s => s.Id == sessionId && s.Client!.TrainerId == trainerId);
+
+    /// <summary>Max należy do klienta tego trenera.</summary>
+    public static async Task<ClientMax?> OwnedMaxAsync(AppDb db, int trainerId, int maxId) =>
+        await db.ClientMaxes
+            .Include(m => m.Client)
+            .FirstOrDefaultAsync(m => m.Id == maxId && m.Client!.TrainerId == trainerId);
+
+    /// <summary>Przypisanie do klienta tego trenera.</summary>
+    public static async Task<Assignment?> OwnedAssignmentAsync(AppDb db, int trainerId, int assignmentId) =>
+        await db.Assignments
+            .Include(a => a.Client)
+            .FirstOrDefaultAsync(a => a.Id == assignmentId && a.Client!.TrainerId == trainerId);
+
+    /// <summary>Pomiar należy do klienta tego trenera.</summary>
+    public static async Task<ClientMeasurement?> OwnedMeasurementAsync(AppDb db, int trainerId, int measurementId) =>
+        await db.ClientMeasurements
+            .Include(m => m.Client)
+            .FirstOrDefaultAsync(m => m.Id == measurementId && m.Client!.TrainerId == trainerId);
 }

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, PlanSummary } from "@/lib/api";
 import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader } from "@/components/ui";
+import { PlanListSkeleton } from "@/components/skeletons";
 
 type AssignmentSummary = { planId: number; clientName: string };
 
@@ -13,6 +14,7 @@ export default function PlansPage() {
   const [plans, setPlans] = useState<PlanSummary[]>([]);
   const [assignments, setAssignments] = useState<AssignmentSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(() => {
     Promise.all([api.plans.list(), api.assignments.list()])
@@ -20,7 +22,8 @@ export default function PlansPage() {
         setPlans(p);
         setAssignments(a.filter((x) => x.status === "active"));
       })
-      .catch((e: Error) => setError(e.message));
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(load, [load]);
@@ -73,10 +76,21 @@ export default function PlansPage() {
       />
       <ErrorBanner message={error} />
 
+      {loading ? <PlanListSkeleton /> : null}
+
       <Section title="Formuły" count={templates.length}>
-        {templates.length === 0 ? (
-          <EmptyState>Brak formuł. Tworząc plan, wybierz rodzaj „Formuła”.</EmptyState>
-        ) : (
+        {!loading && templates.length === 0 ? (
+          <EmptyState
+            title="Brak formuł"
+            action={
+              <Link href="/plans/new">
+                <Button size="sm">Utwórz formułę</Button>
+              </Link>
+            }
+          >
+            Formuła to szablon wielokrotnego użytku — sklonujesz ją na plan klienta.
+          </EmptyState>
+        ) : loading ? null : (
           templates.map((p) => (
             <PlanRow key={p.id} plan={p} clientNames={clientNamesByPlan.get(p.id) ?? []} kind="formula">
               <Button variant="ghost" onClick={() => handleDuplicate(p, true)}>
@@ -94,9 +108,18 @@ export default function PlansPage() {
       </Section>
 
       <Section title="Plany klientów" count={clientPlans.length}>
-        {clientPlans.length === 0 ? (
-          <EmptyState>Brak planów klientów — stwórz nowy albo użyj formuły.</EmptyState>
-        ) : (
+        {!loading && clientPlans.length === 0 ? (
+          <EmptyState
+            title="Brak planów klientów"
+            action={
+              <Link href="/plans/new">
+                <Button size="sm">Utwórz plan klienta</Button>
+              </Link>
+            }
+          >
+            Stwórz nowy plan albo użyj formuły → „Utwórz plan klienta”.
+          </EmptyState>
+        ) : loading ? null : (
           clientPlans.map((p) => (
             <PlanRow key={p.id} plan={p} clientNames={clientNamesByPlan.get(p.id) ?? []} kind="client">
               <Button variant="ghost" onClick={() => handleDuplicate(p, false)}>

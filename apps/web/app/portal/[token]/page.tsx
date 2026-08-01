@@ -7,6 +7,7 @@ import { api, ClientRecord, PortalHome, PortalSessionSummary, ProgressReport } f
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { YoutubeLite } from "@/components/YoutubeLite";
 import { Badge, Button, ErrorBanner, formatRest } from "@/components/ui";
+import { PortalHomeSkeleton } from "@/components/skeletons";
 import { estimateDayMinutes, formatDurationApprox, formatDurationMinutes } from "@/lib/estimateDuration";
 
 type Tab = "today" | "week" | "history" | "records";
@@ -87,7 +88,7 @@ export default function PortalHomePage() {
     return (
       <div>
         <ErrorBanner message={error} />
-        <p className="text-muted">Ładowanie…</p>
+        {error ? null : <PortalHomeSkeleton />}
       </div>
     );
   }

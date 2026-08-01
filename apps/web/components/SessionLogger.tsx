@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   api,
+  Exercise,
   LoggedExerciseInput,
   PrevLoggedSet,
+  SessionCheckinInput,
   SessionDetail,
   WorkoutSessionInput,
 } from "@/lib/api";
@@ -17,6 +19,8 @@ type Props = {
   session: SessionDetail;
   /** Gdy podane — zapis przez api.portal.*; inaczej api.sessions.* */
   portalToken?: string;
+  /** Biblioteka ćwiczeń do podmiany w trakcie sesji. */
+  libraryExercises?: Exercise[];
   /** Edycja już ukończonej sesji — statyczny czas, CTA „Zapisz zmiany”. */
   completedEdit?: boolean;
   onUpdated: (session: SessionDetail) => void;
@@ -82,6 +86,7 @@ function elapsedLabel(startedAt: number): string {
 export function SessionLogger({
   session,
   portalToken,
+  libraryExercises = [],
   completedEdit = false,
   onUpdated,
   onCompleted,
@@ -92,6 +97,12 @@ export function SessionLogger({
   const [saving, setSaving] = useState(false);
   const [restLeft, setRestLeft] = useState<number | null>(null);
   const [summary, setSummary] = useState<SessionDetail | null>(null);
+  const [checkinSession, setCheckinSession] = useState<SessionDetail | null>(null);
+  const [feelingScore, setFeelingScore] = useState<number | null>(null);
+  const [sleepScore, setSleepScore] = useState<number | null>(null);
+  const [energyScore, setEnergyScore] = useState<number | null>(null);
+  const [swapExIdx, setSwapExIdx] = useState<number | null>(null);
+  const [swapSearch, setSwapSearch] = useState("");
   const [videoId, setVideoId] = useState<string | null>(null);
   const [videoTitle, setVideoTitle] = useState("");
   const [clock, setClock] = useState(() => elapsedLabel(Date.parse(session.createdAt)));
@@ -156,7 +167,10 @@ export function SessionLogger({
         draftRef.current = updated;
         setDraft(updated);
         onUpdated(updated);
-        if (complete) setSummary(updated);
+        if (complete) {
+          if (completedEdit || updated.feelingScore != null) setSummary(updated);
+          else setCheckinSession(updated);
+        }
         return updated;
       } catch (e) {
         const err = e as Error;
@@ -167,7 +181,7 @@ export function SessionLogger({
         setSaving(false);
       }
     },
-    [onPersistFailed, onUpdated, portalToken],
+    [completedEdit, onPersistFailed, onUpdated, portalToken],
   );
 
   const scheduleSave = useCallback(() => {
@@ -341,6 +355,80 @@ export function SessionLogger({
     }
   };
 
+  const saveCheckin = async (skip = false) => {
+    if (!checkinSession) return;
+    setSaving(true);
+    setError(null);
+    try {
+      let updated = checkinSession;
+      if (!skip) {
+        const input: SessionCheckinInput = {
+          feelingScore,
+          sleepScore,
+          energyScore,
+        };
+        updated = portalToken
+          ? await api.portal.checkinSession(portalToken, checkinSession.id, input)
+          : await api.sessions.checkin(checkinSession.id, input);
+      }
+      setCheckinSession(null);
+      setSummary(updated);
+      onUpdated(updated);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const swapExercise = (exIdx: number, picked: Exercise) => {
+    updateDraft((prev) => ({
+      ...prev,
+      exercises: prev.exercises.map((ex, i) =>
+        i === exIdx
+          ? {
+              ...ex,
+              exerciseId: picked.id,
+              exerciseName: picked.name,
+              exerciseType: picked.type,
+              category: picked.category,
+              media: picked.media,
+            }
+          : ex,
+      ),
+    }));
+    setSwapExIdx(null);
+    setSwapSearch("");
+  };
+
+  const filteredSwapExercises = libraryExercises.filter((ex) =>
+    ex.name.toLowerCase().includes(swapSearch.trim().toLowerCase()),
+  );
+
+  if (checkinSession) {
+    return (
+      <div className="space-y-4">
+        <ErrorBanner message={error} />
+        <div className="rounded-xl border border-border bg-surface px-4 py-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">Check-in</p>
+          <h2 className="mt-1 font-display text-xl font-bold">Jak się czujesz po treningu?</h2>
+          <p className="mt-1 text-sm text-muted">Oceń w skali 1–5 — pomoże to dostosować kolejne sesje.</p>
+        </div>
+        <ScorePicker label="Samopoczucie" value={feelingScore} onChange={setFeelingScore} />
+        <ScorePicker label="Sen (ostatnia noc)" value={sleepScore} onChange={setSleepScore} />
+        <ScorePicker label="Energia" value={energyScore} onChange={setEnergyScore} />
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button className="flex-1" disabled={saving} onClick={() => void saveCheckin(false)}>
+            {saving ? "Zapis…" : "Zapisz check-in"}
+          </Button>
+          <Button className="flex-1" variant="ghost" disabled={saving} onClick={() => void saveCheckin(true)}>
+            Pomiń
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (summary) {
     return (
       <div className="space-y-4">
@@ -424,10 +512,11 @@ export function SessionLogger({
         </div>
         {prCelebrate ? (
           <div
-            className="mt-2 rounded-[10px] border border-pr/50 bg-pr-dim px-3 py-2 text-center text-sm font-semibold text-pr"
+            className="pr-celebrate-in mt-2 rounded-md border border-pr/50 bg-pr-dim px-3 py-2.5 text-center shadow-[0_0_24px_rgba(232,187,79,0.18)]"
             role="status"
           >
-            {prCelebrate}
+            <div className="text-xs font-semibold uppercase tracking-caps text-pr">Nowy rekord</div>
+            <div className="mt-0.5 font-display text-sm font-semibold text-pr">{prCelebrate}</div>
           </div>
         ) : null}
       </div>
@@ -476,7 +565,49 @@ export function SessionLogger({
                   przerwa {formatRest(exercise.restSeconds ?? 90)}
                 </p>
               </div>
+              {libraryExercises.length > 0 ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="shrink-0 text-xs"
+                  onClick={() => {
+                    setSwapExIdx(swapExIdx === exIdx ? null : exIdx);
+                    setSwapSearch("");
+                  }}
+                >
+                  Podmień
+                </Button>
+              ) : null}
             </div>
+
+            {swapExIdx === exIdx ? (
+              <div className="border-b border-border px-3 py-3">
+                <input
+                  className={`${inputClass} mb-2 w-full px-2 py-1.5 text-sm`}
+                  placeholder="Szukaj ćwiczenia…"
+                  value={swapSearch}
+                  onChange={(e) => setSwapSearch(e.target.value)}
+                  autoFocus
+                />
+                <ul className="max-h-48 space-y-1 overflow-y-auto">
+                  {filteredSwapExercises.length === 0 ? (
+                    <li className="px-2 py-2 text-xs text-muted">Brak wyników.</li>
+                  ) : (
+                    filteredSwapExercises.slice(0, 20).map((ex) => (
+                      <li key={ex.id}>
+                        <button
+                          type="button"
+                          className="w-full rounded-[8px] px-2 py-2 text-left text-sm hover:bg-surface-hover"
+                          onClick={() => swapExercise(exIdx, ex)}
+                        >
+                          {ex.name}
+                        </button>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              </div>
+            ) : null}
 
             <div className="grid grid-cols-[2.25rem_minmax(0,1fr)_minmax(0,1.4fr)_2.25rem] gap-1 border-b border-border px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted">
               <span>Seria</span>
@@ -603,6 +734,38 @@ function Stat({ label, value }: { label: string; value: string }) {
     <div className="rounded-xl border border-border bg-surface px-3 py-3 text-center">
       <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted">{label}</p>
       <p className="mt-1 font-mono text-base font-semibold tabular-nums">{value}</p>
+    </div>
+  );
+}
+
+function ScorePicker({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number | null;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-surface px-3 py-3">
+      <p className="mb-2 text-sm font-medium">{label}</p>
+      <div className="grid grid-cols-5 gap-1">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => onChange(n)}
+            className={`rounded-[8px] border py-2 font-mono text-sm font-semibold tabular-nums transition-colors ${
+              value === n
+                ? "border-accent-border bg-accent text-accent-foreground"
+                : "border-border-strong text-muted hover:border-accent-border"
+            }`}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

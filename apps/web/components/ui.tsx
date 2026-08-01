@@ -6,11 +6,21 @@ export function PageHeader({ title, subtitle, action }: { title: string; subtitl
   return (
     <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0">
-        <h1 className="break-words font-display text-xl font-bold tracking-tight sm:text-2xl">{title}</h1>
-        {subtitle ? <p className="mt-1 break-words text-sm text-muted-strong">{subtitle}</p> : null}
+        <h1 className="break-words font-display text-xl font-bold sm:text-2xl">{title}</h1>
+        {subtitle ? <p className="mt-1 max-w-[70ch] break-words text-sm leading-[var(--leading-body)] text-muted-strong">{subtitle}</p> : null}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}
     </div>
+  );
+}
+
+/** Placeholder ładowania — kształt 1:1 z docelowym layoutem. Pokazuj po ≥200ms (useDelayedFlag). */
+export function Skeleton({ className = "" }: { className?: string }) {
+  return (
+    <div
+      aria-hidden
+      className={`skeleton-pulse rounded-md bg-surface-active ${className}`}
+    />
   );
 }
 
@@ -34,19 +44,21 @@ export function Card({
   onClick?: () => void;
 }) {
   const classNames = [
-    "rounded-xl border bg-surface p-5 text-left shadow-card transition-[background-color,border-color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)]",
+    "rounded-xl border bg-surface p-4 text-left shadow-card transition-[background-color,border-color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)]",
     selected ? "border-accent" : "border-border",
-    interactive || onClick ? "hover:bg-surface-hover active:scale-[0.99]" : "",
+    interactive || onClick
+      ? "hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.99]"
+      : "",
     className,
   ].join(" ");
   const header =
     eyebrow || title || meta ? (
       <div className="mb-3 min-w-0">
         {eyebrow ? (
-          <div className="mb-1 text-xs font-semibold uppercase tracking-[0.08em] text-muted">{eyebrow}</div>
+          <div className="mb-1 text-xs font-semibold uppercase tracking-caps text-muted">{eyebrow}</div>
         ) : null}
         {title ? <div className="break-words font-display text-lg font-semibold text-foreground">{title}</div> : null}
-        {meta ? <div className="mt-0.5 break-words text-sm text-muted">{meta}</div> : null}
+        {meta ? <div className="mt-0.5 break-words text-sm leading-[var(--leading-label)] text-muted">{meta}</div> : null}
       </div>
     ) : null;
 
@@ -76,6 +88,7 @@ export function Button({
   variant = "primary",
   size = "md",
   disabled,
+  loading,
   title,
   full,
   className = "",
@@ -86,6 +99,8 @@ export function Button({
   variant?: ButtonVariant;
   size?: ButtonSize;
   disabled?: boolean;
+  /** Spinner wewnątrz przycisku — rozmiar stabilny, treść w aria-busy. */
+  loading?: boolean;
   title?: string;
   full?: boolean;
   className?: string;
@@ -101,20 +116,28 @@ export function Button({
     md: "h-10 px-4 text-sm",
     lg: "h-12 px-5 text-sm",
   };
+  const busy = !!loading;
   return (
     <button
       type={type}
       onClick={onClick}
-      disabled={disabled}
+      disabled={disabled || busy}
+      aria-busy={busy || undefined}
       title={title}
       className={[
-        "inline-flex items-center justify-center gap-2 rounded-[10px] transition-[background-color,transform,color] duration-[var(--dur-fast)] ease-[var(--ease-out)] active:scale-[0.98] disabled:opacity-50",
+        "inline-flex items-center justify-center gap-2 rounded-md transition-[background-color,transform,color] duration-[var(--dur-fast)] ease-[var(--ease-out)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
         styles[variant],
         sizes[size],
         full ? "w-full" : "",
         className,
       ].join(" ")}
     >
+      {busy ? (
+        <span
+          aria-hidden
+          className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent"
+        />
+      ) : null}
       {children}
     </button>
   );
@@ -135,7 +158,7 @@ export function Field({
 }) {
   return (
     <label className="flex flex-col gap-1.5 text-sm" title={title}>
-      <span className="flex flex-wrap items-baseline gap-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-muted-strong">
+      <span className="flex flex-wrap items-baseline gap-1.5 text-xs font-semibold uppercase tracking-caps text-muted-strong">
         {label}
         {hint ? <span className="text-xs font-normal normal-case tracking-normal text-muted">{hint}</span> : null}
       </span>
@@ -145,21 +168,42 @@ export function Field({
 }
 
 export const inputClass =
-  "h-10 w-full rounded-[10px] border border-border-strong bg-surface-sunken px-3 text-sm text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:text-muted-faint focus:border-accent-strong focus:shadow-[var(--glow-accent)]";
+  "h-10 w-full rounded-md border border-border-strong bg-surface-sunken px-3 text-sm text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:text-muted-faint focus:border-accent-strong focus:shadow-[var(--glow-accent)]";
+
+/** Input liczbowy — mono + tabular, bez „drgania” layoutu przy zmianie cyfr. */
+export const inputNumericClass =
+  "h-10 w-full rounded-md border border-border-strong bg-surface-sunken px-3 font-mono text-sm tabular-nums text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:text-muted-faint focus:border-accent-strong focus:shadow-[var(--glow-accent)]";
 
 export function ErrorBanner({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <div className="mb-4 rounded-[10px] border border-danger-border bg-danger-bg/60 px-4 py-2 text-sm text-danger">
+    <div
+      role="alert"
+      className="mb-4 rounded-md border border-danger-border bg-danger-bg/60 px-4 py-2 text-sm leading-[var(--leading-body)] text-danger"
+    >
       {message}
     </div>
   );
 }
 
-export function EmptyState({ children }: { children: ReactNode }) {
+export function EmptyState({
+  children,
+  title,
+  action,
+}: {
+  children: ReactNode;
+  title?: string;
+  action?: ReactNode;
+}) {
   return (
-    <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted">
-      {children}
+    <div className="rounded-xl border border-dashed border-border px-6 py-10 text-center">
+      {title ? (
+        <div className="font-display text-base font-semibold text-foreground">{title}</div>
+      ) : null}
+      <div className={`mx-auto max-w-[40ch] text-sm leading-[var(--leading-body)] text-muted ${title ? "mt-2" : ""}`}>
+        {children}
+      </div>
+      {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
     </div>
   );
 }
@@ -245,7 +289,7 @@ export function IconButton({
       title={title}
       aria-label={title}
       disabled={disabled}
-      className={`inline-flex ${dims} shrink-0 items-center justify-center rounded-[10px] transition-[background-color,transform,color] duration-[var(--dur-fast)] ease-[var(--ease-out)] active:scale-[0.98] disabled:opacity-50 ${styles}`}
+      className={`inline-flex ${dims} shrink-0 items-center justify-center rounded-md transition-[background-color,transform,color] duration-[var(--dur-fast)] ease-[var(--ease-out)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.98] disabled:opacity-50 ${styles}`}
     >
       {children}
     </button>
@@ -286,7 +330,7 @@ export function StatBlock({
 }) {
   return (
     <div className="min-w-0">
-      <div className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">{label}</div>
+      <div className="text-xs font-semibold uppercase tracking-caps text-muted">{label}</div>
       <div className="mt-1 flex items-baseline gap-1.5">
         <span className={`font-mono font-semibold tabular-nums text-foreground ${size === "lg" ? "text-4xl" : "text-2xl"}`}>
           {value}
@@ -382,7 +426,7 @@ export function SegmentedControl({
 }) {
   return (
     <div
-      className={`inline-flex rounded-[10px] border border-border bg-surface-sunken p-0.5 ${full ? "w-full" : ""}`}
+      className={`inline-flex rounded-md border border-border bg-surface-sunken p-0.5 ${full ? "w-full" : ""}`}
       role="group"
     >
       {items.map((item) => {
@@ -491,12 +535,12 @@ export function Dialog({
         role="dialog"
         aria-modal
         aria-labelledby="dialog-title"
-        className="relative w-full max-w-lg rounded-2xl border border-border bg-surface-sunken p-6 shadow-modal"
+        className="relative w-full max-w-lg rounded-xl border border-border bg-surface-sunken p-6 shadow-modal"
       >
         <h2 id="dialog-title" className="font-display text-xl font-bold text-foreground">
           {title}
         </h2>
-        {description ? <p className="mt-2 text-sm text-muted-strong">{description}</p> : null}
+        {description ? <p className="mt-2 max-w-[70ch] text-sm leading-[var(--leading-body)] text-muted-strong">{description}</p> : null}
         {children ? <div className="mt-4">{children}</div> : null}
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="ghost" onClick={onCancel}>
@@ -549,7 +593,7 @@ export function ProgressRing({
       {(label || sub) && (
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           {label ? <span className="font-mono text-sm font-semibold tabular-nums text-foreground">{label}</span> : null}
-          {sub ? <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">{sub}</span> : null}
+          {sub ? <span className="text-xs font-semibold uppercase tracking-caps text-muted">{sub}</span> : null}
         </div>
       )}
     </div>
@@ -576,7 +620,7 @@ export function useUndoToast() {
   }, []);
 
   const toastNode = toast ? (
-    <div className="fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-[10px] border border-border-strong bg-surface px-4 py-3 text-sm shadow-raised">
+    <div className="fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-md border border-border-strong bg-surface px-4 py-3 text-sm shadow-raised">
       <span className="text-foreground-secondary">{toast.message}</span>
       {toast.onUndo && (
         <button

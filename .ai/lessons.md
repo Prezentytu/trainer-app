@@ -55,6 +55,13 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: Po zmianie schematu usuń `apps/api/trainer.db` i pozwól odtworzyć bazę (dev). Utratę danych zgłoś użytkownikowi z góry.
 **Dotyczy**: `apps/api/Models.cs`, `apps/api/AppDb.cs`, `apps/api/Program.cs`.
 
+## Każdy endpoint trenera musi przejść przez `TrainerAccess`
+
+**Kontekst**: Clients/Plans/Dashboard były scoped po `TrainerId`, ale sessions, maxes, assignments, exercises GET/PUT/DELETE i access-token były otwarte po samym ID.
+**Problem**: W produkcji z Clerkiem to IDOR — trener A mógł czytać/edytować zasoby trenera B.
+**Zasada**: Nowy endpoint pod `/api/*` (poza portalem tokenowym) zawsze: `TrainerIdAsync` + filtr własności (`OwnsClientAsync` / `TrainerId ==`). Wspólna biblioteka ćwiczeń (`TrainerId == null`) jest tylko do odczytu. Isolację pokrywaj testem w `TenantIsolationTests`.
+**Dotyczy**: `apps/api/Program.cs`, `apps/api/TrainerAccess.cs`, `tests/api/TenantIsolationTests.cs`.
+
 ## Npgsql nie parsuje URI PostgreSQL — normalizuj przez `DbConnectionString`
 
 **Kontekst**: Neon podaje connection string jako URI (`postgresql://user:pass@host/db?sslmode=require`). Trafiał on wprost do `UseNpgsql` i do `efbundle --connection` w `deploy-api.yml`.

@@ -19,56 +19,94 @@ function intensityText(item: PlanItem): string | null {
   return null;
 }
 
+function prescribedSetMeta(s: PlanItem["prescribedSets"][number]) {
+  const reps =
+    s.durationSeconds != null
+      ? `${s.durationSeconds}s`
+      : s.repsMax
+        ? `${s.reps}–${s.repsMax}`
+        : s.reps != null
+          ? `${s.reps}`
+          : "—";
+  const load =
+    s.computedLoadKg != null
+      ? `${s.computedLoadKg} kg`
+      : s.loadPercent != null
+        ? `${s.loadPercent}%${s.percentOf === "1rm" ? " 1RM" : s.percentOf === "top" ? " od topu" : ""}`
+        : "—";
+  return { reps, load };
+}
+
 function PrescribedSets({ item }: { item: PlanItem }) {
   if (item.prescribedSets.length === 0) return null;
   return (
-    <div className="mt-2 overflow-x-auto rounded-lg border border-border">
-      <table className="w-full min-w-[480px] text-left text-xs">
-        <thead className="bg-surface text-xs uppercase tracking-wide text-muted">
-          <tr>
-            <th className="px-3 py-1.5">#</th>
-            <th className="px-3 py-1.5">Rola</th>
-            <th className="px-3 py-1.5">Powt./czas</th>
-            <th className="px-3 py-1.5">Obciążenie</th>
-            <th className="px-3 py-1.5">RIR</th>
-            <th className="px-3 py-1.5">Notatka</th>
-          </tr>
-        </thead>
-        <tbody>
-          {item.prescribedSets.map((s) => {
-            const reps =
-              s.durationSeconds != null
-                ? `${s.durationSeconds}s`
-                : s.repsMax
-                  ? `${s.reps}–${s.repsMax}`
-                  : s.reps != null
-                    ? `${s.reps}`
-                    : "—";
-            const load =
-              s.computedLoadKg != null
-                ? `${s.computedLoadKg} kg`
-                : s.loadPercent != null
-                  ? `${s.loadPercent}%${s.percentOf === "1rm" ? " 1RM" : s.percentOf === "top" ? " od topu" : ""}`
-                  : "—";
-            return (
-              <tr key={s.id} className="border-t border-border">
-                <td className="px-3 py-1.5 text-muted">{s.order}</td>
-                <td className="px-3 py-1.5 text-muted-strong">{s.role ?? "—"}</td>
-                <td className="px-3 py-1.5 text-sm font-semibold">{reps}</td>
-                <td className="px-3 py-1.5 text-sm font-semibold text-accent">
-                  {load}
-                  {s.computedLoadKg != null && s.loadPercent != null && (
-                    <span className="ml-1 text-xs font-normal text-muted">({s.loadPercent}%)</span>
-                  )}
-                </td>
-                <td className="px-3 py-1.5 text-muted-strong">{s.targetRir ?? "—"}</td>
-                <td className="px-3 py-1.5 text-muted-strong">{s.note ?? ""}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <>
+      {/* Mobile: karty zamiast szerokiej tabeli */}
+      <ul className="mt-2 space-y-2 sm:hidden">
+        {item.prescribedSets.map((s) => {
+          const { reps, load } = prescribedSetMeta(s);
+          return (
+            <li key={s.id} className="rounded-md border border-border bg-surface-sunken p-3 text-xs">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="font-mono tabular-nums text-muted">Seria {s.order}</span>
+                {s.role ? <span className="text-muted-strong">{s.role}</span> : null}
+              </div>
+              <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
+                <span>
+                  <span className="text-muted">Powt. </span>
+                  <span className="font-mono font-semibold tabular-nums text-foreground">{reps}</span>
+                </span>
+                <span>
+                  <span className="text-muted">Obc. </span>
+                  <span className="font-mono font-semibold tabular-nums text-accent">{load}</span>
+                </span>
+                {s.targetRir != null ? (
+                  <span>
+                    <span className="text-muted">RIR </span>
+                    <span className="font-mono tabular-nums text-foreground">{s.targetRir}</span>
+                  </span>
+                ) : null}
+              </div>
+              {s.note ? <p className="mt-1 text-muted-strong">{s.note}</p> : null}
+            </li>
+          );
+        })}
+      </ul>
+      <div className="mt-2 hidden overflow-x-auto rounded-lg border border-border sm:block">
+        <table className="w-full text-left text-xs">
+          <thead className="bg-surface text-xs uppercase tracking-caps text-muted">
+            <tr>
+              <th className="px-3 py-1.5">#</th>
+              <th className="px-3 py-1.5">Rola</th>
+              <th className="px-3 py-1.5">Powt./czas</th>
+              <th className="px-3 py-1.5">Obciążenie</th>
+              <th className="px-3 py-1.5">RIR</th>
+              <th className="px-3 py-1.5">Notatka</th>
+            </tr>
+          </thead>
+          <tbody>
+            {item.prescribedSets.map((s) => {
+              const { reps, load } = prescribedSetMeta(s);
+              return (
+                <tr key={s.id} className="border-t border-border">
+                  <td className="px-3 py-1.5 font-mono tabular-nums text-muted">{s.order}</td>
+                  <td className="px-3 py-1.5 text-muted-strong">{s.role ?? "—"}</td>
+                  <td className="px-3 py-1.5 font-mono text-sm font-semibold tabular-nums">{reps}</td>
+                  <td className="px-3 py-1.5 font-mono text-sm font-semibold tabular-nums text-accent">
+                    {load}
+                    {s.computedLoadKg != null && s.loadPercent != null && (
+                      <span className="ml-1 text-xs font-normal text-muted">({s.loadPercent}%)</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-1.5 font-mono tabular-nums text-muted-strong">{s.targetRir ?? "—"}</td>
+                  <td className="px-3 py-1.5 text-muted-strong">{s.note ?? ""}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 

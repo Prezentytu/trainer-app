@@ -85,6 +85,16 @@ public record StatusInput(string Status);
 
 public record ClientMaxInput(int ExerciseId, double MaxKg, DateOnly MeasuredOn, string? Note = null);
 
+public record ClientMeasurementInput(
+    DateOnly MeasuredOn,
+    double? WeightKg = null,
+    double? WaistCm = null,
+    double? ChestCm = null,
+    double? HipsCm = null,
+    string? Note = null);
+
+public record SessionCheckinInput(int? FeelingScore, int? SleepScore, int? EnergyScore);
+
 public record LoggedSetInput(
     int? Id = null,
     int SetNumber = 1,

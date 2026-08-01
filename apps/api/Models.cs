@@ -22,8 +22,23 @@ public class Client
 
     public List<Assignment> Assignments { get; set; } = [];
     public List<ClientMax> Maxes { get; set; } = [];
+    public List<ClientMeasurement> Measurements { get; set; } = [];
     public List<WorkoutSession> Sessions { get; set; } = [];
     public List<ClientAccessToken> AccessTokens { get; set; } = [];
+}
+
+public class ClientMeasurement
+{
+    public int Id { get; set; }
+    public int ClientId { get; set; }
+    public Client? Client { get; set; }
+    public DateOnly MeasuredOn { get; set; }
+    public double? WeightKg { get; set; }
+    public double? WaistCm { get; set; }
+    public double? ChestCm { get; set; }
+    public double? HipsCm { get; set; }
+    public string? Note { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
 /// <summary>1RM klienta per ćwiczenie (historia — aktualny = najnowszy wg daty).</summary>
@@ -211,6 +226,9 @@ public class WorkoutSession
     public DateOnly PerformedOn { get; set; }
     public int? DurationSeconds { get; set; }
     public string? Note { get; set; }
+    public int? FeelingScore { get; set; }
+    public int? SleepScore { get; set; }
+    public int? EnergyScore { get; set; }
     // "in_progress" | "completed"
     public string Status { get; set; } = "in_progress";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -20,6 +20,13 @@ public static class ChurnRadar
                 LastCompleted = c.Sessions
                     .Where(s => s.Status == "completed")
                     .Max(s => (DateOnly?)s.PerformedOn),
+                AvgRecentFeeling = c.Sessions
+                    .Where(s => s.Status == "completed" && s.FeelingScore != null)
+                    .OrderByDescending(s => s.PerformedOn)
+                    .ThenByDescending(s => s.Id)
+                    .Take(3)
+                    .Select(s => (double?)s.FeelingScore)
+                    .Average(),
                 PortalToken = c.AccessTokens
                     .OrderByDescending(t => t.CreatedAt)
                     .Select(t => t.Token)
@@ -71,6 +78,19 @@ public static class ChurnRadar
                     reason = "silent",
                     message = $"{days} dni bez treningu",
                     daysSilent = days,
+                    portalToken = c.PortalToken,
+                    action = "copy_portal_link",
+                }));
+            }
+            else if (c.AvgRecentFeeling is double feeling && feeling < 2.5)
+            {
+                items.Add((4, (int)Math.Round((2.5 - feeling) * 10), new
+                {
+                    clientId = c.Id,
+                    clientName = c.Name,
+                    reason = "low_wellness",
+                    message = $"Niskie samopoczucie po treningach (śr. {feeling:0.#}/5)",
+                    daysSilent = (int?)null,
                     portalToken = c.PortalToken,
                     action = "copy_portal_link",
                 }));
