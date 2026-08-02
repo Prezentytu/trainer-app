@@ -513,6 +513,10 @@ export type LoggedSet = {
   completed: boolean;
   estimated1Rm: number | null;
   isPr: boolean;
+  /** Cel z planu (additive — nie w encji). */
+  targetWeightKg?: number | null;
+  targetReps?: number | null;
+  targetDurationSeconds?: number | null;
 };
 
 export type LoggedExercise = {
@@ -525,6 +529,10 @@ export type LoggedExercise = {
   order: number;
   note: string | null;
   restSeconds: number | null;
+  /** Cel RIR / tempo / notatka trenera z planu (additive). */
+  targetRir?: number | null;
+  tempo?: string | null;
+  planNote?: string | null;
   prevSets: PrevLoggedSet[];
   sets: LoggedSet[];
 };

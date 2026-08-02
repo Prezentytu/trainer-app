@@ -15,6 +15,13 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Poprzedni wynik w kolumnie, nie w placeholderze inputu
+
+**Kontekst**: SessionLogger pokazywał poprzednią sesję jako ghost-placeholder w polach kg/powt. („Dziś").
+**Problem**: Nagłówki `Seria`/`Dziś` się rozjeżdżały, użytkownik mylił placeholder z wpisaną wartością, a inputy z długim placeholderem psuły siatkę.
+**Zasada**: Poprzedni wynik ma własną kolumnę (`Poprz.`), inputy mają krótkie placeholdery jednostek (`kg` / `powt.`). Cele z planu dołączaj additive do DTO (bez migracji), a „poniżej celu" pokazuj jako osobny znacznik przy kolumnie poprzedniej.
+**Dotyczy**: `SessionLogger.tsx`, `Sessions.LoadTargetsAsync`, portal klient.
+
 ## Ikony to inline SVG, nigdy emoji ani znaki unicode
 
 **Kontekst**: Karty planów dostały akcje `IconButton` z glifami `⎘` i `🗑` (wzorem `TableDay`/`ListView`), a statystyki były luźnymi liczbami na tle karty.

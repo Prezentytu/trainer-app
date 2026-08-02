@@ -172,7 +172,7 @@ export const inputClass =
 
 /** Input liczbowy — mono + tabular, bez „drgania” layoutu przy zmianie cyfr. 16px na mobile (iOS nie zoomuje). */
 export const inputNumericClass =
-  "h-10 w-full rounded-md border border-border-strong bg-surface-sunken px-3 font-mono text-base tabular-nums text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:text-muted-faint focus:border-accent-strong focus:shadow-[var(--glow-accent)] sm:text-sm";
+  "h-10 w-full rounded-[10px] border border-border-strong bg-surface-raised px-3 font-mono text-base tabular-nums text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:text-muted-faint focus:border-accent-strong focus:shadow-[var(--glow-accent)] sm:text-sm";
 
 export function ErrorBanner({ message }: { message: string | null }) {
   if (!message) return null;

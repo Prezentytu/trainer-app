@@ -49,6 +49,7 @@
   /* —— Warstwa 2: semantyka (motyw domyślny WA) —— */
   --background: var(--ink-950);
   --surface: var(--ink-850);
+  --surface-raised: var(--ink-900);
   --surface-sunken: var(--ink-950);
   --surface-hover: var(--ink-800);
   --surface-active: var(--ink-700);
@@ -126,6 +127,7 @@
 
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
   --color-surface-sunken: var(--surface-sunken);
   --color-surface-hover: var(--surface-hover);
   --color-surface-active: var(--surface-active);

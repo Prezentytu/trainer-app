@@ -143,7 +143,10 @@ public class MaxesAndSessionsTests : IClassFixture<TestWebAppFactory>
         var firstEx = sessionDoc.RootElement.GetProperty("exercises")[0];
         Assert.True(firstEx.TryGetProperty("prevSets", out _));
         Assert.True(firstEx.TryGetProperty("restSeconds", out _));
-        var firstSetId = firstEx.GetProperty("sets")[0].GetProperty("id").GetInt32();
+        Assert.True(firstEx.TryGetProperty("targetRir", out _) || firstEx.TryGetProperty("planNote", out _) || firstEx.TryGetProperty("tempo", out _));
+        var firstSet = firstEx.GetProperty("sets")[0];
+        Assert.True(firstSet.TryGetProperty("targetWeightKg", out _) || firstSet.TryGetProperty("targetReps", out _) || firstSet.TryGetProperty("targetDurationSeconds", out _));
+        var firstSetId = firstSet.GetProperty("id").GetInt32();
 
         // PUT z tym samym Id serii — stabilność ID
         var exercises = sessionDoc.RootElement.GetProperty("exercises").EnumerateArray().Select(e => new
@@ -192,7 +195,56 @@ public class MaxesAndSessionsTests : IClassFixture<TestWebAppFactory>
         Assert.True(progress!.Completed >= 1);
     }
 
+    [Fact]
+    public async Task SessionWithoutPlanDay_HasNullTargets()
+    {
+        var clients = await _client.GetFromJsonAsync<List<ClientRow>>("/api/clients");
+        var jan = clients!.First(c => c.Name == "Jan Kowalski");
+        var exercises = await _client.GetFromJsonAsync<List<ExerciseRow>>("/api/exercises");
+        var first = exercises!.First();
+
+        var create = await _client.PostAsJsonAsync("/api/sessions", new
+        {
+            clientId = jan.Id,
+            performedOn = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd"),
+            status = "in_progress",
+            exercises = new[]
+            {
+                new
+                {
+                    exerciseId = first.Id,
+                    order = 0,
+                    note = (string?)null,
+                    sets = new[]
+                    {
+                        new
+                        {
+                            setNumber = 1,
+                            weightKg = (double?)40,
+                            reps = (int?)8,
+                            durationSeconds = (int?)null,
+                            distanceMeters = (int?)null,
+                            rir = (double?)null,
+                            rpe = (double?)null,
+                            isWarmup = false,
+                            completed = false,
+                        },
+                    },
+                },
+            },
+        });
+        Assert.Equal(HttpStatusCode.Created, create.StatusCode);
+        var json = await create.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        var ex = doc.RootElement.GetProperty("exercises")[0];
+        Assert.True(!ex.TryGetProperty("targetRir", out var tr) || tr.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined);
+        var set = ex.GetProperty("sets")[0];
+        Assert.True(!set.TryGetProperty("targetWeightKg", out var tw) || tw.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined);
+        Assert.True(!set.TryGetProperty("targetReps", out var treps) || treps.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined);
+    }
+
     private record ClientRow(int Id, string Name);
+    private record ExerciseRow(int Id, string Name);
     private record MaxRow(int Id, double MaxKg, string ExerciseName);
     private record PlanRow(int Id, string Name);
     private record AssignmentRow(int Id, int PlanId, int ClientId, string Status);

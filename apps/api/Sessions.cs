@@ -272,7 +272,77 @@ public static class Sessions
         var prs = Stats.FindPrSets(session, historical);
         var prevSets = await LoadPrevSetsAsync(db, session, exerciseIds);
         var restSeconds = await LoadRestSecondsAsync(db, session, exerciseIds);
-        return Stats.SessionDetail(session, prs, prevSets, restSeconds);
+        var targets = await LoadTargetsAsync(db, session, exerciseIds);
+        return Stats.SessionDetail(session, prs, prevSets, restSeconds, targets);
+    }
+
+    /// <summary>
+    /// Cele z planu (kg/powt./RIR/tempo/notatka) — bez zmiany schematu LoggedSet.
+    /// Match po ExerciseId + SetNumber.
+    /// </summary>
+    public static async Task<Dictionary<int, Stats.ExerciseTargets>> LoadTargetsAsync(
+        AppDb db, WorkoutSession session, List<int> exerciseIds)
+    {
+        var result = new Dictionary<int, Stats.ExerciseTargets>();
+        if (session.PlanDayId is null || exerciseIds.Count == 0) return result;
+
+        var items = await db.PlanItems
+            .Include(i => i.Exercise)
+            .Include(i => i.PrescribedSets)
+            .Where(i => i.PlanDayId == session.PlanDayId && exerciseIds.Contains(i.ExerciseId))
+            .ToListAsync();
+
+        var maxes = await PlanLoads.LatestMaxesAsync(db, session.ClientId);
+
+        foreach (var item in items)
+        {
+            if (result.ContainsKey(item.ExerciseId)) continue;
+
+            maxes.TryGetValue(item.ExerciseId, out var oneRm);
+            var topKg = PlanLoads.TopLoadKg(item);
+            var sets = new Dictionary<int, Stats.SetTargets>();
+
+            if (item.PrescribedSets.Count > 0)
+            {
+                foreach (var s in item.PrescribedSets.OrderBy(x => x.Order))
+                {
+                    sets[s.Order] = new Stats.SetTargets(
+                        PlanLoads.ComputedSetLoad(s, topKg, oneRm > 0 ? oneRm : null) ?? s.LoadKg,
+                        s.Reps,
+                        s.RepsMax,
+                        s.DurationSeconds);
+                }
+            }
+            else
+            {
+                var setCount = item.Sets ?? item.Exercise?.DefaultSets ?? 3;
+                var measure = item.MeasureType ?? item.Exercise?.Type ?? "reps";
+                var load = item.LoadKg
+                    ?? (item.LoadPercent is not null && oneRm > 0
+                        ? PlanLoads.RoundToHalf(oneRm * item.LoadPercent.Value / 100.0)
+                        : item.Exercise?.DefaultLoadKg);
+                var reps = measure == "reps" ? (item.Reps ?? item.Exercise?.DefaultReps) : null;
+                var duration = measure == "time"
+                    ? (item.RepDurationSeconds ?? item.Exercise?.DefaultRepDurationSeconds)
+                    : null;
+                for (var n = 1; n <= setCount; n++)
+                {
+                    sets[n] = new Stats.SetTargets(
+                        measure == "reps" ? load : null,
+                        reps,
+                        item.RepsMax,
+                        duration);
+                }
+            }
+
+            result[item.ExerciseId] = new Stats.ExerciseTargets(
+                item.TargetRir,
+                item.Tempo,
+                item.Notes,
+                sets);
+        }
+
+        return result;
     }
 
     static async Task<Dictionary<int, List<object>>> LoadPrevSetsAsync(

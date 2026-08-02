@@ -54,11 +54,24 @@ public static class Stats
         };
     }
 
+    public sealed record SetTargets(
+        double? TargetWeightKg,
+        int? TargetReps,
+        int? TargetRepsMax,
+        int? TargetDurationSeconds);
+
+    public sealed record ExerciseTargets(
+        double? TargetRir,
+        string? Tempo,
+        string? PlanNote,
+        IReadOnlyDictionary<int, SetTargets> Sets);
+
     public static object SessionDetail(
         WorkoutSession s,
         HashSet<(int ExerciseId, int SetId)> prSetIds,
         IReadOnlyDictionary<int, List<object>>? prevSetsByExercise = null,
-        IReadOnlyDictionary<int, int?>? restSecondsByExercise = null)
+        IReadOnlyDictionary<int, int?>? restSecondsByExercise = null,
+        IReadOnlyDictionary<int, ExerciseTargets>? targetsByExercise = null)
     {
         var allSets = s.Exercises.SelectMany(e => e.Sets).ToList();
         var prs = s.Exercises
@@ -95,39 +108,57 @@ public static class Stats
             TotalSets = WorkingSetCount(allSets),
             TotalVolumeKg = VolumeKg(allSets),
             Prs = prs,
-            Exercises = s.Exercises.OrderBy(e => e.Order).Select(e => new
+            Exercises = s.Exercises.OrderBy(e => e.Order).Select(e =>
             {
-                e.Id,
-                e.ExerciseId,
-                ExerciseName = e.Exercise?.Name ?? "",
-                ExerciseType = e.Exercise?.Type ?? "reps",
-                Category = e.Exercise?.Category,
-                Media = e.Exercise?.Media ?? [],
-                e.Order,
-                e.Note,
-                RestSeconds = restSecondsByExercise is not null
-                    && restSecondsByExercise.TryGetValue(e.ExerciseId, out var rest)
-                    ? rest
-                    : 90,
-                PrevSets = prevSetsByExercise is not null
-                    && prevSetsByExercise.TryGetValue(e.ExerciseId, out var prev)
-                    ? prev
-                    : [],
-                Sets = e.Sets.OrderBy(x => x.SetNumber).Select(x => new
+                ExerciseTargets? targets = null;
+                if (targetsByExercise is not null)
+                    targetsByExercise.TryGetValue(e.ExerciseId, out targets);
+                return new
                 {
-                    x.Id,
-                    x.SetNumber,
-                    x.WeightKg,
-                    x.Reps,
-                    x.DurationSeconds,
-                    x.DistanceMeters,
-                    x.Rir,
-                    x.Rpe,
-                    x.IsWarmup,
-                    x.Completed,
-                    Estimated1Rm = Epley1Rm(x.WeightKg, x.Reps),
-                    IsPr = prSetIds.Contains((e.ExerciseId, x.Id)),
-                }),
+                    e.Id,
+                    e.ExerciseId,
+                    ExerciseName = e.Exercise?.Name ?? "",
+                    ExerciseType = e.Exercise?.Type ?? "reps",
+                    Category = e.Exercise?.Category,
+                    Media = e.Exercise?.Media ?? [],
+                    e.Order,
+                    e.Note,
+                    TargetRir = targets?.TargetRir,
+                    Tempo = targets?.Tempo,
+                    PlanNote = targets?.PlanNote,
+                    RestSeconds = restSecondsByExercise is not null
+                        && restSecondsByExercise.TryGetValue(e.ExerciseId, out var rest)
+                        ? rest
+                        : 90,
+                    PrevSets = prevSetsByExercise is not null
+                        && prevSetsByExercise.TryGetValue(e.ExerciseId, out var prev)
+                        ? prev
+                        : [],
+                    Sets = e.Sets.OrderBy(x => x.SetNumber).Select(x =>
+                    {
+                        SetTargets? setTarget = null;
+                        if (targets?.Sets is not null)
+                            targets.Sets.TryGetValue(x.SetNumber, out setTarget);
+                        return new
+                        {
+                            x.Id,
+                            x.SetNumber,
+                            x.WeightKg,
+                            x.Reps,
+                            x.DurationSeconds,
+                            x.DistanceMeters,
+                            x.Rir,
+                            x.Rpe,
+                            x.IsWarmup,
+                            x.Completed,
+                            Estimated1Rm = Epley1Rm(x.WeightKg, x.Reps),
+                            IsPr = prSetIds.Contains((e.ExerciseId, x.Id)),
+                            TargetWeightKg = setTarget?.TargetWeightKg,
+                            TargetReps = setTarget?.TargetReps,
+                            TargetDurationSeconds = setTarget?.TargetDurationSeconds,
+                        };
+                    }),
+                };
             }),
         };
     }

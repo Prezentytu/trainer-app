@@ -27,7 +27,8 @@ Portal ma jeden, ciemny motyw startowy (Workout Alchemist). Kolory żyją w **tr
 |---|---|---|---|
 | `background` | `--ink-950` | `bg-background` | tło strony |
 | `surface` | `--ink-850` | `bg-surface` | karty (`Card`), panele |
-| `surface-sunken` | `--ink-950` | `bg-surface-sunken` | zagnieżdżone panele, inputy |
+| `surface-raised` | `--ink-900` | `bg-surface-raised` | inputy w karcie, pływające karty (timer mini) |
+| `surface-sunken` | `--ink-950` | `bg-surface-sunken` | zagnieżdżone panele |
 | `surface-hover` | `--ink-800` | `bg-surface-hover` | hover, tła pomocnicze |
 | `surface-active` | `--ink-700` | `bg-surface-active` | aktywne tło segmentów / badge |
 | `border` | `#22262A` | `border-border` | domyślne obramowanie |
@@ -77,16 +78,31 @@ Hierarchię buduj **wagą i kolorem**, nie skokami rozmiaru:
 
 | Rola | Klasa | Waga |
 |---|---|---|
-| Micro / meta uppercase | `text-xs` + `tracking-[0.08em]` | `font-semibold` |
+| Micro / meta uppercase | `text-xs` + `tracking-[0.08em]` / `tracking-caps` | `font-semibold` |
 | Body / etykiety / przyciski | `text-sm` | `font-normal` / `font-medium` |
 | Nazwa ćwiczenia / dnia | `text-sm font-medium` lub `text-base` | `font-medium` |
 | Nagłówek karty | `font-display text-lg` | `font-semibold` |
 | Tytuł strony (`PageHeader`) | `font-display text-xl sm:text-2xl` | `font-bold` |
 
+### Mapowanie rampy designu WA (`--type-*`) → Tailwind
+
+Composite tokenów `--type-*` **nie** dodajemy do CSS — mapujemy na utility:
+
+| Token designu | Tailwind |
+|---|---|
+| `--type-h2` | `font-display text-3xl font-bold` |
+| `--type-h3` | `font-display text-lg font-semibold` |
+| `--type-body` | `text-[15px] leading-normal` |
+| `--type-body-strong` | `text-[15px] font-semibold` |
+| `--type-caption` | `text-[13px]` |
+| `--type-label` | `text-xs font-semibold tracking-caps uppercase` |
+| `--type-mono-sm` | `font-mono text-[13px] tabular-nums` |
+| `--type-stat` | `font-mono text-3xl font-semibold tabular-nums` |
+
 Zasady:
 - Maks. 3 wagi w UI: `normal` / `medium` / `semibold`. `bold` tylko h1 i wordmark.
-- Zero arbitralnych rozmiarów (`text-[11px]`).
-- ALL-CAPS tylko na tiny labels (1–3 słowa) z `tracking-[0.08em]`.
+- Zero arbitralnych rozmiarów poza mapowaniem rampy WA powyżej (`text-[13px]` / `text-[15px]`).
+- ALL-CAPS tylko na tiny labels (1–3 słowa) z `tracking-caps`.
 - Liczby zawsze `font-mono tabular-nums`.
 
 ## Spacing — rytm 8px

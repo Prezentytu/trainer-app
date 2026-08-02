@@ -19,12 +19,14 @@ import {
   EmptyState,
   ErrorBanner,
   formatRest,
+  IconButton,
   inputClass,
   useUndoToast,
 } from "@/components/ui";
 import { demoMedia } from "@/lib/youtube";
 import { unlockAudio } from "@/lib/restAlarm";
 import { clearLocalDraft, readLocalDraft, saveLocalDraft } from "@/lib/sessionDraft";
+import { readAutoRest } from "@/lib/portalPrefs";
 import { SetValueInput } from "@/components/session/SetValueInput";
 import { SessionClock } from "@/components/session/SessionClock";
 import { RestTimer } from "@/components/session/RestTimer";
@@ -32,6 +34,9 @@ import { useRestTimer } from "@/components/session/useRestTimer";
 import { useWakeLock } from "@/components/session/useWakeLock";
 import { PlateCalculator } from "@/components/session/PlateCalculator";
 import { formatKg } from "@/lib/plates";
+
+const SET_GRID =
+  "grid grid-cols-[1.25rem_minmax(0,1fr)_4.25rem_3.5rem_2.75rem] gap-1.5 min-[360px]:grid-cols-[1.25rem_minmax(0,1fr)_4.25rem_3.5rem_2.75rem_1.125rem]";
 
 type Props = {
   session: SessionDetail;
@@ -156,6 +161,9 @@ function reconcile(local: LocalSession, server: SessionDetail): LocalSession {
         uid: lSet.uid,
         isPr: sSet.isPr,
         estimated1Rm: sSet.estimated1Rm,
+        targetWeightKg: sSet.targetWeightKg ?? lSet.targetWeightKg,
+        targetReps: sSet.targetReps ?? lSet.targetReps,
+        targetDurationSeconds: sSet.targetDurationSeconds ?? lSet.targetDurationSeconds,
       };
     });
 
@@ -169,6 +177,9 @@ function reconcile(local: LocalSession, server: SessionDetail): LocalSession {
     return {
       ...sEx,
       note: lEx?.note ?? sEx.note,
+      targetRir: sEx.targetRir ?? lEx?.targetRir,
+      tempo: sEx.tempo ?? lEx?.tempo,
+      planNote: sEx.planNote ?? lEx?.planNote,
       sets: sets.map((s, i) => ({ ...s, setNumber: i + 1 })),
     };
   });
@@ -191,16 +202,40 @@ function reconcile(local: LocalSession, server: SessionDetail): LocalSession {
 
 function formatPrev(p: PrevLoggedSet | undefined): string {
   if (!p) return "—";
-  if (p.weightKg != null && p.reps != null) return `${formatKg(p.weightKg)} × ${p.reps}`;
-  if (p.reps != null) return `${p.reps} powt.`;
-  if (p.durationSeconds != null) return formatRest(p.durationSeconds);
+  if (p.weightKg != null && p.reps != null) return `${formatKg(p.weightKg)}×${p.reps}`;
+  if (p.durationSeconds != null) return `${p.durationSeconds} s`;
+  if (p.reps != null) return `${p.reps}`;
   return "—";
 }
 
-function prevPlaceholder(p: PrevLoggedSet | undefined, field: "weight" | "reps"): string | undefined {
-  if (!p) return undefined;
-  if (field === "weight") return p.weightKg != null ? formatKg(p.weightKg) : undefined;
-  return p.reps != null ? String(p.reps) : undefined;
+function formatTargetLabel(set: LocalSet, isTime: boolean): string {
+  if (isTime && set.targetDurationSeconds != null) return `${set.targetDurationSeconds} s`;
+  if (set.targetWeightKg != null && set.targetReps != null)
+    return `${formatKg(set.targetWeightKg)}×${set.targetReps}`;
+  if (set.targetReps != null) return `${set.targetReps}`;
+  return "";
+}
+
+function isBelowTarget(set: LocalSet, isTime: boolean): boolean {
+  if (!set.completed) return false;
+  if (isTime) {
+    const t = set.targetDurationSeconds;
+    return t != null && (set.durationSeconds ?? set.reps ?? 0) < t;
+  }
+  const tw = set.targetWeightKg;
+  const tr = set.targetReps;
+  if (tr != null && (set.reps ?? 0) < tr) return true;
+  if (tw != null && (set.weightKg ?? 0) < tw) return true;
+  return false;
+}
+
+function restPillLabel(seconds: number): string {
+  if (seconds >= 60) {
+    const min = seconds / 60;
+    const label = Number.isInteger(min) ? String(min) : String(min).replace(".", ",");
+    return `${label} min`;
+  }
+  return `${seconds} s`;
 }
 
 export function SessionLogger({
@@ -227,17 +262,18 @@ export function SessionLogger({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [summary, setSummary] = useState<SessionDetail | null>(null);
-  const [checkinSession, setCheckinSession] = useState<SessionDetail | null>(null);
   const [feelingScore, setFeelingScore] = useState<number | null>(null);
   const [sleepScore, setSleepScore] = useState<number | null>(null);
   const [energyScore, setEnergyScore] = useState<number | null>(null);
   const [swapExIdx, setSwapExIdx] = useState<number | null>(null);
   const [swapSearch, setSwapSearch] = useState("");
+  const [menuExIdx, setMenuExIdx] = useState<number | null>(null);
   const [videoId, setVideoId] = useState<string | null>(null);
   const [videoTitle, setVideoTitle] = useState("");
   const [prCelebrate, setPrCelebrate] = useState<string | null>(null);
   const [activeCell, setActiveCell] = useState<ActiveCell | null>(null);
   const [platesOpen, setPlatesOpen] = useState(false);
+  const [sessionNote, setSessionNote] = useState("");
   const { showUndoToast, toastNode } = useUndoToast();
 
   const draftRef = useRef(draft);
@@ -316,8 +352,11 @@ export function SessionLogger({
         }
 
         if (complete) {
-          if (completedEdit || updated.feelingScore != null) setSummary(updated);
-          else setCheckinSession(updated);
+          setSummary(updated);
+          setFeelingScore(updated.feelingScore);
+          setSleepScore(updated.sleepScore);
+          setEnergyScore(updated.energyScore);
+          setSessionNote(updated.note ?? "");
         }
         return merged;
       } catch (e) {
@@ -451,7 +490,7 @@ export function SessionLogger({
       return next;
     });
 
-    if (nextCompleted) startRest(exercise.restSeconds ?? 90);
+    if (nextCompleted && readAutoRest()) startRest(exercise.restSeconds ?? 90);
 
     saveChain.current = saveChain.current
       .then(async () => {
@@ -547,6 +586,9 @@ export function SessionLogger({
               completed: false,
               estimated1Rm: null,
               isPr: false,
+              targetWeightKg: last?.targetWeightKg ?? null,
+              targetReps: last?.targetReps ?? null,
+              targetDurationSeconds: last?.targetDurationSeconds ?? null,
             },
           ],
         };
@@ -614,25 +656,32 @@ export function SessionLogger({
     }
   };
 
-  const saveCheckin = async (skip = false) => {
-    if (!checkinSession) return;
+  const sendSummaryAndClose = async () => {
+    if (!summary) return;
     setSaving(true);
     setError(null);
     try {
-      let updated = checkinSession;
-      if (!skip) {
-        const input: SessionCheckinInput = {
-          feelingScore,
-          sleepScore,
-          energyScore,
-        };
+      let updated = summary;
+      const input: SessionCheckinInput = {
+        feelingScore,
+        sleepScore,
+        energyScore,
+      };
+      if (feelingScore != null || sleepScore != null || energyScore != null) {
         updated = portalToken
-          ? await api.portal.checkinSession(portalToken, checkinSession.id, input)
-          : await api.sessions.checkin(checkinSession.id, input);
+          ? await api.portal.checkinSession(portalToken, summary.id, input)
+          : await api.sessions.checkin(summary.id, input);
       }
-      setCheckinSession(null);
-      setSummary(updated);
+      if (sessionNote !== (summary.note ?? "")) {
+        const base = withUids(updated);
+        const withNote: LocalSession = { ...base, note: sessionNote || null, status: "completed" };
+        const saved = portalToken
+          ? await api.portal.updateSession(portalToken, summary.id, toInput(withNote))
+          : await api.sessions.update(summary.id, toInput(withNote));
+        updated = { ...updated, note: saved.note };
+      }
       onUpdated(updated);
+      onCompleted?.(updated);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -689,72 +738,109 @@ export function SessionLogger({
     setActiveCell({ exIdx, setIdx, field });
   };
 
-  if (checkinSession) {
-    return (
-      <div className="space-y-4">
-        <ErrorBanner message={error} />
-        <div className="rounded-xl border border-border bg-surface px-4 py-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">Check-in</p>
-          <h2 className="mt-1 font-display text-xl font-bold">Jak się czujesz po treningu?</h2>
-          <p className="mt-1 text-sm text-muted">Oceń w skali 1–5 — pomoże to dostosować kolejne sesje.</p>
-        </div>
-        <ScorePicker label="Samopoczucie" value={feelingScore} onChange={setFeelingScore} />
-        <ScorePicker label="Sen (ostatnia noc)" value={sleepScore} onChange={setSleepScore} />
-        <ScorePicker label="Energia" value={energyScore} onChange={setEnergyScore} />
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Button className="flex-1" disabled={saving} onClick={() => void saveCheckin(false)}>
-            {saving ? "Zapis…" : "Zakończ i zobacz podsumowanie"}
-          </Button>
-          <Button className="flex-1" variant="ghost" disabled={saving} onClick={() => void saveCheckin(true)}>
-            Pomiń
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   if (summary) {
+    const doneTotal = summary.exercises.reduce(
+      (acc, ex) => {
+        const done = ex.sets.filter((s) => s.completed).length;
+        return { done: acc.done + done, total: acc.total + ex.sets.length };
+      },
+      { done: 0, total: 0 },
+    );
+    const durSec = summary.durationSeconds ?? 0;
+    const durH = Math.floor(durSec / 3600);
+    const durM = Math.floor((durSec % 3600) / 60);
+    const durS = durSec % 60;
+    const durationFmt =
+      durH > 0
+        ? `${durH}:${String(durM).padStart(2, "0")}:${String(durS).padStart(2, "0")}`
+        : `${durM}:${String(durS).padStart(2, "0")}`;
+
     return (
-      <div className="space-y-4">
-        <div className="rounded-xl border border-accent-border bg-accent-dim/40 px-4 py-5 text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-accent">
-            {completedEdit ? "Zmiany zapisane" : "Trening zakończony"}
+      <div className="space-y-4 pb-28">
+        <ErrorBanner message={error} />
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-caps text-muted-faint">
+            {completedEdit ? "Zmiany zapisane" : "Trening ukończony"}
           </p>
-          <h1 className="mt-1 font-display text-2xl font-bold">{summary.dayLabel ?? "Sesja"}</h1>
-          <p className="mt-1 font-mono text-sm tabular-nums text-muted">{summary.performedOn}</p>
+          <h1 className="mt-1 font-display text-3xl font-bold">
+            {completedEdit ? "Gotowe" : "Dobra robota"}
+          </h1>
+          <p className="mt-0.5 text-[13px] text-muted">
+            {summary.dayLabel ?? "Trening"}
+            {summary.planName ? ` · ${summary.planName}` : ""}
+          </p>
         </div>
-        <div className="grid grid-cols-3 gap-3">
-          <Stat label="Czas" value={formatRest(summary.durationSeconds ?? 0)} />
-          <Stat label="Serie" value={String(summary.totalSets)} />
-          <Stat label="Tonaż" value={`${Math.round(summary.totalVolumeKg)} kg`} />
+
+        <div className="grid grid-cols-2 gap-3">
+          <StatCard label="Czas" value={durationFmt} />
+          <StatCard
+            label="Objętość"
+            value={`${Math.round(summary.totalVolumeKg).toLocaleString("pl-PL")} kg`}
+          />
+          <StatCard label="Serie" value={`${doneTotal.done}/${doneTotal.total}`} />
+          <StatCard
+            label="Rekordy"
+            value={String(summary.prs.length)}
+            highlight={summary.prs.length > 0}
+          />
         </div>
-        {summary.prs.length > 0 ? (
-          <div className="rounded-xl border border-pr/40 bg-pr-dim px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-pr">Nowe rekordy</p>
-            <ul className="mt-2 space-y-1">
-              {summary.prs.map((p) => (
-                <li key={`${p.exerciseId}-${p.setNumber}`} className="text-sm">
-                  <Badge tone="pr">PR</Badge>{" "}
-                  <span className="font-semibold">{p.exerciseName}</span>{" "}
-                  <span className="font-mono tabular-nums text-muted">
-                    {p.weightKg} × {p.reps}
-                    {p.estimated1Rm != null ? ` · max ${p.estimated1Rm}` : ""}
-                  </span>
-                </li>
-              ))}
-            </ul>
+
+        <div className="rounded-2xl border border-border bg-surface px-4 py-1 shadow-card">
+          {summary.exercises.map((ex) => {
+            const done = ex.sets.filter((s) => s.completed).length;
+            const isTime = ex.exerciseType === "time";
+            const below = ex.sets.some((s) => isBelowTarget(s as LocalSet, isTime));
+            const hasPr =
+              ex.sets.some((s) => s.isPr && s.completed) ||
+              summary.prs.some((p) => p.exerciseId === ex.exerciseId);
+            return (
+              <div
+                key={ex.id}
+                className="flex min-h-12 items-center gap-2.5 border-b border-border last:border-0"
+              >
+                <div className="min-w-0 flex-1 truncate text-[15px] font-semibold text-foreground-secondary">
+                  {ex.exerciseName}
+                </div>
+                {hasPr ? <Badge tone="pr">PR</Badge> : null}
+                <div
+                  className={`shrink-0 font-mono text-[13px] tabular-nums ${
+                    done < ex.sets.length || below ? "text-muted" : "text-positive"
+                  }`}
+                >
+                  {done}/{ex.sets.length}
+                  {below ? " · poniżej celu" : ""}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="space-y-3">
+          <ScorePicker label="Samopoczucie" value={feelingScore} onChange={setFeelingScore} />
+          <ScorePicker label="Sen (ostatnia noc)" value={sleepScore} onChange={setSleepScore} />
+          <ScorePicker label="Energia" value={energyScore} onChange={setEnergyScore} />
+        </div>
+
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-caps text-muted">
+            Wiadomość do trenera
+          </p>
+          <textarea
+            className={`${inputClass} min-h-[88px] resize-none py-3`}
+            placeholder="Np. biodra ciasne przy przysiadzie — trzecia seria lżejsza."
+            value={sessionNote}
+            onChange={(e) => setSessionNote(e.target.value)}
+            rows={3}
+          />
+        </div>
+
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/80 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md">
+          <div className="mx-auto max-w-lg">
+            <Button className="w-full" size="lg" disabled={saving} onClick={() => void sendSummaryAndClose()}>
+              {saving ? "Wysyłanie…" : "Wyślij do trenera i zakończ"}
+            </Button>
           </div>
-        ) : (
-          <p className="text-sm text-muted">Brak nowych PR w tej sesji — dobra robota i tak.</p>
-        )}
-        <Button
-          className="w-full"
-          onClick={() => {
-            onCompleted?.(summary);
-          }}
-        >
-          Wróć do panelu
-        </Button>
+        </div>
       </div>
     );
   }
@@ -770,8 +856,24 @@ export function SessionLogger({
     );
   }
 
-  const nextExercise =
-    currentExerciseIdx >= 0 ? draft.exercises[currentExerciseIdx] : null;
+  const allSetsFlat = draft.exercises.flatMap((ex) => ex.sets);
+  const doneSetsCount = allSetsFlat.filter((s) => s.completed).length;
+  const totalSetsCount = allSetsFlat.length;
+  const progressPct =
+    totalSetsCount > 0 ? Math.round((doneSetsCount / totalSetsCount) * 100) : 0;
+
+  // Pierwsza nieukończona seria — do podświetlenia wiersza
+  let nextExIdx = -1;
+  let nextSetIdx = -1;
+  outer: for (let i = 0; i < draft.exercises.length; i++) {
+    for (let j = 0; j < draft.exercises[i].sets.length; j++) {
+      if (!draft.exercises[i].sets[j].completed) {
+        nextExIdx = i;
+        nextSetIdx = j;
+        break outer;
+      }
+    }
+  }
 
   return (
     <div className="space-y-4 pb-24">
@@ -785,43 +887,40 @@ export function SessionLogger({
         </div>
       ) : null}
 
-      <div className="sticky top-0 z-20 -mx-1 border-b border-border bg-background/95 px-1 py-3 backdrop-blur">
+      <div className="sticky top-0 z-20 -mx-4 border-b border-border bg-background/80 px-4 pb-2.5 pt-[max(0.5rem,env(safe-area-inset-top))] backdrop-blur-md">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">
-              {draft.dayLabel ?? "Trening"}
-            </p>
-            <div className="flex items-baseline gap-2">
-              <h1 className="truncate font-display text-lg font-bold">
-                {completedEdit ? "Poprawa" : "Sesja"}
-              </h1>
+            <h1 className="truncate font-display text-lg font-semibold">
+              {draft.dayLabel ?? draft.planName ?? (completedEdit ? "Poprawa" : "Trening")}
+            </h1>
+            <p className="mt-0.5 font-mono text-[13px] tabular-nums text-muted">
+              {doneSetsCount} z {totalSetsCount} serii
+              {" · "}
               {completedEdit ? (
-                <span className="font-mono text-sm tabular-nums text-muted">
-                  {formatRest(draft.durationSeconds ?? 0)}
-                </span>
+                formatRest(draft.durationSeconds ?? 0)
               ) : (
-                <SessionClock startedAt={startedAt} />
+                <SessionClock startedAt={startedAt} className="font-mono text-[13px] tabular-nums text-muted" />
               )}
               <span
-                className={`text-xs text-muted transition-opacity duration-[var(--dur-fast)] ${
+                className={`ml-2 text-xs transition-opacity duration-[var(--dur-fast)] ${
                   saving ? "opacity-100" : "opacity-0"
                 }`}
                 aria-live="polite"
               >
                 Zapis…
               </span>
-            </div>
+            </p>
           </div>
-          <Button disabled={saving} onClick={() => void finish()}>
-            {completedEdit ? "Zapisz zmiany" : "Zakończ trening"}
+          <Button variant="secondary" disabled={saving} onClick={() => void finish()}>
+            {completedEdit ? "Zapisz" : "Zakończ"}
           </Button>
         </div>
-        {nextExercise && !completedEdit ? (
-          <p className="mt-2 text-xs text-muted">
-            Teraz:{" "}
-            <span className="font-medium text-accent-strong">{nextExercise.exerciseName}</span>
-          </p>
-        ) : null}
+        <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-surface-active">
+          <div
+            className="h-full rounded-full bg-accent transition-[width] duration-[var(--dur-med)] ease-[var(--ease-out)]"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
       </div>
 
       {videoId ? (
@@ -842,23 +941,21 @@ export function SessionLogger({
 
       {draft.exercises.map((exercise, exIdx) => {
         const thumb = demoMedia({ media: exercise.media, category: exercise.category });
-        const isCurrent = exIdx === currentExerciseIdx;
         const allDone = exercise.sets.every((s) => s.completed);
+        const isTime = exercise.exerciseType === "time";
+        const trainerNote = exercise.planNote || null;
+        const menuOpen = menuExIdx === exIdx;
         return (
           <section
             key={exercise.id > 0 ? exercise.id : `ex-${exIdx}`}
-            className={`overflow-hidden rounded-xl border bg-surface ${
-              isCurrent
-                ? "border-accent-border ring-1 ring-accent-border/60"
-                : allDone
-                  ? "border-border opacity-70"
-                  : "border-border"
+            className={`overflow-hidden rounded-2xl border border-border bg-surface px-4 pb-2 pt-4 shadow-card ${
+              allDone ? "opacity-70" : ""
             }`}
           >
-            <div className="flex items-center gap-3 border-b border-border px-3 py-3">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
-                className="h-12 w-12 shrink-0 rounded-md focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+                className="h-10 w-10 shrink-0 rounded-[10px] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
                 onClick={() => {
                   if (!thumb.youtubeId) return;
                   setVideoId(thumb.youtubeId);
@@ -873,43 +970,76 @@ export function SessionLogger({
                   alt={exercise.exerciseName}
                 />
               </button>
-              <div className="min-w-0 flex-1">
-                <h2 className="break-words font-display text-base font-bold">{exercise.exerciseName}</h2>
-                <p className="font-mono text-xs tabular-nums text-muted">
-                  {isCurrent ? "Teraz · " : allDone ? "Gotowe · " : ""}
-                  przerwa {formatRest(exercise.restSeconds ?? 90)}
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-1">
-                {exercise.prevSets.length > 0 ? (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="text-xs"
-                    onClick={() => copyPrevExercise(exIdx)}
-                    title="Skopiuj poprzednie wartości"
-                  >
-                    Poprz.
-                  </Button>
-                ) : null}
-                {libraryExercises.length > 0 ? (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="text-xs"
-                    onClick={() => {
-                      setSwapExIdx(swapExIdx === exIdx ? null : exIdx);
-                      setSwapSearch("");
-                    }}
-                  >
-                    Podmień
-                  </Button>
+              <h2 className="min-w-0 flex-1 font-display text-lg font-semibold leading-snug">
+                {exercise.exerciseName}
+              </h2>
+              {exercise.targetRir != null ? (
+                <span className="shrink-0 rounded-full border border-border bg-surface-raised px-2.5 py-0.5 font-mono text-[13px] tabular-nums text-muted">
+                  RIR {exercise.targetRir}
+                </span>
+              ) : null}
+              <span className="shrink-0 rounded-full border border-border bg-surface-raised px-2.5 py-0.5 font-mono text-[13px] tabular-nums text-muted">
+                {restPillLabel(exercise.restSeconds ?? 90)}
+              </span>
+              <div className="relative shrink-0">
+                <IconButton
+                  title="Więcej"
+                  size="md"
+                  onClick={() => setMenuExIdx(menuOpen ? null : exIdx)}
+                >
+                  ⋯
+                </IconButton>
+                {menuOpen ? (
+                  <div className="absolute right-0 top-full z-10 mt-1 min-w-[10rem] rounded-[10px] border border-border bg-surface-raised py-1 shadow-[var(--shadow-raised)]">
+                    {exercise.prevSets.length > 0 ? (
+                      <button
+                        type="button"
+                        className="block w-full px-3 py-2.5 text-left text-[13px] hover:bg-surface-hover"
+                        onClick={() => {
+                          copyPrevExercise(exIdx);
+                          setMenuExIdx(null);
+                        }}
+                      >
+                        Skopiuj poprzednie
+                      </button>
+                    ) : null}
+                    {libraryExercises.length > 0 ? (
+                      <button
+                        type="button"
+                        className="block w-full px-3 py-2.5 text-left text-[13px] hover:bg-surface-hover"
+                        onClick={() => {
+                          setSwapExIdx(exIdx);
+                          setSwapSearch("");
+                          setMenuExIdx(null);
+                        }}
+                      >
+                        Podmień ćwiczenie
+                      </button>
+                    ) : null}
+                    {thumb.youtubeId ? (
+                      <button
+                        type="button"
+                        className="block w-full px-3 py-2.5 text-left text-[13px] hover:bg-surface-hover"
+                        onClick={() => {
+                          setVideoId(thumb.youtubeId!);
+                          setVideoTitle(exercise.exerciseName);
+                          setMenuExIdx(null);
+                        }}
+                      >
+                        Pokaż film
+                      </button>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
             </div>
 
+            {trainerNote ? (
+              <p className="mt-1.5 text-[13px] text-muted">Trener: {trainerNote}</p>
+            ) : null}
+
             {swapExIdx === exIdx ? (
-              <div className="border-b border-border px-3 py-3">
+              <div className="mt-3 border-t border-border pt-3">
                 <input
                   className={`${inputClass} mb-2 w-full px-2 py-1.5`}
                   placeholder="Szukaj ćwiczenia…"
@@ -937,37 +1067,57 @@ export function SessionLogger({
               </div>
             ) : null}
 
-            <div className="grid grid-cols-[2.25rem_minmax(0,1fr)_2.75rem] gap-1 border-b border-border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted">
-              <span>Seria</span>
-              <span>Dziś</span>
-              <span className="text-center">OK</span>
+            <div
+              className={`${SET_GRID} mt-3 items-center border-b border-border px-0.5 pb-1.5 text-xs font-semibold uppercase tracking-caps text-muted-faint`}
+            >
+              <div>#</div>
+              <div>Poprz.</div>
+              <div>{isTime ? "" : "kg"}</div>
+              <div>{isTime ? "sek." : "powt."}</div>
+              <div className="text-center">✓</div>
+              <div className="hidden min-[360px]:block" />
             </div>
 
             {exercise.sets.map((s, setIdx) => {
               const prev = exercise.prevSets[setIdx];
               const isActiveRow =
                 activeCell?.exIdx === exIdx && activeCell?.setIdx === setIdx;
+              const isNext = exIdx === nextExIdx && setIdx === nextSetIdx;
               return (
                 <div key={s.uid}>
                   <SetRow
                     set={s}
                     prev={prev}
-                    completed={s.completed}
-                    isPr={s.isPr}
+                    isTime={isTime}
+                    isNext={isNext}
+                    canRemove={exercise.sets.length > 1}
                     onWeight={(v) => patchSet(exIdx, setIdx, { weightKg: v })}
-                    onReps={(v) => patchSet(exIdx, setIdx, { reps: v })}
+                    onReps={(v) =>
+                      patchSet(
+                        exIdx,
+                        setIdx,
+                        isTime ? { durationSeconds: v, reps: v } : { reps: v },
+                      )
+                    }
                     onFocusWeight={() => setActiveCell({ exIdx, setIdx, field: "weight" })}
                     onFocusReps={() => setActiveCell({ exIdx, setIdx, field: "reps" })}
                     onToggle={() => toggleComplete(exIdx, setIdx)}
+                    onRemove={() => removeSet(exIdx, setIdx)}
                     onCopyPrev={() => copyPrevSet(exIdx, setIdx)}
                   />
                   {isActiveRow ? (
-                    <div className="flex flex-wrap items-center gap-1 border-b border-border bg-surface-sunken px-2 py-1.5">
-                      <ToolbarBtn onClick={() => stepActive("weight", -2.5)}>−2,5</ToolbarBtn>
-                      <ToolbarBtn onClick={() => stepActive("weight", 2.5)}>+2,5</ToolbarBtn>
+                    <div className="flex flex-wrap items-center gap-1 border-b border-border bg-surface-raised px-1 py-1.5">
+                      {!isTime ? (
+                        <>
+                          <ToolbarBtn onClick={() => stepActive("weight", -2.5)}>−2,5</ToolbarBtn>
+                          <ToolbarBtn onClick={() => stepActive("weight", 2.5)}>+2,5</ToolbarBtn>
+                        </>
+                      ) : null}
                       <ToolbarBtn onClick={() => stepActive("reps", -1)}>−1</ToolbarBtn>
                       <ToolbarBtn onClick={() => stepActive("reps", 1)}>+1</ToolbarBtn>
-                      <ToolbarBtn onClick={() => setPlatesOpen(true)}>Talerze</ToolbarBtn>
+                      {!isTime ? (
+                        <ToolbarBtn onClick={() => setPlatesOpen(true)}>Talerze</ToolbarBtn>
+                      ) : null}
                       <ToolbarBtn
                         onClick={() => {
                           setActiveCell(null);
@@ -976,35 +1126,26 @@ export function SessionLogger({
                       >
                         Gotowe
                       </ToolbarBtn>
+                      {exercise.sets.length > 1 ? (
+                        <ToolbarBtn onClick={() => removeSet(exIdx, setIdx)}>Usuń</ToolbarBtn>
+                      ) : null}
                     </div>
                   ) : null}
                 </div>
               );
             })}
 
-            <div className="flex flex-wrap items-center gap-2 px-3 py-2">
-              <button
-                type="button"
-                className="inline-flex min-h-11 min-w-11 items-center justify-center font-mono text-xl font-bold text-accent hover:text-accent-strong focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
-                onClick={() => addSet(exIdx)}
-                aria-label="Dodaj serię"
-              >
-                +
-              </button>
-              {exercise.sets.length > 1 ? (
-                <button
-                  type="button"
-                  className="inline-flex min-h-11 items-center px-2 text-sm text-muted hover:text-danger focus-visible:outline-none focus-visible:text-danger"
-                  onClick={() => removeSet(exIdx, exercise.sets.length - 1)}
-                >
-                  Usuń ostatnią
-                </button>
-              ) : null}
-            </div>
+            <button
+              type="button"
+              className="mt-0.5 flex min-h-11 w-full items-center justify-center rounded-[10px] text-[15px] font-semibold text-muted hover:bg-surface-hover hover:text-foreground-secondary focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+              onClick={() => addSet(exIdx)}
+            >
+              + Dodaj serię
+            </button>
 
-            <div className="border-t border-border px-3 py-2">
+            <div className="border-t border-border pt-2">
               <input
-                className={`${inputClass} px-2 py-1.5`}
+                className={`${inputClass} bg-surface-raised px-2 py-1.5`}
                 placeholder="Notatka do ćwiczenia…"
                 value={exercise.note ?? ""}
                 onChange={(e) => patchNote(exIdx, e.target.value)}
@@ -1013,6 +1154,10 @@ export function SessionLogger({
           </section>
         );
       })}
+
+      <p className="px-1 pb-3 text-center text-[13px] text-muted-faint">
+        Wpisz faktyczny ciężar i powtórzenia — nawet jeśli inne niż plan. Trener widzi różnicę.
+      </p>
 
       {rest ? (
         <RestTimer
@@ -1051,76 +1196,124 @@ export function SessionLogger({
 const SetRow = memo(function SetRow({
   set,
   prev,
-  completed,
-  isPr,
+  isTime,
+  isNext,
+  canRemove,
   onWeight,
   onReps,
   onFocusWeight,
   onFocusReps,
   onToggle,
+  onRemove,
   onCopyPrev,
 }: {
   set: LocalSet;
   prev: PrevLoggedSet | undefined;
-  completed: boolean;
-  isPr: boolean;
+  isTime: boolean;
+  isNext: boolean;
+  canRemove: boolean;
   onWeight: (v: number | null) => void;
   onReps: (v: number | null) => void;
   onFocusWeight: () => void;
   onFocusReps: () => void;
   onToggle: () => void;
+  onRemove: () => void;
   onCopyPrev: () => void;
 }) {
+  const completed = set.completed;
+  const below = isBelowTarget(set, isTime);
+  const targetLabel = formatTargetLabel(set, isTime);
+  const valColor = completed ? "text-foreground" : "text-foreground-secondary";
+  const rowBg = completed
+    ? "bg-accent-dim"
+    : isNext
+      ? "bg-surface-hover"
+      : "bg-transparent";
+  const checkBg = completed ? "bg-accent border-accent" : "bg-transparent";
+  const checkBorder = completed
+    ? "border-accent"
+    : isNext
+      ? "border-accent"
+      : "border-border-strong";
+  const checkColor = completed
+    ? "text-accent-foreground"
+    : isNext
+      ? "text-accent"
+      : "text-muted-faint";
+
   return (
-    <div
-      className={`grid grid-cols-[2.25rem_minmax(0,1fr)_2.75rem] items-center gap-1 border-b border-border px-3 py-2 ${
-        completed ? "bg-accent-dim/25" : ""
-      } ${completed && isPr ? "bg-pr-dim/40" : ""}`}
-    >
+    <div className={`${SET_GRID} min-h-[52px] items-center rounded-md px-0.5 py-1 ${rowBg}`}>
       <button
         type="button"
-        className="font-mono text-sm tabular-nums text-muted hover:text-accent focus-visible:outline-none focus-visible:text-accent"
+        className="font-mono text-[13px] tabular-nums text-muted hover:text-accent focus-visible:outline-none"
         onClick={onCopyPrev}
         title={prev ? `Poprzednio: ${formatPrev(prev)}` : "Brak poprzedniej serii"}
       >
         {set.setNumber}
-        {set.isWarmup ? <span className="block text-xs">W</span> : null}
-        {completed && isPr ? (
-          <span className="mt-0.5 inline-block">
-            <Badge tone="pr">PR</Badge>
+        {set.isWarmup ? <span className="block text-[10px]">W</span> : null}
+      </button>
+
+      <div className="flex min-w-0 items-center gap-1.5">
+        <span className="truncate font-mono text-[13px] tabular-nums text-muted-faint">
+          {formatPrev(prev)}
+        </span>
+        {completed && set.isPr ? <Badge tone="pr">PR</Badge> : null}
+        {below && targetLabel ? (
+          <span
+            className="shrink-0 whitespace-nowrap text-xs font-semibold text-danger-hover"
+            title="Poniżej celu — trener to zobaczy"
+          >
+            ▾ {targetLabel}
           </span>
         ) : null}
-      </button>
-      <div className="flex min-w-0 items-center gap-1">
+      </div>
+
+      {isTime ? (
+        <div className="flex h-11 items-center justify-center rounded-[10px] border border-border bg-surface-raised font-mono text-[13px] text-muted">
+          —
+        </div>
+      ) : (
         <SetValueInput
           kind="weight"
           value={set.weightKg}
-          placeholder={prevPlaceholder(prev, "weight") ?? "kg"}
+          placeholder="kg"
           ariaLabel="kg"
+          className={`h-11 ${valColor}`}
           onCommit={onWeight}
           onFocusField={onFocusWeight}
         />
-        <span className="text-muted-faint">×</span>
-        <SetValueInput
-          kind="reps"
-          value={set.reps}
-          placeholder={prevPlaceholder(prev, "reps") ?? "powt"}
-          ariaLabel="powtórzenia"
-          onCommit={onReps}
-          onFocusField={onFocusReps}
-        />
-      </div>
+      )}
+
+      <SetValueInput
+        kind="reps"
+        value={isTime ? (set.durationSeconds ?? set.reps) : set.reps}
+        placeholder={isTime ? "sek" : "powt"}
+        ariaLabel={isTime ? "sekundy" : "powtórzenia"}
+        className={`h-11 ${valColor}`}
+        onCommit={onReps}
+        onFocusField={onFocusReps}
+      />
+
       <button
         type="button"
         onClick={onToggle}
-        className={`mx-auto flex h-11 w-11 items-center justify-center rounded-lg border text-base font-bold transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
-          completed
-            ? "border-accent-border bg-accent text-accent-foreground"
-            : "border-border-strong text-muted hover:border-accent-border"
-        }`}
-        aria-label={completed ? "Cofnij ukończenie" : "Oznacz serię jako ukończoną"}
+        className={`mx-auto flex h-11 w-11 items-center justify-center rounded-[10px] border transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.94] ${checkBg} ${checkBorder} ${checkColor}`}
+        aria-label={completed ? "Cofnij ukończenie" : "Zalicz serię"}
       >
-        {completed ? "✓" : ""}
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M20 6L9 17l-5-5" />
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        onClick={onRemove}
+        disabled={!canRemove}
+        className="hidden h-11 w-[18px] items-center justify-center text-[15px] text-muted-faint hover:text-danger disabled:opacity-30 min-[360px]:flex"
+        aria-label="Usuń serię"
+        title="Usuń serię"
+      >
+        ×
       </button>
     </div>
   );
@@ -1130,7 +1323,7 @@ function ToolbarBtn({ children, onClick }: { children: ReactNode; onClick: () =>
   return (
     <button
       type="button"
-      className="inline-flex h-11 min-w-11 items-center justify-center rounded-md border border-border-strong bg-surface px-2.5 font-mono text-xs font-semibold tabular-nums text-foreground-secondary hover:border-accent-border hover:text-accent-strong focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+      className="inline-flex h-11 min-w-11 items-center justify-center rounded-[10px] border border-border-strong bg-surface px-2.5 font-mono text-xs font-semibold tabular-nums text-foreground-secondary hover:border-accent-border hover:text-accent-strong focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
       onClick={onClick}
     >
       {children}
@@ -1138,11 +1331,29 @@ function ToolbarBtn({ children, onClick }: { children: ReactNode; onClick: () =>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function StatCard({
+  label,
+  value,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
   return (
-    <div className="rounded-xl border border-border bg-surface px-3 py-3 text-center">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted">{label}</p>
-      <p className="mt-1 font-mono text-base font-semibold tabular-nums">{value}</p>
+    <div
+      className={`rounded-2xl border bg-surface px-4 py-4 shadow-card ${
+        highlight ? "border-pr" : "border-border"
+      }`}
+    >
+      <p
+        className={`font-mono text-3xl font-semibold tabular-nums ${
+          highlight ? "text-pr" : "text-foreground"
+        }`}
+      >
+        {value}
+      </p>
+      <p className="mt-1.5 text-xs font-semibold uppercase tracking-caps text-muted">{label}</p>
     </div>
   );
 }
