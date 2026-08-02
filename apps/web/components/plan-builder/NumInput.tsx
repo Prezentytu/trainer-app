@@ -6,6 +6,7 @@ export function NumInput({
   value,
   onChange,
   min,
+  max,
   step,
   placeholder,
   className = "",
@@ -15,6 +16,7 @@ export function NumInput({
   value: number | null;
   onChange: (v: number | null) => void;
   min?: number;
+  max?: number;
   step?: number;
   placeholder?: string;
   className?: string;
@@ -27,6 +29,7 @@ export function NumInput({
       type="number"
       inputMode="decimal"
       min={min}
+      max={max}
       step={step}
       placeholder={placeholder}
       value={value ?? ""}

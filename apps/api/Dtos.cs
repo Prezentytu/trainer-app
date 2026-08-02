@@ -149,3 +149,40 @@ public record StartSessionInput(
     int? PlanDayId = null,
     int? PlanId = null,
     DateOnly? PerformedOn = null);
+
+public record PlanImportRequest(string Text);
+
+public record PlanImportDraft(
+    string? Name = null,
+    string? Description = null,
+    List<PlanImportDay>? Days = null);
+
+public record PlanImportDay(
+    int WeekNumber = 1,
+    int Order = 0,
+    string Label = "",
+    string? Notes = null,
+    List<PlanImportItem>? Items = null);
+
+public record PlanImportItem(
+    string ExerciseName = "",
+    int? MatchedExerciseId = null,
+    int Order = 0,
+    int? SupersetGroup = null,
+    bool IsWarmup = false,
+    string? MeasureType = null,
+    int? Sets = null,
+    int? Reps = null,
+    int? RepsMax = null,
+    int? RepDurationSeconds = null,
+    int? DistanceMeters = null,
+    string? Tempo = null,
+    double? TargetRpe = null,
+    double? TargetRir = null,
+    string? SetScheme = null,
+    int? RestBetweenSetsSeconds = null,
+    int? RestAfterExerciseSeconds = null,
+    double? LoadKg = null,
+    double? LoadPercent = null,
+    string? Notes = null,
+    List<PlanSetInput>? PrescribedSets = null);

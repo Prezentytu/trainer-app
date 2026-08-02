@@ -91,7 +91,8 @@ export function ComposerHelp({
               <p className="mb-1 font-semibold uppercase tracking-[0.08em] text-muted-faint">Format wpisu</p>
               <ul className="space-y-0.5 font-mono tabular-nums text-foreground-secondary">
                 <li>przysiad 3x8</li>
-                <li>przysiad 3x8-10 3110 rir2</li>
+                <li>przysiad 3x8-10 60kg 3110 rir2</li>
+                <li>przysiad rampa 4 + bo 80% 47.5kg</li>
                 <li>deska 3x30s · 3x1:30 · 3x2min</li>
                 <li>farmer walk 3x15m</li>
                 <li>1b nazwa · 0 nazwa (rozgrzewka)</li>
@@ -103,8 +104,11 @@ export function ComposerHelp({
                 <span className="font-mono text-muted">Tempo 3110</span> = 3s w dół · 1s pauza na dole · 1s w
                 górę · 0s na górze · <span className="font-mono text-muted">X</span> = dynamicznie.{" "}
                 <span className="text-muted-strong">RIR</span> = powtórzenia w zapasie.{" "}
-                <span className="text-muted-strong">Rampa</span> = kolejne serie rosnącym ciężarem do
-                docelowego xRM. Numer <span className="font-mono text-muted">0</span> = część rozgrzewkowa.
+                <span className="text-muted-strong">Rampa</span> = serie do docelowego xRM;{" "}
+                <span className="font-mono text-muted">+ bo 80%</span> = backoff % topu.{" "}
+                <span className="font-mono text-muted">60kg</span> /{" "}
+                <span className="font-mono text-muted">75%</span> = ciężar. Numer{" "}
+                <span className="font-mono text-muted">0</span> = część rozgrzewkowa.
               </p>
             </section>
           </div>

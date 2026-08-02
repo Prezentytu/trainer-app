@@ -70,9 +70,14 @@ export default function PlansPage() {
         title="Plany treningowe"
         subtitle="Szablony wielokrotnego użytku i plany gotowe do przypisania"
         action={
-          <Link href="/plans/new">
-            <Button>+ Nowy plan</Button>
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/plans/import">
+              <Button variant="secondary">Importuj</Button>
+            </Link>
+            <Link href="/plans/new">
+              <Button>+ Nowy plan</Button>
+            </Link>
+          </div>
         }
       />
       <ErrorBanner message={error} />

@@ -2,10 +2,12 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.AI;
 using Microsoft.IdentityModel.Tokens;
 using TrainerApp.Api;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddOpenRouterChatClient();
 
 var provider = builder.Configuration["Database:Provider"]
                ?? (string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Default"))
@@ -1682,6 +1684,76 @@ app.MapDelete("/api/assignments/{id:int}", async (int id, HttpContext http, AppD
         db.Assignments.Remove(assignment);
         await db.SaveChangesAsync();
         return Results.NoContent();
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+// ---------- AI ----------
+
+app.MapPost("/api/ai/plan-import", async (
+    PlanImportRequest input,
+    HttpContext http,
+    AppDb db,
+    IConfiguration config,
+    IChatClient chatClient,
+    CancellationToken ct) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var text = input.Text?.Trim() ?? "";
+        if (text.Length < 10)
+            return Results.BadRequest(new { message = "Wklej dłuższy tekst planu (min. kilka linii)." });
+        if (text.Length > 40_000)
+            return Results.BadRequest(new { message = "Tekst jest za długi (max 40 000 znaków)." });
+
+        if (chatClient is UnavailableChatClient)
+            return Results.Json(new { message = UnavailableChatClient.Message }, statusCode: 503);
+
+        var library = await db.Exercises
+            .Where(e => e.TrainerId == null || e.TrainerId == trainerId)
+            .OrderBy(e => e.Name)
+            .Select(e => new { e.Id, e.Name, e.Type })
+            .ToListAsync(ct);
+
+        var libTuples = library.Select(e => (e.Id, e.Name, e.Type)).ToList();
+        var prompt = PlanImport.BuildPrompt(text, libTuples);
+        var messages = new List<ChatMessage>
+        {
+            new(ChatRole.System, "Jesteś asystentem trenera personalnego. Odpowiadasz TYLKO poprawnym JSON-em, bez markdown."),
+            new(ChatRole.User, prompt),
+        };
+        var options = new ChatOptions { Temperature = 0.2f, ResponseFormat = ChatResponseFormat.Json };
+
+        ChatResponse response;
+        try
+        {
+            response = await chatClient.GetResponseAsync(messages, options, ct);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("OpenRouterApiKey", StringComparison.Ordinal))
+        {
+            return Results.Json(new { message = ex.Message }, statusCode: 503);
+        }
+        catch (Exception ex)
+        {
+            return Results.Json(
+                new { message = $"Nie udało się połączyć z AI: {ex.Message}" },
+                statusCode: 502);
+        }
+
+        var draft = PlanImport.DeserializeDraft(response.Text);
+        if (draft is null)
+            return Results.Json(
+                new { message = "AI zwróciło nieczytelny JSON. Spróbuj ponownie lub uprość tekst." },
+                statusCode: 502);
+
+        var normalized = PlanImport.NormalizeAndMatch(draft, libTuples);
+        if (normalized.Days is null || normalized.Days.Count == 0)
+            return Results.Json(
+                new { message = "Nie rozpoznano żadnych dni treningowych w tekście." },
+                statusCode: 422);
+
+        return Results.Ok(normalized);
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });

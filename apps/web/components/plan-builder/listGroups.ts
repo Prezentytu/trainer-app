@@ -101,23 +101,127 @@ export function superHintLabel(items: BuilderItem[]): string {
   return `${last.positionNum}${LETTERS.charAt(last.entries.length)}`;
 }
 
-export function parseRampScheme(setScheme: string | null): number | null {
+export type RampSchemeInfo = {
+  targetRm: number;
+  /** % topu dla serii backoff; null = bez BO */
+  backoffPercent: number | null;
+};
+
+/** Parsuje `rampa → 4RM` / `rampa → 4RM + BO 80%` (także strzałka ASCII). */
+export function parseRampSchemeInfo(setScheme: string | null): RampSchemeInfo | null {
   if (!setScheme) return null;
-  const m = setScheme.match(/rampa\s*→\s*(\d+)\s*RM/i) || setScheme.match(/rampa\s*->\s*(\d+)\s*RM/i);
-  return m ? Number(m[1]) : null;
+  const m =
+    setScheme.match(/rampa\s*[→\-]+\s*(\d+)\s*RM(?:\s*\+\s*BO\s*(\d+(?:\.\d+)?)\s*%)?/i) ||
+    setScheme.match(/rampa\s+(\d+)(?:\s*\+\s*BO\s*(\d+(?:\.\d+)?)\s*%)?/i);
+  if (!m) return null;
+  const targetRm = Number(m[1]);
+  if (!Number.isFinite(targetRm) || targetRm < 1) return null;
+  const bo = m[2] != null ? Number(m[2]) : null;
+  return {
+    targetRm,
+    backoffPercent: bo != null && Number.isFinite(bo) ? bo : null,
+  };
 }
 
-export function formatRampScheme(targetRm: number): string {
-  return `rampa → ${targetRm}RM`;
+/** @deprecated użyj parseRampSchemeInfo — zostawione dla krótkiego odczytu celu */
+export function parseRampScheme(setScheme: string | null): number | null {
+  return parseRampSchemeInfo(setScheme)?.targetRm ?? null;
+}
+
+export function formatRampScheme(targetRm: number, backoffPercent?: number | null): string {
+  const base = `rampa → ${targetRm}RM`;
+  return backoffPercent != null ? `${base} + BO ${backoffPercent}%` : base;
+}
+
+/** Buduje prescribedSets: 1× ramp (cel xRM) + N× backoff % topu. */
+export function buildRampPrescribedSets(opts: {
+  targetRm: number;
+  backoffCount: number;
+  backoffPercent: number;
+  reps?: number | null;
+  repsMax?: number | null;
+}): BuilderItem["prescribedSets"] {
+  const sets: BuilderItem["prescribedSets"] = [
+    {
+      key: Math.random().toString(36).slice(2),
+      order: 1,
+      reps: opts.targetRm,
+      repsMax: null,
+      durationSeconds: null,
+      distanceMeters: null,
+      loadKg: null,
+      loadPercent: null,
+      percentOf: null,
+      targetRpe: null,
+      targetRir: null,
+      tempo: null,
+      role: "ramp",
+      note: `ustal ${opts.targetRm}RM`,
+    },
+  ];
+  const reps = opts.reps ?? 5;
+  const repsMax = opts.repsMax ?? 10;
+  for (let i = 0; i < opts.backoffCount; i++) {
+    sets.push({
+      key: Math.random().toString(36).slice(2),
+      order: i + 2,
+      reps,
+      repsMax,
+      durationSeconds: null,
+      distanceMeters: null,
+      loadKg: null,
+      loadPercent: opts.backoffPercent,
+      percentOf: "top",
+      targetRpe: null,
+      targetRir: null,
+      tempo: null,
+      role: "backoff",
+      note: i === 0 ? "seria anaboliczna" : null,
+    });
+  }
+  return sets;
+}
+
+/** Odczyt stanu BO z prescribedSets + setScheme. */
+export function readRampBackoff(item: BuilderItem): {
+  enabled: boolean;
+  count: number;
+  percent: number;
+  reps: number | null;
+  repsMax: number | null;
+} {
+  const info = parseRampSchemeInfo(item.setScheme);
+  const boSets = item.prescribedSets.filter((s) => s.role === "backoff");
+  if (boSets.length === 0) {
+    return {
+      enabled: false,
+      count: 1,
+      percent: info?.backoffPercent ?? 80,
+      reps: 5,
+      repsMax: 10,
+    };
+  }
+  const first = boSets[0];
+  return {
+    enabled: true,
+    count: boSets.length,
+    percent: first.loadPercent ?? info?.backoffPercent ?? 80,
+    reps: first.reps ?? 5,
+    repsMax: first.repsMax ?? 10,
+  };
 }
 
 /** Jedna linia podsumowania karty Lista (jak makieta WA). */
 export function listEntrySummary(item: BuilderItem, exercise?: Exercise): string {
   const sets = item.sets ?? exercise?.defaultSets ?? null;
-  const ramp = parseRampScheme(item.setScheme);
+  const ramp = parseRampSchemeInfo(item.setScheme);
+  const boCount = item.prescribedSets.filter((s) => s.role === "backoff").length;
   let schemeText: string;
   if (ramp != null) {
-    schemeText = `${sets ?? "?"} serii · rampa → ${ramp}RM`;
+    const boPct = ramp.backoffPercent ?? (boCount > 0 ? readRampBackoff(item).percent : null);
+    const boPart = boPct != null ? ` + BO ${boPct}%` : "";
+    const setCount = item.prescribedSets.length > 0 ? item.prescribedSets.length : sets;
+    schemeText = `${setCount ?? "?"} serii · rampa → ${ramp.targetRm}RM${boPart}`;
   } else if (item.setScheme) {
     schemeText = sets ? `${sets} serii · ${item.setScheme}` : item.setScheme;
   } else {

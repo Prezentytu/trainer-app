@@ -20,26 +20,38 @@ export function detachLinks(items: BuilderItem[], itemKey: string): BuilderItem[
 export function usePlanDraft({
   plan,
   initialName,
+  initialDescription,
   initialIsTemplate,
   initialDayCount,
   initialWeekCount,
+  initialDays,
   getExerciseById,
 }: {
   plan?: Plan;
   initialName?: string;
+  initialDescription?: string | null;
   initialIsTemplate?: boolean;
   initialDayCount?: number;
   initialWeekCount?: number;
+  /** Gotowy draft (np. z importu AI) — nadpisuje pustą strukturę. */
+  initialDays?: BuilderDay[];
   getExerciseById: (id: number) => Exercise | undefined;
 }) {
   const { showUndoToast, toastNode } = useUndoToast();
 
   const [name, setName] = useState(plan?.name ?? initialName ?? "");
-  const [description, setDescription] = useState(plan?.description ?? "");
+  const [description, setDescription] = useState(plan?.description ?? initialDescription ?? "");
   const [isTemplate, setIsTemplate] = useState(plan?.isTemplate ?? initialIsTemplate ?? false);
-  const [days, setDays] = useState<BuilderDay[]>(() => loadInitialDays(plan, initialDayCount, initialWeekCount));
+  const [days, setDays] = useState<BuilderDay[]>(() =>
+    initialDays && initialDays.length > 0
+      ? initialDays
+      : loadInitialDays(plan, initialDayCount, initialWeekCount)
+  );
   const [activeWeek, setActiveWeek] = useState<number>(() => {
-    const initial = loadInitialDays(plan, initialDayCount, initialWeekCount);
+    const initial =
+      initialDays && initialDays.length > 0
+        ? initialDays
+        : loadInitialDays(plan, initialDayCount, initialWeekCount);
     return initial.length ? Math.min(...initial.map((d) => d.weekNumber)) : 1;
   });
 
@@ -76,9 +88,17 @@ export function usePlanDraft({
   }, [addDay, maxWeek]);
 
   const copyWeek = useCallback(
-    (weekNumber: number, options?: { keepSets?: boolean; reapplyPresets?: boolean }) => {
+    (
+      weekNumber: number,
+      options?: {
+        keepSets?: boolean;
+        reapplyPresets?: boolean;
+        progression?: { mode: "none" | "kg" | "percent" | "reps"; amount: number };
+      }
+    ) => {
       const keepSets = options?.keepSets ?? true;
       const reapplyPresets = options?.reapplyPresets ?? false;
+      const progression = options?.progression ?? { mode: "none" as const, amount: 0 };
       setDays((prev) => {
         const target = (prev.length ? Math.max(...prev.map((d) => d.weekNumber)) : 0) + 1;
         const clones = prev
@@ -90,6 +110,9 @@ export function usePlanDraft({
             items: d.items.map((it) => {
               let prescribedSets = it.prescribedSets.map((s) => ({ ...s, key: newKey() }));
               let setScheme = it.setScheme;
+              let loadKg = it.loadKg;
+              let reps = it.reps;
+              let repsMax = it.repsMax;
               if (!keepSets) {
                 prescribedSets = [];
                 setScheme = null;
@@ -102,7 +125,32 @@ export function usePlanDraft({
                   setScheme = match.label;
                 }
               }
-              return { ...it, key: newKey(), prescribedSets, setScheme };
+              if (progression.mode === "kg" && progression.amount !== 0) {
+                if (loadKg != null) loadKg = Math.round((loadKg + progression.amount) * 2) / 2;
+                prescribedSets = prescribedSets.map((s) =>
+                  s.loadKg != null
+                    ? { ...s, loadKg: Math.round((s.loadKg + progression.amount) * 2) / 2 }
+                    : s
+                );
+              } else if (progression.mode === "percent" && progression.amount !== 0) {
+                const factor = 1 + progression.amount / 100;
+                if (loadKg != null) loadKg = Math.round(loadKg * factor * 2) / 2;
+                prescribedSets = prescribedSets.map((s) =>
+                  s.loadKg != null ? { ...s, loadKg: Math.round(s.loadKg * factor * 2) / 2 } : s
+                );
+              } else if (progression.mode === "reps" && progression.amount !== 0) {
+                if (reps != null) reps = Math.max(1, reps + progression.amount);
+                if (repsMax != null) repsMax = Math.max(reps ?? 1, repsMax + progression.amount);
+                prescribedSets = prescribedSets.map((s) => ({
+                  ...s,
+                  reps: s.reps != null ? Math.max(1, s.reps + progression.amount) : s.reps,
+                  repsMax:
+                    s.repsMax != null
+                      ? Math.max(s.reps ?? 1, s.repsMax + progression.amount)
+                      : s.repsMax,
+                }));
+              }
+              return { ...it, key: newKey(), prescribedSets, setScheme, loadKg, reps, repsMax };
             }),
           }));
         setActiveWeek(target);
@@ -331,6 +379,29 @@ export function usePlanDraft({
     },
     [getExerciseById]
   );
+
+  const duplicateItem = useCallback((dayKey: string, itemKey: string) => {
+    setDays((prev) =>
+      prev.map((d) => {
+        if (d.key !== dayKey) return d;
+        const idx = d.items.findIndex((i) => i.key === itemKey);
+        if (idx === -1) return d;
+        const source = d.items[idx];
+        const clone: BuilderItem = {
+          ...source,
+          key: newKey(),
+          linkedToNext: false,
+          prescribedSets: source.prescribedSets.map((s) => ({ ...s, key: newKey() })),
+        };
+        // Rozłącz źródło z następnym — klon wstawiamy między nimi jako osobną pozycję.
+        const items = d.items.map((i, iIdx) =>
+          iIdx === idx ? { ...i, linkedToNext: false } : i
+        );
+        items.splice(idx + 1, 0, clone);
+        return { ...d, items: items.map((i, o) => ({ ...i, order: o + 1 })) };
+      })
+    );
+  }, []);
 
   const removeItem = useCallback(
     (dayKey: string, itemKey: string) => {
@@ -600,6 +671,7 @@ export function usePlanDraft({
     addItemAt,
     patchItem,
     removeItem,
+    duplicateItem,
     moveItem,
     toggleLink,
     toggleWarmup,

@@ -1,4 +1,9 @@
 import { Exercise, ExerciseType } from "@/lib/api";
+import {
+  buildRampPrescribedSets,
+  formatRampScheme,
+} from "@/components/plan-builder/listGroups";
+import type { BuilderItem } from "@/components/plan-builder/types";
 
 // Composer „szybkie wpisywanie" — parsuje jedną linię tekstu na dopasowanie ćwiczenia
 // + opcjonalne nadpisania parametrów. Patrz .ai/specs/2026-07-29-composer-units-and-help.md.
@@ -14,6 +19,12 @@ export type ParsedQuickEntry = {
   valueMax: number | null;
   tempo: string | null;
   targetRir: number | null;
+  loadKg: number | null;
+  loadPercent: number | null;
+  /** Cel rampy (xRM), null = brak */
+  rampTarget: number | null;
+  /** % topu dla BO, null = rampa bez BO */
+  rampBackoffPercent: number | null;
 };
 
 function cut(text: string, match: RegExpMatchArray): string {
@@ -46,8 +57,8 @@ function parseUnit(unitRaw: string): { kind: UnitKind; scale: number } | null {
 }
 
 /**
- * Parsuje jedną linię composera: `{fragment nazwy} [SxR[-Rmax][jednostka]] [tempo] [rirN]`.
- * Token z jednostką przed SxR bez jednostki. Token nierozpoznany trafia do `query`.
+ * Parsuje jedną linię composera:
+ * `{fragment nazwy} [SxR[-Rmax][jednostka]] [NNkg|NN%] [rampa N [+ bo NN%]] [tempo] [rirN]`.
  */
 export function parseQuickEntry(raw: string): ParsedQuickEntry {
   let text = normalizeSetsPhrase(raw);
@@ -64,6 +75,38 @@ export function parseQuickEntry(raw: string): ParsedQuickEntry {
   if (rirMatch) {
     targetRir = Number(rirMatch[1]);
     text = cut(text, rirMatch);
+  }
+
+  let rampTarget: number | null = null;
+  let rampBackoffPercent: number | null = null;
+  const rampMatch = text.match(
+    /\brampa\s*(\d+)\s*(?:\+\s*bo\s*(\d+(?:\.\d+)?)\s*%?)?/i
+  );
+  if (rampMatch) {
+    rampTarget = Number(rampMatch[1]);
+    if (rampMatch[2]) rampBackoffPercent = Number(rampMatch[2]);
+    text = cut(text, rampMatch);
+  } else {
+    const boOnly = text.match(/\bbo\s*(\d+(?:\.\d+)?)\s*%/i);
+    if (boOnly) {
+      rampBackoffPercent = Number(boOnly[1]);
+      text = cut(text, boOnly);
+    }
+  }
+
+  let loadKg: number | null = null;
+  const kgMatch = text.match(/\b(\d+(?:[.,]\d+)?)\s*kg\b/i);
+  if (kgMatch) {
+    loadKg = Number(kgMatch[1].replace(",", "."));
+    text = cut(text, kgMatch);
+  }
+
+  let loadPercent: number | null = null;
+  // NN% ale nie „bo 80%” (już wycięte) i nie tempo-like
+  const pctMatch = text.match(/\b(\d+(?:[.,]\d+)?)\s*%(?!\s*RM)/i);
+  if (pctMatch && loadKg == null) {
+    loadPercent = Number(pctMatch[1].replace(",", "."));
+    text = cut(text, pctMatch);
   }
 
   let sets: number | null = null;
@@ -124,7 +167,20 @@ export function parseQuickEntry(raw: string): ParsedQuickEntry {
 
   const query = text.replace(/\s+/g, " ").trim();
 
-  return { query, supersetPrefix, sets, measure, value, valueMax, tempo, targetRir };
+  return {
+    query,
+    supersetPrefix,
+    sets,
+    measure,
+    value,
+    valueMax,
+    tempo,
+    targetRir,
+    loadKg,
+    loadPercent,
+    rampTarget,
+    rampBackoffPercent,
+  };
 }
 
 /**
@@ -152,4 +208,38 @@ export function matchExercises(query: string, exercises: Exercise[]): Exercise[]
     .sort((a, b) => a.prefixRank - b.prefixRank || a.length - b.length)
     .slice(0, 6)
     .map((m) => m.exercise);
+}
+
+/** Buduje overrides rampy z parsed quick-entry (gdy jest rampTarget). */
+export function rampOverridesFromParsed(parsed: ParsedQuickEntry): Partial<BuilderItem> | null {
+  if (parsed.rampTarget == null) return null;
+  const targetRm = Math.min(15, Math.max(1, Math.round(parsed.rampTarget)));
+  const boPct = parsed.rampBackoffPercent;
+  if (boPct != null) {
+    const prescribedSets = buildRampPrescribedSets({
+      targetRm,
+      backoffCount: 1,
+      backoffPercent: boPct,
+      reps: 5,
+      repsMax: 10,
+    });
+    return {
+      setScheme: formatRampScheme(targetRm, boPct),
+      sets: prescribedSets.length,
+      reps: null,
+      repsMax: null,
+      prescribedSets,
+      loadKg: parsed.loadKg,
+      loadPercent: parsed.loadKg != null ? null : parsed.loadPercent,
+    };
+  }
+  return {
+    setScheme: formatRampScheme(targetRm),
+    sets: parsed.sets ?? 6,
+    reps: null,
+    repsMax: null,
+    prescribedSets: [],
+    loadKg: parsed.loadKg,
+    loadPercent: parsed.loadKg != null ? null : parsed.loadPercent,
+  };
 }

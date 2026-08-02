@@ -20,6 +20,7 @@ export function ListEntryCard({
   onPatch,
   onToggleWarmup,
   onMakeSuper,
+  onDuplicate,
   onRemove,
   onAddSet,
   onPatchSet,
@@ -39,6 +40,7 @@ export function ListEntryCard({
   onPatch: (patch: Partial<BuilderItem>) => void;
   onToggleWarmup: () => void;
   onMakeSuper: () => void;
+  onDuplicate?: () => void;
   onRemove: () => void;
   onAddSet: () => void;
   onPatchSet: (setKey: string, patch: Partial<BuilderSet>) => void;
@@ -128,6 +130,7 @@ export function ListEntryCard({
           onPatch={onPatch}
           onToggleWarmup={onToggleWarmup}
           onMakeSuper={onMakeSuper}
+          onDuplicate={onDuplicate}
           onRemove={onRemove}
           onAddSet={onAddSet}
           onPatchSet={onPatchSet}

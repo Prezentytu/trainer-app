@@ -18,6 +18,7 @@ import { PlanTable } from "./PlanTable";
 import { estimateWeekMinutes, formatDurationApprox } from "./summaryText";
 import { useBuilderDnd } from "./useBuilderDnd";
 import { useExerciseLibrary } from "./useExerciseLibrary";
+import { BuilderDay } from "./types";
 import { usePlanDraft } from "./usePlanDraft";
 import { usePlanPersistence } from "./usePlanPersistence";
 import { WeekTabs } from "./WeekTabs";
@@ -45,16 +46,20 @@ type DialogState =
 export default function PlanBuilder({
   plan,
   initialName,
+  initialDescription,
   initialIsTemplate,
   initialDayCount,
   initialWeekCount,
+  initialDays,
   stepLabel,
 }: {
   plan?: Plan;
   initialName?: string;
+  initialDescription?: string | null;
   initialIsTemplate?: boolean;
   initialDayCount?: number;
   initialWeekCount?: number;
+  initialDays?: BuilderDay[];
   /** np. „Krok 2 z 3 · zbuduj plan ćwiczeniami” — tylko nowy plan */
   stepLabel?: string;
 }) {
@@ -70,9 +75,11 @@ export default function PlanBuilder({
   const draft = usePlanDraft({
     plan,
     initialName,
+    initialDescription,
     initialIsTemplate,
     initialDayCount,
     initialWeekCount,
+    initialDays,
     getExerciseById: library.getExerciseById,
   });
 
@@ -252,6 +259,7 @@ export default function PlanBuilder({
             onAddItemAt={draft.addItemAt}
             onPatchItem={draft.patchItem}
             onRemoveItem={draft.removeItem}
+            onDuplicateItem={draft.duplicateItem}
             onToggleWarmup={draft.toggleWarmup}
             onAddSet={draft.addSet}
             onPatchSet={draft.patchSet}

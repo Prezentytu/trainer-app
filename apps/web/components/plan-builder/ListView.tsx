@@ -21,6 +21,7 @@ export function ListView({
   onAddItemAt,
   onPatchItem,
   onRemoveItem,
+  onDuplicateItem,
   onToggleWarmup,
   onAddSet,
   onPatchSet,
@@ -47,6 +48,7 @@ export function ListView({
   ) => void;
   onPatchItem: (dayKey: string, itemKey: string, patch: Partial<BuilderItem>) => void;
   onRemoveItem: (dayKey: string, itemKey: string) => void;
+  onDuplicateItem: (dayKey: string, itemKey: string) => void;
   onToggleWarmup: (dayKey: string, itemKey: string) => void;
   onAddSet: (dayKey: string, itemKey: string) => void;
   onPatchSet: (dayKey: string, itemKey: string, setKey: string, patch: Partial<BuilderSet>) => void;
@@ -223,6 +225,7 @@ export function ListView({
                           setPendingNum(g.positionNum);
                           setEditKey(null);
                         }}
+                        onDuplicate={() => onDuplicateItem(activeDay.key, entry.item.key)}
                         onRemove={() => onRemoveItem(activeDay.key, entry.item.key)}
                         onAddSet={() => onAddSet(activeDay.key, entry.item.key)}
                         onPatchSet={(setKey, patch) =>

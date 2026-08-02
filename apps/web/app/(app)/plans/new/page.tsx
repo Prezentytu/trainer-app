@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import PlanBuilder from "@/components/plan-builder/PlanBuilder";
+import { consumeImportHandoff, PlanImportHandoff } from "@/lib/planImportHandoff";
 import { Button, Card, Field, PageHeader, Pill, inputClass } from "@/components/ui";
 
 type StructurePreset = {
@@ -24,11 +25,34 @@ function todayLabel(): string {
   return new Date().toLocaleDateString("pl-PL", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
+type Boot =
+  | { status: "loading" }
+  | { status: "wizard" }
+  | { status: "import"; handoff: PlanImportHandoff };
+
 export default function NewPlanPage() {
-  const [started, setStarted] = useState(false);
+  const [boot, setBoot] = useState<Boot>({ status: "loading" });
   const [isTemplate, setIsTemplate] = useState(false);
   const [presetId, setPresetId] = useState<string>("6x4");
   const [name, setName] = useState(`Nowy plan — ${todayLabel()}`);
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    // Asynchronicznie — unika synchronicznego setState w efekcie (eslint react-hooks/set-state-in-effect).
+    queueMicrotask(() => {
+      if (cancelled) return;
+      const handoff = consumeImportHandoff();
+      if (handoff && handoff.days.length > 0) {
+        setBoot({ status: "import", handoff });
+      } else {
+        setBoot({ status: "wizard" });
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const preset = STRUCTURE_PRESETS.find((p) => p.id === presetId) ?? STRUCTURE_PRESETS[1];
 
@@ -36,6 +60,26 @@ export default function NewPlanPage() {
     const weeksLabel = preset.weeks === 1 ? "T1" : `T1–${preset.weeks}`;
     return `${weeksLabel}, ${preset.daysPerWeek} ${preset.daysPerWeek === 1 ? "dzień" : "dni"}/tydz.`;
   }, [preset]);
+
+  if (boot.status === "loading") {
+    return (
+      <div className="mx-auto max-w-2xl py-12 text-center text-sm text-muted">
+        Ładowanie…
+      </div>
+    );
+  }
+
+  if (boot.status === "import") {
+    return (
+      <PlanBuilder
+        initialName={boot.handoff.name}
+        initialDescription={boot.handoff.description}
+        initialIsTemplate={boot.handoff.isTemplate}
+        initialDays={boot.handoff.days}
+        stepLabel="Import AI · sprawdź i zapisz plan"
+      />
+    );
+  }
 
   if (started) {
     return (

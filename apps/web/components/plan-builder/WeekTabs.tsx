@@ -1,6 +1,6 @@
 "use client";
 
-import { CopyWeekPopover } from "./CopyWeekPopover";
+import { CopyWeekOpts, CopyWeekPopover } from "./CopyWeekPopover";
 
 export function WeekTabs({
   weeks,
@@ -14,7 +14,7 @@ export function WeekTabs({
   activeWeek: number;
   onSelect: (week: number) => void;
   onAddWeek: () => void;
-  onCopyWeek: (week: number, opts?: { keepSets: boolean; reapplyPresets: boolean }) => void;
+  onCopyWeek: (week: number, opts?: CopyWeekOpts) => void;
   metaLabel?: string;
 }) {
   const nextWeek = (weeks.length ? Math.max(...weeks) : 0) + 1;

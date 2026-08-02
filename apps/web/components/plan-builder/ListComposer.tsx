@@ -8,7 +8,7 @@ import {
   exerciseInputFromQuickEntry,
 } from "@/lib/exerciseDraft";
 import { formatMeasureCore, measureOverridesFromParsed } from "@/lib/measure";
-import { matchExercises, parseQuickEntry } from "@/lib/quickEntry";
+import { matchExercises, parseQuickEntry, rampOverridesFromParsed } from "@/lib/quickEntry";
 import { demoMedia } from "@/lib/youtube";
 import { ComposerHelp, markComposerHelpSeen, useComposerHelpOpen } from "./ComposerHelp";
 import { CreateExerciseRow } from "./CreateExerciseRow";
@@ -67,8 +67,18 @@ export function ListComposer({
   const hintSuper = superHintLabel(day.items);
   const groups = buildListGroups(day.items);
 
-  const overridesFromParsed = (exercise: Exercise): Partial<BuilderItem> =>
-    measureOverridesFromParsed(parsed, exercise.type);
+  const overridesFromParsed = (exercise: Exercise): Partial<BuilderItem> => {
+    const ramp = rampOverridesFromParsed(parsed);
+    if (ramp) {
+      return {
+        measureType: "reps",
+        ...ramp,
+        tempo: parsed.tempo ?? null,
+        targetRir: parsed.targetRir ?? null,
+      };
+    }
+    return measureOverridesFromParsed(parsed, exercise.type);
+  };
 
   const reset = () => {
     setValue("");

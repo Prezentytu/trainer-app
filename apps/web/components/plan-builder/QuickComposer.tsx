@@ -8,7 +8,7 @@ import {
   exerciseInputFromQuickEntry,
 } from "@/lib/exerciseDraft";
 import { formatMeasureCore, measureOverridesFromParsed } from "@/lib/measure";
-import { matchExercises, parseQuickEntry } from "@/lib/quickEntry";
+import { matchExercises, parseQuickEntry, rampOverridesFromParsed } from "@/lib/quickEntry";
 import { demoMedia } from "@/lib/youtube";
 import { Badge, IconButton, inputClass } from "@/components/ui";
 import { ComposerHelp, markComposerHelpSeen, useComposerHelpOpen } from "./ComposerHelp";
@@ -50,7 +50,15 @@ function previewSummary(exercise: Exercise, overrides: Partial<BuilderItem>): st
   };
   const sets = draft.sets;
   const core = formatMeasureCore(draft, exercise);
+  if (overrides.setScheme) {
+    const parts = [overrides.setScheme];
+    if (overrides.loadKg != null) parts.push(`${overrides.loadKg}kg`);
+    if (overrides.tempo) parts.push(overrides.tempo);
+    if (overrides.targetRir != null) parts.push(`RIR ${overrides.targetRir}`);
+    return parts.join(" · ");
+  }
   const parts = [`${sets}×${core}`];
+  if (overrides.loadKg != null) parts.push(`${overrides.loadKg}kg`);
   if (draft.tempo) parts.push(draft.tempo);
   if (draft.targetRir != null) parts.push(`RIR ${draft.targetRir}`);
   return parts.join(" · ");
@@ -101,7 +109,15 @@ export function QuickComposer({
   };
 
   const placeExercise = (exercise: Exercise) => {
-    const overrides = measureOverridesFromParsed(parsed, exercise.type);
+    const ramp = rampOverridesFromParsed(parsed);
+    const overrides = ramp
+      ? {
+          measureType: "reps" as const,
+          ...ramp,
+          tempo: parsed.tempo ?? null,
+          targetRir: parsed.targetRir ?? null,
+        }
+      : measureOverridesFromParsed(parsed, exercise.type);
     const previousItem = day.items[day.items.length - 1];
     onAdd(exercise.id, overrides);
 

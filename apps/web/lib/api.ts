@@ -394,6 +394,44 @@ export type PlanSetInput = {
   note: string | null;
 };
 
+export type PlanImportItem = {
+  exerciseName: string;
+  matchedExerciseId: number | null;
+  order: number;
+  supersetGroup: number | null;
+  isWarmup: boolean;
+  measureType: ExerciseType | null;
+  sets: number | null;
+  reps: number | null;
+  repsMax: number | null;
+  repDurationSeconds: number | null;
+  distanceMeters: number | null;
+  tempo: string | null;
+  targetRpe: number | null;
+  targetRir: number | null;
+  setScheme: string | null;
+  restBetweenSetsSeconds: number | null;
+  restAfterExerciseSeconds: number | null;
+  loadKg: number | null;
+  loadPercent: number | null;
+  notes: string | null;
+  prescribedSets: PlanSetInput[] | null;
+};
+
+export type PlanImportDay = {
+  weekNumber: number;
+  order: number;
+  label: string;
+  notes: string | null;
+  items: PlanImportItem[];
+};
+
+export type PlanImportDraft = {
+  name: string | null;
+  description: string | null;
+  days: PlanImportDay[];
+};
+
 export type PlanItemInput = {
   exerciseId: number;
   order: number;
@@ -790,6 +828,13 @@ export const api = {
     update: (id: number, input: Omit<Exercise, "id">) =>
       request<Exercise>(`/api/exercises/${id}`, { method: "PUT", body: JSON.stringify(input) }),
     remove: (id: number) => request(`/api/exercises/${id}`, { method: "DELETE" }),
+  },
+  ai: {
+    importPlan: (text: string) =>
+      request<PlanImportDraft>("/api/ai/plan-import", {
+        method: "POST",
+        body: JSON.stringify({ text }),
+      }),
   },
   plans: {
     list: () => request<PlanSummary[]>("/api/plans"),

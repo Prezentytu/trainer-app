@@ -75,7 +75,7 @@ export function formatMeasureCore(
   return `${reps}${item.repsMax ? `–${item.repsMax}` : ""}`;
 }
 
-/** Overrides z quick-entry: wartość trafia w pole zgodne z miarą. */
+/** Overrides z quick-entry: wartość trafia w pole zgodne z miarą (+ kg/%). Rampa: `rampOverridesFromParsed`. */
 export function measureOverridesFromParsed(
   parsed: {
     sets: number | null;
@@ -84,6 +84,8 @@ export function measureOverridesFromParsed(
     valueMax: number | null;
     tempo: string | null;
     targetRir: number | null;
+    loadKg?: number | null;
+    loadPercent?: number | null;
   },
   fallbackMeasure: ExerciseType
 ): Partial<BuilderItem> {
@@ -92,6 +94,13 @@ export function measureOverridesFromParsed(
   if (parsed.sets != null) overrides.sets = parsed.sets;
   if (parsed.tempo != null) overrides.tempo = parsed.tempo;
   if (parsed.targetRir != null) overrides.targetRir = parsed.targetRir;
+  if (parsed.loadKg != null) {
+    overrides.loadKg = parsed.loadKg;
+    overrides.loadPercent = null;
+  } else if (parsed.loadPercent != null) {
+    overrides.loadPercent = parsed.loadPercent;
+    overrides.loadKg = null;
+  }
 
   if (parsed.value != null || parsed.measure != null) {
     if (measure === "time") {

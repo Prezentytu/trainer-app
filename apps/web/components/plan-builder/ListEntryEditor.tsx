@@ -6,7 +6,12 @@ import { MEASURE_SHORT, measurePatch } from "@/lib/measure";
 import { Field, Switch, inputClass } from "@/components/ui";
 import { NumInput } from "./NumInput";
 import { SetSchemeEditor } from "./SetSchemeEditor";
-import { formatRampScheme, parseRampScheme } from "./listGroups";
+import {
+  buildRampPrescribedSets,
+  formatRampScheme,
+  parseRampSchemeInfo,
+  readRampBackoff,
+} from "./listGroups";
 import { BuilderItem, BuilderSet } from "./types";
 
 const MEASURE_OPTS: ExerciseType[] = ["reps", "time", "distance"];
@@ -18,7 +23,8 @@ const RIR_OPTS = [
   { label: "3+", value: 3 },
 ] as const;
 
-const RAMP_OPTS = [6, 4, 2, 1] as const;
+const RAMP_SHORTCUTS = [6, 4, 2, 1] as const;
+const BO_PERCENT_CHIPS = [60, 70, 80, 90] as const;
 
 const segOn =
   "rounded-[10px] border border-accent-border bg-accent-dim px-3 py-1.5 text-sm font-medium text-accent-strong";
@@ -29,6 +35,41 @@ const chipOn =
 const chipOff =
   "rounded-[10px] border border-border-strong bg-surface-sunken px-2.5 py-1.5 font-mono text-xs font-medium tabular-nums text-foreground-secondary hover:bg-surface-hover";
 
+function applyRamp(
+  onPatch: (patch: Partial<BuilderItem>) => void,
+  opts: {
+    targetRm: number;
+    sets: number | null;
+    backoff: ReturnType<typeof readRampBackoff>;
+  }
+) {
+  const targetRm = Math.min(15, Math.max(1, Math.round(opts.targetRm)));
+  if (opts.backoff.enabled) {
+    const prescribedSets = buildRampPrescribedSets({
+      targetRm,
+      backoffCount: opts.backoff.count,
+      backoffPercent: opts.backoff.percent,
+      reps: opts.backoff.reps,
+      repsMax: opts.backoff.repsMax,
+    });
+    onPatch({
+      setScheme: formatRampScheme(targetRm, opts.backoff.percent),
+      reps: null,
+      repsMax: null,
+      sets: prescribedSets.length,
+      prescribedSets,
+    });
+  } else {
+    onPatch({
+      setScheme: formatRampScheme(targetRm),
+      reps: null,
+      repsMax: null,
+      sets: opts.sets ?? 6,
+      prescribedSets: [],
+    });
+  }
+}
+
 export function ListEntryEditor({
   item,
   weekNumber,
@@ -38,6 +79,7 @@ export function ListEntryEditor({
   onPatch,
   onToggleWarmup,
   onMakeSuper,
+  onDuplicate,
   onRemove,
   onAddSet,
   onPatchSet,
@@ -53,6 +95,7 @@ export function ListEntryEditor({
   onPatch: (patch: Partial<BuilderItem>) => void;
   onToggleWarmup: () => void;
   onMakeSuper: () => void;
+  onDuplicate?: () => void;
   onRemove: () => void;
   onAddSet: () => void;
   onPatchSet: (setKey: string, patch: Partial<BuilderSet>) => void;
@@ -60,23 +103,43 @@ export function ListEntryEditor({
   onApplyPreset: (presetId: string) => void;
   onClearSets: () => void;
 }) {
-  const rampTarget = parseRampScheme(item.setScheme);
-  const isRamp = rampTarget != null;
+  const rampInfo = parseRampSchemeInfo(item.setScheme);
+  const isRamp = rampInfo != null;
+  const backoff = readRampBackoff(item);
   const [moreOpen, setMoreOpen] = useState(false);
   const [schemeOpen, setSchemeOpen] = useState(item.prescribedSets.length > 0 && !isRamp);
 
   const pickSets = () => {
-    onPatch({ setScheme: null });
+    onPatch({ setScheme: null, prescribedSets: [] });
   };
 
-  const pickRamp = (target = rampTarget ?? 6) => {
-    onClearSets();
+  const pickRamp = (target = rampInfo?.targetRm ?? 6) => {
     setSchemeOpen(false);
-    onPatch({
-      setScheme: formatRampScheme(target),
-      reps: null,
-      repsMax: null,
+    applyRamp(onPatch, {
+      targetRm: target,
       sets: item.sets ?? 6,
+      backoff: { ...backoff, enabled: backoff.enabled },
+    });
+  };
+
+  const setRampTarget = (v: number | null) => {
+    if (v == null || v < 1) return;
+    applyRamp(onPatch, { targetRm: v, sets: item.sets, backoff });
+  };
+
+  const setBackoffEnabled = (enabled: boolean) => {
+    applyRamp(onPatch, {
+      targetRm: rampInfo?.targetRm ?? 6,
+      sets: item.sets,
+      backoff: { ...backoff, enabled, count: enabled ? Math.max(1, backoff.count) : backoff.count },
+    });
+  };
+
+  const patchBackoff = (patch: Partial<ReturnType<typeof readRampBackoff>>) => {
+    applyRamp(onPatch, {
+      targetRm: rampInfo?.targetRm ?? 6,
+      sets: item.sets,
+      backoff: { ...backoff, enabled: true, ...patch },
     });
   };
 
@@ -114,11 +177,11 @@ export function ListEntryEditor({
         {isRamp && (
           <>
             <span className="ml-2 text-xs text-muted">do</span>
-            {RAMP_OPTS.map((t) => (
+            {RAMP_SHORTCUTS.map((t) => (
               <button
                 key={t}
                 type="button"
-                className={rampTarget === t ? chipOn : chipOff}
+                className={rampInfo.targetRm === t ? chipOn : chipOff}
                 onClick={() => pickRamp(t)}
               >
                 {t}RM
@@ -146,13 +209,25 @@ export function ListEntryEditor({
 
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
         <Field label="Serie">
-          <NumInput value={item.sets} min={1} onChange={(v) => onPatch({ sets: v })} placeholder="3" />
+          <NumInput
+            value={item.sets}
+            min={1}
+            onChange={(v) => {
+              if (isRamp && backoff.enabled) return;
+              onPatch({ sets: v });
+            }}
+            placeholder="3"
+          />
         </Field>
         {isRamp ? (
-          <Field label="Cel rampy">
-            <div className="flex h-10 items-center rounded-[10px] border border-accent-border bg-accent-dim px-2.5 font-mono text-sm font-semibold tabular-nums text-accent-strong">
-              do {rampTarget}RM
-            </div>
+          <Field label="Cel rampy (xRM)">
+            <NumInput
+              value={rampInfo.targetRm}
+              min={1}
+              max={15}
+              onChange={setRampTarget}
+              placeholder="6"
+            />
           </Field>
         ) : item.measureType === "time" ? (
           <Field label="Czas powt. (s)">
@@ -198,6 +273,74 @@ export function ListEntryEditor({
           />
         </Field>
       </div>
+
+      {isRamp && (
+        <div className="rounded-xl border border-border bg-surface-sunken p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Switch label="Backoff (BO)" checked={backoff.enabled} onChange={setBackoffEnabled} />
+            {backoff.enabled ? (
+              <span className="font-mono text-xs tabular-nums text-muted">
+                {formatRampScheme(rampInfo.targetRm, backoff.percent)}
+              </span>
+            ) : null}
+          </div>
+          {backoff.enabled && (
+            <div className="mt-3 space-y-3">
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                <Field label="Liczba serii BO">
+                  <NumInput
+                    value={backoff.count}
+                    min={1}
+                    max={3}
+                    onChange={(v) => patchBackoff({ count: v ?? 1 })}
+                    placeholder="1"
+                  />
+                </Field>
+                <Field label="Powtórzenia BO (od–do)">
+                  <div className="flex items-center gap-1.5">
+                    <NumInput
+                      value={backoff.reps}
+                      min={1}
+                      onChange={(v) => patchBackoff({ reps: v })}
+                      placeholder="5"
+                    />
+                    <span className="text-muted-faint">–</span>
+                    <NumInput
+                      value={backoff.repsMax}
+                      min={1}
+                      onChange={(v) => patchBackoff({ repsMax: v })}
+                      placeholder="10"
+                    />
+                  </div>
+                </Field>
+                <Field label="% topu">
+                  <NumInput
+                    value={backoff.percent}
+                    min={1}
+                    max={100}
+                    step={1}
+                    onChange={(v) => patchBackoff({ percent: v ?? 80 })}
+                    placeholder="80"
+                  />
+                </Field>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="mr-1 text-xs text-muted">Szybki %</span>
+                {BO_PERCENT_CHIPS.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    className={backoff.percent === p ? chipOn : chipOff}
+                    onClick={() => patchBackoff({ percent: p })}
+                  >
+                    {p}%
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-1.5" title={RIR_HELP}>
         <span className="mr-1 w-16 text-xs text-muted">RIR</span>
@@ -316,13 +459,24 @@ export function ListEntryEditor({
         >
           + Superseria z tym → dodasz jako {superLabel}
         </button>
-        <button
-          type="button"
-          onClick={onRemove}
-          className="rounded-[10px] px-3 py-2 text-sm font-medium text-muted transition-colors hover:text-danger-hover"
-        >
-          Usuń ćwiczenie
-        </button>
+        <div className="flex flex-wrap items-center gap-1">
+          {onDuplicate ? (
+            <button
+              type="button"
+              onClick={onDuplicate}
+              className="rounded-[10px] px-3 py-2 text-sm font-medium text-muted transition-colors hover:text-foreground-secondary"
+            >
+              Duplikuj
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={onRemove}
+            className="rounded-[10px] px-3 py-2 text-sm font-medium text-muted transition-colors hover:text-danger-hover"
+          >
+            Usuń ćwiczenie
+          </button>
+        </div>
       </div>
     </div>
   );
