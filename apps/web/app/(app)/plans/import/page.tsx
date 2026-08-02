@@ -53,6 +53,19 @@ function itemSummary(it: PlanImportItem): string {
   return parts.join(" · ") || "—";
 }
 
+function draftWeekBadge(draft: PlanImportDraft): string {
+  const days = draft.days ?? [];
+  const weeks = [...new Set(days.map((d) => d.weekNumber))].sort((a, b) => a - b);
+  const items = days.reduce((s, d) => s + (d.items?.length ?? 0), 0);
+  const weekLabel =
+    weeks.length === 0
+      ? "—"
+      : weeks.length === 1
+        ? `T${weeks[0]}`
+        : `T${weeks[0]}–T${weeks[weeks.length - 1]}`;
+  return `${weekLabel} · ${days.length} dni · ${items} poz.`;
+}
+
 export default function PlanImportPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("paste");
@@ -65,6 +78,7 @@ export default function PlanImportPage() {
   const [idMap, setIdMap] = useState<ExerciseIdMap>({});
   const [creatingKey, setCreatingKey] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
     api.exercises.list().then(setExercises).catch((e: Error) => setError(e.message));
@@ -75,6 +89,7 @@ export default function PlanImportPage() {
     [draft, idMap]
   );
   const canOpen = draft != null && allItemsMapped(draft, idMap);
+  const failedWeeks = draft?.failedWeeks ?? [];
 
   const seedMapFromDraft = useCallback((d: PlanImportDraft) => {
     const next: ExerciseIdMap = {};
@@ -101,6 +116,63 @@ export default function PlanImportPage() {
     } finally {
       window.clearTimeout(hintTimer);
       setLoading(false);
+    }
+  };
+
+  /** Ponawia tylko nieudane tygodnie i scala z bieżącym draftem (zachowuje ręczne mapowania). */
+  const retryFailedWeeks = async () => {
+    if (!draft || failedWeeks.length === 0) return;
+    setError(null);
+    setRetrying(true);
+    setLoadingHint("Ponawiam brakujące tygodnie…");
+    try {
+      const result = await api.ai.importPlan(text, failedWeeks);
+      const oldDays = draft.days ?? [];
+      const recovered = result.days ?? [];
+
+      // Zachowaj ręczne mapowania po (weekNumber, order, itemIdx).
+      const stableIds: Record<string, number> = {};
+      oldDays.forEach((day, di) => {
+        day.items?.forEach((it, ii) => {
+          const id = idMap[itemMapKey(di, ii)] ?? it.matchedExerciseId;
+          if (id != null) stableIds[`${day.weekNumber}:${day.order}:${ii}`] = id;
+        });
+      });
+      recovered.forEach((day) => {
+        day.items?.forEach((it, ii) => {
+          if (it.matchedExerciseId != null) {
+            stableIds[`${day.weekNumber}:${day.order}:${ii}`] = it.matchedExerciseId;
+          }
+        });
+      });
+
+      const recoveredWeeks = new Set(recovered.map((d) => d.weekNumber));
+      const kept = oldDays.filter((d) => !recoveredWeeks.has(d.weekNumber));
+      const mergedDays = [...kept, ...recovered].sort(
+        (a, b) => a.weekNumber - b.weekNumber || a.order - b.order
+      );
+
+      const nextMap: ExerciseIdMap = {};
+      mergedDays.forEach((day, di) => {
+        day.items?.forEach((it, ii) => {
+          const id = stableIds[`${day.weekNumber}:${day.order}:${ii}`];
+          if (id != null) nextMap[itemMapKey(di, ii)] = id;
+        });
+      });
+
+      setDraft({
+        ...draft,
+        name: draft.name || result.name,
+        description: draft.description ?? result.description,
+        days: mergedDays,
+        warnings: result.warnings ?? null,
+        failedWeeks: result.failedWeeks ?? null,
+      });
+      setIdMap(nextMap);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setRetrying(false);
     }
   };
 
@@ -254,13 +326,40 @@ export default function PlanImportPage() {
                 <Badge tone={unmapped === 0 ? "positive" : "neutral"}>
                   {unmapped === 0 ? "Wszystko dopasowane" : `${unmapped} bez dopasowania`}
                 </Badge>
-                <Badge tone="accent">
-                  {draft.days?.length ?? 0} dni ·{" "}
-                  {draft.days?.reduce((s, d) => s + (d.items?.length ?? 0), 0) ?? 0} poz.
-                </Badge>
+                <Badge tone="accent">{draftWeekBadge(draft)}</Badge>
               </div>
             </div>
           </Card>
+
+          {(draft.warnings?.length ?? 0) > 0 || failedWeeks.length > 0 ? (
+            <div
+              role="alert"
+              className="rounded-md border border-danger-border bg-danger-bg/60 px-4 py-3 text-sm leading-[var(--leading-body)] text-danger"
+            >
+              <p className="font-semibold">Import może być niekompletny</p>
+              {(draft.warnings?.length ?? 0) > 0 ? (
+                <ul className="mt-1 list-disc space-y-0.5 pl-5">
+                  {draft.warnings!.map((w) => (
+                    <li key={w}>{w}</li>
+                  ))}
+                </ul>
+              ) : null}
+              {failedWeeks.length > 0 ? (
+                <div className="mt-3">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={retrying || loading}
+                    onClick={() => void retryFailedWeeks()}
+                  >
+                    {retrying
+                      ? "Ponawiam…"
+                      : `Ponów brakujące tygodnie (${failedWeeks.length})`}
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           {(draft.days ?? []).length === 0 ? (
             <EmptyState>Brak dni w odpowiedzi AI.</EmptyState>

@@ -150,12 +150,14 @@ public record StartSessionInput(
     int? PlanId = null,
     DateOnly? PerformedOn = null);
 
-public record PlanImportRequest(string Text);
+public record PlanImportRequest(string Text, List<int>? Weeks = null);
 
 public record PlanImportDraft(
     string? Name = null,
     string? Description = null,
-    List<PlanImportDay>? Days = null);
+    List<PlanImportDay>? Days = null,
+    List<string>? Warnings = null,
+    List<int>? FailedWeeks = null);
 
 public record PlanImportDay(
     int WeekNumber = 1,

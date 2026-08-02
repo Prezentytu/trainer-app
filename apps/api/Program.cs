@@ -1,3 +1,4 @@
+using System.ClientModel;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
@@ -1696,6 +1697,7 @@ app.MapPost("/api/ai/plan-import", async (
     AppDb db,
     IConfiguration config,
     IChatClient chatClient,
+    ILoggerFactory loggerFactory,
     CancellationToken ct) =>
 {
     try
@@ -1717,18 +1719,119 @@ app.MapPost("/api/ai/plan-import", async (
             .ToListAsync(ct);
 
         var libTuples = library.Select(e => (e.Id, e.Name, e.Type)).ToList();
-        var prompt = PlanImport.BuildPrompt(text, libTuples);
-        var messages = new List<ChatMessage>
+        var chunks = PlanImport.SplitWeeks(text);
+        if (input.Weeks is { Count: > 0 } weeksFilter)
         {
-            new(ChatRole.System, "Jesteś asystentem trenera personalnego. Odpowiadasz TYLKO poprawnym JSON-em, bez markdown."),
-            new(ChatRole.User, prompt),
-        };
-        var options = new ChatOptions { Temperature = 0.2f, ResponseFormat = ChatResponseFormat.Json };
+            var wanted = weeksFilter.ToHashSet();
+            chunks = chunks.Where(c => c.WeekNumber is { } w && wanted.Contains(w)).ToList();
+        }
 
-        ChatResponse response;
+        if (chunks.Count == 0)
+            return Results.Json(
+                new { message = "Nie rozpoznano żadnych dni treningowych w tekście." },
+                statusCode: 422);
+
+        var logger = loggerFactory.CreateLogger("PlanImport");
+        // Structured outputs (json_schema) — gdy provider odrzuci schematem (400), chunk spada na json_object.
+        var schemaOptions = new ChatOptions
+        {
+            Temperature = 0.2f,
+            ResponseFormat = ChatResponseFormat.ForJsonSchema(
+                PlanImport.ResponseSchema,
+                "plan_import_draft",
+                "Draft planu treningowego z dniami i ćwiczeniami"),
+            MaxOutputTokens = 16_000,
+        };
+        var jsonOptions = new ChatOptions
+        {
+            Temperature = 0.2f,
+            ResponseFormat = ChatResponseFormat.Json,
+            MaxOutputTokens = 16_000,
+        };
+
+        var parts = new (WeekChunk Chunk, PlanImportDraft? Draft, string? Error)[chunks.Count];
+        using var gate = new SemaphoreSlim(3);
+
+        async Task<(WeekChunk Chunk, PlanImportDraft? Draft, string? Error)> ImportWeekChunkAsync(WeekChunk chunk)
+        {
+            const int maxAttempts = 3;
+            var prompt = PlanImport.BuildPrompt(chunk.Text, libTuples);
+            var messages = new List<ChatMessage>
+            {
+                new(ChatRole.System, "Jesteś asystentem trenera personalnego. Odpowiadasz TYLKO poprawnym JSON-em, bez markdown."),
+                new(ChatRole.User, prompt),
+            };
+
+            var activeOptions = schemaOptions;
+            string? lastError = null;
+            for (var attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                ChatResponse response;
+                try
+                {
+                    response = await chatClient.GetResponseAsync(messages, activeOptions, ct);
+                }
+                catch (ClientResultException ex) when (ex.Status == 400 &&
+                    ReferenceEquals(activeOptions, schemaOptions))
+                {
+                    // Schemat odrzucony przez OpenRouter/Gemini → fallback na json_object.
+                    logger.LogWarning(
+                        "Plan import week {Week}: json_schema rejected (400), falling back to json_object. {Error}",
+                        chunk.WeekNumber, ex.Message);
+                    activeOptions = jsonOptions;
+                    attempt--; // nie zużywaj próby na odrzucenie schematu
+                    continue;
+                }
+
+                var raw = response.Text ?? "";
+                var rawPreview = raw.Length > 500 ? raw[..500] : raw;
+
+                if (response.FinishReason == ChatFinishReason.Length)
+                {
+                    lastError = chunk.WeekNumber is { } w
+                        ? $"Odpowiedź AI dla tygodnia {w} została ucięta limitem długości."
+                        : "Odpowiedź AI została ucięta limitem długości.";
+                    logger.LogWarning(
+                        "Plan import week {Week} attempt {Attempt}/{Max}: truncated (Length). Raw preview: {Raw}",
+                        chunk.WeekNumber, attempt + 1, maxAttempts, rawPreview);
+                    continue;
+                }
+
+                if (PlanImport.TryDeserializeDraft(raw, out var draft, out var parseError))
+                    return (chunk, draft, null);
+
+                lastError = chunk.WeekNumber is { } week
+                    ? $"Nie udało się odczytać tygodnia {week}."
+                    : "AI zwróciło nieczytelny JSON dla fragmentu planu.";
+                logger.LogWarning(
+                    "Plan import week {Week} attempt {Attempt}/{Max}: parse failed ({ParseError}). Finish={Finish}. Raw preview: {Raw}",
+                    chunk.WeekNumber, attempt + 1, maxAttempts, parseError, response.FinishReason, rawPreview);
+
+                if (attempt + 1 >= maxAttempts) break;
+
+                messages.Add(new ChatMessage(ChatRole.Assistant, raw));
+                messages.Add(new ChatMessage(
+                    ChatRole.User,
+                    $"Twój JSON był niepoprawny: {parseError}. Zwróć wyłącznie poprawiony JSON zgodny ze schematem."));
+            }
+
+            return (chunk, null, lastError ?? "Nie udało się odczytać fragmentu planu.");
+        }
+
         try
         {
-            response = await chatClient.GetResponseAsync(messages, options, ct);
+            await Task.WhenAll(chunks.Select(async (chunk, index) =>
+            {
+                await gate.WaitAsync(ct);
+                try
+                {
+                    parts[index] = await ImportWeekChunkAsync(chunk);
+                }
+                finally
+                {
+                    gate.Release();
+                }
+            }));
         }
         catch (InvalidOperationException ex) when (ex.Message.Contains("OpenRouterApiKey", StringComparison.Ordinal))
         {
@@ -1736,22 +1839,23 @@ app.MapPost("/api/ai/plan-import", async (
         }
         catch (Exception ex)
         {
+            var root = ex is AggregateException ae
+                ? ae.Flatten().InnerExceptions.FirstOrDefault() ?? ex
+                : ex;
+            logger.LogError(root, "Plan import AI call failed");
             return Results.Json(
-                new { message = $"Nie udało się połączyć z AI: {ex.Message}" },
+                new { message = $"Nie udało się połączyć z AI: {root.Message}" },
                 statusCode: 502);
         }
 
-        var draft = PlanImport.DeserializeDraft(response.Text);
-        if (draft is null)
-            return Results.Json(
-                new { message = "AI zwróciło nieczytelny JSON. Spróbuj ponownie lub uprość tekst." },
-                statusCode: 502);
-
-        var normalized = PlanImport.NormalizeAndMatch(draft, libTuples);
+        var normalized = PlanImport.MergeWeekDrafts(chunks, parts, libTuples);
         if (normalized.Days is null || normalized.Days.Count == 0)
-            return Results.Json(
-                new { message = "Nie rozpoznano żadnych dni treningowych w tekście." },
-                statusCode: 422);
+        {
+            var msg = normalized.Warnings is { Count: > 0 }
+                ? string.Join(" ", normalized.Warnings)
+                : "Nie rozpoznano żadnych dni treningowych w tekście.";
+            return Results.Json(new { message = msg }, statusCode: 422);
+        }
 
         return Results.Ok(normalized);
     }

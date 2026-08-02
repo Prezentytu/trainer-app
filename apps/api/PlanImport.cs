@@ -4,6 +4,9 @@ using System.Text.RegularExpressions;
 
 namespace TrainerApp.Api;
 
+/// <summary>Fragment tekstu planu odpowiadający jednemu tygodniowi (lub całości, gdy brak nagłówków).</summary>
+public sealed record WeekChunk(int? WeekNumber, string Text);
+
 public static class PlanImport
 {
     public static readonly JsonSerializerOptions JsonOptions = new()
@@ -12,6 +15,129 @@ public static class PlanImport
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
+
+    /// <summary>
+    /// Odchudzony JSON Schema dla structured outputs (bez warnings/failedWeeks — to pola serwerowe).
+    /// Wymagane tylko kluczowe pola; resztę model pomija gdy brak danych.
+    /// </summary>
+    public static readonly JsonElement ResponseSchema = JsonSerializer.Deserialize<JsonElement>("""
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["days"],
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "days": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["weekNumber", "order", "label", "items"],
+            "properties": {
+              "weekNumber": { "type": "integer" },
+              "order": { "type": "integer" },
+              "label": { "type": "string" },
+              "notes": { "type": "string" },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["exerciseName", "order"],
+                  "properties": {
+                    "exerciseName": { "type": "string" },
+                    "matchedExerciseId": { "type": ["integer", "null"] },
+                    "order": { "type": "integer" },
+                    "supersetGroup": { "type": ["integer", "null"] },
+                    "isWarmup": { "type": "boolean" },
+                    "measureType": { "type": "string" },
+                    "sets": { "type": ["integer", "null"] },
+                    "reps": { "type": ["integer", "null"] },
+                    "repsMax": { "type": ["integer", "null"] },
+                    "repDurationSeconds": { "type": ["integer", "null"] },
+                    "distanceMeters": { "type": ["integer", "null"] },
+                    "tempo": { "type": "string" },
+                    "targetRpe": { "type": ["number", "null"] },
+                    "targetRir": { "type": ["number", "null"] },
+                    "setScheme": { "type": "string" },
+                    "restBetweenSetsSeconds": { "type": ["integer", "null"] },
+                    "restAfterExerciseSeconds": { "type": ["integer", "null"] },
+                    "loadKg": { "type": ["number", "null"] },
+                    "loadPercent": { "type": ["number", "null"] },
+                    "notes": { "type": "string" },
+                    "prescribedSets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["order"],
+                        "properties": {
+                          "order": { "type": "integer" },
+                          "reps": { "type": ["integer", "null"] },
+                          "repsMax": { "type": ["integer", "null"] },
+                          "durationSeconds": { "type": ["integer", "null"] },
+                          "distanceMeters": { "type": ["integer", "null"] },
+                          "loadKg": { "type": ["number", "null"] },
+                          "loadPercent": { "type": ["number", "null"] },
+                          "percentOf": { "type": "string" },
+                          "targetRpe": { "type": ["number", "null"] },
+                          "targetRir": { "type": ["number", "null"] },
+                          "tempo": { "type": "string" },
+                          "role": { "type": "string" },
+                          "note": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    """)!;
+
+    /// <summary>
+    /// Dzieli tekst planu po nagłówkach „TYDZIEŃ N". Preambuła przed pierwszym nagłówkiem
+    /// trafia do pierwszego chunka. Brak nagłówków → jeden chunk z całym tekstem.
+    /// </summary>
+    public static List<WeekChunk> SplitWeeks(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return [];
+
+        // Obsługuje: TYDZIEŃ 5, Tydzien 5, * TYDZIEŃ 5, # TYDZIEŃ 5, - TYDZIEŃ 5
+        var matches = Regex.Matches(
+            text,
+            @"^[ \t]*(?:[*#\-]+\s*)?TYDZIE[NŃ]\s+(\d+)\b",
+            RegexOptions.IgnoreCase | RegexOptions.Multiline);
+
+        if (matches.Count == 0)
+            return [new WeekChunk(null, text.Trim())];
+
+        var chunks = new List<WeekChunk>(matches.Count);
+        for (var i = 0; i < matches.Count; i++)
+        {
+            var m = matches[i];
+            var weekNum = int.Parse(m.Groups[1].Value);
+            var start = m.Index;
+            var end = i + 1 < matches.Count ? matches[i + 1].Index : text.Length;
+            var chunkText = text[start..end].Trim();
+
+            if (i == 0 && start > 0)
+            {
+                var preamble = text[..start].Trim();
+                if (preamble.Length > 0)
+                    chunkText = preamble + "\n\n" + chunkText;
+            }
+
+            chunks.Add(new WeekChunk(weekNum, chunkText));
+        }
+
+        return chunks;
+    }
 
     public static string BuildPrompt(string text, IReadOnlyList<(int Id, string Name, string Type)> library)
     {
@@ -23,7 +149,7 @@ public static class PlanImport
 ZADANIE: Przeanalizuj tekst planu treningowego (polski) i zwróć WYŁĄCZNIE poprawny JSON zgodny ze schematem poniżej.
 Nie dodawaj markdown, komentarzy ani tekstu poza JSON.
 
-BIBLIOTEKA ĆWICZEŃ (dopasuj matchedExerciseId gdy nazwa jest bliska; inaczej null):
+BIBLIOTEKA ĆWICZEŃ (dopasuj matchedExerciseId gdy nazwa jest bliska; inaczej null lub pomiń pole):
 {{libLines}}
 
 TEKST PLANU:
@@ -35,7 +161,7 @@ REGUŁY:
 1. „TYDZIEŃ N" → weekNumber = N. Dni: „Trening A/B/C/B1…" → label.
 2. Pozycje z numeracją „1.", „3a/b.", „2/3.", „4a/b/c." — rozbij superserie na osobne items z tym samym supersetGroup (1-based w obrębie dnia).
 3. „Nazwa1/Nazwa2" w superserii → dwa exerciseName.
-4. „NxM" / „NxM-K" → sets, reps, repsMax. Czas: „10-15s" → measureType=time, repDurationSeconds/Max.
+4. „NxM" / „NxM-K" → sets, reps, repsMax. Czas: „10-15s" → measureType=time, repDurationSeconds.
 5. „Rampa N (X kg) + BO P%: Y kg (A-B powt.)":
    - setScheme = „rampa → NRM + BO P%"
    - prescribedSets: [{order:1, role:"ramp", reps:N, loadKg:X}, {order:2, role:"backoff", reps:A, repsMax:B, loadPercent:P, percentOf:"top", loadKg:Y opcjonalnie}]
@@ -44,42 +170,28 @@ REGUŁY:
 7. „ciężar +1kg", „ciężary z T5", „Finał/Rekord" → notes (nie zmyślaj liczb).
 8. Tempo typu 3110 → tempo. RIR → targetRir.
 9. name planu: krótka nazwa z zakresu tygodni jeśli widać (np. „Tydzień 5–6").
+10. Zwróć KAŻDY dzień treningowy z tekstu — niczego nie skracaj, nie streszczaj i nie pomijaj.
+11. Pomijaj pola o wartości null — emituj TYLKO pola z danymi (krótszy JSON).
 
-SCHEMAT JSON:
+SCHEMAT JSON (pola opcjonalne pomijaj gdy brak danych):
 {
-  "name": "string|null",
-  "description": "string|null",
+  "name": "Tydzień 5",
   "days": [
     {
-      "weekNumber": 1,
+      "weekNumber": 5,
       "order": 1,
       "label": "Trening A",
-      "notes": null,
       "items": [
         {
           "exerciseName": "High bar squat",
-          "matchedExerciseId": null,
           "order": 1,
-          "supersetGroup": null,
-          "isWarmup": false,
           "measureType": "reps",
           "sets": 2,
-          "reps": null,
-          "repsMax": null,
-          "repDurationSeconds": null,
-          "distanceMeters": null,
-          "tempo": null,
-          "targetRpe": null,
-          "targetRir": null,
           "setScheme": "rampa → 3RM + BO 80%",
-          "restBetweenSetsSeconds": null,
-          "restAfterExerciseSeconds": null,
           "loadKg": 47.5,
-          "loadPercent": null,
-          "notes": null,
           "prescribedSets": [
-            { "order": 1, "reps": 3, "repsMax": null, "durationSeconds": null, "distanceMeters": null, "loadKg": 47.5, "loadPercent": null, "percentOf": null, "targetRpe": null, "targetRir": null, "tempo": null, "role": "ramp", "note": null },
-            { "order": 2, "reps": 5, "repsMax": 10, "durationSeconds": null, "distanceMeters": null, "loadKg": 38, "loadPercent": 80, "percentOf": "top", "targetRpe": null, "targetRir": null, "tempo": null, "role": "backoff", "note": null }
+            { "order": 1, "reps": 3, "loadKg": 47.5, "role": "ramp" },
+            { "order": 2, "reps": 5, "repsMax": 10, "loadKg": 38, "loadPercent": 80, "percentOf": "top", "role": "backoff" }
           ]
         }
       ]
@@ -104,21 +216,137 @@ SCHEMAT JSON:
         var start = text.IndexOf('{');
         var end = text.LastIndexOf('}');
         if (start < 0 || end <= start) return null;
-        return text[start..(end + 1)];
+        return RemoveTrailingCommas(text[start..(end + 1)]);
     }
 
-    public static PlanImportDraft? DeserializeDraft(string? raw)
+    /// <summary>Usuwa trailing commas przed }/] — typowy błąd JSON z LLM.</summary>
+    public static string RemoveTrailingCommas(string json) =>
+        Regex.Replace(json, @",(\s*[}\]])", "$1");
+
+    public static PlanImportDraft? DeserializeDraft(string? raw) =>
+        TryDeserializeDraft(raw, out var draft, out _) ? draft : null;
+
+    /// <summary>
+    /// Deserializuje draft; przy niepowodzeniu zwraca zwięzły komunikat błędu (do retry z feedbackiem).
+    /// </summary>
+    public static bool TryDeserializeDraft(string? raw, out PlanImportDraft? draft, out string? error)
     {
+        draft = null;
+        error = null;
         var json = StripJsonFences(raw);
-        if (json is null) return null;
+        if (json is null)
+        {
+            error = string.IsNullOrWhiteSpace(raw)
+                ? "pusta odpowiedź"
+                : "brak obiektu JSON w odpowiedzi";
+            return false;
+        }
+
         try
         {
-            return JsonSerializer.Deserialize<PlanImportDraft>(json, JsonOptions);
+            draft = JsonSerializer.Deserialize<PlanImportDraft>(json, JsonOptions);
+            if (draft is null)
+            {
+                error = "deserializacja zwróciła null";
+                return false;
+            }
+            return true;
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
-            return null;
+            error = ex.Message.Length > 200 ? ex.Message[..200] : ex.Message;
+            return false;
         }
+    }
+
+    /// <summary>
+    /// Nadpisuje weekNumber wszystkich dni (gdy chunk zna numer tygodnia z nagłówka).
+    /// </summary>
+    public static PlanImportDraft ForceWeekNumber(PlanImportDraft draft, int weekNumber)
+    {
+        var days = (draft.Days ?? [])
+            .Select(d => d with { WeekNumber = weekNumber })
+            .ToList();
+        return draft with { Days = days };
+    }
+
+    /// <summary>
+    /// Scala drafty z osobnych wywołań LLM (po tygodniu) w jeden draft + ostrzeżenia kompletności.
+    /// </summary>
+    public static PlanImportDraft MergeWeekDrafts(
+        IReadOnlyList<WeekChunk> chunks,
+        IReadOnlyList<(WeekChunk Chunk, PlanImportDraft? Draft, string? Error)> parts,
+        IReadOnlyList<(int Id, string Name, string Type)> library)
+    {
+        var warnings = new List<string>();
+        var failedWeeks = new List<int>();
+        var allDays = new List<PlanImportDay>();
+        string? name = null;
+        string? description = null;
+
+        foreach (var (chunk, draft, error) in parts)
+        {
+            if (error is not null)
+            {
+                warnings.Add(error);
+                if (chunk.WeekNumber is { } fw) failedWeeks.Add(fw);
+                continue;
+            }
+
+            if (draft is null || (draft.Days?.Count ?? 0) == 0)
+            {
+                var label = chunk.WeekNumber is { } w
+                    ? $"Nie udało się odczytać tygodnia {w}."
+                    : "Nie udało się odczytać fragmentu planu.";
+                warnings.Add(label);
+                if (chunk.WeekNumber is { } fw) failedWeeks.Add(fw);
+                continue;
+            }
+
+            name ??= draft.Name;
+            description ??= draft.Description;
+
+            var days = draft.Days!;
+            if (chunk.WeekNumber is { } week)
+                days = days.Select(d => d with { WeekNumber = week }).ToList();
+
+            allDays.AddRange(days);
+        }
+
+        // Przy wielu tygodniach nazwa z zakresu (SuggestName); przy jednym — zachowaj propozycję AI.
+        var merged = new PlanImportDraft(
+            Name: chunks.Count == 1 ? name : null,
+            Description: description,
+            Days: allDays);
+        var normalized = NormalizeAndMatch(merged, library);
+
+        // Strażnik: tygodnie z nagłówków tekstu vs tygodnie w drafcie
+        var expectedWeeks = chunks
+            .Where(c => c.WeekNumber is not null)
+            .Select(c => c.WeekNumber!.Value)
+            .Distinct()
+            .OrderBy(w => w)
+            .ToList();
+        var actualWeeks = (normalized.Days ?? [])
+            .Select(d => d.WeekNumber)
+            .ToHashSet();
+
+        foreach (var w in expectedWeeks)
+        {
+            if (!actualWeeks.Contains(w))
+            {
+                if (!failedWeeks.Contains(w)) failedWeeks.Add(w);
+                if (!warnings.Any(x => x.Contains($"tygodnia {w}", StringComparison.Ordinal)))
+                    warnings.Add($"Nie udało się odczytać tygodnia {w}.");
+            }
+        }
+
+        failedWeeks = failedWeeks.Distinct().OrderBy(w => w).ToList();
+        return normalized with
+        {
+            Warnings = warnings.Count > 0 ? warnings : null,
+            FailedWeeks = failedWeeks.Count > 0 ? failedWeeks : null,
+        };
     }
 
     public static PlanImportDraft NormalizeAndMatch(

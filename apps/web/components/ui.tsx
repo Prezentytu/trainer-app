@@ -168,11 +168,11 @@ export function Field({
 }
 
 export const inputClass =
-  "h-10 w-full rounded-md border border-border-strong bg-surface-sunken px-3 text-sm text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:text-muted-faint focus:border-accent-strong focus:shadow-[var(--glow-accent)]";
+  "h-10 w-full rounded-md border border-border-strong bg-surface-sunken px-3 text-base text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:text-muted-faint focus:border-accent-strong focus:shadow-[var(--glow-accent)] sm:text-sm";
 
-/** Input liczbowy — mono + tabular, bez „drgania” layoutu przy zmianie cyfr. */
+/** Input liczbowy — mono + tabular, bez „drgania” layoutu przy zmianie cyfr. 16px na mobile (iOS nie zoomuje). */
 export const inputNumericClass =
-  "h-10 w-full rounded-md border border-border-strong bg-surface-sunken px-3 font-mono text-sm tabular-nums text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:text-muted-faint focus:border-accent-strong focus:shadow-[var(--glow-accent)]";
+  "h-10 w-full rounded-md border border-border-strong bg-surface-sunken px-3 font-mono text-base tabular-nums text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:text-muted-faint focus:border-accent-strong focus:shadow-[var(--glow-accent)] sm:text-sm";
 
 export function ErrorBanner({ message }: { message: string | null }) {
   if (!message) return null;

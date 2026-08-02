@@ -77,13 +77,35 @@ export function ClientDetailSkeleton() {
 
 export function PlanListSkeleton() {
   return (
-    <div aria-busy aria-label="Wczytuję plany" className="space-y-8">
+    <div aria-busy aria-label="Wczytuję plany" className="space-y-10">
       {["Szablony", "Plany klientów"].map((section) => (
         <div key={section}>
-          <Skeleton className="mb-3 h-5 w-32" />
-          <div className="grid gap-3 xl:grid-cols-2">
-            {Array.from({ length: 2 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 w-full rounded-xl" />
+          <div className="mb-1 flex items-center gap-3">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-5 w-5 rounded-full" />
+            <span aria-hidden className="h-px flex-1 bg-border" />
+          </div>
+          <Skeleton className="mb-4 h-4 w-72 max-w-full" />
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-4">
+                <div className="flex items-start gap-3">
+                  <Skeleton className="h-9 w-9 shrink-0 rounded-md" />
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-3 w-20" />
+                  </div>
+                </div>
+                <div className="min-h-[2.625rem] space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+                <Skeleton className="h-[3.625rem] w-full rounded-md" />
+                <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
+                  <Skeleton className="h-6 w-28" />
+                  <Skeleton className="h-8 w-32 rounded-md" />
+                </div>
+              </div>
             ))}
           </div>
         </div>

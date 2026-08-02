@@ -3,10 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { api, Exercise, SessionDetail } from "@/lib/api";
+import { api, Exercise, SessionDetail, WorkoutSessionInput } from "@/lib/api";
 import { SessionLogger } from "@/components/SessionLogger";
 import { SessionLoggerSkeleton } from "@/components/skeletons";
 import { Button, ErrorBanner, PageHeader } from "@/components/ui";
+import {
+  clearSessionQueueItem,
+  enqueueSessionWrite,
+  readSessionQueue,
+} from "@/lib/sessionQueue";
 
 export default function ClientSessionPage() {
   const params = useParams<{ id: string; sessionId: string }>();
@@ -16,6 +21,28 @@ export default function ClientSessionPage() {
   const [session, setSession] = useState<SessionDetail | null>(null);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  const flushQueue = useCallback(async () => {
+    if (typeof navigator !== "undefined" && !navigator.onLine) return;
+    for (const item of readSessionQueue().filter((q) => q.scope === "trainer")) {
+      try {
+        await api.sessions.update(item.sessionId, item.body as WorkoutSessionInput);
+        if (item.complete) await api.sessions.complete(item.sessionId);
+        clearSessionQueueItem(item.id);
+      } catch {
+        // zostaw w kolejce
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    void flushQueue();
+    const onOnline = () => {
+      void flushQueue();
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [flushQueue]);
 
   const load = useCallback(() => {
     Promise.all([api.sessions.get(sessionId), api.exercises.list()])
@@ -53,6 +80,14 @@ export default function ClientSessionPage() {
         session={session}
         libraryExercises={exercises}
         onUpdated={setSession}
+        onPersistFailed={(input, complete) => {
+          enqueueSessionWrite({
+            scope: "trainer",
+            sessionId,
+            body: input,
+            complete,
+          });
+        }}
         onCompleted={() => router.push(`/clients/${clientId}`)}
       />
     </div>

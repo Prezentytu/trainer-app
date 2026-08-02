@@ -430,6 +430,10 @@ export type PlanImportDraft = {
   name: string | null;
   description: string | null;
   days: PlanImportDay[];
+  /** Ostrzeżenia o niekompletności (np. brakujący tydzień po chunkingu AI). */
+  warnings?: string[] | null;
+  /** Numery tygodni, których nie udało się odczytać — do ponowienia. */
+  failedWeeks?: number[] | null;
 };
 
 export type PlanItemInput = {
@@ -830,10 +834,10 @@ export const api = {
     remove: (id: number) => request(`/api/exercises/${id}`, { method: "DELETE" }),
   },
   ai: {
-    importPlan: (text: string) =>
+    importPlan: (text: string, weeks?: number[]) =>
       request<PlanImportDraft>("/api/ai/plan-import", {
         method: "POST",
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, weeks: weeks?.length ? weeks : undefined }),
       }),
   },
   plans: {
@@ -880,10 +884,11 @@ export const api = {
         method: "POST",
         body: JSON.stringify(input),
       }),
-    update: (id: number, input: WorkoutSessionInput) =>
+    update: (id: number, input: WorkoutSessionInput, opts?: { keepalive?: boolean }) =>
       request<SessionDetail>(`/api/sessions/${id}`, {
         method: "PUT",
         body: JSON.stringify(input),
+        keepalive: opts?.keepalive,
       }),
     complete: (id: number) =>
       request<SessionDetail>(`/api/sessions/${id}/complete`, { method: "PATCH" }),
@@ -916,10 +921,16 @@ export const api = {
         method: "POST",
         body: JSON.stringify(input),
       }),
-    updateSession: (token: string, id: number, input: WorkoutSessionInput) =>
+    updateSession: (
+      token: string,
+      id: number,
+      input: WorkoutSessionInput,
+      opts?: { keepalive?: boolean },
+    ) =>
       request<SessionDetail>(`/api/portal/${token}/sessions/${id}`, {
         method: "PUT",
         body: JSON.stringify(input),
+        keepalive: opts?.keepalive,
       }),
     completeSession: (token: string, id: number) =>
       request<SessionDetail>(`/api/portal/${token}/sessions/${id}/complete`, {

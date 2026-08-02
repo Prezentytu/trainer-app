@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   api,
   Exercise,
   LoggedExerciseInput,
+  LoggedSet,
   PrevLoggedSet,
   SessionCheckinInput,
   SessionDetail,
@@ -19,10 +20,18 @@ import {
   ErrorBanner,
   formatRest,
   inputClass,
-  inputNumericClass,
   useUndoToast,
 } from "@/components/ui";
 import { demoMedia } from "@/lib/youtube";
+import { unlockAudio } from "@/lib/restAlarm";
+import { clearLocalDraft, readLocalDraft, saveLocalDraft } from "@/lib/sessionDraft";
+import { SetValueInput } from "@/components/session/SetValueInput";
+import { SessionClock } from "@/components/session/SessionClock";
+import { RestTimer } from "@/components/session/RestTimer";
+import { useRestTimer } from "@/components/session/useRestTimer";
+import { useWakeLock } from "@/components/session/useWakeLock";
+import { PlateCalculator } from "@/components/session/PlateCalculator";
+import { formatKg } from "@/lib/plates";
 
 type Props = {
   session: SessionDetail;
@@ -38,7 +47,55 @@ type Props = {
   onPersistFailed?: (input: WorkoutSessionInput, complete: boolean, error: Error) => void;
 };
 
-function toInput(session: SessionDetail): WorkoutSessionInput {
+type LocalSet = LoggedSet & { uid: string };
+type LocalExercise = Omit<SessionDetail["exercises"][number], "sets"> & { sets: LocalSet[] };
+type LocalSession = Omit<SessionDetail, "exercises"> & { exercises: LocalExercise[] };
+
+type ActiveCell = { exIdx: number; setIdx: number; field: "weight" | "reps" };
+
+function newUid(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return `u-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function withUids(session: SessionDetail, prevUids?: Map<string, string>): LocalSession {
+  return {
+    ...session,
+    exercises: session.exercises.map((ex, exIdx) => ({
+      ...ex,
+      sets: ex.sets.map((s, setIdx) => {
+        const stableKey = s.id > 0 ? `id:${s.id}` : `tmp:${exIdx}:${setIdx}:${s.setNumber}`;
+        const uid =
+          prevUids?.get(stableKey) ??
+          (s.id > 0 ? `s-${s.id}` : newUid());
+        return { ...s, uid };
+      }),
+    })),
+  };
+}
+
+function collectUids(session: LocalSession): Map<string, string> {
+  const map = new Map<string, string>();
+  session.exercises.forEach((ex, exIdx) => {
+    ex.sets.forEach((s, setIdx) => {
+      const stableKey = s.id > 0 ? `id:${s.id}` : `tmp:${exIdx}:${setIdx}:${s.setNumber}`;
+      map.set(stableKey, s.uid);
+    });
+  });
+  return map;
+}
+
+function stripUids(session: LocalSession): SessionDetail {
+  return {
+    ...session,
+    exercises: session.exercises.map((ex) => ({
+      ...ex,
+      sets: ex.sets.map(({ uid: _uid, ...s }) => s),
+    })),
+  };
+}
+
+function toInput(session: LocalSession): WorkoutSessionInput {
   return {
     clientId: session.clientId,
     performedOn: session.performedOn,
@@ -50,12 +107,12 @@ function toInput(session: SessionDetail): WorkoutSessionInput {
     status: session.status,
     exercises: session.exercises.map(
       (e): LoggedExerciseInput => ({
-        id: e.id,
+        id: e.id > 0 ? e.id : null,
         exerciseId: e.exerciseId,
         order: e.order,
         note: e.note,
         sets: e.sets.map((s) => ({
-          id: s.id,
+          id: s.id > 0 ? s.id : null,
           setNumber: s.setNumber,
           weightKg: s.weightKg,
           reps: s.reps,
@@ -71,25 +128,79 @@ function toInput(session: SessionDetail): WorkoutSessionInput {
   };
 }
 
-function parseNum(v: string): number | null {
-  if (v.trim() === "") return null;
-  const n = Number(v.replace(",", "."));
-  return Number.isFinite(n) ? n : null;
+/** Z serwera: id, isPr, estimated1Rm, agregaty. Z lokalnego: wartości wpisane przez użytkownika. */
+function reconcile(local: LocalSession, server: SessionDetail): LocalSession {
+  const uidMap = collectUids(local);
+  const serverLocal = withUids(server, uidMap);
+
+  const localExById = new Map(local.exercises.filter((e) => e.id > 0).map((e) => [e.id, e]));
+  const localExByOrder = new Map(local.exercises.map((e) => [e.order, e]));
+
+  const exercises: LocalExercise[] = serverLocal.exercises.map((sEx) => {
+    const lEx =
+      (sEx.id > 0 ? localExById.get(sEx.id) : undefined) ?? localExByOrder.get(sEx.order);
+
+    const localSets = lEx?.sets ?? [];
+    const sets: LocalSet[] = sEx.sets.map((sSet, idx) => {
+      const lSet =
+        (sSet.id > 0 ? localSets.find((s) => s.id === sSet.id) : undefined) ??
+        localSets.find((s) => s.uid === sSet.uid) ??
+        localSets[idx];
+
+      if (!lSet) {
+        return { ...sSet, uid: sSet.id > 0 ? `s-${sSet.id}` : sSet.uid || newUid() };
+      }
+      return {
+        ...lSet,
+        id: sSet.id > 0 ? sSet.id : lSet.id,
+        uid: lSet.uid,
+        isPr: sSet.isPr,
+        estimated1Rm: sSet.estimated1Rm,
+      };
+    });
+
+    // Lokalne serie jeszcze bez id, których nie ma na serwerze (race) — dołącz.
+    for (const lSet of localSets) {
+      if (lSet.id > 0) continue;
+      if (sets.some((s) => s.uid === lSet.uid)) continue;
+      sets.push(lSet);
+    }
+
+    return {
+      ...sEx,
+      note: lEx?.note ?? sEx.note,
+      sets: sets.map((s, i) => ({ ...s, setNumber: i + 1 })),
+    };
+  });
+
+  return {
+    ...serverLocal,
+    note: local.note,
+    exercises,
+    // agregaty i PR z serwera
+    totalSets: server.totalSets,
+    totalVolumeKg: server.totalVolumeKg,
+    prs: server.prs,
+    feelingScore: server.feelingScore,
+    sleepScore: server.sleepScore,
+    energyScore: server.energyScore,
+    status: server.status,
+    durationSeconds: server.durationSeconds,
+  };
 }
 
 function formatPrev(p: PrevLoggedSet | undefined): string {
   if (!p) return "—";
-  if (p.weightKg != null && p.reps != null) return `${p.weightKg} × ${p.reps}`;
+  if (p.weightKg != null && p.reps != null) return `${formatKg(p.weightKg)} × ${p.reps}`;
   if (p.reps != null) return `${p.reps} powt.`;
   if (p.durationSeconds != null) return formatRest(p.durationSeconds);
   return "—";
 }
 
-function elapsedLabel(startedAt: number): string {
-  const sec = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
+function prevPlaceholder(p: PrevLoggedSet | undefined, field: "weight" | "reps"): string | undefined {
+  if (!p) return undefined;
+  if (field === "weight") return p.weightKg != null ? formatKg(p.weightKg) : undefined;
+  return p.reps != null ? String(p.reps) : undefined;
 }
 
 export function SessionLogger({
@@ -101,10 +212,20 @@ export function SessionLogger({
   onCompleted,
   onPersistFailed,
 }: Props) {
-  const [draft, setDraft] = useState(session);
+  const draftScope = portalToken ?? "trainer";
+  const [initial] = useState(() => {
+    if (typeof window !== "undefined" && session.status === "in_progress") {
+      const local = readLocalDraft(draftScope, session.id);
+      if (local && local.status === "in_progress") {
+        return { draft: withUids(local), restored: true };
+      }
+    }
+    return { draft: withUids(session), restored: false };
+  });
+  const [draft, setDraft] = useState<LocalSession>(initial.draft);
+  const [restoredBanner, setRestoredBanner] = useState(initial.restored);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [restLeft, setRestLeft] = useState<number | null>(null);
   const [summary, setSummary] = useState<SessionDetail | null>(null);
   const [checkinSession, setCheckinSession] = useState<SessionDetail | null>(null);
   const [feelingScore, setFeelingScore] = useState<number | null>(null);
@@ -114,27 +235,28 @@ export function SessionLogger({
   const [swapSearch, setSwapSearch] = useState("");
   const [videoId, setVideoId] = useState<string | null>(null);
   const [videoTitle, setVideoTitle] = useState("");
-  const [clock, setClock] = useState(() => elapsedLabel(Date.parse(session.createdAt)));
   const [prCelebrate, setPrCelebrate] = useState<string | null>(null);
+  const [activeCell, setActiveCell] = useState<ActiveCell | null>(null);
+  const [platesOpen, setPlatesOpen] = useState(false);
   const { showUndoToast, toastNode } = useUndoToast();
 
-  const draftRef = useRef(session);
+  const draftRef = useRef(draft);
+  const dirtyRef = useRef(initial.restored);
+  const pendingRestoreSync = useRef(initial.restored);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const draftSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveChain = useRef(Promise.resolve());
-  const restInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const prFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const startedAt = useRef(Date.parse(session.createdAt));
+  const [startedAt] = useState(() => Date.parse(session.createdAt));
+  const statusRef = useRef(session.status);
 
-  useEffect(() => {
-    if (completedEdit) return;
-    const t = setInterval(() => setClock(elapsedLabel(startedAt.current)), 1000);
-    return () => clearInterval(t);
-  }, [completedEdit]);
+  const { rest, startRest, adjustRest, dismissRest, setExpanded } = useRestTimer(session.id);
+  useWakeLock(!completedEdit && draft.status === "in_progress");
 
   useEffect(() => {
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
-      if (restInterval.current) clearInterval(restInterval.current);
+      if (draftSaveTimer.current) clearTimeout(draftSaveTimer.current);
       if (prFlashTimer.current) clearTimeout(prFlashTimer.current);
     };
   }, []);
@@ -145,43 +267,59 @@ export function SessionLogger({
     prFlashTimer.current = setTimeout(() => setPrCelebrate(null), 2800);
   }, []);
 
-  const startRest = useCallback((seconds: number) => {
-    if (restInterval.current) clearInterval(restInterval.current);
-    setRestLeft(seconds);
-    restInterval.current = setInterval(() => {
-      setRestLeft((prev) => {
-        if (prev == null || prev <= 1) {
-          if (restInterval.current) clearInterval(restInterval.current);
-          restInterval.current = null;
-          return null;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  }, []);
+  const persistLocalDraft = useCallback(
+    (next: LocalSession) => {
+      if (completedEdit || next.status !== "in_progress") return;
+      if (draftSaveTimer.current) clearTimeout(draftSaveTimer.current);
+      draftSaveTimer.current = setTimeout(() => {
+        saveLocalDraft(draftScope, next.id, stripUids(next));
+      }, 250);
+    },
+    [completedEdit, draftScope],
+  );
 
   const persist = useCallback(
-    async (next: SessionDetail, complete = false) => {
+    async (next: LocalSession, complete = false, opts?: { keepalive?: boolean }) => {
       setSaving(true);
       setError(null);
       const input = toInput(next);
       try {
         let updated: SessionDetail;
         if (portalToken) {
-          updated = await api.portal.updateSession(portalToken, next.id, input);
+          updated = await api.portal.updateSession(portalToken, next.id, input, {
+            keepalive: opts?.keepalive,
+          });
           if (complete) updated = await api.portal.completeSession(portalToken, next.id);
         } else {
-          updated = await api.sessions.update(next.id, input);
+          updated = await api.sessions.update(next.id, input, { keepalive: opts?.keepalive });
           if (complete) updated = await api.sessions.complete(next.id);
         }
-        draftRef.current = updated;
-        setDraft(updated);
-        onUpdated(updated);
+
+        // keepalive często nie zwraca czytelnego body — nie nadpisuj lokalnego stanu.
+        if (opts?.keepalive && (!updated || typeof updated !== "object" || !("exercises" in updated))) {
+          dirtyRef.current = false;
+          return next;
+        }
+
+        const merged = reconcile(draftRef.current, updated);
+        draftRef.current = merged;
+        setDraft(merged);
+        dirtyRef.current = false;
+        clearLocalDraft(draftScope, next.id);
+
+        // Rodzic: re-render tylko przy zmianie statusu (unikamy migania).
+        if (updated.status !== statusRef.current || complete) {
+          statusRef.current = updated.status;
+          onUpdated(stripUids(merged));
+        } else {
+          onUpdated(stripUids(merged));
+        }
+
         if (complete) {
           if (completedEdit || updated.feelingScore != null) setSummary(updated);
           else setCheckinSession(updated);
         }
-        return updated;
+        return merged;
       } catch (e) {
         const err = e as Error;
         setError(err.message);
@@ -191,7 +329,7 @@ export function SessionLogger({
         setSaving(false);
       }
     },
-    [completedEdit, onPersistFailed, onUpdated, portalToken],
+    [completedEdit, draftScope, onPersistFailed, onUpdated, portalToken],
   );
 
   const scheduleSave = useCallback(() => {
@@ -207,10 +345,58 @@ export function SessionLogger({
     }, 400);
   }, [persist]);
 
-  const updateDraft = (updater: (prev: SessionDetail) => SessionDetail) => {
+  const flushNow = useCallback(
+    (keepalive = false) => {
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+        saveTimer.current = null;
+      }
+      if (!dirtyRef.current && !keepalive) return;
+      // synchroniczny lokalny backup przed ukryciem
+      if (draftRef.current.status === "in_progress") {
+        saveLocalDraft(draftScope, draftRef.current.id, stripUids(draftRef.current));
+      }
+      saveChain.current = saveChain.current
+        .then(() => {
+          void persist(draftRef.current, false, { keepalive });
+        })
+        .catch(() => {
+          /* queue */
+        });
+    },
+    [draftScope, persist],
+  );
+
+  // Flush przy minimalizacji / ukryciu karty
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === "hidden") flushNow(true);
+    };
+    const onPageHide = () => flushNow(true);
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("pagehide", onPageHide);
+    };
+  }, [flushNow]);
+
+  // Po przywróceniu lokalnego draftu — od razu wyślij na serwer
+  useEffect(() => {
+    if (!pendingRestoreSync.current) return;
+    pendingRestoreSync.current = false;
+    dirtyRef.current = true;
+    scheduleSave();
+    const t = setTimeout(() => setRestoredBanner(false), 4000);
+    return () => clearTimeout(t);
+  }, [scheduleSave]);
+
+  const updateDraft = (updater: (prev: LocalSession) => LocalSession) => {
     setDraft((prev) => {
       const next = updater(prev);
       draftRef.current = next;
+      dirtyRef.current = true;
+      persistLocalDraft(next);
       return next;
     });
     scheduleSave();
@@ -219,7 +405,7 @@ export function SessionLogger({
   const patchSet = (
     exIdx: number,
     setIdx: number,
-    patch: Partial<SessionDetail["exercises"][0]["sets"][0]>,
+    patch: Partial<LocalSet>,
   ) => {
     updateDraft((prev) => ({
       ...prev,
@@ -234,14 +420,15 @@ export function SessionLogger({
   };
 
   const toggleComplete = (exIdx: number, setIdx: number) => {
+    unlockAudio();
     const exercise = draft.exercises[exIdx];
     const set = exercise?.sets[setIdx];
     if (!set) return;
     const nextCompleted = !set.completed;
     const exerciseId = exercise.exerciseId;
     const setNumber = set.setNumber;
+    const setUid = set.uid;
 
-    // Natychmiastowy zapis (bez debounce) — PR wraca z API zaraz po checkmarku.
     if (saveTimer.current) clearTimeout(saveTimer.current);
     setDraft((prev) => {
       const next = {
@@ -259,6 +446,8 @@ export function SessionLogger({
         }),
       };
       draftRef.current = next;
+      dirtyRef.current = true;
+      persistLocalDraft(next);
       return next;
     });
 
@@ -270,7 +459,15 @@ export function SessionLogger({
         if (!nextCompleted || !updated) return;
         const logged = updated.exercises
           .flatMap((ex) => ex.sets.map((s) => ({ ex, s })))
-          .find(({ ex, s }) => ex.exerciseId === exerciseId && s.setNumber === setNumber);
+          .find(({ ex, s }) => {
+            const localMatch = draftRef.current.exercises
+              .flatMap((e) => e.sets)
+              .find((ls) => ls.uid === setUid);
+            return (
+              ex.exerciseId === exerciseId &&
+              (localMatch ? s.id === localMatch.id || s.setNumber === setNumber : s.setNumber === setNumber)
+            );
+          });
         if (logged?.s.isPr && logged.s.completed) {
           const e1 = logged.s.estimated1Rm;
           flashPr(
@@ -285,7 +482,7 @@ export function SessionLogger({
       });
   };
 
-  const copyPrev = (exIdx: number, setIdx: number) => {
+  const copyPrevSet = (exIdx: number, setIdx: number) => {
     const prev = draft.exercises[exIdx]?.prevSets[setIdx];
     if (!prev) return;
     patchSet(exIdx, setIdx, {
@@ -296,6 +493,33 @@ export function SessionLogger({
       rir: prev.rir,
       rpe: prev.rpe,
     });
+  };
+
+  const copyPrevExercise = (exIdx: number) => {
+    const exercise = draft.exercises[exIdx];
+    if (!exercise || exercise.prevSets.length === 0) return;
+    updateDraft((prev) => ({
+      ...prev,
+      exercises: prev.exercises.map((ex, i) => {
+        if (i !== exIdx) return ex;
+        return {
+          ...ex,
+          sets: ex.sets.map((s, j) => {
+            const p = ex.prevSets[j];
+            if (!p) return s;
+            return {
+              ...s,
+              weightKg: p.weightKg,
+              reps: p.reps,
+              durationSeconds: p.durationSeconds,
+              distanceMeters: p.distanceMeters,
+              rir: p.rir,
+              rpe: p.rpe,
+            };
+          }),
+        };
+      }),
+    }));
   };
 
   const addSet = (exIdx: number) => {
@@ -310,6 +534,7 @@ export function SessionLogger({
           sets: [
             ...ex.sets,
             {
+              uid: newUid(),
               id: -Date.now(),
               setNumber: nextNum,
               weightKg: last?.weightKg ?? null,
@@ -383,6 +608,7 @@ export function SessionLogger({
     try {
       await saveChain.current;
       await persist(draftRef.current, true);
+      clearLocalDraft(draftScope, draft.id);
     } catch {
       /* error state */
     }
@@ -437,6 +663,31 @@ export function SessionLogger({
   const filteredSwapExercises = libraryExercises.filter((ex) =>
     ex.name.toLowerCase().includes(swapSearch.trim().toLowerCase()),
   );
+
+  const nextRestLabel = useMemo(() => {
+    const idx = currentExerciseIdx >= 0 ? currentExerciseIdx : 0;
+    const ex = draft.exercises[idx];
+    if (!ex) return null;
+    const nextSet = ex.sets.find((s) => !s.completed);
+    return nextSet ? `${ex.exerciseName} · seria ${nextSet.setNumber}` : ex.exerciseName;
+  }, [currentExerciseIdx, draft.exercises]);
+
+  const stepActive = (field: "weight" | "reps", delta: number) => {
+    if (!activeCell) return;
+    const { exIdx, setIdx } = activeCell;
+    const set = draft.exercises[exIdx]?.sets[setIdx];
+    if (!set) return;
+    if (field === "weight") {
+      const base = set.weightKg ?? 0;
+      const next = Math.round((base + delta) * 100) / 100;
+      patchSet(exIdx, setIdx, { weightKg: next < 0 ? 0 : next });
+    } else {
+      const base = set.reps ?? 0;
+      const next = Math.max(0, Math.min(999, base + delta));
+      patchSet(exIdx, setIdx, { reps: next });
+    }
+    setActiveCell({ exIdx, setIdx, field });
+  };
 
   if (checkinSession) {
     return (
@@ -525,6 +776,14 @@ export function SessionLogger({
   return (
     <div className="space-y-4 pb-24">
       <ErrorBanner message={error} />
+      {restoredBanner ? (
+        <div
+          role="status"
+          className="rounded-md border border-accent-border bg-accent-dim/40 px-3 py-2 text-sm text-accent-strong"
+        >
+          Przywrócono niezapisane zmiany
+        </div>
+      ) : null}
 
       <div className="sticky top-0 z-20 -mx-1 border-b border-border bg-background/95 px-1 py-3 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
@@ -536,27 +795,27 @@ export function SessionLogger({
               <h1 className="truncate font-display text-lg font-bold">
                 {completedEdit ? "Poprawa" : "Sesja"}
               </h1>
-              <span className="font-mono text-sm tabular-nums text-muted">
-                {completedEdit
-                  ? formatRest(draft.durationSeconds ?? 0)
-                  : clock}
+              {completedEdit ? (
+                <span className="font-mono text-sm tabular-nums text-muted">
+                  {formatRest(draft.durationSeconds ?? 0)}
+                </span>
+              ) : (
+                <SessionClock startedAt={startedAt} />
+              )}
+              <span
+                className={`text-xs text-muted transition-opacity duration-[var(--dur-fast)] ${
+                  saving ? "opacity-100" : "opacity-0"
+                }`}
+                aria-live="polite"
+              >
+                Zapis…
               </span>
-              {saving ? <span className="text-xs text-muted">Zapis…</span> : null}
             </div>
           </div>
           <Button disabled={saving} onClick={() => void finish()}>
             {completedEdit ? "Zapisz zmiany" : "Zakończ trening"}
           </Button>
         </div>
-        {prCelebrate ? (
-          <div
-            className="pr-celebrate-in mt-2 rounded-md border border-pr/50 bg-pr-dim px-3 py-2.5 text-center shadow-[var(--glow-pr)]"
-            role="status"
-          >
-            <div className="text-xs font-semibold uppercase tracking-caps text-pr">Nowy rekord</div>
-            <div className="mt-0.5 font-display text-sm font-semibold text-pr">{prCelebrate}</div>
-          </div>
-        ) : null}
         {nextExercise && !completedEdit ? (
           <p className="mt-2 text-xs text-muted">
             Teraz:{" "}
@@ -587,7 +846,7 @@ export function SessionLogger({
         const allDone = exercise.sets.every((s) => s.completed);
         return (
           <section
-            key={exercise.id}
+            key={exercise.id > 0 ? exercise.id : `ex-${exIdx}`}
             className={`overflow-hidden rounded-xl border bg-surface ${
               isCurrent
                 ? "border-accent-border ring-1 ring-accent-border/60"
@@ -621,25 +880,38 @@ export function SessionLogger({
                   przerwa {formatRest(exercise.restSeconds ?? 90)}
                 </p>
               </div>
-              {libraryExercises.length > 0 ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="shrink-0 text-xs"
-                  onClick={() => {
-                    setSwapExIdx(swapExIdx === exIdx ? null : exIdx);
-                    setSwapSearch("");
-                  }}
-                >
-                  Podmień
-                </Button>
-              ) : null}
+              <div className="flex shrink-0 items-center gap-1">
+                {exercise.prevSets.length > 0 ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="text-xs"
+                    onClick={() => copyPrevExercise(exIdx)}
+                    title="Skopiuj poprzednie wartości"
+                  >
+                    Poprz.
+                  </Button>
+                ) : null}
+                {libraryExercises.length > 0 ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="text-xs"
+                    onClick={() => {
+                      setSwapExIdx(swapExIdx === exIdx ? null : exIdx);
+                      setSwapSearch("");
+                    }}
+                  >
+                    Podmień
+                  </Button>
+                ) : null}
+              </div>
             </div>
 
             {swapExIdx === exIdx ? (
               <div className="border-b border-border px-3 py-3">
                 <input
-                  className={`${inputClass} mb-2 w-full px-2 py-1.5 text-sm`}
+                  className={`${inputClass} mb-2 w-full px-2 py-1.5`}
                   placeholder="Szukaj ćwiczenia…"
                   value={swapSearch}
                   onChange={(e) => setSwapSearch(e.target.value)}
@@ -665,70 +937,47 @@ export function SessionLogger({
               </div>
             ) : null}
 
-            <div className="grid grid-cols-[2.25rem_minmax(0,1fr)_minmax(0,1.4fr)_2.75rem] gap-1 border-b border-border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted">
+            <div className="grid grid-cols-[2.25rem_minmax(0,1fr)_2.75rem] gap-1 border-b border-border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted">
               <span>Seria</span>
-              <span>Poprz.</span>
               <span>Dziś</span>
               <span className="text-center">OK</span>
             </div>
 
             {exercise.sets.map((s, setIdx) => {
               const prev = exercise.prevSets[setIdx];
+              const isActiveRow =
+                activeCell?.exIdx === exIdx && activeCell?.setIdx === setIdx;
               return (
-                <div
-                  key={s.id || setIdx}
-                  className={`grid grid-cols-[2.25rem_minmax(0,1fr)_minmax(0,1.4fr)_2.75rem] items-center gap-1 border-b border-border px-3 py-2 last:border-b-0 ${
-                    s.completed ? "bg-accent-dim/25" : ""
-                  } ${s.completed && s.isPr ? "bg-pr-dim/40" : ""}`}
-                >
-                  <div className="font-mono text-sm tabular-nums text-muted">
-                    {s.setNumber}
-                    {s.isWarmup ? <span className="block text-xs">W</span> : null}
-                    {s.completed && s.isPr ? (
-                      <span className="mt-0.5 inline-block">
-                        <Badge tone="pr">PR</Badge>
-                      </span>
-                    ) : null}
-                  </div>
-                  <button
-                    type="button"
-                    className="min-h-11 truncate text-left font-mono text-xs tabular-nums text-muted hover:text-accent focus-visible:outline-none focus-visible:text-accent"
-                    onClick={() => copyPrev(exIdx, setIdx)}
-                    title="Skopiuj do Dziś"
-                  >
-                    {formatPrev(prev)}
-                  </button>
-                  <div className="flex min-w-0 items-center gap-1">
-                    <input
-                      className={`${inputNumericClass} h-11 min-w-0 flex-1 px-1.5 text-center text-base`}
-                      value={s.weightKg ?? ""}
-                      onChange={(e) => patchSet(exIdx, setIdx, { weightKg: parseNum(e.target.value) })}
-                      inputMode="decimal"
-                      aria-label="kg"
-                      placeholder="kg"
-                    />
-                    <span className="text-muted-faint">×</span>
-                    <input
-                      className={`${inputNumericClass} h-11 min-w-0 flex-1 px-1.5 text-center text-base`}
-                      value={s.reps ?? ""}
-                      onChange={(e) => patchSet(exIdx, setIdx, { reps: parseNum(e.target.value) })}
-                      inputMode="numeric"
-                      aria-label="powtórzenia"
-                      placeholder="powt"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => toggleComplete(exIdx, setIdx)}
-                    className={`mx-auto flex h-11 w-11 items-center justify-center rounded-lg border text-base font-bold transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
-                      s.completed
-                        ? "border-accent-border bg-accent text-accent-foreground"
-                        : "border-border-strong text-muted hover:border-accent-border"
-                    }`}
-                    aria-label={s.completed ? "Cofnij ukończenie" : "Oznacz serię jako ukończoną"}
-                  >
-                    {s.completed ? "✓" : ""}
-                  </button>
+                <div key={s.uid}>
+                  <SetRow
+                    set={s}
+                    prev={prev}
+                    completed={s.completed}
+                    isPr={s.isPr}
+                    onWeight={(v) => patchSet(exIdx, setIdx, { weightKg: v })}
+                    onReps={(v) => patchSet(exIdx, setIdx, { reps: v })}
+                    onFocusWeight={() => setActiveCell({ exIdx, setIdx, field: "weight" })}
+                    onFocusReps={() => setActiveCell({ exIdx, setIdx, field: "reps" })}
+                    onToggle={() => toggleComplete(exIdx, setIdx)}
+                    onCopyPrev={() => copyPrevSet(exIdx, setIdx)}
+                  />
+                  {isActiveRow ? (
+                    <div className="flex flex-wrap items-center gap-1 border-b border-border bg-surface-sunken px-2 py-1.5">
+                      <ToolbarBtn onClick={() => stepActive("weight", -2.5)}>−2,5</ToolbarBtn>
+                      <ToolbarBtn onClick={() => stepActive("weight", 2.5)}>+2,5</ToolbarBtn>
+                      <ToolbarBtn onClick={() => stepActive("reps", -1)}>−1</ToolbarBtn>
+                      <ToolbarBtn onClick={() => stepActive("reps", 1)}>+1</ToolbarBtn>
+                      <ToolbarBtn onClick={() => setPlatesOpen(true)}>Talerze</ToolbarBtn>
+                      <ToolbarBtn
+                        onClick={() => {
+                          setActiveCell(null);
+                          (document.activeElement as HTMLElement | null)?.blur?.();
+                        }}
+                      >
+                        Gotowe
+                      </ToolbarBtn>
+                    </div>
+                  ) : null}
                 </div>
               );
             })}
@@ -755,7 +1004,7 @@ export function SessionLogger({
 
             <div className="border-t border-border px-3 py-2">
               <input
-                className={`${inputClass} px-2 py-1.5 text-sm`}
+                className={`${inputClass} px-2 py-1.5`}
                 placeholder="Notatka do ćwiczenia…"
                 value={exercise.note ?? ""}
                 onChange={(e) => patchNote(exIdx, e.target.value)}
@@ -765,35 +1014,127 @@ export function SessionLogger({
         );
       })}
 
-      {restLeft != null ? (
-        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-accent-border bg-accent-dim px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center">
-          <p className="font-mono text-2xl font-semibold tabular-nums text-accent-strong">
-            Przerwa {formatRest(restLeft)}
-          </p>
-          <div className="mt-2 flex items-center justify-center gap-3">
-            <button
-              type="button"
-              className="min-h-11 rounded-md px-3 text-sm font-semibold text-accent-strong hover:text-accent focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
-              onClick={() => setRestLeft((prev) => (prev == null ? 30 : prev + 30))}
-            >
-              +30 s
-            </button>
-            <button
-              type="button"
-              className="min-h-11 rounded-md px-3 text-xs font-semibold uppercase tracking-[0.08em] text-muted-strong hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
-              onClick={() => {
-                if (restInterval.current) clearInterval(restInterval.current);
-                restInterval.current = null;
-                setRestLeft(null);
-              }}
-            >
-              Pomiń
-            </button>
-          </div>
+      {rest ? (
+        <RestTimer
+          rest={rest}
+          nextLabel={nextRestLabel}
+          onAdjust={adjustRest}
+          onDismiss={dismissRest}
+          onExpand={setExpanded}
+        />
+      ) : null}
+
+      {platesOpen && activeCell ? (
+        <PlateCalculator
+          targetKg={draft.exercises[activeCell.exIdx]?.sets[activeCell.setIdx]?.weightKg}
+          onApply={(kg) => {
+            patchSet(activeCell.exIdx, activeCell.setIdx, { weightKg: kg });
+          }}
+          onClose={() => setPlatesOpen(false)}
+        />
+      ) : null}
+
+      {prCelebrate ? (
+        <div
+          className="pr-celebrate-in fixed bottom-20 left-1/2 z-[55] w-[min(100%-2rem,24rem)] -translate-x-1/2 rounded-md border border-pr/50 bg-pr-dim px-3 py-2.5 text-center shadow-[var(--glow-pr)]"
+          role="status"
+        >
+          <div className="text-xs font-semibold uppercase tracking-caps text-pr">Nowy rekord</div>
+          <div className="mt-0.5 font-display text-sm font-semibold text-pr">{prCelebrate}</div>
         </div>
       ) : null}
       {toastNode}
     </div>
+  );
+}
+
+const SetRow = memo(function SetRow({
+  set,
+  prev,
+  completed,
+  isPr,
+  onWeight,
+  onReps,
+  onFocusWeight,
+  onFocusReps,
+  onToggle,
+  onCopyPrev,
+}: {
+  set: LocalSet;
+  prev: PrevLoggedSet | undefined;
+  completed: boolean;
+  isPr: boolean;
+  onWeight: (v: number | null) => void;
+  onReps: (v: number | null) => void;
+  onFocusWeight: () => void;
+  onFocusReps: () => void;
+  onToggle: () => void;
+  onCopyPrev: () => void;
+}) {
+  return (
+    <div
+      className={`grid grid-cols-[2.25rem_minmax(0,1fr)_2.75rem] items-center gap-1 border-b border-border px-3 py-2 ${
+        completed ? "bg-accent-dim/25" : ""
+      } ${completed && isPr ? "bg-pr-dim/40" : ""}`}
+    >
+      <button
+        type="button"
+        className="font-mono text-sm tabular-nums text-muted hover:text-accent focus-visible:outline-none focus-visible:text-accent"
+        onClick={onCopyPrev}
+        title={prev ? `Poprzednio: ${formatPrev(prev)}` : "Brak poprzedniej serii"}
+      >
+        {set.setNumber}
+        {set.isWarmup ? <span className="block text-xs">W</span> : null}
+        {completed && isPr ? (
+          <span className="mt-0.5 inline-block">
+            <Badge tone="pr">PR</Badge>
+          </span>
+        ) : null}
+      </button>
+      <div className="flex min-w-0 items-center gap-1">
+        <SetValueInput
+          kind="weight"
+          value={set.weightKg}
+          placeholder={prevPlaceholder(prev, "weight") ?? "kg"}
+          ariaLabel="kg"
+          onCommit={onWeight}
+          onFocusField={onFocusWeight}
+        />
+        <span className="text-muted-faint">×</span>
+        <SetValueInput
+          kind="reps"
+          value={set.reps}
+          placeholder={prevPlaceholder(prev, "reps") ?? "powt"}
+          ariaLabel="powtórzenia"
+          onCommit={onReps}
+          onFocusField={onFocusReps}
+        />
+      </div>
+      <button
+        type="button"
+        onClick={onToggle}
+        className={`mx-auto flex h-11 w-11 items-center justify-center rounded-lg border text-base font-bold transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
+          completed
+            ? "border-accent-border bg-accent text-accent-foreground"
+            : "border-border-strong text-muted hover:border-accent-border"
+        }`}
+        aria-label={completed ? "Cofnij ukończenie" : "Oznacz serię jako ukończoną"}
+      >
+        {completed ? "✓" : ""}
+      </button>
+    </div>
+  );
+});
+
+function ToolbarBtn({ children, onClick }: { children: ReactNode; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      className="inline-flex h-11 min-w-11 items-center justify-center rounded-md border border-border-strong bg-surface px-2.5 font-mono text-xs font-semibold tabular-nums text-foreground-secondary hover:border-accent-border hover:text-accent-strong focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+      onClick={onClick}
+    >
+      {children}
+    </button>
   );
 }
 

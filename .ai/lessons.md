@@ -15,6 +15,16 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Ikony to inline SVG, nigdy emoji ani znaki unicode
+
+**Kontekst**: Karty planów dostały akcje `IconButton` z glifami `⎘` i `🗑` (wzorem `TableDay`/`ListView`), a statystyki były luźnymi liczbami na tle karty.
+**Problem**: Emoji renderuje się w kolorze systemowym i innym rozmiarze niż tekst — wygląda tanio i niespójnie; wyśrodkowane liczby bez ramki „pływają” i karta sprawia wrażenie pustej.
+**Zasada**:
+1. Ikony rysuj jako inline `<svg>` 16×16, `stroke="currentColor"`, `strokeWidth 1.4` — dziedziczą kolor tokenu i skalę tekstu. Zero emoji/dingbatów w UI (dotyczy też starych miejsc przy okazji ich edycji).
+2. Grupy liczb (tyg./dni/ćwiczeń) zamykaj w wydzielony pasek: `rounded-md border border-border bg-surface-sunken` + `divide-x divide-border`. Liczba `font-mono font-semibold`, etykieta `text-xs uppercase tracking-caps text-muted`.
+3. Karta w siatce ma stały szkielet: kafelek ikony 36px + tytuł, opis z `line-clamp-2` i `min-h`, pasek statystyk, stopka `mt-auto` — dzięki temu karty w rzędzie są równe i nic nie „lata”.
+**Dotyczy**: `apps/web/app/(app)/plans/page.tsx`, `apps/web/components/skeletons.tsx`, docelowo `plan-builder/*`.
+
 ## Prosty język + forma wizualna zamiast żargonu i pustych heatmap
 
 **Kontekst**: Profil klienta miał CTA „Loguj trening” i sekcję „Zgodność klienta” (heatmapa GitHub 7×8).
@@ -79,6 +89,19 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Problem**: W produkcji z Clerkiem to IDOR — trener A mógł czytać/edytować zasoby trenera B.
 **Zasada**: Nowy endpoint pod `/api/*` (poza portalem tokenowym) zawsze: `TrainerIdAsync` + filtr własności (`OwnsClientAsync` / `TrainerId ==`). Wspólna biblioteka ćwiczeń (`TrainerId == null`) jest tylko do odczytu. Isolację pokrywaj testem w `TenantIsolationTests`.
 **Dotyczy**: `apps/api/Program.cs`, `apps/api/TrainerAccess.cs`, `tests/api/TenantIsolationTests.cs`.
+
+## Logger sesji: nie parsuj liczb w trakcie pisania i nie nadpisuj draftu odpowiedzią API
+
+**Kontekst**: Hardening `SessionLogger` — zoom iOS, miganie przy ✓, utrata `10,5` kg, utrata danych po minimalizacji.
+**Problem**:
+1. Kontrolowany `value={number}` + `Number("10.")` w `onChange` natychmiast kasuje kropkę/przecinek.
+2. `setDraft(serverResponse)` po każdym PUT nadpisuje lokalne edycje i zmienia `key` (remount) gdy serwer nadaje ID.
+3. Debounce 400 ms nie odpala się, gdy karta jest zamrożona — dane giną.
+**Zasada**:
+1. Input liczbowy trzyma bufor tekstowy; commit liczby na blur / gdy draft nie kończy się separatorem.
+2. Po PUT rób `reconcile(local, server)` — z serwera tylko `id` / `isPr` / agregaty; wartości użytkownika zostają lokalne. Stabilny `uid` jako React `key`.
+3. Każdy debounce zapisu wymaga flusha na `visibilitychange`/`pagehide` (`keepalive`) + lokalnego draftu w `localStorage`.
+**Dotyczy**: `apps/web/components/SessionLogger.tsx`, `components/session/*`, `lib/sessionDraft.ts`, `lib/sessionQueue.ts`.
 
 ## Npgsql nie parsuje URI PostgreSQL — normalizuj przez `DbConnectionString`
 

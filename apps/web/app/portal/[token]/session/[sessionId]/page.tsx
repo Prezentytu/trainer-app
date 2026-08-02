@@ -7,7 +7,11 @@ import { SessionLogger } from "@/components/SessionLogger";
 import { SessionSummaryView } from "@/components/SessionSummaryView";
 import { SessionLoggerSkeleton } from "@/components/skeletons";
 import { ErrorBanner } from "@/components/ui";
-import { enqueuePortalWrite, readPortalQueue, clearPortalQueueItem } from "@/lib/portalQueue";
+import {
+  clearSessionQueueItem,
+  enqueueSessionWrite,
+  readSessionQueue,
+} from "@/lib/sessionQueue";
 
 export default function PortalSessionPage() {
   const params = useParams<{ token: string; sessionId: string }>();
@@ -21,11 +25,11 @@ export default function PortalSessionPage() {
 
   const flushQueue = useCallback(async () => {
     if (typeof navigator !== "undefined" && !navigator.onLine) return;
-    for (const item of readPortalQueue().filter((q) => q.token === token)) {
+    for (const item of readSessionQueue().filter((q) => q.scope === token)) {
       try {
         await api.portal.updateSession(token, item.sessionId, item.body as WorkoutSessionInput);
         if (item.complete) await api.portal.completeSession(token, item.sessionId);
-        clearPortalQueueItem(item.id);
+        clearSessionQueueItem(item.id);
       } catch {
         // zostaw w kolejce
       }
@@ -84,8 +88,8 @@ export default function PortalSessionPage() {
         completedEdit={editingCompleted}
         onUpdated={setSession}
         onPersistFailed={(input, complete) => {
-          enqueuePortalWrite({
-            token,
+          enqueueSessionWrite({
+            scope: token,
             sessionId,
             body: input,
             complete,

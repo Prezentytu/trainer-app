@@ -20,7 +20,8 @@ public static class AiChatExtensions
                 return new UnavailableChatClient();
 
             var baseUrl = config["Ai:BaseUrl"] ?? "https://openrouter.ai/api/v1";
-            var model = config["Ai:Model"] ?? "google/gemini-3.1-flash-lite";
+            // Pełny Flash na OpenRouterze (nie istnieje slug google/gemini-3.1-flash).
+            var model = config["Ai:Model"] ?? "google/gemini-3-flash-preview";
             var options = new OpenAIClientOptions { Endpoint = new Uri(baseUrl) };
             return new OpenAI.Chat.ChatClient(model, new ApiKeyCredential(apiKey), options)
                 .AsIChatClient();
