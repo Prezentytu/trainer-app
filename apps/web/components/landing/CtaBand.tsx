@@ -1,35 +1,30 @@
 import Link from "next/link";
-import { Button } from "@/components/ui";
 import { LandingReveal } from "./LandingReveal";
 
 export function CtaBand() {
   return (
-    <LandingReveal as="section" className="px-4 pb-20 sm:px-6 sm:pb-28">
-      <div className="relative mx-auto max-w-5xl overflow-hidden rounded-xl border border-border bg-surface px-6 py-16 text-center sm:px-12 sm:py-24">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,var(--accent-dim)_0%,transparent_55%)]"
-        />
-        <div className="relative">
-          <h2 className="font-display text-4xl font-bold tracking-[-0.03em] text-balance text-foreground sm:text-5xl md:text-6xl">
-            Przestań wysyłać PDF-y.
-          </h2>
-          <p className="mx-auto mt-5 max-w-lg text-base text-foreground-secondary sm:text-lg">
-            Załóż konto, dodaj klienta, wyślij link. Za darmo we wczesnym dostępie.
+    <LandingReveal as="section" id="cta" className="bg-accent text-accent-foreground">
+      <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-10 px-5 py-24 sm:flex-row sm:items-center sm:px-6 sm:py-28">
+        <div>
+          <p className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-accent-foreground/70">
+            {"/// Bez karty"}
           </p>
-          <div className="mt-9 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
-            <Link href="/sign-up" className="sm:min-w-[220px]">
-              <Button size="lg" full>
-                Zacznij za darmo
-              </Button>
-            </Link>
-            <Link href="/sign-in" className="sm:min-w-[160px]">
-              <Button variant="ghost" size="lg" full>
-                Mam już konto
-              </Button>
-            </Link>
-          </div>
+          <h2 className="mt-4 display-caps text-[clamp(2.375rem,5.4vw,4.25rem)] text-accent-foreground">
+            Skaluj swój
+            <br />
+            coaching
+            <span className="text-accent-foreground">.</span>
+          </h2>
+          <p className="mt-4 text-[15px] font-medium text-accent-foreground/75">
+            Za darmo we wczesnym dostępie. Pierwszy plan zajmuje kilka minut.
+          </p>
         </div>
+        <Link
+          href="/sign-up"
+          className="inline-flex h-14 shrink-0 items-center justify-center rounded-[10px] bg-background px-9 font-display text-base font-bold text-foreground transition-[background-color,transform] duration-[var(--dur-med)] hover:bg-surface-raised active:scale-[0.98] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+        >
+          Zacznij za darmo →
+        </Link>
       </div>
     </LandingReveal>
   );

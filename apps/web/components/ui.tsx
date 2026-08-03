@@ -28,24 +28,34 @@ export function Card({
   children,
   className = "",
   eyebrow,
+  eyebrowMark,
   title,
   meta,
   interactive,
   selected,
+  pending,
   onClick,
 }: {
   children?: ReactNode;
   className?: string;
   eyebrow?: string;
+  /** Prefiks „///” przed eyebrow (Acid micro-label). */
+  eyebrowMark?: boolean;
   title?: string;
   meta?: string;
   interactive?: boolean;
   selected?: boolean;
+  /** Dashed border — stan pending / next. */
+  pending?: boolean;
   onClick?: () => void;
 }) {
   const classNames = [
-    "rounded-xl border bg-surface p-4 text-left shadow-card transition-[background-color,border-color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)]",
-    selected ? "border-accent" : "border-border",
+    "rounded-xl border bg-surface p-5 text-left shadow-card transition-[background-color,border-color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] sm:p-6",
+    selected
+      ? "border-accent"
+      : pending
+        ? "border-dashed border-border-strong"
+        : "border-border",
     interactive || onClick
       ? "hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.99]"
       : "",
@@ -55,9 +65,11 @@ export function Card({
     eyebrow || title || meta ? (
       <div className="mb-3 min-w-0">
         {eyebrow ? (
-          <div className="mb-1 text-xs font-semibold uppercase tracking-caps text-muted">{eyebrow}</div>
+          <div className="eyebrow mb-1">
+            {eyebrowMark ? `/// ${eyebrow}` : eyebrow}
+          </div>
         ) : null}
-        {title ? <div className="break-words font-display text-lg font-semibold text-foreground">{title}</div> : null}
+        {title ? <div className="break-words font-display text-lg font-bold text-foreground">{title}</div> : null}
         {meta ? <div className="mt-0.5 break-words text-sm leading-[var(--leading-label)] text-muted">{meta}</div> : null}
       </div>
     ) : null;
@@ -91,6 +103,8 @@ export function Button({
   loading,
   title,
   full,
+  /** @deprecated Glow retired — kept for API compat, no visual effect. */
+  glow: _glow,
   className = "",
 }: {
   children: ReactNode;
@@ -103,10 +117,13 @@ export function Button({
   loading?: boolean;
   title?: string;
   full?: boolean;
+  /** @deprecated Hierarchy rule: no CTA blooms. Ignored. */
+  glow?: boolean;
   className?: string;
 }) {
+  void _glow;
   const styles: Record<ButtonVariant, string> = {
-    primary: "bg-accent text-accent-foreground hover:bg-accent-strong font-semibold",
+    primary: "bg-accent font-display font-bold text-accent-foreground hover:bg-accent-strong",
     secondary: "border border-border-strong bg-surface text-foreground-secondary hover:bg-surface-hover",
     ghost: "bg-transparent text-foreground-secondary hover:bg-surface-hover",
     danger: "bg-danger-bg text-danger hover:bg-danger-border",
@@ -125,7 +142,7 @@ export function Button({
       aria-busy={busy || undefined}
       title={title}
       className={[
-        "inline-flex items-center justify-center gap-2 rounded-md transition-[background-color,transform,color] duration-[var(--dur-fast)] ease-[var(--ease-out)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
+        "inline-flex items-center justify-center gap-2 rounded-[10px] transition-[background-color,transform,color] duration-[var(--dur-fast)] ease-[var(--ease-out)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
         styles[variant],
         sizes[size],
         full ? "w-full" : "",
@@ -158,7 +175,7 @@ export function Field({
 }) {
   return (
     <label className="flex flex-col gap-1.5 text-sm" title={title}>
-      <span className="flex flex-wrap items-baseline gap-1.5 text-xs font-semibold uppercase tracking-caps text-muted-strong">
+      <span className="flex flex-wrap items-baseline gap-1.5 font-mono text-xs font-medium uppercase tracking-caps text-muted-strong">
         {label}
         {hint ? <span className="text-xs font-normal normal-case tracking-normal text-muted">{hint}</span> : null}
       </span>
@@ -168,7 +185,7 @@ export function Field({
 }
 
 export const inputClass =
-  "h-10 w-full rounded-md border border-border-strong bg-surface-sunken px-3 text-base text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:text-muted-faint focus:border-accent-strong focus:shadow-[var(--glow-accent)] sm:text-sm";
+  "h-10 w-full rounded-[10px] border border-border-strong bg-surface-sunken px-3 text-base text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:text-muted-faint focus:border-accent-strong focus:shadow-[var(--glow-accent)] sm:text-sm";
 
 /** Input liczbowy — mono + tabular, bez „drgania” layoutu przy zmianie cyfr. 16px na mobile (iOS nie zoomuje). */
 export const inputNumericClass =
@@ -196,9 +213,9 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-dashed border-border px-6 py-10 text-center">
+    <div className="rounded-xl border border-dashed border-border-strong px-6 py-10 text-center">
       {title ? (
-        <div className="font-display text-base font-semibold text-foreground">{title}</div>
+        <div className="font-display text-base font-bold text-foreground">{title}</div>
       ) : null}
       <div className={`mx-auto max-w-[40ch] text-sm leading-[var(--leading-body)] text-muted ${title ? "mt-2" : ""}`}>
         {children}
@@ -213,16 +230,18 @@ export type BadgeTone = "neutral" | "yellow" | "green" | "red" | "pr" | "accent"
 export function Badge({ children, tone = "neutral" }: { children: ReactNode; tone?: BadgeTone }) {
   const styles: Record<BadgeTone, string> = {
     neutral: "bg-surface-active text-foreground-secondary",
-    yellow: "bg-accent-dim text-accent-strong",
-    accent: "bg-accent-dim text-accent-strong",
-    green: "bg-positive-dim text-positive",
-    positive: "bg-positive-dim text-positive",
-    red: "bg-danger-bg text-danger",
-    danger: "bg-danger-bg text-danger",
-    pr: "bg-pr-dim text-pr",
+    yellow: "border border-accent-border bg-accent-dim text-foreground-secondary",
+    accent: "border border-accent-border bg-accent-dim text-foreground-secondary",
+    green: "border border-border bg-positive-dim text-positive",
+    positive: "border border-border bg-positive-dim text-positive",
+    red: "border border-danger-border bg-danger-bg text-danger",
+    danger: "border border-danger-border bg-danger-bg text-danger",
+    pr: "border border-pr-border bg-pr-dim text-pr",
   };
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[tone]}`}>
+    <span
+      className={`inline-flex items-center rounded-[var(--radius-pill)] px-2.5 py-0.5 font-mono text-xs font-medium ${styles[tone]}`}
+    >
       {children}
     </span>
   );
@@ -241,7 +260,7 @@ export function Pill({
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
+      className={`shrink-0 rounded-[var(--radius-pill)] px-3.5 py-1.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
         active
           ? "bg-accent text-accent-foreground"
           : "bg-surface-hover text-foreground-secondary hover:bg-surface-active"
@@ -337,7 +356,7 @@ export function StatBlock({
   const showDelta = Boolean(delta) || reserveDelta;
   return (
     <div className="min-w-0">
-      <div className="text-xs font-semibold uppercase tracking-caps text-muted">{label}</div>
+      <div className="font-mono text-xs font-medium uppercase tracking-caps text-muted">{label}</div>
       <div className="mt-1 flex items-baseline gap-1.5">
         <span
           className={`font-mono font-semibold tabular-nums ${valueClassName ?? "text-foreground"} ${
@@ -586,7 +605,7 @@ export function Dialog({
         role="dialog"
         aria-modal
         aria-labelledby="dialog-title"
-        className="relative w-full max-w-lg rounded-xl border border-border bg-surface-sunken p-6 shadow-modal"
+        className="relative w-full max-w-lg rounded-3xl border border-border bg-surface-sunken p-6 shadow-modal"
       >
         <h2 id="dialog-title" className="font-display text-xl font-bold text-foreground">
           {title}
@@ -644,7 +663,7 @@ export function ProgressRing({
       {(label || sub) && (
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           {label ? <span className="font-mono text-sm font-semibold tabular-nums text-foreground">{label}</span> : null}
-          {sub ? <span className="text-xs font-semibold uppercase tracking-caps text-muted">{sub}</span> : null}
+          {sub ? <span className="font-mono text-xs font-medium uppercase tracking-caps text-muted">{sub}</span> : null}
         </div>
       )}
     </div>

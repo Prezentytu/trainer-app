@@ -73,12 +73,12 @@ export function ExerciseRow({
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={`rounded-[10px] border bg-surface ${
-        isInSuperset ? "border-accent/50 border-l-[3px] bg-accent-dim/40" : "border-border"
+        isInSuperset ? "border-border-strong border-l-[3px] bg-surface-sunken" : "border-border"
       } ${isDragging ? "opacity-50" : ""}`}
     >
       <div className="flex flex-col gap-2 p-3">
         {isSupersetStart && (
-          <p className="pl-8 text-xs font-semibold uppercase tracking-[0.08em] text-accent-strong">Superseria</p>
+          <p className="eyebrow pl-8">{"/// Superseria"}</p>
         )}
         <div className="flex items-start gap-2">
           <button
@@ -91,7 +91,7 @@ export function ExerciseRow({
             ⋮⋮
           </button>
 
-          <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-accent-dim font-mono text-xs font-semibold tabular-nums text-accent-strong">
+          <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-surface-active font-mono text-xs font-semibold tabular-nums text-muted">
             {supersetLabel ?? index + 1}
           </span>
 
@@ -149,7 +149,7 @@ export function ExerciseRow({
 
       {expanded && (
         <div className="border-t border-border p-3">
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">Podstawowe</p>
+          <p className="mb-2 font-mono text-xs font-medium uppercase tracking-caps text-muted">Podstawowe</p>
           <div className="mb-3 grid grid-cols-2 gap-3">
             <Field label={`Serie${exercise ? ` (dom. ${exercise.defaultSets})` : ""}`}>
               <NumInput value={item.sets} min={1} onChange={(v) => onPatch({ sets: v })} placeholder="dom." />
@@ -185,7 +185,7 @@ export function ExerciseRow({
             </Field>
           </div>
 
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">Zaawansowane</p>
+          <p className="mb-2 font-mono text-xs font-medium uppercase tracking-caps text-muted">Zaawansowane</p>
           <div className="mb-3 grid grid-cols-2 gap-3">
             <Field label="Tempo">
               <input
@@ -226,7 +226,7 @@ export function ExerciseRow({
             </div>
           </div>
 
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">Rozkład serii</p>
+          <p className="mb-2 font-mono text-xs font-medium uppercase tracking-caps text-muted">Rozkład serii</p>
           <SetSchemeEditor
             sets={item.prescribedSets}
             weekNumber={weekNumber}

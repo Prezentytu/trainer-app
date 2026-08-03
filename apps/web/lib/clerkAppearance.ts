@@ -8,17 +8,17 @@
  */
 export const clerkAppearance = {
   variables: {
-    colorBackground: "#141618", // --surface / --ink-850
-    colorForeground: "#f3f1ec", // --foreground / --bone-100
-    colorPrimary: "#3e9c8f", // --accent / --teal-500
-    colorPrimaryForeground: "#04120f", // --accent-foreground
-    colorMutedForeground: "#93958f", // --muted / --bone-500
-    colorBorder: "#343a3b", // --border-strong
-    colorInput: "#0a0b0c", // --surface-sunken / --ink-950
-    colorDanger: "#cf6b4b", // --danger / --clay-500
-    colorRing: "#3e9c8f", // --accent
+    colorBackground: "#1a1b1a", // --surface / --ink-850
+    colorForeground: "#f2f4ec", // --foreground / --bone-100
+    colorPrimary: "#c6f135", // --accent / --lime-500
+    colorPrimaryForeground: "#0c0d0c", // --accent-foreground
+    colorMutedForeground: "#9aa193", // --muted / --bone-500
+    colorBorder: "#3a3c3a", // --border-strong
+    colorInput: "#080908", // --surface-sunken
+    colorDanger: "#e06a4a", // --danger / --clay-500
+    colorRing: "#c6f135", // --accent
     borderRadius: "10px",
-    fontFamily: "var(--font-instrument), system-ui, sans-serif",
+    fontFamily: "var(--font-space-grotesk), system-ui, sans-serif",
     fontFamilyMono: "var(--font-ibm-plex-mono), ui-monospace, monospace",
   },
   layout: {

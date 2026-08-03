@@ -64,6 +64,10 @@ export function PlanHeader({
     <div className="mb-4 border-b border-border pb-4">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 flex-1">
+          <p className="eyebrow mb-2 text-muted">
+            {"/// "}
+            {isTemplate ? "Szablon" : "Plan klienta"} · Tydzień {activeWeek}
+          </p>
           <div className="flex flex-wrap items-center gap-2">
             {editingName ? (
               <input

@@ -1,61 +1,64 @@
 @import "tailwindcss";
 
 /*
- * Workout Alchemist — trójwarstwowa architektura tokenów.
+ * Workout Alchemist — Acid Design System (trójwarstwowa architektura tokenów).
  *
- * Warstwa 1 (prymitywy): --ink-*, --bone-*, --teal-*, --gold-*, --clay-* — surowy materiał.
- * Warstwa 2 (semantyka): --background, --surface, --accent, --pr… — themable; każdy motyw
- *   nadpisuje TYLKO tę warstwę (np. [data-theme="…"]).
- * Warstwa 3 (@theme inline): mapuje semantyki na klasy Tailwind (bg-surface, text-accent…).
- *   Dzięki `inline` + var(--…) klasy reagują w runtime na zmianę motywu.
+ * HIERARCHY FIRST: legibility from structure (elevation + text ramp), not brightness.
+ * Lime budget ≤3%: CTA fill, focus ring, active-nav tint+bar, progress fill, links.
+ * Every screen must stay readable with accent removed.
  *
- * Komponenty NIGDY nie odwołują się do prymitywów ani surowych hexów.
- * Gold (--pr) wyłącznie dla rekordów (PR). Zobacz skill `design-system`.
+ * Warstwa 1 (prymitywy): --ink-*, --bone-*, --lime-*, --gold-*, --clay-*.
+ * Warstwa 2 (semantyka): --background, --surface, --accent, --pr…
+ * Warstwa 3 (@theme inline): klasy Tailwind.
+ * Gold (--pr) wyłącznie PR. Zobacz skill `design-system`.
  */
 
 :root {
-  /* —— Warstwa 1: prymitywy WA —— */
-  --ink-950: #0a0b0c;
-  --ink-900: #101214;
-  --ink-850: #141618;
-  --ink-800: #1a1d1f;
-  --ink-700: #242829;
-  --ink-600: #313637;
-  --ink-500: #474c4c;
+  /* —— Warstwa 1: near-neutral charcoal (whisper of green only) —— */
+  /* Elevation ladder: sunken → app → raised → card → hover → active */
+  --ink-980: #080908;
+  --ink-950: #0c0d0c;
+  --ink-900: #121312;
+  --ink-850: #1a1b1a;
+  --ink-800: #222322;
+  --ink-700: #2c2e2c;
+  --ink-600: #3a3c3a;
+  --ink-500: #4a4c4a;
 
-  --bone-100: #f3f1ec;
-  --bone-300: #c8c7c1;
-  --bone-500: #93958f;
-  --bone-700: #66675f;
+  --bone-100: #f2f4ec;
+  --bone-300: #c8cdc0;
+  --bone-500: #9aa193;
+  --bone-700: #6e7566;
 
-  --teal-300: #6fbfae;
-  --teal-400: #4fae9e;
-  --teal-500: #3e9c8f;
-  --teal-600: #2f7a70;
-  --teal-700: #275048;
-  --teal-900: #10241f;
+  --lime-300: #c3e05a;
+  --lime-400: #d4f550;
+  --lime-500: #c6f135;
+  --lime-600: #b0dc20;
+  --lime-800: #2a3014;
+  --lime-900: #161a10;
 
   --gold-300: #f2ce72;
   --gold-400: #e8bb4f;
   --gold-500: #d6a335;
   --gold-600: #b3842a;
-  --gold-900: #33280f;
+  --gold-900: #2a2210;
+  --gold-border: #4d3c17;
 
-  --clay-400: #e08b6c;
-  --clay-500: #cf6b4b;
-  --clay-600: #b0563a;
-  --clay-900: #361a11;
+  --clay-400: #e88c70;
+  --clay-500: #e06a4a;
+  --clay-600: #b85436;
+  --clay-900: #331810;
 
-  /* —— Warstwa 2: semantyka (motyw domyślny WA) —— */
+  /* —— Warstwa 2: semantyka —— */
+  --surface-sunken: var(--ink-980);
   --background: var(--ink-950);
-  --surface: var(--ink-850);
   --surface-raised: var(--ink-900);
-  --surface-sunken: var(--ink-950);
+  --surface: var(--ink-850);
   --surface-hover: var(--ink-800);
   --surface-active: var(--ink-700);
 
-  --border: #22262a;
-  --border-strong: #343a3b;
+  --border: #2a2c2a;
+  --border-strong: #3a3c3a;
 
   --foreground: var(--bone-100);
   --foreground-secondary: var(--bone-300);
@@ -63,48 +66,54 @@
   --muted: var(--bone-500);
   --muted-faint: var(--bone-700);
 
-  --accent: var(--teal-500);
-  --accent-strong: var(--teal-400);
-  --accent-foreground: #04120f;
-  --accent-dim: var(--teal-900);
-  --accent-border: var(--teal-700);
+  --accent: var(--lime-500);
+  --accent-strong: var(--lime-400);
+  --accent-text: var(--lime-300);
+  --accent-foreground: #0c0d0c;
+  --accent-dim: var(--lime-900);
+  --accent-border: var(--lime-800);
 
   --pr: var(--gold-400);
   --pr-dim: var(--gold-900);
+  --pr-border: var(--gold-border);
   --text-on-gold: #1a1406;
 
-  --positive: var(--teal-300);
-  --positive-dim: var(--teal-900);
+  /* Positive = quiet on-track (not a second lime scream) */
+  --positive: var(--bone-300);
+  --positive-dim: var(--ink-800);
 
   --danger: var(--clay-500);
   --danger-bg: var(--clay-900);
   --danger-border: var(--clay-600);
   --danger-hover: var(--clay-400);
 
-  /* Alias wsteczny — Badge tone="green" / success */
   --success: var(--positive);
   --success-bg: var(--positive);
 
-  /* Efekty */
-  --shadow-card: inset 0 1px 0 rgba(243, 241, 236, 0.04), 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-raised: inset 0 1px 0 rgba(243, 241, 236, 0.05), 0 8px 24px rgba(0, 0, 0, 0.5);
-  --shadow-modal: inset 0 1px 0 rgba(243, 241, 236, 0.06), 0 24px 64px rgba(0, 0, 0, 0.65);
-  --glow-accent: 0 0 0 3px rgba(62, 156, 143, 0.28);
-  --glow-pr: 0 0 24px rgba(232, 187, 79, 0.18);
-  --shadow-segment-active: inset 0 1px 0 rgba(243, 241, 236, 0.05);
-  --overlay-scrim: rgba(10, 11, 12, 0.74);
+  /* Depth from value + border — no blooms, no scanlines */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-raised: 0 8px 24px rgba(0, 0, 0, 0.55);
+  --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.7);
+  --glow-accent: 0 0 0 3px rgba(198, 241, 53, 0.28);
+  --glow-cta: none;
+  --glow-pr: none;
+  --shadow-segment-active: none;
+  --overlay-scrim: rgba(8, 9, 8, 0.78);
+  --texture-scan: none;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
   --dur-fast: 120ms;
   --dur-med: 220ms;
   --dur-slow: 360ms;
 
-  /* Typografia — tracking + leading systemowe */
-  --tracking-caps: 0.08em;
-  --tracking-display: -0.015em;
-  --leading-display: 1.15;
+  --tracking-caps: 0.14em;
+  --tracking-eyebrow: 0.2em;
+  --tracking-display: -0.035em;
+  --leading-display: 0.96;
   --leading-body: 1.5;
   --leading-label: 1.4;
+  --radius-well: 6px;
+  --radius-pill: 9999px;
 }
 
 .sr-only {
@@ -121,8 +130,8 @@
 
 /* —— Warstwa 3: Tailwind —— */
 @theme inline {
-  --font-sans: var(--font-instrument);
-  --font-display: var(--font-bricolage);
+  --font-sans: var(--font-space-grotesk);
+  --font-display: var(--font-archivo);
   --font-mono: var(--font-ibm-plex-mono);
 
   --color-background: var(--background);
@@ -143,12 +152,14 @@
 
   --color-accent: var(--accent);
   --color-accent-strong: var(--accent-strong);
+  --color-accent-text: var(--accent-text);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent-dim: var(--accent-dim);
   --color-accent-border: var(--accent-border);
 
   --color-pr: var(--pr);
   --color-pr-dim: var(--pr-dim);
+  --color-pr-border: var(--pr-border);
   --color-text-on-gold: var(--text-on-gold);
 
   --color-positive: var(--positive);
@@ -181,19 +192,50 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-instrument), system-ui, sans-serif;
+  font-family: var(--font-space-grotesk), system-ui, sans-serif;
   line-height: var(--leading-body);
   overflow-x: hidden;
 }
 
 .font-display {
-  font-optical-sizing: auto;
   letter-spacing: var(--tracking-display);
   line-height: var(--leading-display);
 }
 
 .tracking-caps {
   letter-spacing: var(--tracking-caps);
+}
+
+/* Acid utilities — brutalizm bez ad-hoc klas w komponentach */
+.display-caps {
+  font-family: var(--font-archivo), system-ui, sans-serif;
+  font-weight: 900;
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-display);
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Retired — kept as no-op so existing classNames don't break */
+.texture-scan {
+  position: relative;
+}
+
+.texture-scan::before {
+  content: none;
+  display: none;
+}
+
+.rule-dashed {
+  border-top: 1px dashed var(--border-strong);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -240,11 +282,40 @@ body {
   .pr-celebrate-in {
     animation: pr-celebrate-in var(--dur-med) var(--ease-out) both;
   }
+
+  @keyframes acid-scan {
+    from {
+      background-position: 0 0;
+    }
+    to {
+      background-position: 0 48px;
+    }
+  }
+
+  .texture-scan::before {
+    animation: acid-scan 3s linear infinite;
+  }
+
+  @keyframes acid-tick {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
+  }
+
+  .acid-tick {
+    animation: acid-tick 2s ease-in-out infinite;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .skeleton-pulse,
-  .stagger-in {
+  .stagger-in,
+  .texture-scan::before,
+  .acid-tick {
     animation: none;
   }
 }
@@ -295,9 +366,9 @@ textarea {
 }
 
 .landing-demo-check {
-  border-color: var(--accent-border);
-  background: var(--accent-dim);
-  color: var(--accent-strong);
+  border-color: var(--border-strong);
+  background: var(--surface-active);
+  color: var(--foreground-secondary);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -390,9 +461,9 @@ textarea {
     }
     14%,
     100% {
-      border-color: var(--accent-border);
-      background: var(--accent-dim);
-      color: var(--accent-strong);
+      border-color: var(--border-strong);
+      background: var(--surface-active);
+      color: var(--foreground-secondary);
     }
   }
 

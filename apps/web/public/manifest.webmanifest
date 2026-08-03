@@ -4,8 +4,8 @@
   "description": "Twój plan treningowy i logowanie serii",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0B0D0E",
-  "theme_color": "#0B0D0E",
+  "background_color": "#0C0D0C",
+  "theme_color": "#0C0D0C",
   "lang": "pl",
   "icons": [
     {

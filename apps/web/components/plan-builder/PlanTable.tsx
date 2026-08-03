@@ -68,7 +68,7 @@ export function PlanTable({
       <button
         type="button"
         onClick={onAddDay}
-        className="flex min-h-16 w-full items-center justify-center rounded-xl border border-dashed border-border text-sm font-medium text-muted-strong transition-colors hover:border-border-strong hover:bg-surface-hover hover:text-foreground-secondary"
+        className="flex min-h-16 w-full items-center justify-center rounded-xl border border-dashed border-border-strong text-sm font-medium text-muted-strong transition-colors hover:border-accent-border hover:bg-surface-hover hover:text-foreground-secondary"
       >
         + Dzień
       </button>

@@ -123,3 +123,22 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Problem**: Npgsql przyjmuje **wyłącznie** format ADO.NET `klucz=wartość` — URI rozbija na pierwszym `=` (tym z `sslmode=require`), całą resztę traktuje jako nazwę parametru i pada na `Couldn't set …/neondb?sslmode`. Wcześniejsza diagnoza w `docs/deploy.md` i guard w workflow twierdziły odwrotnie (że URI jest wymagany), co utrwaliło błąd. Wsparcia URI nie będzie: [npgsql#6576](https://github.com/npgsql/npgsql/pull/6576) zamknięty przez maintainera w 2026-05.
 **Zasada**: Każdy connection string do Postgresa przechodzi przez `DbConnectionString.Normalize` (`apps/api/DbConnectionString.cs`) — jedno źródło prawdy dla runtime'u (`Program.cs`) i bundle'a migracji (`DesignTimeDbContextFactory`, czyta `DB_CONNECTION_STRING`). Nie duplikuj parsowania w bashu i nie dodawaj `--connection` do `efbundle`, bo omija normalizację.
 **Dotyczy**: `apps/api/DbConnectionString.cs`, `apps/api/Program.cs`, `apps/api/DesignTimeDbContextFactory.cs`, `.github/workflows/deploy-api.yml`, `docs/deploy.md`.
+
+## Prefiks „///” w JSX musi być w wyrażeniu stringowym
+
+**Kontekst**: Acid Design System używa eyebrowów z prefiksem `///` (np. `/// Start`).
+**Problem**: ESLint `react/jsx-no-comment-textnodes` traktuje surowy tekst `/// …` w children JSX jako komentarz — lint pada.
+**Zasada**: Zawsze `{"/// Start"}` albo template w JS (`eyebrowMark ? \`/// ${eyebrow}\` : eyebrow`). Nigdy gołego `///` jako text node.
+**Dotyczy**: landing, dashboard, portal, plan-builder, `ui.tsx` Card.
+
+## Hierarchia Acid: struktura > jasność; lime ≤3%
+
+**Kontekst**: Po pierwszym re-theme Acid cały ekran „świecił” — powierzchnie prawie identyczne, lime na eyebrowach/ikonach/statystykach + CTA glow + scanline.
+**Problem**: Brak głębi i konkurujące akcenty; nic nie dało się odczytać jako primary.
+**Zasada**:
+1. Elevation: 6 rozróżnialnych stopni near-neutral (bez zielonego castu).
+2. Lime tylko: CTA fill, focus ring, nav tint+2px bar, progress fill, `text-accent-text` na linkach.
+3. Eyebrowy / meta / numery list = `muted` / `muted-faint`. Active nav = `text-foreground`, nie lime.
+4. `--glow-cta`, `--texture-scan`, `--glow-pr` = `none`. PR = tint + `border-pr-border`.
+5. Test kontrolny: usuń akcent — ekran nadal czytelny.
+**Dotyczy**: `globals.css`, skill `design-system`, wszystkie ekrany produktu.

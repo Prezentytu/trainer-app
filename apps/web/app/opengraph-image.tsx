@@ -15,43 +15,55 @@ export default function OpenGraphImage() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          background: "#0a0b0c",
+          background: "#0B0D08",
           padding: 64,
           fontFamily: "system-ui, sans-serif",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ width: 12, height: 12, background: "#C6F135" }} />
           <div
             style={{
-              width: 56,
-              height: 56,
-              borderRadius: 12,
-              background: "#3e9c8f",
-              color: "#04120f",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
               fontSize: 22,
-              fontWeight: 700,
+              fontWeight: 900,
+              color: "#F2F4EC",
+              letterSpacing: "-0.02em",
+              textTransform: "uppercase",
             }}
           >
-            WA
-          </div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: "#f3f1ec" }}>
-            Workout <span style={{ color: "#3e9c8f" }}>Alchemist</span>
+            Workout Alchemist
           </div>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ fontSize: 56, fontWeight: 700, color: "#f3f1ec", lineHeight: 1.15, maxWidth: 900 }}>
-            Plany, które klienci robią.
+          <div
+            style={{
+              fontSize: 56,
+              fontWeight: 900,
+              color: "#F2F4EC",
+              lineHeight: 1.05,
+              maxWidth: 900,
+              textTransform: "uppercase",
+              letterSpacing: "-0.03em",
+            }}
+          >
+            Plany, które klienci robią<span style={{ color: "#C6F135" }}>.</span>
           </div>
-          <div style={{ fontSize: 24, color: "#c8c7c1", maxWidth: 720, lineHeight: 1.4 }}>
+          <div style={{ fontSize: 24, color: "#8A9280", maxWidth: 720, lineHeight: 1.4 }}>
             Ułóż plan, wyślij link, widzisz każdy trening.
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 24, fontSize: 18, color: "#93958f" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 24,
+            fontSize: 14,
+            color: "#8A9280",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+          }}
+        >
           <span>Za darmo we wczesnym dostępie</span>
           <span>·</span>
           <span>Bez karty</span>

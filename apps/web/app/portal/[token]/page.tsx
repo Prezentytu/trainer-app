@@ -149,10 +149,8 @@ export default function PortalTodayPage() {
   return (
     <div className={`space-y-5 ${today ? "pb-36" : "pb-24"}`}>
       <header>
-        <p className="text-xs font-semibold uppercase tracking-caps text-muted-faint">
-          Workout Alchemist
-        </p>
-        <h1 className="mt-1 font-display text-3xl font-bold">Cześć, {firstName}</h1>
+        <p className="eyebrow text-muted">{"/// Workout Alchemist"}</p>
+        <h1 className="mt-2 font-display text-3xl font-bold">Cześć, {firstName}</h1>
       </header>
       <ErrorBanner message={error} />
       <PwaInstallPrompt token={token} />
@@ -161,18 +159,18 @@ export default function PortalTodayPage() {
         {weekStrip.map((d, i) => (
           <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
             <div
-              className={`text-xs font-semibold ${
+              className={`font-mono text-[10px] font-medium uppercase tracking-caps ${
                 d.today ? "text-foreground-secondary" : "text-muted-faint"
               }`}
             >
               {d.label}
             </div>
             <div
-              className={`flex h-[30px] w-[30px] items-center justify-center rounded-full font-mono text-[13px] tabular-nums ${
+              className={`flex h-8 w-8 items-center justify-center rounded-full font-mono text-[13px] tabular-nums ${
                 d.done
-                  ? "border border-accent-border bg-accent-dim text-positive"
+                  ? "border border-border-strong bg-surface-active text-foreground"
                   : d.today
-                    ? "border border-accent text-muted-faint"
+                    ? "border border-dashed border-border-strong text-muted"
                     : "border border-border text-muted-faint"
               }`}
             >
@@ -183,11 +181,9 @@ export default function PortalTodayPage() {
       </div>
 
       {intake && !hasEssentialIntake(intake) ? (
-        <section className="rounded-2xl border border-border-strong bg-surface p-4 shadow-card">
-          <p className="text-xs font-semibold uppercase tracking-caps text-muted-strong">
-            Ankieta startowa
-          </p>
-          <p className="mt-1 text-[15px] font-semibold">Uzupełnij kilka informacji o sobie</p>
+        <section className="rounded-2xl border border-dashed border-border-strong bg-surface p-4 shadow-card">
+          <p className="eyebrow text-muted">{"/// Ankieta startowa"}</p>
+          <p className="mt-2 text-[15px] font-semibold">Uzupełnij kilka informacji o sobie</p>
           <p className="mt-1 text-[13px] text-muted">
             Cele, zdrowie i styl życia — dzięki temu trener ułoży bezpieczny plan.
           </p>
@@ -215,16 +211,14 @@ export default function PortalTodayPage() {
       ) : (
         <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
           <div className="flex items-baseline justify-between gap-2">
-            <p className="text-xs font-semibold uppercase tracking-caps text-muted">
-              Dzisiejszy trening
-            </p>
+            <p className="eyebrow text-muted">{"/// Dzisiejszy trening"}</p>
             {estMin != null ? (
               <p className="font-mono text-[13px] tabular-nums text-muted">
                 {formatDurationApprox(estMin)}
               </p>
             ) : null}
           </div>
-          <h2 className="mt-1.5 font-display text-lg font-semibold">{today.day.label}</h2>
+          <h2 className="mt-2 display-caps text-lg text-foreground">{today.day.label}</h2>
           <p className="mt-0.5 text-[13px] text-muted">
             {today.planName}
             {weekMeta ? ` · ${weekMeta}` : ""}

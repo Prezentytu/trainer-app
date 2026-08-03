@@ -6,10 +6,11 @@ type LandingRevealProps = {
   children: ReactNode;
   className?: string;
   as?: "div" | "section";
+  id?: string;
 };
 
 /** Scroll-reveal sekcji landingu (IntersectionObserver). Respektuje prefers-reduced-motion. */
-export function LandingReveal({ children, className = "", as = "div" }: LandingRevealProps) {
+export function LandingReveal({ children, className = "", as = "div", id }: LandingRevealProps) {
   const ref = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -37,7 +38,7 @@ export function LandingReveal({ children, className = "", as = "div" }: LandingR
 
   const Tag = as;
   return (
-    <Tag ref={ref as never} className={`landing-scroll ${className}`.trim()}>
+    <Tag ref={ref as never} id={id} className={`landing-scroll ${className}`.trim()}>
       {children}
     </Tag>
   );

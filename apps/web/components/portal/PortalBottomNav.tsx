@@ -99,10 +99,10 @@ export function PortalBottomNav({ token }: { token: string }) {
                 href={tab.href(token)}
                 className="flex min-h-11 flex-1 flex-col items-center gap-0.5 rounded-[10px] px-1 py-1.5 transition-colors active:bg-surface-hover"
               >
-                <span className={active ? "text-accent" : "text-muted"}>{tab.icon}</span>
+                <span className={active ? "text-foreground" : "text-muted"}>{tab.icon}</span>
                 <span
-                  className={`text-[11px] ${
-                    active ? "font-semibold text-accent" : "font-normal text-muted"
+                  className={`font-mono text-[10px] uppercase tracking-caps ${
+                    active ? "font-semibold text-foreground" : "font-medium text-muted"
                   }`}
                 >
                   {tab.label}

@@ -12,8 +12,8 @@ const ROLE_OPTIONS = ["work", "warmup", "ramp", "top", "backoff"];
 function rolePill(role: string | null | undefined) {
   const r = role ?? "work";
   const label = SET_ROLE_LABELS[r] ?? r;
-  if (r === "top") return "bg-accent text-accent-foreground";
-  if (r === "backoff") return "bg-accent-dim text-accent-strong";
+  if (r === "top") return "bg-surface-active text-foreground";
+  if (r === "backoff") return "bg-surface-sunken text-foreground-secondary";
   if (r === "ramp") return "bg-surface-active text-muted-strong";
   return "bg-surface-active text-foreground-secondary";
 }
@@ -46,7 +46,7 @@ export function SetSchemeEditor({
   return (
     <div className="rounded-[10px] border border-border bg-surface-sunken p-3">
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">Metoda</span>
+        <span className="font-mono text-xs font-medium uppercase tracking-caps text-muted">Metoda</span>
         {PLAN_PRESETS.map((p) => {
           const short =
             p.id === "642531" ? "6-4-2-5-3-1" : p.id === "ramp15" ? "15-10-5" : p.id === "ramp10" ? "10" : "5";
@@ -58,7 +58,7 @@ export function SetSchemeEditor({
               onClick={() => onApplyPreset(p.id)}
               className={`rounded-full border px-3 py-1 font-mono text-xs tabular-nums transition-colors ${
                 active
-                  ? "border-accent-border bg-accent-dim text-accent-strong"
+                  ? "border-border-strong bg-surface-active text-foreground"
                   : "border-border bg-surface text-muted hover:border-border-strong"
               }`}
               title={p.label}
@@ -93,7 +93,7 @@ export function SetSchemeEditor({
           </p>
           <div className="overflow-x-auto">
             <div className="grid min-w-[720px] gap-2">
-              <div className="grid grid-cols-[2rem_7rem_5rem_4rem_6rem_5rem_4rem_auto] gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-faint">
+              <div className="grid grid-cols-[2rem_7rem_5rem_4rem_6rem_5rem_4rem_auto] gap-2 font-mono text-[10px] font-medium uppercase tracking-caps text-muted">
                 <span>#</span>
                 <span>Rola</span>
                 <span>Powt.</span>
@@ -110,10 +110,10 @@ export function SetSchemeEditor({
                   <div
                     key={s.key}
                     className={`grid grid-cols-[2rem_7rem_5rem_4rem_6rem_5rem_4rem_auto] items-center gap-2 rounded-lg px-1 py-1 ${
-                      isTop ? "bg-accent-dim shadow-[inset_3px_0_0_var(--accent)]" : ""
+                      isTop ? "bg-surface-active shadow-[inset_3px_0_0_var(--border-strong)]" : ""
                     }`}
                   >
-                    <span className="font-mono text-xs tabular-nums text-muted">{idx + 1}</span>
+                    <span className="font-mono text-xs tabular-nums text-muted-faint">{idx + 1}</span>
                     <select
                       className={`h-8 rounded-full border-0 px-2 text-xs font-medium ${rolePill(s.role)}`}
                       value={s.role ?? "work"}
@@ -175,7 +175,7 @@ export function SetSchemeEditor({
                     />
                     <span
                       className={`font-mono text-sm font-semibold tabular-nums ${
-                        isTop ? "text-accent-strong" : "text-foreground"
+                        isTop ? "text-foreground" : "text-foreground-secondary"
                       }`}
                     >
                       {computed != null ? computed : "—"}

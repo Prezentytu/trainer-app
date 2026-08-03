@@ -40,15 +40,22 @@ function NavLinks({
             onClick={onNavigate}
             title={compact ? item.label : undefined}
             aria-current={active ? "page" : undefined}
-            className={`flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
+            className={`relative flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
               active
-                ? "bg-accent-dim text-accent-strong"
-                : "text-foreground-secondary hover:bg-surface-hover hover:text-accent-strong"
+                ? "bg-accent-dim text-foreground"
+                : "text-muted hover:bg-surface-hover hover:text-foreground"
             } ${compact ? "justify-center" : "justify-between"}`}
           >
+            {active ? (
+              <span aria-hidden className="absolute top-2 bottom-2 left-0 w-0.5 bg-accent" />
+            ) : null}
             <span className={`flex items-center gap-3 ${compact ? "justify-center" : "min-w-0"}`}>
-              <Icon aria-hidden className="h-5 w-5 shrink-0" strokeWidth={1.75} />
-              {!compact && <span className="truncate">{item.label}</span>}
+              <Icon aria-hidden className="h-6 w-6 shrink-0" strokeWidth={1.75} />
+              {!compact && (
+                <span className="truncate font-mono text-xs font-medium uppercase tracking-caps">
+                  {item.label}
+                </span>
+              )}
             </span>
             {!compact && count != null && (
               <span className="shrink-0 rounded-full bg-surface-active px-2 py-0.5 font-mono text-xs font-semibold tabular-nums text-foreground-secondary">
@@ -130,8 +137,8 @@ function BottomNav() {
             key={item.href}
             href={item.href}
             aria-current={active ? "page" : undefined}
-            className={`flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 py-1.5 text-xs transition-colors focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
-              active ? "font-semibold text-accent" : "text-muted-strong"
+            className={`flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 py-1.5 font-mono text-[10px] uppercase tracking-caps transition-colors focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
+              active ? "font-semibold text-foreground" : "text-muted"
             }`}
           >
             <span
@@ -139,7 +146,11 @@ function BottomNav() {
                 active ? "bg-accent-dim" : ""
               }`}
             >
-              <Icon aria-hidden className="h-5 w-5" strokeWidth={1.75} />
+              <Icon
+                aria-hidden
+                className={`h-6 w-6 ${active ? "text-foreground" : "text-muted"}`}
+                strokeWidth={1.75}
+              />
             </span>
             {item.label}
           </Link>

@@ -1,16 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, IBM_Plex_Mono, Instrument_Sans } from "next/font/google";
+import { Archivo, IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { ClerkAppProvider } from "@/components/ClerkAppProvider";
 
-const fontDisplay = Bricolage_Grotesque({
-  variable: "--font-bricolage",
+const fontDisplay = Archivo({
+  variable: "--font-archivo",
+  weight: ["700", "800", "900"],
   subsets: ["latin", "latin-ext"],
-  axes: ["opsz"],
 });
 
-const fontBody = Instrument_Sans({
-  variable: "--font-instrument",
+const fontBody = Space_Grotesk({
+  variable: "--font-space-grotesk",
+  weight: ["400", "500", "600"],
   subsets: ["latin", "latin-ext"],
 });
 
@@ -53,7 +54,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0b0c",
+  themeColor: "#0C0D0C",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,

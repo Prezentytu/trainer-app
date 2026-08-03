@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, ProgressRing, formatRest } from "@/components/ui";
+import { Button, ProgressRing } from "@/components/ui";
 import type { RestTimerState } from "@/components/session/useRestTimer";
 
 type Props = {
@@ -24,7 +24,7 @@ export function RestTimer({ rest, nextLabel, onAdjust, onDismiss, onExpand }: Pr
 
   if (!rest.expanded) {
     return (
-      <div className="fixed inset-x-3 bottom-3 z-50 rounded-2xl border border-border-strong bg-surface-raised p-3.5 shadow-[var(--shadow-raised)] sm:inset-x-auto sm:left-1/2 sm:w-full sm:max-w-lg sm:-translate-x-1/2">
+      <div className="fixed inset-x-3 bottom-3 z-50 rounded-2xl border border-dashed border-border-strong bg-surface-raised p-3.5 shadow-[var(--shadow-raised)] sm:inset-x-auto sm:left-1/2 sm:w-full sm:max-w-lg sm:-translate-x-1/2">
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
@@ -32,9 +32,11 @@ export function RestTimer({ rest, nextLabel, onAdjust, onDismiss, onExpand }: Pr
             onClick={() => onExpand(true)}
             aria-label="Powiększ timer przerwy"
           >
-            <p className="text-xs font-semibold uppercase tracking-caps text-muted">Odpoczynek</p>
-            <p className="mt-0.5 font-mono text-3xl font-semibold tabular-nums text-foreground">
-              {formatRest(rest.leftSeconds)}
+            <p className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-muted">
+              Rest_timer
+            </p>
+            <p className="mt-0.5 font-mono text-[28px] font-semibold tabular-nums text-foreground">
+              {mmss(rest.leftSeconds)}
             </p>
             {nextLabel ? (
               <p className="mt-0.5 truncate text-[13px] text-muted">Dalej: {nextLabel}</p>
@@ -77,7 +79,9 @@ export function RestTimer({ rest, nextLabel, onAdjust, onDismiss, onExpand }: Pr
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-background px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold uppercase tracking-caps text-muted">Przerwa</p>
+        <p className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-muted">
+          Rest_timer
+        </p>
         <button
           type="button"
           className="inline-flex h-11 w-11 items-center justify-center rounded-[10px] text-xl text-muted-strong hover:bg-surface-hover hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
@@ -98,7 +102,7 @@ export function RestTimer({ rest, nextLabel, onAdjust, onDismiss, onExpand }: Pr
         />
         {nextLabel ? (
           <p className="max-w-[28ch] text-center text-sm text-muted">
-            Dalej: <span className="font-medium text-accent-strong">{nextLabel}</span>
+            Dalej: <span className="font-medium text-foreground">{nextLabel}</span>
           </p>
         ) : null}
       </div>

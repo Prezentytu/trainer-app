@@ -78,6 +78,6 @@ export default function ClientsPage() {
 
 ## Styl / Tailwind
 
-- Motyw Workout Alchemist: tło `bg-background`, tekst `text-foreground`, akcent teal `bg-accent`/`text-accent`, gold (`pr`) tylko dla rekordów. Pełna paleta: skill `design-system` (źródło: `app/globals.css`, warstwy prymitywy → semantyka → `@theme inline`).
+- Motyw Workout Alchemist Acid: tło `bg-background`, tekst `text-foreground`, akcent lime `bg-accent`/`text-accent`, gold (`pr`) tylko dla rekordów. Pełna paleta: skill `design-system` (źródło: `app/globals.css`, warstwy prymitywy → semantyka → `@theme inline`).
 - Statusy przez `Badge` z tonami `neutral | accent | positive | danger | pr` (aliasy `yellow`/`green`/`red` nadal działają).
-- Fonty WA w `layout.tsx`: Bricolage Grotesque (`font-display`), Instrument Sans (`font-sans`), IBM Plex Mono (`font-mono` dla liczb).
+- Fonty Acid w `layout.tsx`: Archivo (`font-display` / `.display-caps`), Space Grotesk (`font-sans`), IBM Plex Mono (`font-mono` dla liczb).

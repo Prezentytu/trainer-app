@@ -1081,10 +1081,10 @@ export function SessionLogger({
                   alt={exercise.exerciseName}
                 />
               </button>
-              <h2 className="min-w-0 flex-1 font-display text-lg font-semibold leading-snug">
+              <h2 className="display-caps min-w-0 flex-1 text-lg leading-snug text-foreground">
                 {exercise.exerciseName}
                 {exercise.substitutedFromName ? (
-                  <span className="mt-0.5 block font-sans text-xs font-normal text-muted">
+                  <span className="mt-0.5 block font-sans text-xs font-normal normal-case tracking-normal text-muted">
                     zamieniono z {exercise.substitutedFromName}
                   </span>
                 ) : null}
@@ -1184,7 +1184,7 @@ export function SessionLogger({
             ) : null}
 
             <div
-              className={`${SET_GRID} mt-3 items-center border-b border-border px-0.5 pb-1.5 text-xs font-semibold uppercase tracking-caps text-muted-faint`}
+              className={`${SET_GRID} mt-3 items-center border-b border-border px-0.5 pb-1.5 font-mono text-[10px] font-medium uppercase tracking-caps text-muted`}
             >
               <div>#</div>
               <div>Poprz.</div>
@@ -1297,11 +1297,13 @@ export function SessionLogger({
 
       {prCelebrate ? (
         <div
-          className="pr-celebrate-in fixed bottom-20 left-1/2 z-[55] w-[min(100%-2rem,24rem)] -translate-x-1/2 rounded-md border border-pr/50 bg-pr-dim px-3 py-2.5 text-center shadow-[var(--glow-pr)]"
+          className="pr-celebrate-in fixed bottom-20 left-1/2 z-[55] w-[min(100%-2rem,24rem)] -translate-x-1/2 rounded-[10px] border border-pr-border bg-pr-dim px-4 py-3 text-center"
           role="status"
         >
-          <div className="text-xs font-semibold uppercase tracking-caps text-pr">Nowy rekord</div>
-          <div className="mt-0.5 font-display text-sm font-semibold text-pr">{prCelebrate}</div>
+          <div className="font-mono text-xs font-medium uppercase tracking-caps text-pr">
+            ★ Personal best
+          </div>
+          <div className="mt-1 font-display text-sm font-bold text-foreground">{prCelebrate}</div>
         </div>
       ) : null}
       {toastNode}
@@ -1341,31 +1343,33 @@ const SetRow = memo(function SetRow({
   const targetLabel = formatTargetLabel(set, isTime);
   const valColor = completed ? "text-foreground" : "text-foreground-secondary";
   const rowBg = completed
-    ? "bg-accent-dim"
+    ? "bg-surface-active"
     : isNext
-      ? "bg-surface-hover"
+      ? "rounded-[var(--radius-well)] border border-dashed border-border-strong bg-surface-sunken"
       : "bg-transparent";
   const checkBg = completed ? "bg-accent border-accent" : "bg-transparent";
   const checkBorder = completed
     ? "border-accent"
     : isNext
-      ? "border-accent"
+      ? "border-border-strong"
       : "border-border-strong";
   const checkColor = completed
     ? "text-accent-foreground"
     : isNext
-      ? "text-accent"
+      ? "text-foreground"
       : "text-muted-faint";
 
   return (
-    <div className={`${SET_GRID} min-h-[52px] items-center rounded-md px-0.5 py-1 ${rowBg}`}>
+    <div className={`${SET_GRID} min-h-[52px] items-center rounded-[var(--radius-well)] px-0.5 py-1 ${rowBg}`}>
       <button
         type="button"
-        className="font-mono text-[13px] tabular-nums text-muted hover:text-accent focus-visible:outline-none"
+        className={`font-mono text-[13px] tabular-nums hover:text-foreground focus-visible:outline-none ${
+          completed ? "text-foreground" : "text-muted"
+        }`}
         onClick={onCopyPrev}
         title={prev ? `Poprzednio: ${formatPrev(prev)}` : "Brak poprzedniej serii"}
       >
-        {set.setNumber}
+        {String(set.setNumber).padStart(2, "0")}
         {set.isWarmup ? <span className="block text-[10px]">W</span> : null}
       </button>
 

@@ -184,25 +184,25 @@ export function TrainerDashboard() {
           </div>
           <ol className="space-y-3 text-sm text-foreground-secondary">
             <li className="flex items-start gap-3">
-              <span className="font-mono text-accent">1.</span>
+              <span className="font-mono text-muted-faint">1.</span>
               <span>
-                <Link href="/clients" className="font-semibold text-accent hover:underline">
+                <Link href="/clients" className="font-semibold text-accent-text hover:underline">
                   Dodaj klienta
                 </Link>{" "}
                 — imię i cel wystarczą.
               </span>
             </li>
             <li className="flex items-start gap-3">
-              <span className="font-mono text-accent">2.</span>
+              <span className="font-mono text-muted-faint">2.</span>
               <span>
-                <Link href="/plans" className="font-semibold text-accent hover:underline">
+                <Link href="/plans" className="font-semibold text-accent-text hover:underline">
                   Przypisz plan
                 </Link>{" "}
                 — użyj szablonu startowego albo zbuduj własny.
               </span>
             </li>
             <li className="flex items-start gap-3">
-              <span className="font-mono text-accent">3.</span>
+              <span className="font-mono text-muted-faint">3.</span>
               <span>Skopiuj link portalu z karty klienta i wyślij go podopiecznemu.</span>
             </li>
           </ol>
@@ -236,7 +236,7 @@ export function TrainerDashboard() {
       )}
 
       {needsAttention.length > 0 ? (
-        <Card className="mb-6 border-accent-border" title="Wymagają uwagi">
+        <Card className="mb-6" eyebrow="Wymagają uwagi" eyebrowMark pending>
           <ul className="divide-y divide-border">
             {needsAttention.map(({ client, status }) => (
               <li key={client.clientId} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -253,8 +253,10 @@ export function TrainerDashboard() {
                       zgodność {status.attention.compliancePct}%
                     </span>
                   ) : null}
-                  <Link href={`/clients/${client.clientId}`} className="text-sm font-medium text-accent hover:text-accent-strong">
-                    Otwórz klienta
+                  <Link href={`/clients/${client.clientId}`}>
+                    <Button size="sm" variant="ghost">
+                      Otwórz klienta
+                    </Button>
                   </Link>
                   {status.action === "copy_portal_link" && status.portalToken ? (
                     <>
@@ -274,9 +276,12 @@ export function TrainerDashboard() {
       ) : null}
 
       {!showOnboarding && (
-        <Card className={`mb-6 ${needsAttention.length > 0 ? "border-accent-border" : ""}`}>
+        <Card className="mb-6">
           <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="font-display text-lg font-semibold">Klienci w tym tygodniu</h2>
+            <div>
+              <p className="eyebrow text-muted">{"/// Ten tydzień"}</p>
+              <h2 className="mt-1 font-display text-lg font-bold">Klienci w tym tygodniu</h2>
+            </div>
             {needsAttention.length === 0 ? (
               <span className="inline-flex items-center gap-1.5 text-sm text-positive">
                 <CheckCircle2 aria-hidden className="h-4 w-4" strokeWidth={1.75} />
@@ -331,21 +336,20 @@ export function TrainerDashboard() {
                       </span>
                     ) : null}
                     {status.kind === "no_plan" ? (
-                      <Link
-                        href={`/clients/${client.clientId}`}
-                        className="shrink-0 rounded-md bg-accent-dim px-2.5 py-2 text-xs font-semibold text-accent-strong hover:bg-accent-border focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
-                      >
-                        Przypisz plan
+                      <Link href={`/clients/${client.clientId}`}>
+                        <Button size="sm" variant="secondary">
+                          Przypisz plan
+                        </Button>
                       </Link>
                     ) : status.kind === "attention" && status.action === "copy_portal_link" ? (
-                      <button
-                        type="button"
-                        onClick={() => void copyPortalLink(client.clientId, status.portalToken)}
+                      <Button
+                        size="sm"
+                        variant="secondary"
                         disabled={!status.portalToken}
-                        className="shrink-0 rounded-md bg-accent-dim px-2.5 py-2 text-xs font-semibold text-accent-strong hover:bg-accent-border focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] disabled:opacity-40"
+                        onClick={() => void copyPortalLink(client.clientId, status.portalToken)}
                       >
                         {copiedId === client.clientId ? "Skopiowano" : "Skopiuj link"}
-                      </button>
+                      </Button>
                     ) : null}
                   </div>
                 </li>
@@ -357,8 +361,9 @@ export function TrainerDashboard() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-display text-lg font-semibold">Ostatnie sesje</h2>
+          <div className="mb-4">
+            <p className="eyebrow text-muted">{"/// Historia"}</p>
+            <h2 className="mt-1 font-display text-lg font-bold">Ostatnie sesje</h2>
           </div>
           {recentSessions.length === 0 ? (
             <EmptyState
@@ -399,7 +404,10 @@ export function TrainerDashboard() {
         <Card>
           <div className="mb-4 flex items-center gap-2">
             <Trophy aria-hidden className="h-4 w-4 text-pr" strokeWidth={1.75} />
-            <h2 className="font-display text-lg font-semibold">Rekordy PR</h2>
+            <div>
+              <p className="eyebrow">{"/// Personal bests"}</p>
+              <h2 className="mt-0.5 font-display text-lg font-bold">Rekordy PR</h2>
+            </div>
           </div>
           {recentPrs.length === 0 ? (
             <EmptyState
@@ -429,7 +437,7 @@ export function TrainerDashboard() {
                       <span className="mt-0.5 block break-words text-xs text-muted">{r.exerciseName}</span>
                     </span>
                   </Link>
-                  <span className="shrink-0 rounded-full bg-pr-dim px-2.5 py-0.5 font-mono text-sm font-semibold tabular-nums text-pr">
+                  <span className="shrink-0 rounded-[var(--radius-pill)] border border-pr-border bg-pr-dim px-2.5 py-0.5 font-mono text-sm font-semibold tabular-nums text-pr">
                     {r.estimated1Rm} kg
                   </span>
                 </li>

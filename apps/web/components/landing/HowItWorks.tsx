@@ -22,30 +22,24 @@ export function HowItWorks() {
   return (
     <LandingReveal
       as="section"
-      className="scroll-mt-20 border-y border-border bg-surface-sunken px-4 py-16 sm:px-6 sm:py-24"
+      className="scroll-mt-20 border-y border-border bg-surface-raised px-5 py-24 sm:px-6 sm:py-32"
     >
       <div id="jak-to-dziala" className="mx-auto max-w-6xl scroll-mt-20">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="font-mono text-xs font-medium tracking-[0.12em] text-muted uppercase">
-            03 / Start
-          </p>
-          <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
-            Trzy kroki do pierwszego treningu
-          </h2>
-        </div>
-        <ol className="mt-10 grid gap-4 md:grid-cols-3 md:gap-6">
+        <p className="eyebrow">{"/// Start"}</p>
+        <h2 className="mt-4 max-w-xl display-caps text-[clamp(2rem,4vw,3.25rem)] text-foreground">
+          Trzy kroki do pierwszego treningu
+        </h2>
+        <ol className="mt-12 grid gap-3.5 md:grid-cols-3">
           {STEPS.map((step) => (
             <li
               key={step.n}
-              className="relative rounded-xl border border-border bg-surface p-6 shadow-card"
+              className="rounded-xl border border-border bg-surface p-7 shadow-card transition-[background-color,border-color] duration-[var(--dur-med)] hover:border-border-strong hover:bg-surface-hover"
             >
-              <span className="font-mono text-sm font-semibold tabular-nums text-accent">
+              <span className="font-mono text-sm font-semibold tabular-nums text-muted">
                 {step.n}
               </span>
-              <h3 className="mt-4 font-display text-lg font-semibold text-foreground">
-                {step.title}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-foreground-secondary">{step.body}</p>
+              <h3 className="mt-4 display-caps text-lg text-foreground">{step.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{step.body}</p>
             </li>
           ))}
         </ol>

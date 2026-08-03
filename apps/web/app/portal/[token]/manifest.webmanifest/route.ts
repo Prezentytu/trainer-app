@@ -12,8 +12,8 @@ export function GET(
       start_url: `/portal/${token}`,
       scope: `/portal/${token}`,
       display: "standalone",
-      background_color: "#0B0D0E",
-      theme_color: "#0B0D0E",
+      background_color: "#0C0D0C",
+      theme_color: "#0C0D0C",
       lang: "pl",
       icons: [
         {

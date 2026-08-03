@@ -14,7 +14,7 @@ Ten plik jest punktem startowym dla każdego agenta. Zanim zaczniesz kodować, d
 | Testy API | xUnit + `WebApplicationFactory` | — | `tests/api/` |
 
 - Namespace backendu: `TrainerApp.Api`. Lokalnie (SQLite) schemat powstaje przez `EnsureCreated()`; na produkcji (Postgres) przez migracje EF z `apps/api/Migrations/`. Zmiana encji wymaga **obu**: nowej migracji i usunięcia `apps/api/trainer.db`.
-- UI jest w całości po polsku, ciemny motyw Workout Alchemist. Kolory wyłącznie przez tokeny semantyczne z `apps/web/app/globals.css` (warstwa semantyczna + `@theme inline`; akcent teal, gold tylko PR) — zobacz skill `design-system`.
+- UI jest w całości po polsku, ciemny motyw Workout Alchemist **Acid**. Kolory wyłącznie przez tokeny semantyczne z `apps/web/app/globals.css` (warstwa semantyczna + `@theme inline`; akcent lime, gold tylko PR) — zobacz skill `design-system`.
 - Monorepo, jeden git w root: deployowalne aplikacje pod `apps/`, testy pod `tests/`.
 
 ## Układ repo
