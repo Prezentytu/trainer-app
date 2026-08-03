@@ -14,7 +14,7 @@ const STEPS = [
   {
     n: "03",
     title: "Wyślij link",
-    body: "Klient trenuje w telefonie. Ty widzisz wynik.",
+    body: "Klient trenuje w telefonie. Ty widzisz każdy trening.",
   },
 ];
 

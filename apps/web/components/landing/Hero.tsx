@@ -2,10 +2,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui";
 
 const METRICS = [
-  { value: "6 min", label: "Pierwszy plan" },
-  { value: "0", label: "Aplikacji do instalacji" },
   { value: "1 link", label: "Klient zaczyna" },
-  { value: "Live", label: "Widok serii" },
+  { value: "0", label: "Aplikacji do instalacji" },
+  { value: "Live", label: "Widok każdej serii" },
+  { value: "0 zł", label: "Wczesny dostęp" },
 ];
 
 export function Hero() {
@@ -15,7 +15,7 @@ export function Hero() {
         <p className="landing-reveal eyebrow">{"/// Dla trenerów personalnych"}</p>
         <h1 className="landing-reveal landing-reveal-delay-1 mt-6 display-caps text-[clamp(3.25rem,8vw,6.75rem)] text-foreground">
           <span className="block">
-            Plany, które
+            Układasz plan
             <span className="text-accent-text">.</span>
           </span>
           <span className="block">
@@ -23,17 +23,17 @@ export function Hero() {
               className="text-transparent"
               style={{ WebkitTextStroke: "2px var(--accent-text)" }}
             >
-              Klienci
+              Widzisz
             </span>{" "}
-            robią
+            każdą serię
             <span className="text-accent-text">.</span>
           </span>
         </h1>
 
         <div className="landing-reveal landing-reveal-delay-2 mt-9 flex flex-col items-stretch justify-between gap-8 sm:flex-row sm:items-end">
           <p className="max-w-md text-[17px] leading-relaxed text-muted text-pretty">
-            Ułóż plan w kilka minut. Klient loguje każdą serię jednym tapnięciem. Ty widzisz wynik —
-            set by set.
+            Klient dostaje link — bez aplikacji i bez konta. Zapisuje wyniki w trakcie treningu, a Ty
+            widzisz jego postępy na żywo.
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <Link href="/sign-up">

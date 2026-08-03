@@ -4,8 +4,8 @@ import { Wordmark } from "@/components/Wordmark";
 
 const PROOFS = [
   {
-    title: "Plan w kilka minut",
-    body: "Układaj treningi jak w notatniku — serie, przerwy i ciężary w jednym miejscu.",
+    title: "Plany bez Excela",
+    body: "Układasz plan w przeglądarce i przypisujesz go jednemu albo wielu klientom.",
   },
   {
     title: "Klient bez aplikacji",
@@ -53,11 +53,10 @@ export function AuthScreen({
               Dla trenerów personalnych
             </p>
             <h1 className="font-display text-3xl font-bold tracking-tight text-foreground xl:text-4xl">
-              Plany, które klienci robią.
+              Układasz plan. Widzisz każdą serię.
             </h1>
             <p className="max-w-md text-sm leading-relaxed text-foreground-secondary">
-              Ułóż plan w kilka minut i wyślij klientowi link. On trenuje w telefonie, Ty widzisz
-              każdy trening.
+              Ułóż plan i wyślij klientowi link. On trenuje w telefonie, Ty widzisz każdy trening.
             </p>
           </div>
 

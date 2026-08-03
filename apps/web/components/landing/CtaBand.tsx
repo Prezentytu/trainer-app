@@ -10,13 +10,13 @@ export function CtaBand() {
             {"/// Bez karty"}
           </p>
           <h2 className="mt-4 display-caps text-[clamp(2.375rem,5.4vw,4.25rem)] text-accent-foreground">
-            Skaluj swój
+            Pierwszy plan
             <br />
-            coaching
+            zrobisz dziś
             <span className="text-accent-foreground">.</span>
           </h2>
           <p className="mt-4 text-[15px] font-medium text-accent-foreground/75">
-            Za darmo we wczesnym dostępie. Pierwszy plan zajmuje kilka minut.
+            Wczesny dostęp za darmo, bez karty.
           </p>
         </div>
         <Link

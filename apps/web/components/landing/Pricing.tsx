@@ -12,17 +12,18 @@ export function Pricing() {
             Wczesny dostęp
           </p>
           <p className="mt-4 font-mono text-4xl font-semibold tabular-nums text-foreground">
-            149 zł <span className="text-lg font-normal text-muted">/ mies.</span>
+            0 zł <span className="text-lg font-normal text-muted">/ wczesny dostęp</span>
+          </p>
+          <p className="mt-2 font-mono text-sm tabular-nums text-muted">
+            <span className="line-through">149 zł / mies.</span>
+            <span className="ml-2 text-muted-faint">po premierze</span>
           </p>
           <p className="mt-4 text-sm text-muted">
-            Wszystko w cenie — bez dopłat za AI, raporty i portal klienta.
-          </p>
-          <p className="mt-2 text-[13px] text-muted-faint">
-            U konkurencji nutrition i branding to osobne add-ony.
+            Wszystko w cenie — analityka, portal klienta, eksport danych.
           </p>
           <div className="mt-7">
-            <Link href="#cta">
-              <Button>Umów rozmowę</Button>
+            <Link href="/sign-up">
+              <Button>Zacznij za darmo</Button>
             </Link>
           </div>
         </div>

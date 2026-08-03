@@ -7,11 +7,11 @@ const FAQ = [
   },
   {
     q: "Czy działa na siłowni bez zasięgu?",
-    a: "Portal zapisuje trening lokalnie i dogrywa, gdy wróci sieć.",
+    a: "Tak. Wyniki zapisują się w telefonie i wysyłają automatycznie, gdy wróci zasięg.",
   },
   {
     q: "Ile to kosztuje?",
-    a: "Wczesny dostęp kosztuje 149 zł miesięcznie. Napisz do nas, żeby omówić wdrożenie dla swojego zespołu.",
+    a: "We wczesnym dostępie nic — zakładasz konto i korzystasz. Docelowa cena po premierze to 149 zł miesięcznie, wszystko w cenie.",
   },
   {
     q: "Czy mogę zabrać swoje dane?",

@@ -98,7 +98,7 @@ export function PanelPreview() {
           </div>
         </div>
         <p className="mt-4 text-center font-mono text-[11px] uppercase tracking-caps text-muted">
-          Widok klienta · Live set logging
+          Widok klienta · Serie na żywo
         </p>
       </div>
     </LandingReveal>

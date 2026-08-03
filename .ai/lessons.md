@@ -142,3 +142,25 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 4. `--glow-cta`, `--texture-scan`, `--glow-pr` = `none`. PR = tint + `border-pr-border`.
 5. Test kontrolny: usuń akcent — ekran nadal czytelny.
 **Dotyczy**: `globals.css`, skill `design-system`, wszystkie ekrany produktu.
+
+## Landing: jasność w 5 s, spójna cena, zero zmyślonych metryk
+
+**Kontekst**: Hero „Plany, które. / Klienci robią." rozcinał zdanie kropką; metryka „6 min / Pierwszy plan" i copy „w kilka minut" nie miały dowodu; hero/CTA mówiły „za darmo", a cennik/FAQ „149 zł".
+**Problem**: Test 5 sekund padał (nie wiadomo, co produkt robi); sprzeczny przekaz cenowy niszczył zaufanie; zmyślony czas to fake proof.
+**Zasada**:
+1. Hasło hero musi mówić *co robi produkt* w ≤12 słowach — nie rozcinaj zdania kropką dla efektu typograficznego.
+2. Przekaz cenowy identyczny w hero, cenniku, FAQ, CTA i AuthScreen (dziś: wczesny dostęp za darmo; 149 zł = kotwica po premierze).
+3. Zero wymyślonych metryk (czas „X min", liczby użytkowników). Szybkość = fakty produktowe: 1 link, 0 aplikacji, widok serii na żywo.
+4. Metadata (`layout.tsx`) i OG image muszą mieć to samo hasło co landing.
+**Dotyczy**: `apps/web/components/landing/*`, `AuthScreen.tsx`, `app/layout.tsx`, `opengraph-image.tsx`.
+
+## Copy marketingowe: język trenera, nie kalki i metafory
+
+**Kontekst**: Landing i AuthScreen dostały teksty typu „Plan jak w notatniku", „Ułóż raz, przypisuj kolejnym", „tapnięciem", „dogrywa", „plateau", „leci do studia".
+**Problem**: Metafora porównuje produkt do darmowego narzędzia; slogany-składanki bez orzeczenia brzmią sztucznie; kalki z angielskiego nie są językiem trenera.
+**Zasada**:
+1. Każde zdanie nazywa korzyść dla trenera/podopiecznego (mniej roboty przy planach, klient zaczyna bez appki, widzisz postępy, zastój wcześnie, rekordy, dane do zabrania) — nigdy mechanikę („jak w notatniku").
+2. Zakaz kalek: „tapnięcie/tapnij", „churn", „adherence", „plateau", „digest", „studio" (jako metafora panelu), „loguj" w copy domenowym.
+3. Słownictwo z rynku PT: układasz plan, przypisujesz klientom, podopieczny, postępy, koniec z Excelem — wzorce TrueCoach/Hevy Coach/Fitebo.
+4. Unikaj sloganów bez orzeczenia („Ułóż raz, przypisuj kolejnym") — mów pełnym, prostym zdaniem.
+**Dotyczy**: `apps/web/components/landing/*`, `AuthScreen.tsx`, metadata / OG.

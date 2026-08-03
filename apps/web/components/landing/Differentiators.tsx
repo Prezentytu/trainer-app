@@ -2,24 +2,24 @@ import { LandingReveal } from "./LandingReveal";
 
 const CARDS = [
   {
-    n: "01 / Formuły",
-    title: "Zbuduj raz.\nPrzypisz na zawsze.",
-    body: "Zamień najlepsze programy w formuły z obciążeniami i progresjami per klient.",
+    n: "01 / Szablony",
+    title: "Jeden plan.\nWielu klientów.",
+    body: "Plan zapisujesz jako szablon i przypisujesz kolejnym podopiecznym. Ciężary i progresję ustawiasz osobno dla każdego.",
   },
   {
-    n: "02 / Live tracking",
-    title: "Otwórz. Podnieś.\nTapnij. Gotowe.",
-    body: "Dokładne ciężary, powtórzenia i przerwy — timer startuje sam. Każda seria leci do studia na żywo.",
+    n: "02 / Trening na żywo",
+    title: "Klient wie,\nco ma zrobić.",
+    body: "Dokładne ciężary, powtórzenia i przerwy — timer odlicza sam. Każdy zapisany wynik widzisz od razu.",
   },
   {
     n: "03 / Analityka",
     title: "Zauważ zastój\njako pierwszy.",
-    body: "Objętość, est. 1RM i adherence per klient, ćwiczenie i tydzień. Trend wykrywa plateau wcześnie.",
+    body: "Objętość, szacowane 1RM i regularność — dla każdego klienta, ćwiczenia i tygodnia. Zastój widzisz, zanim klient go poczuje.",
   },
   {
-    n: "04 / Personal bests",
-    title: "Złoto, gdy\nzostało zdobyte.",
-    body: "PR wykrywane automatycznie — w momencie dla klienta, w digescie dla Ciebie.",
+    n: "04 / Rekordy",
+    title: "Rekordy życiowe.\nAutomatycznie.",
+    body: "Klient widzi nowy rekord od razu po serii. Ty masz wszystkie rekordy w panelu.",
     pr: true,
   },
 ];

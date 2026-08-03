@@ -47,10 +47,10 @@ export default function OpenGraphImage() {
               letterSpacing: "-0.03em",
             }}
           >
-            Plany, które klienci robią<span style={{ color: "#C6F135" }}>.</span>
+            Układasz plan. Widzisz każdą serię<span style={{ color: "#C6F135" }}>.</span>
           </div>
           <div style={{ fontSize: 24, color: "#8A9280", maxWidth: 720, lineHeight: 1.4 }}>
-            Ułóż plan, wyślij link, widzisz każdy trening.
+            Ułóż plan, wyślij link — klient trenuje w telefonie.
           </div>
         </div>
 
