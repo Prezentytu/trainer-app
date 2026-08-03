@@ -11,7 +11,7 @@ const FAQ = [
   },
   {
     q: "Ile to kosztuje?",
-    a: "We wczesnym dostępie — za darmo, bez karty. Gdy pojawi się cennik, będzie prosty i przewidywalny.",
+    a: "Wczesny dostęp kosztuje 149 zł miesięcznie. Napisz do nas, żeby omówić wdrożenie dla swojego zespołu.",
   },
   {
     q: "Czy mogę zabrać swoje dane?",

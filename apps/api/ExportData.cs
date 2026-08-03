@@ -79,4 +79,43 @@ public static class ExportData
             sessions,
         };
     }
+
+    public static async Task<string> BuildCsvAsync(AppDb db, int trainerId)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("section,id,name,email,extra");
+
+        var clients = await db.Clients
+            .Where(c => c.TrainerId == trainerId)
+            .OrderBy(c => c.Name)
+            .Select(c => new { c.Id, c.Name, c.Email, c.Note })
+            .ToListAsync();
+        foreach (var c in clients)
+            sb.AppendLine($"client,{c.Id},{Csv(c.Name)},{Csv(c.Email)},{Csv(c.Note)}");
+
+        var plans = await db.Plans
+            .Where(p => p.TrainerId == trainerId)
+            .OrderBy(p => p.Name)
+            .Select(p => new { p.Id, p.Name, p.IsTemplate, DayCount = p.Days.Count })
+            .ToListAsync();
+        foreach (var p in plans)
+            sb.AppendLine($"plan,{p.Id},{Csv(p.Name)},,{Csv(p.IsTemplate ? "template" : "client_plan")} days={p.DayCount}");
+
+        var sessions = await db.WorkoutSessions
+            .Where(s => s.Client!.TrainerId == trainerId && s.Status == "completed")
+            .OrderByDescending(s => s.PerformedOn)
+            .Select(s => new { s.Id, ClientName = s.Client!.Name, s.PerformedOn, PlanName = s.Plan != null ? s.Plan.Name : null })
+            .ToListAsync();
+        foreach (var s in sessions)
+            sb.AppendLine($"session,{s.Id},{Csv(s.ClientName)},{s.PerformedOn:yyyy-MM-dd},{Csv(s.PlanName)}");
+
+        return sb.ToString();
+    }
+
+    static string Csv(string? value)
+    {
+        if (string.IsNullOrEmpty(value)) return "";
+        var escaped = value.Replace("\"", "\"\"");
+        return $"\"{escaped}\"";
+    }
 }

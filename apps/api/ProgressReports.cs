@@ -30,7 +30,7 @@ public static class ProgressReports
         else if (sessions30.Count > 0)
             facts.Add(new { kind = "compliance", text = $"{sessions30.Count} trening{(sessions30.Count == 1 ? "" : sessions30.Count < 5 ? "i" : "ów")} w ostatnich 30 dniach" });
         else
-            facts.Add(new { kind = "compliance", text = "Brak ukończonych treningów w ostatnich 30 dniach — czas wrócić!" });
+            facts.Add(new { kind = "compliance", text = "Brak ukończonych treningów w ostatnich 30 dniach" });
 
         if (prs > 0)
             facts.Add(new { kind = "pr", text = $"{prs} now{(prs == 1 ? "y" : "e")} PR w ostatnich 30 dniach" });

@@ -522,6 +522,8 @@ export type LoggedSet = {
 export type LoggedExercise = {
   id: number;
   exerciseId: number;
+  substitutedFromExerciseId?: number | null;
+  substitutedFromName?: string | null;
   exerciseName: string;
   exerciseType: ExerciseType;
   category: string | null;
@@ -561,6 +563,11 @@ export type SessionSummary = {
   energyScore: number | null;
   status: string;
   createdAt: string;
+  trainerComment?: string | null;
+  trainerCommentAt?: string | null;
+  clientReply?: string | null;
+  clientReplyAt?: string | null;
+  hasUnreadClientReply?: boolean;
   totalSets: number;
   totalVolumeKg: number;
   exerciseCount: number;
@@ -641,9 +648,10 @@ export type PortalHome = {
 export type AttentionItem = {
   clientId: number;
   clientName: string;
-  reason: "no_plan" | "never_trained" | "silent" | string;
+  reason: "no_plan" | "never_trained" | "silent" | "low_wellness" | "no_checkin" | "low_compliance" | string;
   message: string;
   daysSilent: number | null;
+  compliancePct?: number | null;
   portalToken: string | null;
   action: "assign_plan" | "copy_portal_link" | string;
 };
@@ -679,6 +687,15 @@ export type ProgressReport = {
   sessionsLast30Days: number;
   newPrsLast30Days: number;
   facts: { kind: string; text: string; exerciseId?: number; deltaKg?: number }[];
+};
+
+export type ClientCheckIn = {
+  id: number;
+  date: string;
+  moodScore: number | null;
+  sleepScore: number | null;
+  note: string | null;
+  createdAt: string;
 };
 
 export type TrainerMe = {
@@ -737,6 +754,28 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json();
 }
 
+async function requestText(path: string, init?: RequestInit): Promise<string> {
+  const headers: Record<string, string> = {
+    ...(init?.headers as Record<string, string> | undefined),
+  };
+  if (authTokenGetter && !path.startsWith("/api/portal/")) {
+    const token = await authTokenGetter();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API}${path}`, { ...init, headers });
+  if (!res.ok) {
+    let message = `Błąd ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body?.message) message = body.message;
+    } catch {
+      // brak body
+    }
+    throw new Error(message);
+  }
+  return res.text();
+}
+
 export type LoggedSetInput = {
   id?: number | null;
   setNumber: number;
@@ -753,6 +792,7 @@ export type LoggedSetInput = {
 export type LoggedExerciseInput = {
   id?: number | null;
   exerciseId: number;
+  substitutedFromExerciseId?: number | null;
   order: number;
   note: string | null;
   sets: LoggedSetInput[];
@@ -775,6 +815,7 @@ export const api = {
   dashboard: () => request<DashboardData>("/api/dashboard"),
   me: () => request<TrainerMe>("/api/me"),
   export: () => request<unknown>("/api/export"),
+  exportCsv: () => requestText("/api/export/csv"),
   clients: {
     list: () => request<ClientSummary[]>("/api/clients"),
     get: (id: number) => request<ClientDetails>(`/api/clients/${id}`),
@@ -811,6 +852,17 @@ export const api = {
         body: JSON.stringify(input),
       }),
     removeMeasurement: (id: number) => request(`/api/measurements/${id}`, { method: "DELETE" }),
+    sendPortalLink: (clientId: number, message?: string) =>
+      request(`/api/clients/${clientId}/send-portal-link`, {
+        method: "POST",
+        body: JSON.stringify({ message }),
+      }),
+    sendReminder: (clientId: number, message?: string) =>
+      request(`/api/clients/${clientId}/send-reminder`, {
+        method: "POST",
+        body: JSON.stringify({ message }),
+      }),
+    checkIns: (clientId: number) => request<ClientCheckIn[]>(`/api/clients/${clientId}/check-ins`),
     sessions: (clientId: number) => request<SessionSummary[]>(`/api/clients/${clientId}/sessions`),
     records: (clientId: number) => request<ClientRecord[]>(`/api/clients/${clientId}/records`),
     progress: (clientId: number) => request<ClientProgress>(`/api/clients/${clientId}/progress`),
@@ -905,14 +957,35 @@ export const api = {
         method: "PATCH",
         body: JSON.stringify(input),
       }),
+    comment: (id: number, comment: string) =>
+      request<SessionDetail>(`/api/sessions/${id}/comment`, {
+        method: "POST",
+        body: JSON.stringify({ comment }),
+      }),
+    markReplyRead: (id: number) =>
+      request<SessionDetail>(`/api/sessions/${id}/comment/read`, { method: "POST" }),
     remove: (id: number) => request(`/api/sessions/${id}`, { method: "DELETE" }),
   },
   portal: {
+    recover: (email: string) =>
+      request<{ message: string }>("/api/portal/recover", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      }),
     home: (token: string) => request<PortalHome>(`/api/portal/${token}`),
     sessions: (token: string) => request<PortalSessionSummary[]>(`/api/portal/${token}/sessions`),
     records: (token: string) => request<ClientRecord[]>(`/api/portal/${token}/records`),
     progressReport: (token: string) =>
       request<ProgressReport>(`/api/portal/${token}/progress-report`),
+    checkIns: (token: string) => request<ClientCheckIn[]>(`/api/portal/${token}/check-ins`),
+    createCheckIn: (
+      token: string,
+      input: { moodScore: number | null; sleepScore: number | null; note?: string | null; date?: string },
+    ) =>
+      request<ClientCheckIn>(`/api/portal/${token}/check-ins`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
     getSession: (token: string, id: number) =>
       request<SessionDetail>(`/api/portal/${token}/sessions/${id}`),
     startSession: (
@@ -943,6 +1016,21 @@ export const api = {
     completeSession: (token: string, id: number) =>
       request<SessionDetail>(`/api/portal/${token}/sessions/${id}/complete`, {
         method: "PATCH",
+      }),
+    replySession: (token: string, id: number, comment: string) =>
+      request<SessionDetail>(`/api/portal/${token}/sessions/${id}/comment`, {
+        method: "POST",
+        body: JSON.stringify({ comment }),
+      }),
+    subscribePush: (token: string, input: { endpoint: string; p256dh: string; auth: string }) =>
+      request<{ subscribed: boolean }>(`/api/portal/${token}/push-subscription`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    unsubscribePush: (token: string, input: { endpoint: string; p256dh: string; auth: string }) =>
+      request(`/api/portal/${token}/push-subscription/unsubscribe`, {
+        method: "POST",
+        body: JSON.stringify(input),
       }),
     checkinSession: (token: string, id: number, input: SessionCheckinInput) =>
       request<SessionDetail>(`/api/portal/${token}/sessions/${id}/checkin`, {

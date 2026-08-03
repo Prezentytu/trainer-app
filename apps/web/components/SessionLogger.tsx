@@ -7,6 +7,7 @@ import {
   LoggedExerciseInput,
   LoggedSet,
   PrevLoggedSet,
+  ProgressReport,
   SessionCheckinInput,
   SessionDetail,
   WorkoutSessionInput,
@@ -16,6 +17,7 @@ import { YoutubeLite } from "@/components/YoutubeLite";
 import {
   Badge,
   Button,
+  Card,
   EmptyState,
   ErrorBanner,
   formatRest,
@@ -114,6 +116,7 @@ function toInput(session: LocalSession): WorkoutSessionInput {
       (e): LoggedExerciseInput => ({
         id: e.id > 0 ? e.id : null,
         exerciseId: e.exerciseId,
+        substitutedFromExerciseId: e.substitutedFromExerciseId ?? null,
         order: e.order,
         note: e.note,
         sets: e.sets.map((s) => ({
@@ -274,6 +277,9 @@ export function SessionLogger({
   const [activeCell, setActiveCell] = useState<ActiveCell | null>(null);
   const [platesOpen, setPlatesOpen] = useState(false);
   const [sessionNote, setSessionNote] = useState("");
+  const [progressReport, setProgressReport] = useState<ProgressReport | null>(null);
+  const [trainerComment, setTrainerComment] = useState("");
+  const [clientReply, setClientReply] = useState("");
   const { showUndoToast, toastNode } = useUndoToast();
 
   const draftRef = useRef(draft);
@@ -296,6 +302,11 @@ export function SessionLogger({
       if (prFlashTimer.current) clearTimeout(prFlashTimer.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (!summary || !portalToken) return;
+    api.portal.progressReport(portalToken).then(setProgressReport).catch(() => setProgressReport(null));
+  }, [portalToken, summary]);
 
   const flashPr = useCallback((label: string) => {
     if (prFlashTimer.current) clearTimeout(prFlashTimer.current);
@@ -357,6 +368,9 @@ export function SessionLogger({
           setSleepScore(updated.sleepScore);
           setEnergyScore(updated.energyScore);
           setSessionNote(updated.note ?? "");
+          if (portalToken && typeof window !== "undefined") {
+            localStorage.setItem(`wa-completed-session-${portalToken}`, "1");
+          }
         }
         return merged;
       } catch (e) {
@@ -696,6 +710,7 @@ export function SessionLogger({
         i === exIdx
           ? {
               ...ex,
+              substitutedFromExerciseId: ex.substitutedFromExerciseId ?? ex.exerciseId,
               exerciseId: picked.id,
               exerciseName: picked.name,
               exerciseType: picked.type,
@@ -707,6 +722,38 @@ export function SessionLogger({
     }));
     setSwapExIdx(null);
     setSwapSearch("");
+  };
+
+  const saveTrainerComment = async () => {
+    if (!summary || !trainerComment.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await api.sessions.comment(summary.id, trainerComment.trim());
+      setSummary(updated);
+      setTrainerComment("");
+      onUpdated(updated);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const sendClientReply = async () => {
+    if (!summary || !portalToken || !clientReply.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await api.portal.replySession(portalToken, summary.id, clientReply.trim());
+      setSummary(updated);
+      setClientReply("");
+      onUpdated(updated);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const filteredSwapExercises = libraryExercises.filter((ex) =>
@@ -739,6 +786,7 @@ export function SessionLogger({
   };
 
   if (summary) {
+    const celebrationFacts = progressReport?.facts.slice(0, 5) ?? [];
     const doneTotal = summary.exercises.reduce(
       (acc, ex) => {
         const done = ex.sets.filter((s) => s.completed).length;
@@ -785,6 +833,22 @@ export function SessionLogger({
           />
         </div>
 
+        {portalToken && celebrationFacts.length > 0 ? (
+          <Card title="Twój progres">
+            <p className="mb-3 text-sm text-muted">Każdy zapis przybliża Cię do celu.</p>
+            <ul className="space-y-2">
+              {celebrationFacts.map((fact, index) => (
+                <li
+                  key={`${fact.kind}-${index}`}
+                  className={`text-sm ${fact.kind === "pr" ? "font-medium text-pr" : "text-foreground-secondary"}`}
+                >
+                  {fact.text}
+                </li>
+              ))}
+            </ul>
+          </Card>
+        ) : null}
+
         <div className="rounded-2xl border border-border bg-surface px-4 py-1 shadow-card">
           {summary.exercises.map((ex) => {
             const done = ex.sets.filter((s) => s.completed).length;
@@ -798,8 +862,13 @@ export function SessionLogger({
                 key={ex.id}
                 className="flex min-h-12 items-center gap-2.5 border-b border-border last:border-0"
               >
-                <div className="min-w-0 flex-1 truncate text-[15px] font-semibold text-foreground-secondary">
+                <div className="min-w-0 flex-1 text-[15px] font-semibold text-foreground-secondary">
                   {ex.exerciseName}
+                  {ex.substitutedFromName ? (
+                    <p className="mt-0.5 text-xs font-normal text-muted">
+                      zamieniono z {ex.substitutedFromName}
+                    </p>
+                  ) : null}
                 </div>
                 {hasPr ? <Badge tone="pr">PR</Badge> : null}
                 <div
@@ -814,6 +883,48 @@ export function SessionLogger({
             );
           })}
         </div>
+
+        {summary.trainerComment ? (
+          <Card title="Komentarz trenera">
+            <p className="whitespace-pre-wrap text-sm text-foreground-secondary">{summary.trainerComment}</p>
+          </Card>
+        ) : null}
+        {summary.clientReply ? (
+          <Card title="Odpowiedź klienta">
+            <p className="whitespace-pre-wrap text-sm text-foreground-secondary">{summary.clientReply}</p>
+          </Card>
+        ) : null}
+        {!portalToken ? (
+          <Card title="Komentarz dla klienta" meta="Klient zobaczy go przy podsumowaniu treningu.">
+            <textarea
+              className={`${inputClass} min-h-[88px] resize-none py-3`}
+              value={trainerComment}
+              onChange={(e) => setTrainerComment(e.target.value)}
+              placeholder="Krótka wskazówka do kolejnego treningu…"
+              rows={3}
+            />
+            <div className="mt-3">
+              <Button disabled={saving || !trainerComment.trim()} onClick={() => void saveTrainerComment()}>
+                Dodaj komentarz
+              </Button>
+            </div>
+          </Card>
+        ) : summary.trainerComment ? (
+          <Card title="Odpowiedz trenerowi">
+            <textarea
+              className={`${inputClass} min-h-[88px] resize-none py-3`}
+              value={clientReply}
+              onChange={(e) => setClientReply(e.target.value)}
+              placeholder="Napisz, jak poszedł trening…"
+              rows={3}
+            />
+            <div className="mt-3">
+              <Button disabled={saving || !clientReply.trim()} onClick={() => void sendClientReply()}>
+                Odpowiedz trenerowi
+              </Button>
+            </div>
+          </Card>
+        ) : null}
 
         <div className="space-y-3">
           <ScorePicker label="Samopoczucie" value={feelingScore} onChange={setFeelingScore} />
@@ -972,6 +1083,11 @@ export function SessionLogger({
               </button>
               <h2 className="min-w-0 flex-1 font-display text-lg font-semibold leading-snug">
                 {exercise.exerciseName}
+                {exercise.substitutedFromName ? (
+                  <span className="mt-0.5 block font-sans text-xs font-normal text-muted">
+                    zamieniono z {exercise.substitutedFromName}
+                  </span>
+                ) : null}
               </h2>
               {exercise.targetRir != null ? (
                 <span className="shrink-0 rounded-full border border-border bg-surface-raised px-2.5 py-0.5 font-mono text-[13px] tabular-nums text-muted">

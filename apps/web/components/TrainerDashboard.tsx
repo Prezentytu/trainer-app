@@ -23,6 +23,8 @@ import {
   ErrorBanner,
   IconButton,
   PageHeader,
+  Dialog,
+  ProgressRing,
   StatBlock,
 } from "@/components/ui";
 import { DashboardSkeleton } from "@/components/skeletons";
@@ -40,6 +42,8 @@ export function TrainerDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [reminder, setReminder] = useState<AttentionItem | null>(null);
+  const [sendingReminder, setSendingReminder] = useState(false);
 
   useEffect(() => {
     api
@@ -51,7 +55,15 @@ export function TrainerDashboard() {
 
   const recentSessions = dash?.recentSessions ?? [];
   const recentPrs = dash?.recentPrs ?? [];
-  const showOnboarding = !loading && (dash?.clientActivity.length ?? 0) === 0;
+  const portalLinkSent = typeof window !== "undefined" && localStorage.getItem("wa-portal-link-sent") === "1";
+  const onboardingSteps = [
+    (dash?.clients ?? 0) > 0,
+    (dash?.clientActivity.some((client) => client.activePlans > 0) ?? false),
+    portalLinkSent,
+  ];
+  const onboardingDone = onboardingSteps.filter(Boolean).length;
+  const onboardingPct = Math.round((onboardingDone / onboardingSteps.length) * 100);
+  const showOnboarding = !loading && onboardingDone < onboardingSteps.length;
 
   const rows = useMemo(() => {
     const activity = dash?.clientActivity ?? [];
@@ -87,10 +99,39 @@ export function TrainerDashboard() {
     const url = `${window.location.origin}/portal/${portalToken}`;
     try {
       await navigator.clipboard.writeText(url);
+      localStorage.setItem("wa-portal-link-sent", "1");
       setCopiedId(clientId);
       setTimeout(() => setCopiedId(null), 2000);
     } catch {
       setError("Nie udało się skopiować linku.");
+    }
+  };
+
+  const downloadCsv = async () => {
+    try {
+      const csv = await api.exportCsv();
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `workout-alchemist-export-${new Date().toISOString().slice(0, 10)}.csv`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
+
+  const sendReminder = async () => {
+    if (!reminder) return;
+    setSendingReminder(true);
+    try {
+      await api.clients.sendReminder(reminder.clientId);
+      setReminder(null);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setSendingReminder(false);
     }
   };
 
@@ -121,6 +162,9 @@ export function TrainerDashboard() {
             >
               <Download aria-hidden className="h-4 w-4" strokeWidth={1.75} />
             </IconButton>
+            <Button variant="secondary" size="sm" onClick={() => void downloadCsv()}>
+              CSV
+            </Button>
             <Link href="/plans/new">
               <Button>+ Nowy szablon</Button>
             </Link>
@@ -131,6 +175,13 @@ export function TrainerDashboard() {
 
       {showOnboarding && (
         <Card className="mb-6" title="Pierwsze 15 minut">
+          <div className="mb-4 flex items-center gap-3">
+            <ProgressRing value={onboardingPct / 100} size={48} label={`${onboardingPct}%`} />
+            <p className="text-sm text-muted-strong">
+              Konto założone · {onboardingPct}%<br />
+              {onboardingDone}/3 kroków wykonanych
+            </p>
+          </div>
           <ol className="space-y-3 text-sm text-foreground-secondary">
             <li className="flex items-start gap-3">
               <span className="font-mono text-accent">1.</span>
@@ -184,6 +235,44 @@ export function TrainerDashboard() {
         </div>
       )}
 
+      {needsAttention.length > 0 ? (
+        <Card className="mb-6 border-accent-border" title="Wymagają uwagi">
+          <ul className="divide-y divide-border">
+            {needsAttention.map(({ client, status }) => (
+              <li key={client.clientId} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <Link href={`/clients/${client.clientId}`} className="flex min-w-0 items-center gap-2.5">
+                  <Avatar name={client.clientName} size="sm" />
+                  <span className="min-w-0">
+                    <span className="block break-words text-sm font-medium">{client.clientName}</span>
+                    <span className="block text-xs text-muted">{status.label}</span>
+                  </span>
+                </Link>
+                <div className="flex flex-wrap items-center gap-2">
+                  {status.attention?.compliancePct != null ? (
+                    <span className="font-mono text-xs tabular-nums text-muted-strong">
+                      zgodność {status.attention.compliancePct}%
+                    </span>
+                  ) : null}
+                  <Link href={`/clients/${client.clientId}`} className="text-sm font-medium text-accent hover:text-accent-strong">
+                    Otwórz klienta
+                  </Link>
+                  {status.action === "copy_portal_link" && status.portalToken ? (
+                    <>
+                      <Button size="sm" variant="secondary" onClick={() => void copyPortalLink(client.clientId, status.portalToken)}>
+                        Skopiuj link
+                      </Button>
+                      <Button size="sm" onClick={() => setReminder(status.attention ?? null)}>
+                        Wyślij przypomnienie
+                      </Button>
+                    </>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
       {!showOnboarding && (
         <Card className={`mb-6 ${needsAttention.length > 0 ? "border-accent-border" : ""}`}>
           <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
@@ -236,6 +325,11 @@ export function TrainerDashboard() {
                       <span className="text-muted"> · </span>
                       {formatRelativeDate(client.lastSessionOn)}
                     </span>
+                    {status.attention?.compliancePct != null ? (
+                      <span className="font-mono text-xs tabular-nums text-muted">
+                        zgodność {status.attention.compliancePct}%
+                      </span>
+                    ) : null}
                     {status.kind === "no_plan" ? (
                       <Link
                         href={`/clients/${client.clientId}`}
@@ -344,6 +438,14 @@ export function TrainerDashboard() {
           )}
         </Card>
       </div>
+      <Dialog
+        open={Boolean(reminder)}
+        title="Wyślij przypomnienie"
+        description={reminder ? `Do ${reminder.clientName}: „Przypomnienie od trenera — Twój trening czeka.”` : undefined}
+        confirmLabel={sendingReminder ? "Wysyłanie…" : "Wyślij przypomnienie"}
+        onConfirm={() => void sendReminder()}
+        onCancel={() => setReminder(null)}
+      />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api, ClientRecord, PortalSessionSummary } from "@/lib/api";
 import { ErrorBanner } from "@/components/ui";
+import { PortalPageSkeleton } from "@/components/skeletons";
 import { WeeklyActivityBar } from "@/components/WeeklyActivityBar";
 
 function startOfWeekMonday(d: Date): Date {
@@ -109,7 +110,7 @@ export default function PortalProgressPage() {
       <ErrorBanner message={error} />
 
       {!sessions || !records ? (
-        <p className="text-sm text-muted">Ładowanie…</p>
+        <PortalPageSkeleton label="Wczytuję progres…" />
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3">

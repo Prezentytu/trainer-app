@@ -20,6 +20,7 @@ public static class Sessions
             ExerciseId = e.ExerciseId,
             Order = e.Order,
             Note = e.Note,
+            SubstitutedFromExerciseId = e.SubstitutedFromExerciseId,
             Sets = (e.Sets ?? []).Select(MapNewSet).ToList(),
         }).ToList(),
     };
@@ -180,6 +181,7 @@ public static class Sessions
             logged.ExerciseId = eInput.ExerciseId;
             logged.Order = eInput.Order;
             logged.Note = eInput.Note;
+            logged.SubstitutedFromExerciseId = eInput.SubstitutedFromExerciseId;
 
             var existingSets = logged.Sets.ToDictionary(s => s.Id);
             var keepSetIds = new HashSet<int>();
@@ -250,6 +252,7 @@ public static class Sessions
             .Include(s => s.Plan)
             .Include(s => s.PlanDay)
             .Include(s => s.Exercises).ThenInclude(e => e.Exercise)
+            .Include(s => s.Exercises).ThenInclude(e => e.SubstitutedFromExercise)
             .Include(s => s.Exercises).ThenInclude(e => e.Sets)
             .FirstOrDefaultAsync(s => s.Id == id);
         if (session is null) return null;

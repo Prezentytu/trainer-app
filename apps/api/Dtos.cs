@@ -130,7 +130,24 @@ public record LoggedExerciseInput(
     int ExerciseId = 0,
     int Order = 0,
     string? Note = null,
+    int? SubstitutedFromExerciseId = null,
     List<LoggedSetInput>? Sets = null);
+
+public record ClientCheckInInput(
+    int? MoodScore = null,
+    int? SleepScore = null,
+    string? Note = null,
+    DateOnly? Date = null);
+
+public record SessionCommentInput(string Comment);
+
+public record SendPortalLinkInput(string? Message = null);
+
+public record RecoverPortalLinkInput(string Email);
+
+public record SendReminderInput(string? Message = null);
+
+public record PushSubscriptionInput(string Endpoint, string P256dh, string Auth);
 
 public record WorkoutSessionInput(
     int ClientId,

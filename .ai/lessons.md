@@ -110,6 +110,13 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 3. Każdy debounce zapisu wymaga flusha na `visibilitychange`/`pagehide` (`keepalive`) + lokalnego draftu w `localStorage`.
 **Dotyczy**: `apps/web/components/SessionLogger.tsx`, `components/session/*`, `lib/sessionDraft.ts`, `lib/sessionQueue.ts`.
 
+## Minimal API: DELETE z body psuje cały routing (500 na każdym requeście)
+
+**Kontekst**: Endpoint `MapDelete("/api/portal/.../push-subscription", (token, PushSubscriptionInput input, …))` — body JSON przy unsubscribe.
+**Problem**: .NET Minimal API nie inferuje body dla DELETE. Host pada przy budowaniu endpointów z `Body was inferred but the method does not allow inferred body parameters` — **każdy** request (nawet GET /portal) zwraca 500.
+**Zasada**: Do anulowania subskrypcji używaj `MapPost(…/unsubscribe)` albo query string. Parametry body muszą być nie-nullable (`SendPortalLinkInput`, nie `SendPortalLinkInput?`). Po dodaniu endpointu z body odpal `dotnet test` — jeden zły handler zabija całą aplikację.
+**Dotyczy**: `apps/api/Program.cs`, kontrakty portal/push/e-mail.
+
 ## Npgsql nie parsuje URI PostgreSQL — normalizuj przez `DbConnectionString`
 
 **Kontekst**: Neon podaje connection string jako URI (`postgresql://user:pass@host/db?sslmode=require`). Trafiał on wprost do `UseNpgsql` i do `efbundle --connection` w `deploy-api.yml`.

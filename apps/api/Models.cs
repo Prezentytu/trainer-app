@@ -25,7 +25,33 @@ public class Client
     public List<ClientMeasurement> Measurements { get; set; } = [];
     public List<WorkoutSession> Sessions { get; set; } = [];
     public List<ClientAccessToken> AccessTokens { get; set; } = [];
+    public List<ClientCheckIn> CheckIns { get; set; } = [];
     public ClientIntake? Intake { get; set; }
+}
+
+/// <summary>Lekki check-in między sesjami (samopoczucie / sen / notatka).</summary>
+public class ClientCheckIn
+{
+    public int Id { get; set; }
+    public int ClientId { get; set; }
+    public Client? Client { get; set; }
+    public DateOnly Date { get; set; }
+    public int? MoodScore { get; set; }
+    public int? SleepScore { get; set; }
+    public string? Note { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>Subskrypcja Web Push klienta (PWA, opt-in).</summary>
+public class ClientPushSubscription
+{
+    public int Id { get; set; }
+    public int ClientId { get; set; }
+    public Client? Client { get; set; }
+    public string Endpoint { get; set; } = "";
+    public string P256dh { get; set; } = "";
+    public string Auth { get; set; } = "";
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
 /// <summary>Wywiad wstępny klienta (1:0..1). Wszystkie pola opcjonalne — częściowe wypełnianie.</summary>
@@ -261,6 +287,14 @@ public class WorkoutSession
     public int? FeelingScore { get; set; }
     public int? SleepScore { get; set; }
     public int? EnergyScore { get; set; }
+    /// <summary>Komentarz trenera do ukończonej sesji.</summary>
+    public string? TrainerComment { get; set; }
+    public DateTime? TrainerCommentAt { get; set; }
+    /// <summary>Odpowiedź klienta na komentarz trenera.</summary>
+    public string? ClientReply { get; set; }
+    public DateTime? ClientReplyAt { get; set; }
+    /// <summary>Kiedy trener przeczytał odpowiedź klienta (null = nieprzeczytane).</summary>
+    public DateTime? ClientReplyReadAt { get; set; }
     // "in_progress" | "completed"
     public string Status { get; set; } = "in_progress";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -275,6 +309,9 @@ public class LoggedExercise
     public WorkoutSession? Session { get; set; }
     public int ExerciseId { get; set; }
     public Exercise? Exercise { get; set; }
+    /// <summary>Oryginalne ćwiczenie z planu, gdy klient/trener zamienił w sesji.</summary>
+    public int? SubstitutedFromExerciseId { get; set; }
+    public Exercise? SubstitutedFromExercise { get; set; }
     public int Order { get; set; }
     public string? Note { get; set; }
     public List<LoggedSet> Sets { get; set; } = [];

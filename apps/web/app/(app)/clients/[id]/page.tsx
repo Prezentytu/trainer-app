@@ -387,6 +387,15 @@ export default function ClientDetailsPage() {
     }
   };
 
+  const sendPortalLink = async () => {
+    try {
+      await api.clients.sendPortalLink(clientId);
+      showUndoToast("Wysłano link portalu e-mailem");
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
   const handleSaveIntake = async (input: ClientIntakeInput) => {
     setError(null);
     try {
@@ -465,10 +474,15 @@ export default function ClientDetailsPage() {
             </p>
           </div>
         </div>
-        <div className="shrink-0">
+        <div className="flex shrink-0 flex-wrap gap-2">
           <Button variant="ghost" onClick={() => void copyPortalLink()}>
             Skopiuj link dla klienta
           </Button>
+          {client.email ? (
+            <Button variant="secondary" onClick={() => void sendPortalLink()}>
+              Wyślij e-mailem
+            </Button>
+          ) : null}
         </div>
       </div>
 

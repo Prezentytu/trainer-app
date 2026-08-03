@@ -82,6 +82,18 @@ Zapisz URL z Overview, np.:
 
 `https://trainer-app-api.azurewebsites.net`
 
+### B1b. Always On + Health check (cold start)
+
+Na planie **Basic B1+** włącz **Always On**, żeby App Service nie usypiał procesu po bezczynności (klient na siłowni nie czeka 15–30 s na pierwszy request).
+
+1. Web App → **Settings** → **Configuration** → **General settings**
+2. **Always On** → **On** → Save
+3. Web App → **Monitoring** → **Health check** → ścieżka `/api/health` → Enable
+
+Endpoint `/api/health` pinga też bazę (Neon). Jeśli Neon ma autosuspend na free tierze, keep-alive z GitHub Actions (`.github/workflows/keepalive.yml`, co 5 min) budzi API + DB. Preferuj Always On + wyłączony autosuspend Neona na prod; cron to siatka bezpieczeństwa.
+
+Sekrety keep-alive: `API_HEALTH_URL` (dev) i `API_HEALTH_URL_PROD` (prod) — te same co health check po deployu.
+
 ### B2. Ustawienia aplikacji (env) — WAŻNE, zrób przed deployem
 
 1. W Web App w lewym menu: **Settings** → **Environment variables**  
@@ -96,6 +108,9 @@ Zapisz URL z Overview, np.:
 | `ALLOWED_ORIGINS` | `http://localhost:3000` | na razie tylko lokal; **dopiszesz Vercel w kroku E** |
 | `ASPNETCORE_ENVIRONMENT` | `Production` | wpisz ręcznie |
 | `WEBSITES_PORT` | `8080` | wpisz ręcznie (Docker słucha na 8080) |
+| `WEB_ORIGIN` | `https://twoja-app.vercel.app` | origin frontu (linki w e-mailach) |
+| `Email__ResendApiKey` | `re_…` | klucz [Resend](https://resend.com) — opcjonalnie; bez niego wysyłka linków zwraca komunikat |
+| `Email__From` | `Workout Alchemist <hello@twojadomena.pl>` | nadawca Resend (zweryfikowana domena) |
 
 3. Kliknij **Apply** → **Confirm** (restart).
 

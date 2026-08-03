@@ -3,6 +3,7 @@ import { Hero } from "./Hero";
 import { PanelPreview } from "./PanelPreview";
 import { Differentiators } from "./Differentiators";
 import { HowItWorks } from "./HowItWorks";
+import { Pricing } from "./Pricing";
 import { Faq } from "./Faq";
 import { CtaBand } from "./CtaBand";
 import { LandingFooter } from "./LandingFooter";
@@ -16,6 +17,7 @@ export function LandingPage() {
         <PanelPreview />
         <Differentiators />
         <HowItWorks />
+        <Pricing />
         <Faq />
         <CtaBand />
       </main>

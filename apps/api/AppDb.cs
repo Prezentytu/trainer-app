@@ -19,6 +19,8 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
     public DbSet<ClientMeasurement> ClientMeasurements => Set<ClientMeasurement>();
     public DbSet<ClientAccessToken> ClientAccessTokens => Set<ClientAccessToken>();
     public DbSet<ClientIntake> ClientIntakes => Set<ClientIntake>();
+    public DbSet<ClientCheckIn> ClientCheckIns => Set<ClientCheckIn>();
+    public DbSet<ClientPushSubscription> ClientPushSubscriptions => Set<ClientPushSubscription>();
     public DbSet<WorkoutSession> WorkoutSessions => Set<WorkoutSession>();
     public DbSet<LoggedExercise> LoggedExercises => Set<LoggedExercise>();
     public DbSet<LoggedSet> LoggedSets => Set<LoggedSet>();
@@ -176,6 +178,31 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
             .WithMany()
             .HasForeignKey(e => e.ExerciseId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<LoggedExercise>()
+            .HasOne(e => e.SubstitutedFromExercise)
+            .WithMany()
+            .HasForeignKey(e => e.SubstitutedFromExerciseId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<ClientCheckIn>()
+            .HasOne(c => c.Client)
+            .WithMany(c => c.CheckIns)
+            .HasForeignKey(c => c.ClientId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ClientCheckIn>()
+            .HasIndex(c => new { c.ClientId, c.Date });
+
+        modelBuilder.Entity<ClientPushSubscription>()
+            .HasOne(s => s.Client)
+            .WithMany()
+            .HasForeignKey(s => s.ClientId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ClientPushSubscription>()
+            .HasIndex(s => s.Endpoint)
+            .IsUnique();
 
         modelBuilder.Entity<LoggedSet>()
             .HasOne(s => s.LoggedExercise)

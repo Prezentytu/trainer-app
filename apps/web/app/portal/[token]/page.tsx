@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   api,
   ClientIntake,
+  ClientCheckIn,
   hasEssentialIntake,
   PortalHome,
   PortalSessionSummary,
@@ -16,6 +17,8 @@ import { PortalHomeSkeleton } from "@/components/skeletons";
 import { usePortalStickyCta } from "@/components/portal/PortalChrome";
 import { estimateDayMinutes, formatDurationApprox } from "@/lib/estimateDuration";
 import { buildWeekStrip } from "@/lib/portalWeekStrip";
+import { CheckInCard } from "@/components/portal/CheckInCard";
+import { PwaInstallPrompt } from "@/components/portal/PwaInstallPrompt";
 
 function schemeLine(item: NonNullable<PortalHome["today"]>["day"]["items"][number]): string {
   const measure = item.measureType ?? "reps";
@@ -41,6 +44,7 @@ export default function PortalTodayPage() {
   const [history, setHistory] = useState<PortalSessionSummary[]>([]);
   const [progress, setProgress] = useState<ProgressReport | null>(null);
   const [intake, setIntake] = useState<ClientIntake | null>(null);
+  const [checkIns, setCheckIns] = useState<ClientCheckIn[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const { setStickyCta } = usePortalStickyCta();
@@ -51,12 +55,14 @@ export default function PortalTodayPage() {
       api.portal.sessions(token).catch(() => [] as PortalSessionSummary[]),
       api.portal.progressReport(token).catch(() => null),
       api.portal.getIntake(token).catch(() => null),
+      api.portal.checkIns(token).catch(() => [] as ClientCheckIn[]),
     ])
-      .then(([h, s, p, intk]) => {
+      .then(([h, s, p, intk, checkinRows]) => {
         setHome(h);
         setHistory(s);
         setProgress(p);
         setIntake(intk);
+        setCheckIns(checkinRows);
       })
       .catch((e: Error) => setError(e.message));
   }, [token]);
@@ -137,6 +143,8 @@ export default function PortalTodayPage() {
   const weekMeta = today?.day
     ? `tydzień ${today.day.weekNumber}`
     : null;
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const hasTodayCheckIn = checkIns.some((checkIn) => checkIn.date.slice(0, 10) === todayIso);
 
   return (
     <div className={`space-y-5 ${today ? "pb-36" : "pb-24"}`}>
@@ -147,6 +155,7 @@ export default function PortalTodayPage() {
         <h1 className="mt-1 font-display text-3xl font-bold">Cześć, {firstName}</h1>
       </header>
       <ErrorBanner message={error} />
+      <PwaInstallPrompt token={token} />
 
       <div className="flex gap-2">
         {weekStrip.map((d, i) => (
@@ -188,6 +197,15 @@ export default function PortalTodayPage() {
             </Link>
           </div>
         </section>
+      ) : null}
+
+      {!hasTodayCheckIn ? (
+        <CheckInCard
+          token={token}
+          onSaved={() => {
+            void api.portal.checkIns(token).then(setCheckIns).catch((e: Error) => setError(e.message));
+          }}
+        />
       ) : null}
 
       {!today ? (

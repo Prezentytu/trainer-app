@@ -13,6 +13,9 @@ export default function PortalProfilePage() {
   const [home, setHome] = useState<PortalHome | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [autoRest, setAutoRest] = useState(() => readAutoRest());
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushSaving, setPushSaving] = useState(false);
+  const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
   const load = useCallback(() => {
     api.portal
@@ -22,6 +25,59 @@ export default function PortalProfilePage() {
   }, [token]);
 
   useEffect(load, [load]);
+
+  useEffect(() => {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    void navigator.serviceWorker.register("/sw.js").then(async (registration) => {
+      const subscription = await registration.pushManager.getSubscription();
+      setPushEnabled(Boolean(subscription));
+    });
+  }, []);
+
+  const togglePush = async (enabled: boolean) => {
+    if (!vapidKey || !("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    setPushSaving(true);
+    setError(null);
+    try {
+      const registration = await navigator.serviceWorker.register("/sw.js");
+      const current = await registration.pushManager.getSubscription();
+      if (!enabled) {
+        if (current) {
+          const json = current.toJSON();
+          await api.portal.unsubscribePush(token, {
+            endpoint: current.endpoint,
+            p256dh: json.keys?.p256dh ?? "",
+            auth: json.keys?.auth ?? "",
+          });
+          await current.unsubscribe();
+        }
+        setPushEnabled(false);
+        return;
+      }
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        setError("Powiadomienia są wyłączone w ustawieniach przeglądarki.");
+        return;
+      }
+      const subscription =
+        current ??
+        (await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: base64UrlToUint8Array(vapidKey),
+        }));
+      const json = subscription.toJSON();
+      await api.portal.subscribePush(token, {
+        endpoint: subscription.endpoint,
+        p256dh: json.keys?.p256dh ?? "",
+        auth: json.keys?.auth ?? "",
+      });
+      setPushEnabled(true);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setPushSaving(false);
+    }
+  };
 
   if (!home) {
     return (
@@ -88,6 +144,15 @@ export default function PortalProfilePage() {
             kg
           </span>
         </div>
+        <div className="flex min-h-14 items-center gap-3 border-t border-border">
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] text-foreground-secondary">Przypomnienia push</p>
+            {!vapidKey ? (
+              <p className="mt-0.5 text-xs text-muted">Push wymaga konfiguracji. Otrzymasz przypomnienia e-mail przez trenera.</p>
+            ) : null}
+          </div>
+          <Switch checked={pushEnabled} disabled={!vapidKey || pushSaving} onChange={(v) => void togglePush(v)} />
+        </div>
       </div>
 
       <div className="rounded-2xl border border-border bg-surface px-5 py-1 shadow-card">
@@ -106,4 +171,12 @@ export default function PortalProfilePage() {
       </div>
     </div>
   );
+}
+
+function base64UrlToUint8Array(value: string): ArrayBuffer {
+  const padded = `${value}${"=".repeat((4 - (value.length % 4)) % 4)}`.replace(/-/g, "+").replace(/_/g, "/");
+  const raw = window.atob(padded);
+  const bytes = new Uint8Array(raw.length);
+  for (let index = 0; index < raw.length; index++) bytes[index] = raw.charCodeAt(index);
+  return bytes.buffer;
 }

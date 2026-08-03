@@ -194,3 +194,26 @@ export function PlanDetailSkeleton() {
     </div>
   );
 }
+
+/** Uniwersalny skeleton podstron portalu (progres, historia, pomiary, profil). */
+export function PortalPageSkeleton({ label = "Wczytuję…" }: { label?: string }) {
+  return (
+    <div aria-busy aria-label={label} className="space-y-4">
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-7 w-40" />
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-24 w-full rounded-xl" />
+        ))}
+      </div>
+      <Skeleton className="h-40 w-full rounded-xl" />
+      <div className="space-y-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-16 w-full rounded-xl" />
+        ))}
+      </div>
+    </div>
+  );
+}

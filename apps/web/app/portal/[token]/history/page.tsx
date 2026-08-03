@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api, PortalSessionSummary } from "@/lib/api";
 import { Badge, ErrorBanner } from "@/components/ui";
+import { PortalPageSkeleton } from "@/components/skeletons";
 import { formatDurationMinutes } from "@/lib/estimateDuration";
 
 function formatDay(iso: string): string {
@@ -48,7 +49,7 @@ export default function PortalHistoryPage() {
       <ErrorBanner message={error} />
 
       {!history ? (
-        <p className="text-sm text-muted">Ładowanie…</p>
+        <PortalPageSkeleton label="Wczytuję historię…" />
       ) : history.length === 0 ? (
         <div className="rounded-2xl border border-border bg-surface px-4 py-6 text-center shadow-card">
           <p className="text-sm text-muted">Brak ukończonych treningów.</p>
