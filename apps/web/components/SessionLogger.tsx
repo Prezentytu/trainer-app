@@ -1304,11 +1304,11 @@ export function SessionLogger({
               allDone ? "opacity-80" : ""
             }`}
           >
-            <div className="flex items-start gap-2">
+            <div className="flex items-center gap-2">
               {hasVideo ? (
                 <button
                   type="button"
-                  className="h-10 w-10 shrink-0 rounded-[10px] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+                  className="h-10 w-10 shrink-0 self-start rounded-[10px] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
                   onClick={() => {
                     setVideoId(thumb.youtubeId!);
                     setVideoTitle(exercise.exerciseName);
@@ -1331,7 +1331,7 @@ export function SessionLogger({
                   </span>
                 ) : null}
               </h2>
-              <div className="relative shrink-0" data-session-menu>
+              <div className="relative shrink-0 self-center" data-session-menu>
                 <IconButton
                   title="Więcej"
                   size="md"
@@ -1477,9 +1477,10 @@ export function SessionLogger({
               </div>
             ) : null}
 
-            <div className="border-t border-border pt-1">
+            {/* space-y-3 karty = 12px nad linią → pt-3 = 12px pod linią (równy gutter) */}
+            <div className="border-t border-border pt-3">
               <div
-                className={`${SET_GRID} px-0 pb-1 font-mono text-[10px] font-medium uppercase tracking-caps text-muted`}
+                className={`${SET_GRID} px-0 pb-0.5 font-mono text-[10px] font-medium uppercase tracking-caps text-muted`}
               >
                 <div>#</div>
                 <div>{prevHeader}</div>
