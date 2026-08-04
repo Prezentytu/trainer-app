@@ -42,3 +42,4 @@ Pliki: `apps/web/components/landing/*`, `apps/web/components/auth/AuthScreen.tsx
 
 - 2026-08-04 — utworzono i wdrożono spec.
 - 2026-08-04 — craft: atmosfera radialna, wycentrowany hero z brandem, demo jako product shot z fade, glass nav.
+- 2026-08-04 — editorial world-class: Instrument Serif, `.display-editorial`, grain, hairline grid, marquee, EarlyAccess, clip-path reveal, żywe demo serii.

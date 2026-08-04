@@ -110,10 +110,13 @@
   --tracking-eyebrow: 0.2em;
   --tracking-display: -0.035em;
   --tracking-display-soft: -0.02em;
+  --tracking-display-editorial: -0.04em;
   --leading-display: 0.96;
   --leading-display-soft: 1.06;
+  --leading-display-editorial: 0.88;
   --leading-body: 1.5;
   --leading-label: 1.4;
+  --ease-editorial: cubic-bezier(0.77, 0, 0.175, 1);
   --radius-well: 6px;
   --radius-pill: 9999px;
 }
@@ -135,6 +138,7 @@
   --font-sans: var(--font-space-grotesk);
   --font-display: var(--font-archivo);
   --font-mono: var(--font-ibm-plex-mono);
+  --font-serif: var(--font-instrument-serif);
 
   --color-background: var(--background);
   --color-surface: var(--surface);
@@ -223,6 +227,21 @@ body {
   font-weight: 700;
   letter-spacing: var(--tracking-display-soft);
   line-height: var(--leading-display-soft);
+}
+
+/* Landing editorial — typografia plakatowa (Superdesign high-contrast) */
+.display-editorial {
+  font-family: var(--font-archivo), system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: var(--tracking-display-editorial);
+  line-height: var(--leading-display-editorial);
+}
+
+.accent-serif {
+  font-family: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: -0.01em;
 }
 
 .eyebrow {
@@ -378,45 +397,77 @@ textarea {
 
 /* Landing — atmosfera (głębia bez glowów) */
 .landing-atmosphere {
+  position: relative;
   background:
     radial-gradient(ellipse 90% 55% at 50% -5%, var(--accent-dim) 0%, transparent 52%),
     radial-gradient(ellipse 45% 35% at 85% 15%, var(--surface) 0%, transparent 50%),
     var(--background);
 }
 
+/* Ziarno — tekstura premium; wyłączane przy reduced-transparency */
+.landing-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 180px 180px;
+  mix-blend-mode: overlay;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .landing-grain::after {
+    content: none;
+    display: none;
+  }
+}
+
+/* Siatka hairline w hero */
+.landing-rules {
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--border) 0,
+    var(--border) 1px,
+    transparent 1px,
+    transparent calc(100% / 12)
+  );
+  background-size: 100% 100%;
+}
+
 /* Demo produktu — kadr jak product shot: fade w tło */
 .landing-demo-stage {
   position: relative;
-  -webkit-mask-image: linear-gradient(to bottom, #000 58%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 58%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 62%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 62%, transparent 100%);
 }
 
 .landing-demo-frame {
   box-shadow: var(--shadow-raised);
 }
 
+/* Marquee — krawędzie fade */
+.landing-marquee {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+
+.landing-marquee-track {
+  display: flex;
+  width: max-content;
+  gap: 2.5rem;
+}
+
 /* Landing — scroll reveal (IO dodaje .landing-inview) */
 .landing-scroll {
   opacity: 1;
   transform: none;
+  clip-path: none;
 }
 
-/* Rotator H1 — stan spoczynkowy (reduced motion / no-js): tylko pierwsze słowo */
-.landing-rotator {
-  display: inline-grid;
-  vertical-align: baseline;
-  text-align: left;
-}
-
-.landing-rotator-word {
-  grid-area: 1 / 1;
-}
-
-.landing-rotator-word:not(:first-child) {
-  visibility: hidden;
-}
-
-/* Demo produktu — stan spoczynkowy (bez animacji) */
+/* Demo produktu — stan spoczynkowy (bez animacji / reduced motion) */
 .landing-demo-status-idle {
   display: none;
 }
@@ -430,88 +481,78 @@ textarea {
 }
 
 .landing-demo-check {
-  border-color: var(--border-strong);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.5rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
   background: var(--surface-active);
+  padding: 0.35rem 0.75rem;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--foreground-secondary);
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  @keyframes landing-fade-up {
+  @keyframes landing-clip-up {
     from {
       opacity: 0;
-      transform: translateY(16px);
+      transform: translateY(18px);
+      clip-path: inset(0 0 100% 0);
     }
     to {
       opacity: 1;
       transform: translateY(0);
+      clip-path: inset(0 0 0 0);
     }
   }
 
   .landing-reveal {
-    animation: landing-fade-up 0.7s var(--ease-out) both;
+    animation: landing-clip-up 0.7s var(--ease-editorial) both;
+    animation-delay: calc(var(--i, 0) * 90ms);
   }
 
   .landing-reveal-delay-1 {
-    animation-delay: 80ms;
+    --i: 1;
   }
 
   .landing-reveal-delay-2 {
-    animation-delay: 160ms;
+    --i: 2;
   }
 
   .landing-reveal-delay-3 {
-    animation-delay: 240ms;
+    --i: 3;
   }
 
   .landing-reveal-delay-4 {
-    animation-delay: 320ms;
+    --i: 4;
   }
 
   .landing-scroll:not(.landing-inview) {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(24px);
+    clip-path: inset(0 0 12% 0);
   }
 
   .landing-scroll {
     transition:
-      opacity 0.7s var(--ease-out),
-      transform 0.7s var(--ease-out);
+      opacity 0.7s var(--ease-editorial),
+      transform 0.7s var(--ease-editorial),
+      clip-path 0.7s var(--ease-editorial);
   }
 
-  /* Kinetyczne słowo w H1: robią → kończą → czują (slot ~3s) */
-  @keyframes landing-rotate-word {
-    0% {
-      opacity: 0;
-      transform: translateY(0.35em);
+  @keyframes landing-marquee {
+    from {
+      transform: translateX(0);
     }
-    6%,
-    28% {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    34%,
-    100% {
-      opacity: 0;
-      transform: translateY(-0.3em);
+    to {
+      transform: translateX(-50%);
     }
   }
 
-  .landing-rotator-word {
-    visibility: visible;
-    opacity: 0;
-    animation: landing-rotate-word 9s var(--ease-out) infinite;
-  }
-
-  .landing-rotator-word:nth-child(1) {
-    animation-delay: 0s;
-  }
-
-  .landing-rotator-word:nth-child(2) {
-    animation-delay: 3s;
-  }
-
-  .landing-rotator-word:nth-child(3) {
-    animation-delay: 6s;
+  .landing-marquee-track {
+    animation: landing-marquee 36s linear infinite;
   }
 
   /* Demo: serie odhaczają się, status się zmienia — pętla ~8s */
@@ -521,7 +562,6 @@ textarea {
       border-color: var(--border-strong);
       background: transparent;
       color: var(--muted);
-      content: none;
     }
     14%,
     100% {
@@ -573,6 +613,8 @@ textarea {
 
   .landing-demo-status-done {
     display: inline-flex;
+    position: absolute;
+    inset: 0;
     animation: landing-status-swap-done 8s var(--ease-out) infinite;
   }
 

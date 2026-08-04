@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
+import { Archivo, IBM_Plex_Mono, Instrument_Serif, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { ClerkAppProvider } from "@/components/ClerkAppProvider";
 
@@ -18,6 +18,13 @@ const fontBody = Space_Grotesk({
 const fontMono = IBM_Plex_Mono({
   variable: "--font-ibm-plex-mono",
   weight: ["400", "500", "600"],
+  subsets: ["latin", "latin-ext"],
+});
+
+const fontSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
+  weight: "400",
+  style: ["normal", "italic"],
   subsets: ["latin", "latin-ext"],
 });
 
@@ -70,7 +77,7 @@ export default function RootLayout({
   return (
     <html
       lang="pl"
-      className={`${fontDisplay.variable} ${fontBody.variable} ${fontMono.variable} h-full antialiased`}
+      className={`${fontDisplay.variable} ${fontBody.variable} ${fontMono.variable} ${fontSerif.variable} h-full antialiased`}
     >
       <body className="min-h-screen bg-background font-sans text-foreground">
         <ClerkAppProvider>{children}</ClerkAppProvider>

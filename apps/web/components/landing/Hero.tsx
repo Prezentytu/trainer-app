@@ -3,43 +3,51 @@ import { Button } from "@/components/ui";
 
 export function Hero() {
   return (
-    <section id="produkt" className="relative scroll-mt-20 px-5 pt-24 sm:px-6 sm:pt-32">
-      <div className="relative z-[1] mx-auto max-w-3xl text-center">
-        <div className="landing-reveal flex items-center justify-center gap-3">
-          <span className="inline-flex h-3 w-3 shrink-0 bg-accent" aria-hidden />
-          <span className="display-caps text-base text-foreground sm:text-lg">Workout Alchemist</span>
-        </div>
-
-        <p className="landing-reveal landing-reveal-delay-1 mt-8 text-sm text-muted">
+    <section
+      id="produkt"
+      className="relative scroll-mt-20 overflow-hidden px-5 pt-20 sm:px-6 sm:pt-28"
+    >
+      <div
+        aria-hidden
+        className="landing-rules pointer-events-none absolute inset-0 opacity-40"
+      />
+      <div className="relative z-[1] mx-auto max-w-6xl">
+        <p className="landing-reveal font-mono text-xs uppercase tracking-caps text-muted">
           Dla trenerów personalnych
         </p>
 
-        <h1 className="landing-reveal landing-reveal-delay-1 mt-5 display-soft text-[clamp(2.75rem,7vw,4.75rem)] text-foreground text-pretty">
+        <h1 className="landing-reveal landing-reveal-delay-1 mt-6 max-w-5xl display-editorial text-[clamp(3.25rem,9vw,8rem)] text-foreground text-pretty">
           Układasz plan.
           <br />
-          Widzisz każdą serię.
+          Widzisz{" "}
+          <span className="accent-serif font-normal">każdą</span> serię.
         </h1>
 
-        <p className="landing-reveal landing-reveal-delay-2 mx-auto mt-7 max-w-lg text-[17px] leading-relaxed text-muted text-pretty">
-          Wysyłasz klientowi jeden link. On zapisuje serie w telefonie, Ty widzisz każdy trening na
-          żywo.
-        </p>
-
-        <div className="landing-reveal landing-reveal-delay-3 mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
-          <Link href="/sign-up">
-            <Button size="lg">Zacznij za darmo</Button>
-          </Link>
-          <a
-            href="#jak-to-dziala"
-            className="text-sm text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
-          >
-            Zobacz, jak to działa
-          </a>
+        <div className="landing-reveal landing-reveal-delay-2 mt-10 flex max-w-5xl flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
+          <p className="max-w-md text-[17px] leading-relaxed text-muted text-pretty">
+            Wysyłasz klientowi jeden link. On zapisuje serie w telefonie, Ty widzisz każdy trening na
+            żywo.
+          </p>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+            <Link href="/sign-up">
+              <Button size="lg">Zacznij za darmo</Button>
+            </Link>
+            <a
+              href="#jak-to-dziala"
+              className="text-sm text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+            >
+              Zobacz, jak to działa
+            </a>
+          </div>
         </div>
 
-        <p className="landing-reveal landing-reveal-delay-4 mt-8 text-sm text-muted-faint">
-          Wczesny dostęp za darmo · bez karty · klient bez aplikacji
-        </p>
+        <div className="landing-reveal landing-reveal-delay-3 mt-14 flex flex-wrap gap-x-8 gap-y-3 border-t border-border pt-5 text-sm text-muted-faint">
+          <span>Wczesny dostęp za darmo</span>
+          <span aria-hidden>·</span>
+          <span>Bez karty</span>
+          <span aria-hidden>·</span>
+          <span>Klient bez aplikacji</span>
+        </div>
       </div>
     </section>
   );
