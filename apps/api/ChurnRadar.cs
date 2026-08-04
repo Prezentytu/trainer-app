@@ -122,6 +122,22 @@ public static class ChurnRadar
                     $"Compliance {pct}% (ostatnie {ComplianceWindowDays} dni)",
                     days, compliancePct, c.PortalToken, "copy_portal_link")));
             }
+
+            // Zastój siłowy — tylko gdy klient nadal trenuje (nie dubluj ciszy)
+            if (days < SilentDaysThreshold)
+            {
+                var stagnations = await Stagnation.ForClientAsync(db, c.Id);
+                if (stagnations.Count > 0)
+                {
+                    var top = stagnations[0];
+                    var msg = top.Reason == "volume_drop"
+                        ? $"Zastój: {top.ExerciseName} (spadek tonażu)"
+                        : $"Zastój: {top.ExerciseName} (brak progresu e1RM)";
+                    items.Add((7, stagnations.Count, AttentionRow(
+                        c.Id, c.Name, "stagnation", msg,
+                        days, compliancePct, c.PortalToken, "copy_portal_link")));
+                }
+            }
         }
 
         return items

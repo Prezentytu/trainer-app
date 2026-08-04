@@ -3,10 +3,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { api, ClientRecord, PortalSessionSummary } from "@/lib/api";
+import {
+  api,
+  ClientRecord,
+  ClientTrendsResponse,
+  MuscleVolumeResponse,
+  PortalSessionSummary,
+} from "@/lib/api";
 import { ErrorBanner } from "@/components/ui";
 import { PortalPageSkeleton } from "@/components/skeletons";
 import { WeeklyActivityBar } from "@/components/WeeklyActivityBar";
+import { MuscleVolumeBars } from "@/components/MuscleVolumeBars";
+import { LineChart } from "@/components/charts/LineChart";
+import { formatDayShort } from "@/lib/dates";
 
 function startOfWeekMonday(d: Date): Date {
   const day = d.getDay();
@@ -35,13 +44,22 @@ export default function PortalProgressPage() {
   const token = params.token;
   const [sessions, setSessions] = useState<PortalSessionSummary[] | null>(null);
   const [records, setRecords] = useState<ClientRecord[] | null>(null);
+  const [muscleVolume, setMuscleVolume] = useState<MuscleVolumeResponse | null>(null);
+  const [trends, setTrends] = useState<ClientTrendsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    Promise.all([api.portal.sessions(token), api.portal.records(token)])
-      .then(([s, r]) => {
+    Promise.all([
+      api.portal.sessions(token),
+      api.portal.records(token),
+      api.portal.muscleVolume(token, 4),
+      api.portal.trends(token, 12),
+    ])
+      .then(([s, r, mv, tr]) => {
         setSessions(s);
         setRecords(r);
+        setMuscleVolume(mv);
+        setTrends(tr);
       })
       .catch((e: Error) => setError(e.message));
   }, [token]);
@@ -59,7 +77,6 @@ export default function PortalProgressPage() {
     const sunIso = toIso(thisSunday);
 
     const thisWeek = list.filter((s) => s.performedOn >= monIso && s.performedOn <= sunIso);
-    // Seria tygodni bez przerwy (ile kolejnych tygodni wstecz z ≥1 treningiem)
     let streak = 0;
     for (let i = 0; i < 52; i++) {
       const monday = new Date(thisMonday);
@@ -135,10 +152,40 @@ export default function PortalProgressPage() {
 
           <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
             <p className="text-xs font-semibold uppercase tracking-caps text-muted">
-              Objętość tygodniowa
+              Aktywność tygodniowa
             </p>
             <div className="mt-3">
               <WeeklyActivityBar dates={stats.dates} weeks={8} />
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+            <p className="text-xs font-semibold uppercase tracking-caps text-muted">
+              Tonaż · 12 tygodni
+            </p>
+            <div className="mt-3">
+              <LineChart
+                points={(trends?.weeks ?? []).map((w) => ({
+                  label: formatDayShort(w.weekStart),
+                  value: w.volumeKg,
+                }))}
+                unit="kg"
+                emptyHint="Za mało treningów na trend tonażu."
+                ariaLabel="Tonaż tygodniowy"
+              />
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+            <p className="text-xs font-semibold uppercase tracking-caps text-muted">
+              Objętość mięśniowa · 4 tyg.
+            </p>
+            <div className="mt-3">
+              <MuscleVolumeBars
+                groups={muscleVolume?.groups ?? []}
+                mode="sets"
+                emptyHint="Tu zobaczysz balans mięśniowy po zapisanych seriach."
+              />
             </div>
           </div>
 
@@ -149,11 +196,11 @@ export default function PortalProgressPage() {
             {records.length === 0 ? (
               <div className="py-4 text-center">
                 <p className="text-sm text-muted">
-                  Tu zobaczysz rekordy per ćwiczenie — po zalogowaniu serii.
+                  Tu zobaczysz rekordy per ćwiczenie — po zapisaniu serii.
                 </p>
                 <Link
                   href={`/portal/${token}`}
-                  className="mt-3 inline-block text-[15px] font-semibold text-accent"
+                  className="mt-3 inline-block text-[15px] font-semibold text-accent-text"
                 >
                   Rozpocznij trening
                 </Link>
@@ -165,12 +212,12 @@ export default function PortalProgressPage() {
                   className="flex min-h-14 items-center gap-3 border-b border-border last:border-0"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[15px] font-semibold text-foreground-secondary">
+                    <p className="break-words text-[15px] font-semibold text-foreground-secondary">
                       {r.exerciseName}
                     </p>
                     <p className="mt-0.5 text-[13px] text-muted-faint">{formatDay(r.performedOn)}</p>
                   </div>
-                  <p className="font-mono text-xl font-semibold tabular-nums text-pr">
+                  <p className="shrink-0 font-mono text-xl font-semibold tabular-nums text-pr">
                     {r.estimated1Rm.toLocaleString("pl-PL", {
                       maximumFractionDigits: 1,
                     })}{" "}

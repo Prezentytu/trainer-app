@@ -196,7 +196,7 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
 
         modelBuilder.Entity<ClientPushSubscription>()
             .HasOne(s => s.Client)
-            .WithMany()
+            .WithMany(c => c.PushSubscriptions)
             .HasForeignKey(s => s.ClientId)
             .OnDelete(DeleteBehavior.Cascade);
 

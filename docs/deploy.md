@@ -111,6 +111,10 @@ Sekrety keep-alive: `API_HEALTH_URL` (dev) i `API_HEALTH_URL_PROD` (prod) — te
 | `WEB_ORIGIN` | `https://twoja-app.vercel.app` | origin frontu (linki w e-mailach) |
 | `Email__ResendApiKey` | `re_…` | klucz [Resend](https://resend.com) — opcjonalnie; bez niego wysyłka linków zwraca komunikat |
 | `Email__From` | `Workout Alchemist <hello@twojadomena.pl>` | nadawca Resend (zweryfikowana domena) |
+| `Push__PublicKey` | klucz VAPID publiczny | para z `web-push generate-vapid-keys`; ten sam publiczny w Vercel jako `NEXT_PUBLIC_VAPID_PUBLIC_KEY` |
+| `Push__PrivateKey` | klucz VAPID prywatny | tylko na API — nigdy na froncie |
+| `Push__Subject` | `mailto:support@…` | kontakt VAPID |
+| `Cron__Key` | losowy sekret | ten sam w GitHub secret `CRON_KEY` (workflow `reminders.yml`) |
 
 3. Kliknij **Apply** → **Confirm** (restart).
 

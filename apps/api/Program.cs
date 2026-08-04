@@ -66,6 +66,7 @@ builder.Services.AddRateLimiter(o =>
 
 builder.Services.AddHttpClient("resend");
 builder.Services.AddSingleton<EmailService>();
+builder.Services.AddScoped<PushService>();
 
 var app = builder.Build();
 app.UseCors();
@@ -107,6 +108,20 @@ app.MapGet("/api/health", async (AppDb db) =>
     {
         return Results.Json(new { status = "degraded", utc, database = "error" }, statusCode: 503);
     }
+});
+
+app.MapPost("/api/cron/reminders", async (HttpContext http, IConfiguration config, PushService push) =>
+{
+    var expected = config["Cron:Key"];
+    if (string.IsNullOrWhiteSpace(expected))
+        return Results.Json(new { message = "Cron:Key nie jest skonfigurowany." }, statusCode: 503);
+    if (!http.Request.Headers.TryGetValue("X-Cron-Key", out var provided)
+        || !string.Equals(provided.ToString(), expected, StringComparison.Ordinal))
+        return Results.Unauthorized();
+
+    var webOrigin = (config["WEB_ORIGIN"] ?? allowedOrigins.FirstOrDefault() ?? "http://localhost:3000").TrimEnd('/');
+    var (sent, skipped) = await push.SendDailyRemindersAsync(webOrigin);
+    return Results.Ok(new { sent, skipped, utc = DateTime.UtcNow });
 });
 
 app.MapGet("/api/me", async (HttpContext http, AppDb db, IConfiguration config) =>
@@ -684,6 +699,18 @@ app.MapGet("/api/plans/{id:int}", async (int id, int? clientId, HttpContext http
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
+app.MapGet("/api/plans/{id:int}/muscle-volume", async (int id, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var owns = await db.Plans.AnyAsync(p => p.Id == id && p.TrainerId == trainerId);
+        if (!owns) return Results.NotFound();
+        return Results.Ok(await Analytics.PlanMuscleVolumeAsync(db, id));
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
 app.MapPost("/api/plans", async (PlanInput input, HttpContext http, AppDb db, IConfiguration config) =>
 {
     try
@@ -1038,7 +1065,8 @@ app.MapPatch("/api/sessions/{id:int}/checkin", async (int id, SessionCheckinInpu
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
-app.MapPost("/api/sessions/{id:int}/comment", async (int id, SessionCommentInput input, HttpContext http, AppDb db, IConfiguration config) =>
+app.MapPost("/api/sessions/{id:int}/comment", async (
+    int id, SessionCommentInput input, HttpContext http, AppDb db, IConfiguration config, PushService push) =>
 {
     try
     {
@@ -1055,6 +1083,21 @@ app.MapPost("/api/sessions/{id:int}/comment", async (int id, SessionCommentInput
         session.TrainerComment = text;
         session.TrainerCommentAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
+
+        var token = await db.ClientAccessTokens
+            .Where(t => t.ClientId == session.ClientId && (t.ExpiresAt == null || t.ExpiresAt > DateTime.UtcNow))
+            .OrderByDescending(t => t.CreatedAt)
+            .Select(t => t.Token)
+            .FirstOrDefaultAsync();
+        var webOrigin = (config["WEB_ORIGIN"] ?? allowedOrigins.FirstOrDefault() ?? "http://localhost:3000").TrimEnd('/');
+        var portalUrl = token is null ? webOrigin : $"{webOrigin}/portal/{token}/history";
+        var preview = text.Length > 80 ? text[..80] + "…" : text;
+        await push.SendToClientAsync(
+            session.ClientId,
+            "Komentarz od trenera",
+            preview,
+            portalUrl);
+
         return Results.Ok(await Sessions.LoadDto(db, session.Id));
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
@@ -1242,6 +1285,42 @@ app.MapGet("/api/clients/{clientId:int}/progress", async (int clientId, HttpCont
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
+app.MapGet("/api/clients/{clientId:int}/muscle-volume", async (
+    int clientId, int? weeks, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        return Results.Ok(await Analytics.ClientMuscleVolumeAsync(db, clientId, weeks ?? 4));
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapGet("/api/clients/{clientId:int}/trends", async (
+    int clientId, int? weeks, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        return Results.Ok(await Analytics.ClientTrendsAsync(db, clientId, weeks ?? 12));
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapGet("/api/clients/{clientId:int}/stagnation", async (
+    int clientId, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        return Results.Ok(await Stagnation.ForClientDtoAsync(db, clientId));
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
 // ---------- Token dostępu klienta (magic-link) ----------
 
 app.MapGet("/api/clients/{clientId:int}/access-token", async (int clientId, HttpContext http, AppDb db, IConfiguration config) =>
@@ -1330,15 +1409,13 @@ app.MapPost("/api/clients/{clientId:int}/send-portal-link", async (
 
 app.MapPost("/api/clients/{clientId:int}/send-reminder", async (
     int clientId, SendReminderInput input, HttpContext http, AppDb db, IConfiguration config,
-    EmailService email) =>
+    EmailService email, PushService push) =>
 {
     try
     {
         var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
         var client = await db.Clients.FirstOrDefaultAsync(c => c.Id == clientId && c.TrainerId == trainerId);
         if (client is null) return Results.NotFound();
-        if (string.IsNullOrWhiteSpace(client.Email))
-            return Results.Conflict(new { message = "Klient nie ma adresu e-mail." });
 
         var tokenRow = await db.ClientAccessTokens
             .Where(t => t.ClientId == clientId && (t.ExpiresAt == null || t.ExpiresAt > DateTime.UtcNow))
@@ -1352,12 +1429,42 @@ app.MapPost("/api/clients/{clientId:int}/send-reminder", async (
         var reason = string.IsNullOrWhiteSpace(input.Message)
             ? "Przypomnienie od trenera — Twój trening czeka."
             : input.Message!.Trim();
-        var (ok, err) = await email.SendAsync(
-            client.Email!,
+
+        var emailSent = false;
+        string? emailErr = null;
+        if (!string.IsNullOrWhiteSpace(client.Email))
+        {
+            var (ok, err) = await email.SendAsync(
+                client.Email!,
+                "Przypomnienie o treningu",
+                EmailService.ReminderHtml(client.Name, portalUrl, reason));
+            emailSent = ok;
+            emailErr = err;
+        }
+
+        var pushSent = await push.SendToClientAsync(
+            clientId,
             "Przypomnienie o treningu",
-            EmailService.ReminderHtml(client.Name, portalUrl, reason));
-        if (!ok) return Results.Conflict(new { message = err ?? "Nie udało się wysłać e-maila." });
-        return Results.Ok(new { sent = true, to = client.Email, preview = reason });
+            reason,
+            portalUrl);
+
+        if (!emailSent && pushSent == 0)
+        {
+            var msg = emailErr
+                ?? (string.IsNullOrWhiteSpace(client.Email)
+                    ? "Brak e-maila i włączonych powiadomień push u klienta."
+                    : "Nie udało się wysłać przypomnienia.");
+            return Results.Conflict(new { message = msg });
+        }
+
+        return Results.Ok(new
+        {
+            sent = true,
+            to = client.Email,
+            emailSent,
+            pushSent,
+            preview = reason,
+        });
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
@@ -1754,6 +1861,20 @@ app.MapGet("/api/portal/{token}/progress-report", async (string token, AppDb db)
     var access = await ResolvePortalToken(db, token);
     if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
     return Results.Ok(await ProgressReports.BuildForClientAsync(db, access.ClientId));
+}).RequireRateLimiting("portal");
+
+app.MapGet("/api/portal/{token}/muscle-volume", async (string token, int? weeks, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    return Results.Ok(await Analytics.ClientMuscleVolumeAsync(db, access.ClientId, weeks ?? 4));
+}).RequireRateLimiting("portal");
+
+app.MapGet("/api/portal/{token}/trends", async (string token, int? weeks, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    return Results.Ok(await Analytics.ClientTrendsAsync(db, access.ClientId, weeks ?? 12));
 }).RequireRateLimiting("portal");
 
 app.MapGet("/api/portal/{token}/check-ins", async (string token, AppDb db) =>

@@ -26,6 +26,7 @@ public class Client
     public List<WorkoutSession> Sessions { get; set; } = [];
     public List<ClientAccessToken> AccessTokens { get; set; } = [];
     public List<ClientCheckIn> CheckIns { get; set; } = [];
+    public List<ClientPushSubscription> PushSubscriptions { get; set; } = [];
     public ClientIntake? Intake { get; set; }
 }
 

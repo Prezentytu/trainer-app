@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   Activity,
+  AlertTriangle,
   CalendarCheck,
   Dumbbell,
   Ruler,
@@ -20,15 +21,20 @@ import {
   ClientMeasurement,
   ClientProgress,
   ClientRecord,
+  ClientTrendsResponse,
   Exercise,
   ExerciseStats,
   isIntakeBlank,
+  MuscleVolumeResponse,
   PlanSummary,
   SessionSummary,
+  StagnationResponse,
 } from "@/lib/api";
 import { daysAgo, formatDayShort, relativeDayLabel, withinLastDays } from "@/lib/dates";
 import { TrendSparkline } from "@/components/TrendSparkline";
 import { WeightTrendSparkline } from "@/components/WeightTrendSparkline";
+import { MuscleVolumeBars } from "@/components/MuscleVolumeBars";
+import { LineChart } from "@/components/charts/LineChart";
 import { ClientIntakeForm, ClientIntakeView } from "@/components/ClientIntakeForm";
 import {
   Avatar,
@@ -115,6 +121,9 @@ export default function ClientDetailsPage() {
   const [deleteClientOpen, setDeleteClientOpen] = useState(false);
   const [intake, setIntake] = useState<ClientIntake | null>(null);
   const [intakeEditing, setIntakeEditing] = useState(false);
+  const [muscleVolume, setMuscleVolume] = useState<MuscleVolumeResponse | null>(null);
+  const [trends, setTrends] = useState<ClientTrendsResponse | null>(null);
+  const [stagnation, setStagnation] = useState<StagnationResponse | null>(null);
 
   const load = useCallback(() => {
     Promise.all([
@@ -127,8 +136,11 @@ export default function ClientDetailsPage() {
       api.clients.records(clientId),
       api.clients.progress(clientId),
       api.clients.getIntake(clientId),
+      api.clients.muscleVolume(clientId, 4),
+      api.clients.trends(clientId, 12),
+      api.clients.stagnation(clientId),
     ])
-      .then(([c, p, ex, m, meas, s, r, prog, intk]) => {
+      .then(([c, p, ex, m, meas, s, r, prog, intk, mv, tr, st]) => {
         setClient(c);
         const assignable = p.filter((plan) => !plan.isTemplate);
         setPlans(assignable);
@@ -137,6 +149,9 @@ export default function ClientDetailsPage() {
         setMeasurements(meas);
         setSessions(s);
         setRecords(r);
+        setMuscleVolume(mv);
+        setTrends(tr);
+        setStagnation(st);
         setProgress(prog);
         setIntake(intk);
         setPlanId((prev) => (prev === "" && assignable.length > 0 ? assignable[0].id : prev));
@@ -734,6 +749,69 @@ export default function ClientDetailsPage() {
 
         {activeTab === "results" && (
           <div className="space-y-8">
+            {stagnation && stagnation.items.length > 0 ? (
+              <section>
+                <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-semibold">
+                  <AlertTriangle aria-hidden className="h-4 w-4 text-danger" strokeWidth={1.75} />
+                  Zastój
+                </h2>
+                <div className="grid gap-2">
+                  {stagnation.items.map((item) => (
+                    <Card key={`${item.exerciseId}-${item.reason}`} className="border-danger/30">
+                      <p className="break-words text-base font-medium text-foreground">
+                        {item.exerciseName}
+                      </p>
+                      <p className="mt-1 text-sm text-muted">{item.message}</p>
+                    </Card>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            <section>
+              <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-semibold">
+                <Activity aria-hidden className="h-4 w-4 text-foreground-secondary" strokeWidth={1.75} />
+                Trendy
+              </h2>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Card eyebrow="12 tyg." title="Tonaż tygodniowy">
+                  <LineChart
+                    points={(trends?.weeks ?? []).map((w) => ({
+                      label: formatDayShort(w.weekStart),
+                      value: w.volumeKg,
+                    }))}
+                    unit="kg"
+                    emptyHint="Za mało treningów na trend tonażu."
+                    ariaLabel="Tonaż tygodniowy"
+                  />
+                </Card>
+                <Card eyebrow="12 tyg." title="Częstotliwość">
+                  <LineChart
+                    points={(trends?.weeks ?? []).map((w) => ({
+                      label: formatDayShort(w.weekStart),
+                      value: w.sessions,
+                    }))}
+                    emptyHint="Za mało treningów na trend częstotliwości."
+                    ariaLabel="Liczba treningów tygodniowo"
+                  />
+                </Card>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-semibold">
+                <Dumbbell aria-hidden className="h-4 w-4 text-foreground-secondary" strokeWidth={1.75} />
+                Objętość mięśniowa
+              </h2>
+              <Card eyebrow="4 tyg." title="Serie robocze">
+                <MuscleVolumeBars
+                  groups={muscleVolume?.groups ?? []}
+                  mode="sets"
+                  emptyHint="Objętość pojawi się po zapisanych seriach z przypisanymi mięśniami."
+                />
+              </Card>
+            </section>
+
             <section>
               <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-semibold">
                 <Trophy aria-hidden className="h-4 w-4 text-pr" strokeWidth={1.75} />

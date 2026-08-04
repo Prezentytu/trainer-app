@@ -153,6 +153,10 @@ public class TenantIsolationTests : IClassFixture<TestWebAppFactory>
         Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync($"/api/clients/{ids.ClientId}/sessions")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync($"/api/clients/{ids.ClientId}/records")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync($"/api/clients/{ids.ClientId}/progress")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync($"/api/clients/{ids.ClientId}/muscle-volume")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync($"/api/clients/{ids.ClientId}/trends")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync($"/api/clients/{ids.ClientId}/stagnation")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync($"/api/plans/{ids.PlanId}/muscle-volume")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync($"/api/clients/{ids.ClientId}/access-token")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync($"/api/sessions/{ids.SessionId}")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await _client.DeleteAsync($"/api/maxes/{ids.MaxId}")).StatusCode);

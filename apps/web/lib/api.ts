@@ -648,12 +648,57 @@ export type PortalHome = {
 export type AttentionItem = {
   clientId: number;
   clientName: string;
-  reason: "no_plan" | "never_trained" | "silent" | "low_wellness" | "no_checkin" | "low_compliance" | string;
+  reason:
+    | "no_plan"
+    | "never_trained"
+    | "silent"
+    | "low_wellness"
+    | "no_checkin"
+    | "low_compliance"
+    | "stagnation"
+    | string;
   message: string;
   daysSilent: number | null;
   compliancePct?: number | null;
   portalToken: string | null;
   action: "assign_plan" | "copy_portal_link" | string;
+};
+
+export type MuscleVolumeGroup = {
+  muscle: string;
+  sets: number;
+  volumeKg: number;
+};
+
+export type MuscleVolumeResponse = {
+  weeks?: number;
+  from?: string;
+  to?: string;
+  groups: MuscleVolumeGroup[];
+};
+
+export type WeekTrend = {
+  weekStart: string;
+  sessions: number;
+  volumeKg: number;
+  workingSets: number;
+};
+
+export type ClientTrendsResponse = {
+  weeks: WeekTrend[];
+};
+
+export type StagnationItem = {
+  exerciseId: number;
+  exerciseName: string;
+  reason: "no_e1rm_progress" | "volume_drop" | string;
+  sessionsWithoutProgress: number | null;
+  volumeDropWeeks: number | null;
+  message: string;
+};
+
+export type StagnationResponse = {
+  items: StagnationItem[];
 };
 
 export type ClientActivityItem = {
@@ -883,6 +928,12 @@ export const api = {
         method: "PUT",
         body: JSON.stringify(input),
       }),
+    muscleVolume: (clientId: number, weeks = 4) =>
+      request<MuscleVolumeResponse>(`/api/clients/${clientId}/muscle-volume?weeks=${weeks}`),
+    trends: (clientId: number, weeks = 12) =>
+      request<ClientTrendsResponse>(`/api/clients/${clientId}/trends?weeks=${weeks}`),
+    stagnation: (clientId: number) =>
+      request<StagnationResponse>(`/api/clients/${clientId}/stagnation`),
   },
   exercises: {
     list: () => request<Exercise[]>("/api/exercises"),
@@ -914,6 +965,8 @@ export const api = {
         body: JSON.stringify(input),
       }),
     remove: (id: number) => request(`/api/plans/${id}`, { method: "DELETE" }),
+    muscleVolume: (id: number) =>
+      request<MuscleVolumeResponse>(`/api/plans/${id}/muscle-volume`),
   },
   assignments: {
     list: () => request<Assignment[]>("/api/assignments"),
@@ -1060,5 +1113,9 @@ export const api = {
         method: "PUT",
         body: JSON.stringify(input),
       }),
+    muscleVolume: (token: string, weeks = 4) =>
+      request<MuscleVolumeResponse>(`/api/portal/${token}/muscle-volume?weeks=${weeks}`),
+    trends: (token: string, weeks = 12) =>
+      request<ClientTrendsResponse>(`/api/portal/${token}/trends?weeks=${weeks}`),
   },
 };
