@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api, PortalHome } from "@/lib/api";
 import { Avatar, ErrorBanner, Switch } from "@/components/ui";
+import { PortalPageSkeleton } from "@/components/skeletons";
 import { readAutoRest, writeAutoRest } from "@/lib/portalPrefs";
 
 export default function PortalProfilePage() {
@@ -81,9 +82,9 @@ export default function PortalProfilePage() {
 
   if (!home) {
     return (
-      <div>
+      <div className="mx-auto max-w-lg space-y-6 pb-24">
         <ErrorBanner message={error} />
-        <p className="text-sm text-muted">Ładowanie…</p>
+        {error ? null : <PortalPageSkeleton label="Wczytuję profil…" />}
       </div>
     );
   }
@@ -91,84 +92,114 @@ export default function PortalProfilePage() {
   const today = home.today;
 
   return (
-    <div className="space-y-4 pb-8">
+    <div className="mx-auto max-w-lg space-y-8 pb-24">
       <ErrorBanner message={error} />
 
-      <div className="flex items-center gap-3.5">
+      <header className="flex items-center gap-3.5">
         <Avatar name={home.client.name} size="lg" />
         <div className="min-w-0">
-          <h1 className="truncate font-display text-3xl font-bold">{home.client.name}</h1>
-          <p className="mt-0.5 text-[13px] text-muted">Portal klienta · Workout Alchemist</p>
+          <p className="text-xs font-medium uppercase tracking-caps text-muted">Profil</p>
+          <h1 className="mt-1 break-words font-display text-3xl font-bold tracking-tight text-foreground">
+            {home.client.name}
+          </h1>
         </div>
-      </div>
+      </header>
 
       {today ? (
-        <div className="rounded-2xl border border-border bg-surface px-5 py-4 shadow-card">
-          <p className="text-xs font-semibold uppercase tracking-caps text-muted">Aktualny plan</p>
-          <p className="mt-1.5 font-display text-lg font-semibold">{today.planName}</p>
-          <p className="mt-0.5 text-[13px] text-muted">
+        <section aria-label="Aktualny plan">
+          <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
+            Aktualny plan
+          </p>
+          <p className="mt-2 break-words font-display text-xl font-bold tracking-tight text-foreground">
+            {today.planName}
+          </p>
+          <p className="mt-0.5 text-sm text-muted">
             Tydzień {today.day.weekNumber} · {today.day.label}
           </p>
-          <div className="mt-3 h-1 overflow-hidden rounded-full bg-surface-active">
+          <div className="mt-4 h-1 overflow-hidden rounded-full bg-surface-active">
             <div
-              className="h-full rounded-full bg-accent"
+              className="h-full rounded-full bg-accent transition-[width] duration-[var(--dur-med)] ease-[var(--ease-out)]"
               style={{ width: `${Math.min(100, today.percent)}%` }}
             />
           </div>
-          <p className="mt-1.5 font-mono text-[13px] tabular-nums text-muted">
-            {today.completed}/{today.total} sesji w bloku · {today.percent}%
+          <p className="mt-2 font-mono text-sm tabular-nums text-muted">
+            {today.completed}/{today.total} sesji · {today.percent}%
           </p>
-        </div>
+        </section>
       ) : (
-        <div className="rounded-2xl border border-border bg-surface px-5 py-4 text-[13px] text-muted shadow-card">
-          Brak aktywnego planu. Poproś trenera o przypisanie.
-        </div>
+        <section>
+          <p className="text-sm text-muted">Brak aktywnego planu. Poproś trenera o przypisanie.</p>
+        </section>
       )}
 
-      <div className="rounded-2xl border border-border bg-surface px-5 py-1 shadow-card">
-        <div className="flex min-h-14 items-center gap-3 border-b border-border">
-          <div className="min-w-0 flex-1 text-[15px] text-foreground-secondary">
-            Auto-timer odpoczynku
-          </div>
-          <Switch
-            checked={autoRest}
-            onChange={(v) => {
-              setAutoRest(v);
-              writeAutoRest(v);
-            }}
-          />
-        </div>
-        <div className="flex min-h-14 items-center gap-3">
-          <div className="min-w-0 flex-1 text-[15px] text-foreground-secondary">Jednostki</div>
-          <span className="rounded-full border border-border bg-surface-raised px-3 py-1 font-mono text-[13px] text-muted">
-            kg
-          </span>
-        </div>
-        <div className="flex min-h-14 items-center gap-3 border-t border-border">
-          <div className="min-w-0 flex-1">
-            <p className="text-[15px] text-foreground-secondary">Przypomnienia push</p>
-            {!vapidKey ? (
-              <p className="mt-0.5 text-xs text-muted">Push wymaga konfiguracji. Otrzymasz przypomnienia e-mail przez trenera.</p>
-            ) : null}
-          </div>
-          <Switch checked={pushEnabled} disabled={!vapidKey || pushSaving} onChange={(v) => void togglePush(v)} />
-        </div>
-      </div>
+      <section aria-label="Ustawienia">
+        <p className="mb-1 font-mono text-xs font-medium uppercase tracking-caps text-muted">
+          Ustawienia
+        </p>
+        <ul className="divide-y divide-border border-y border-border">
+          <li className="flex min-h-14 items-center gap-3 py-2">
+            <div className="min-w-0 flex-1 text-[15px] text-foreground-secondary">
+              Auto-timer odpoczynku
+            </div>
+            <Switch
+              checked={autoRest}
+              onChange={(v) => {
+                setAutoRest(v);
+                writeAutoRest(v);
+              }}
+            />
+          </li>
+          <li className="flex min-h-14 items-center gap-3 py-2">
+            <div className="min-w-0 flex-1 text-[15px] text-foreground-secondary">Jednostki</div>
+            <span className="font-mono text-sm tabular-nums text-muted">kg</span>
+          </li>
+          <li className="flex min-h-14 items-center gap-3 py-2">
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] text-foreground-secondary">Przypomnienia push</p>
+              {!vapidKey ? (
+                <p className="mt-0.5 text-xs text-muted">
+                  Push wymaga konfiguracji. Przypomnienia e-mail ustawia trener.
+                </p>
+              ) : null}
+            </div>
+            <Switch
+              checked={pushEnabled}
+              disabled={!vapidKey || pushSaving}
+              onChange={(v) => void togglePush(v)}
+            />
+          </li>
+        </ul>
+      </section>
 
-      <div className="rounded-2xl border border-border bg-surface px-5 py-1 shadow-card">
-        <Link
-          href={`/portal/${token}/intake`}
-          className="flex min-h-14 items-center text-[15px] font-semibold text-accent"
-        >
-          Ankieta startowa
-        </Link>
-        <Link
-          href={`/portal/${token}/measurements`}
-          className="flex min-h-14 items-center border-t border-border text-[15px] font-semibold text-accent"
-        >
-          Pomiary
-        </Link>
-      </div>
+      <section aria-label="Więcej">
+        <p className="mb-1 font-mono text-xs font-medium uppercase tracking-caps text-muted">
+          Więcej
+        </p>
+        <ul className="divide-y divide-border border-y border-border">
+          <li>
+            <Link
+              href={`/portal/${token}/intake`}
+              className="flex min-h-14 items-center justify-between gap-3 py-2 text-[15px] font-medium text-foreground transition-colors duration-[var(--dur-fast)] hover:text-foreground-secondary focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+            >
+              Ankieta startowa
+              <span className="text-muted-faint" aria-hidden>
+                ›
+              </span>
+            </Link>
+          </li>
+          <li>
+            <Link
+              href={`/portal/${token}/measurements`}
+              className="flex min-h-14 items-center justify-between gap-3 py-2 text-[15px] font-medium text-foreground transition-colors duration-[var(--dur-fast)] hover:text-foreground-secondary focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+            >
+              Pomiary
+              <span className="text-muted-faint" aria-hidden>
+                ›
+              </span>
+            </Link>
+          </li>
+        </ul>
+      </section>
     </div>
   );
 }

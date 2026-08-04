@@ -97,7 +97,9 @@ export function PortalBottomNav({ token }: { token: string }) {
               <Link
                 key={tab.id}
                 href={tab.href(token)}
-                className="flex min-h-11 flex-1 flex-col items-center gap-0.5 rounded-[10px] px-1 py-1.5 transition-colors active:bg-surface-hover"
+                className={`flex min-h-11 flex-1 flex-col items-center gap-0.5 rounded-[10px] px-1 py-1.5 transition-colors duration-[var(--dur-fast)] active:scale-[0.98] ${
+                  active ? "bg-accent-dim" : "active:bg-surface-hover"
+                }`}
               >
                 <span className={active ? "text-foreground" : "text-muted"}>{tab.icon}</span>
                 <span

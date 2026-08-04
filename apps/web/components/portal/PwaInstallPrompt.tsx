@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, Card } from "@/components/ui";
+import { Button } from "@/components/ui";
 
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -32,12 +32,15 @@ export function PwaInstallPrompt({ token }: { token: string }) {
   if (!promptEvent) return null;
 
   return (
-    <Card className="border-accent-border" title="Dodaj do ekranu głównego">
-      <p className="text-sm text-muted">
-        Otwieraj swój plan jak aplikację — jednym tapnięciem, bez szukania linku.
+    <section className="rounded-xl border border-border bg-surface-raised px-4 py-4">
+      <p className="text-[15px] font-semibold text-foreground">Dodaj do ekranu głównego</p>
+      <p className="mt-1 text-sm text-muted">
+        Otwieraj plan jak aplikację — z ikony na ekranie, bez szukania linku.
       </p>
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <Button
+          variant="secondary"
+          full
           onClick={() => {
             void promptEvent.prompt().then(async () => {
               await promptEvent.userChoice;
@@ -49,6 +52,7 @@ export function PwaInstallPrompt({ token }: { token: string }) {
         </Button>
         <Button
           variant="ghost"
+          full
           onClick={() => {
             localStorage.setItem(dismissedKey, "1");
             setPromptEvent(null);
@@ -57,6 +61,6 @@ export function PwaInstallPrompt({ token }: { token: string }) {
           Nie teraz
         </Button>
       </div>
-    </Card>
+    </section>
   );
 }

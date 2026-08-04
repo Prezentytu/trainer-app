@@ -148,14 +148,22 @@ export function ExerciseListSkeleton() {
 
 export function PortalHomeSkeleton() {
   return (
-    <div aria-busy aria-label="Wczytuję trening" className="space-y-4">
+    <div aria-busy aria-label="Wczytuję trening" className="mx-auto max-w-lg space-y-8">
       <div className="space-y-2">
-        <Skeleton className="h-4 w-28" />
-        <Skeleton className="h-7 w-48" />
+        <Skeleton className="h-3 w-12" />
+        <Skeleton className="h-9 w-44" />
       </div>
-      <Skeleton className="h-10 w-full rounded-md" />
-      <Skeleton className="h-64 w-full rounded-xl" />
-      <Skeleton className="h-12 w-full rounded-md" />
+      <div className="flex gap-1.5">
+        {Array.from({ length: 7 }).map((_, i) => (
+          <Skeleton key={i} className="mx-auto h-8 w-8 rounded-full" />
+        ))}
+      </div>
+      <div className="space-y-3">
+        <Skeleton className="h-3 w-28" />
+        <Skeleton className="h-8 w-56" />
+        <Skeleton className="h-4 w-36" />
+        <Skeleton className="h-40 w-full" />
+      </div>
     </div>
   );
 }
@@ -216,20 +224,26 @@ export function PlanDetailSkeleton() {
 /** Uniwersalny skeleton podstron portalu (progres, historia, pomiary, profil). */
 export function PortalPageSkeleton({ label = "Wczytuję…" }: { label?: string }) {
   return (
-    <div aria-busy aria-label={label} className="space-y-4">
+    <div aria-busy aria-label={label} className="space-y-8">
       <div className="space-y-2">
-        <Skeleton className="h-4 w-24" />
-        <Skeleton className="h-7 w-40" />
+        <Skeleton className="h-3 w-16" />
+        <Skeleton className="h-9 w-48" />
       </div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-3 gap-3 border-y border-border py-5">
         {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} className="h-24 w-full rounded-xl" />
+          <div key={i} className="space-y-2">
+            <Skeleton className="h-3 w-12" />
+            <Skeleton className="h-7 w-16" />
+          </div>
         ))}
       </div>
-      <Skeleton className="h-40 w-full rounded-xl" />
-      <div className="space-y-2">
+      <Skeleton className="h-32 w-full" />
+      <div className="space-y-0 divide-y divide-border border-y border-border">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-16 w-full rounded-xl" />
+          <div key={i} className="py-4">
+            <Skeleton className="h-4 w-2/3 max-w-[14rem]" />
+            <Skeleton className="mt-2 h-3 w-20" />
+          </div>
         ))}
       </div>
     </div>

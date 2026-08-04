@@ -1,17 +1,52 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api, PortalSessionSummary } from "@/lib/api";
-import { Badge, ErrorBanner } from "@/components/ui";
+import { ErrorBanner } from "@/components/ui";
 import { PortalPageSkeleton } from "@/components/skeletons";
 import { formatDurationMinutes } from "@/lib/estimateDuration";
 
-function formatDay(iso: string): string {
+/** Kiedy trenowałem — oś skanu dla bywalca. */
+function formatWhen(iso: string, todayIso: string): string {
   const d = new Date(`${iso}T12:00:00`);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("pl-PL", { weekday: "short", day: "numeric", month: "short" });
+  const today = new Date(`${todayIso}T12:00:00`);
+  const diff = Math.round((today.getTime() - d.getTime()) / 86_400_000);
+  if (diff === 0) return "Dziś";
+  if (diff === 1) return "Wczoraj";
+  if (diff > 1 && diff < 7) {
+    return d.toLocaleDateString("pl-PL", { weekday: "long" });
+  }
+  return d.toLocaleDateString("pl-PL", { day: "numeric", month: "short" });
+}
+
+function monthKey(iso: string): string {
+  return iso.slice(0, 7);
+}
+
+function monthHeading(ym: string): string {
+  const d = new Date(`${ym}-01T12:00:00`);
+  if (Number.isNaN(d.getTime())) return ym;
+  return d.toLocaleDateString("pl-PL", { month: "long", year: "numeric" });
+}
+
+function sessionTitle(s: PortalSessionSummary): string {
+  return s.dayLabel ?? s.planName ?? "Trening";
+}
+
+function sessionMeta(s: PortalSessionSummary): string {
+  const parts: string[] = [];
+  const dur = formatDurationMinutes(s.durationSeconds);
+  if (dur) parts.push(dur);
+  if (s.totalVolumeKg > 0) {
+    parts.push(`${Math.round(s.totalVolumeKg).toLocaleString("pl-PL")} kg`);
+  }
+  if (s.totalSets > 0) {
+    parts.push(`${s.totalSets} ${s.totalSets === 1 ? "seria" : s.totalSets < 5 ? "serie" : "serii"}`);
+  }
+  return parts.join(" · ");
 }
 
 export default function PortalHistoryPage() {
@@ -19,6 +54,7 @@ export default function PortalHistoryPage() {
   const token = params.token;
   const [history, setHistory] = useState<PortalSessionSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
   const load = useCallback(() => {
     api.portal
@@ -29,84 +65,120 @@ export default function PortalHistoryPage() {
 
   useEffect(load, [load]);
 
-  const monthLabel = new Date().toLocaleDateString("pl-PL", { month: "long" });
-  const volume = (history ?? []).reduce((a, s) => a + s.totalVolumeKg, 0);
+  const thisMonthIso = todayIso.slice(0, 7);
+  const monthSessions = (history ?? []).filter((s) => monthKey(s.performedOn) === thisMonthIso);
+  const monthVolume = monthSessions.reduce((a, s) => a + s.totalVolumeKg, 0);
+
+  const groups = useMemo(() => {
+    if (!history?.length) return [];
+    const map = new Map<string, PortalSessionSummary[]>();
+    for (const s of history) {
+      const key = monthKey(s.performedOn);
+      const bucket = map.get(key);
+      if (bucket) bucket.push(s);
+      else map.set(key, [s]);
+    }
+    return [...map.entries()];
+  }, [history]);
 
   return (
-    <div className="space-y-4 pb-8">
+    <div className="mx-auto max-w-lg space-y-8 pb-24">
       <header>
-        <h1 className="font-display text-3xl font-bold">Historia</h1>
-        {history ? (
-          <p className="mt-0.5 text-[13px] capitalize text-muted">
-            {monthLabel} · {history.length} treningów ·{" "}
-            <span className="font-mono tabular-nums">
-              {Math.round(volume).toLocaleString("pl-PL")} kg
+        <p className="text-xs font-medium uppercase tracking-caps text-muted">Historia</p>
+        <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          Ostatnie sesje
+        </h1>
+        {history && history.length > 0 ? (
+          <p className="mt-1.5 text-sm text-muted">
+            W tym miesiącu{" "}
+            <span className="font-mono tabular-nums text-foreground-secondary">
+              {monthSessions.length}
             </span>{" "}
-            objętości
+            {monthSessions.length === 1
+              ? "trening"
+              : monthSessions.length < 5
+                ? "treningi"
+                : "treningów"}
+            {monthVolume > 0 ? (
+              <>
+                {" · "}
+                <span className="font-mono tabular-nums text-foreground-secondary">
+                  {Math.round(monthVolume).toLocaleString("pl-PL")} kg
+                </span>
+              </>
+            ) : null}
           </p>
         ) : null}
       </header>
+
       <ErrorBanner message={error} />
 
       {!history ? (
         <PortalPageSkeleton label="Wczytuję historię…" />
       ) : history.length === 0 ? (
-        <div className="rounded-2xl border border-border bg-surface px-4 py-6 text-center shadow-card">
-          <p className="text-sm text-muted">Brak ukończonych treningów.</p>
+        <section className="space-y-3">
+          <p className="text-sm text-muted">
+            Tu zobaczysz ukończone treningi — od najnowszego. Wejdź, żeby sprawdzić serie i rekordy.
+          </p>
           <Link
             href={`/portal/${token}`}
-            className="mt-3 inline-block text-[15px] font-semibold text-accent hover:text-accent-strong"
+            className="inline-flex min-h-11 items-center text-sm font-medium text-accent-text transition-colors hover:text-accent-strong focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
           >
             Idź do dzisiejszego treningu
           </Link>
-        </div>
+        </section>
       ) : (
-        <ul className="space-y-3">
-          {history.map((s) => {
-            const prs = s.prs ?? [];
-            return (
-              <li key={s.id}>
-                <Link
-                  href={`/portal/${token}/session/${s.id}`}
-                  className="block rounded-2xl border border-border bg-surface p-4 shadow-card transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
-                >
-                  <div className="flex items-center gap-2">
-                    <p className="min-w-0 flex-1 truncate text-[15px] font-semibold">
-                      {s.dayLabel ?? s.planName ?? "Trening"}
-                    </p>
-                    {prs.length > 0 ? <Badge tone="pr">PR</Badge> : null}
-                    <p className="shrink-0 font-mono text-[13px] tabular-nums text-muted-faint">
-                      {formatDay(s.performedOn)}
-                    </p>
-                  </div>
-                  <div className="mt-3 flex gap-6">
-                    <Stat
-                      v={formatDurationMinutes(s.durationSeconds) ?? "—"}
-                      l="Czas"
-                    />
-                    <Stat
-                      v={`${Math.round(s.totalVolumeKg).toLocaleString("pl-PL")} kg`}
-                      l="Objętość"
-                    />
-                    <Stat v={`${s.totalSets}`} l="Serie" />
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="space-y-8">
+          {groups.map(([ym, sessions]) => (
+            <section key={ym} aria-label={monthHeading(ym)}>
+              {groups.length > 1 || ym !== thisMonthIso ? (
+                <p className="mb-2 font-mono text-xs font-medium uppercase tracking-caps text-muted">
+                  {monthHeading(ym)}
+                </p>
+              ) : null}
+              <ul className="divide-y divide-border border-y border-border">
+                {sessions.map((s) => {
+                  const prCount = (s.prs ?? []).length;
+                  const meta = sessionMeta(s);
+                  return (
+                    <li key={s.id}>
+                      <Link
+                        href={`/portal/${token}/session/${s.id}`}
+                        className="flex min-h-14 items-center gap-3 py-3.5 transition-colors duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:bg-surface-raised/50 focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:bg-surface-hover active:scale-[0.995]"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline gap-2">
+                            <p className="font-display text-lg font-bold tracking-tight text-foreground">
+                              {formatWhen(s.performedOn, todayIso)}
+                            </p>
+                            {prCount > 0 ? (
+                              <span className="font-mono text-xs font-medium tracking-caps text-pr">
+                                {prCount === 1 ? "PR" : `${prCount}× PR`}
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="mt-0.5 break-words text-sm text-foreground-secondary">
+                            {sessionTitle(s)}
+                            {s.planName && s.dayLabel && s.planName !== s.dayLabel ? (
+                              <span className="text-muted"> · {s.planName}</span>
+                            ) : null}
+                          </p>
+                          {meta ? (
+                            <p className="mt-1 font-mono text-sm tabular-nums text-muted">{meta}</p>
+                          ) : null}
+                        </div>
+                        <span className="shrink-0 text-lg text-muted-faint" aria-hidden>
+                          ›
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
+        </div>
       )}
-    </div>
-  );
-}
-
-function Stat({ v, l }: { v: string; l: string }) {
-  return (
-    <div>
-      <div className="font-mono text-[15px] tabular-nums text-foreground-secondary">{v}</div>
-      <div className="mt-0.5 text-xs font-semibold uppercase tracking-caps text-muted-faint">
-        {l}
-      </div>
     </div>
   );
 }

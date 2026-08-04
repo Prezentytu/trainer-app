@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { api } from "@/lib/api";
-import { Button, Card, ErrorBanner, inputClass } from "@/components/ui";
+import { Button, ErrorBanner, inputClass } from "@/components/ui";
 
 export function CheckInCard({ token, onSaved }: { token: string; onSaved?: () => void }) {
   const [moodScore, setMoodScore] = useState<number | null>(null);
@@ -26,15 +26,17 @@ export function CheckInCard({ token, onSaved }: { token: string; onSaved?: () =>
   };
 
   return (
-    <Card title="Krótki check-in" meta="Dwie liczby pomagają trenerowi dopasować plan.">
+    <section className="rounded-xl border border-border bg-surface-raised px-4 py-4">
+      <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">Check-in</p>
+      <p className="mt-1 text-sm text-muted">Dwie liczby pomagają trenerowi dopasować plan.</p>
       <ErrorBanner message={error} />
-      <Score label="Samopoczucie" value={moodScore} onChange={setMoodScore} />
-      <div className="mt-3">
+      <div className="mt-4 space-y-4">
+        <Score label="Samopoczucie" value={moodScore} onChange={setMoodScore} />
         <Score label="Sen ostatniej nocy" value={sleepScore} onChange={setSleepScore} />
       </div>
       {showNote ? (
         <textarea
-          className={`${inputClass} mt-3 min-h-[80px] resize-none py-3`}
+          className={`${inputClass} mt-4 min-h-[80px] resize-none py-3`}
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Opcjonalna notatka dla trenera…"
@@ -43,18 +45,24 @@ export function CheckInCard({ token, onSaved }: { token: string; onSaved?: () =>
       ) : (
         <button
           type="button"
-          className="mt-3 text-sm font-medium text-accent hover:text-accent-strong focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+          className="mt-4 min-h-11 text-sm font-medium text-foreground-secondary transition-colors duration-[var(--dur-fast)] hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
           onClick={() => setShowNote(true)}
         >
           Dodaj notatkę
         </button>
       )}
       <div className="mt-4">
-        <Button disabled={saving || (moodScore == null && sleepScore == null)} onClick={() => void submit()}>
+        <Button
+          variant="secondary"
+          full
+          disabled={saving || (moodScore == null && sleepScore == null)}
+          loading={saving}
+          onClick={() => void submit()}
+        >
           {saving ? "Wysyłanie…" : "Wyślij check-in"}
         </Button>
       </div>
-    </Card>
+    </section>
   );
 }
 
@@ -77,9 +85,9 @@ function Score({
             type="button"
             aria-pressed={value === score}
             onClick={() => onChange(score)}
-            className={`min-h-11 rounded-md border font-mono text-sm font-semibold tabular-nums transition-colors focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
+            className={`min-h-11 rounded-[10px] border font-mono text-sm font-semibold tabular-nums transition-[background-color,border-color,transform,color] duration-[var(--dur-fast)] ease-[var(--ease-out)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.98] ${
               value === score
-                ? "border-accent bg-accent text-accent-foreground"
+                ? "border-accent-border bg-accent-dim text-foreground"
                 : "border-border-strong bg-surface-sunken text-muted-strong hover:bg-surface-hover"
             }`}
           >

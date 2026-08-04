@@ -10,12 +10,13 @@ import {
   MuscleVolumeResponse,
   PortalSessionSummary,
 } from "@/lib/api";
-import { ErrorBanner } from "@/components/ui";
+import { ErrorBanner, StatBlock } from "@/components/ui";
 import { PortalPageSkeleton } from "@/components/skeletons";
 import { WeeklyActivityBar } from "@/components/WeeklyActivityBar";
 import { MuscleVolumeBars } from "@/components/MuscleVolumeBars";
 import { LineChart } from "@/components/charts/LineChart";
 import { formatDayShort } from "@/lib/dates";
+import { formatKg } from "@/lib/plates";
 
 function startOfWeekMonday(d: Date): Date {
   const day = d.getDay();
@@ -119,125 +120,113 @@ export default function PortalProgressPage() {
     };
   }, [sessions]);
 
+  const volumeDelta =
+    stats.deltaPct == null
+      ? undefined
+      : `${stats.deltaPct > 0 ? "+" : ""}${stats.deltaPct}% vs poprz.`;
+
   return (
-    <div className="space-y-4 pb-8">
+    <div className="mx-auto max-w-lg space-y-8 pb-24">
       <header>
-        <h1 className="font-display text-3xl font-bold">Progres</h1>
+        <p className="text-xs font-medium uppercase tracking-caps text-muted">Progres</p>
+        <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          Twoje wyniki
+        </h1>
       </header>
+
       <ErrorBanner message={error} />
 
       {!sessions || !records ? (
         <PortalPageSkeleton label="Wczytuję progres…" />
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3">
-            <Metric
-              value={String(stats.weekCount)}
-              label="Treningi · ten tydzień"
+          <section
+            aria-label="Podsumowanie"
+            className="grid grid-cols-3 gap-3 border-y border-border py-5"
+          >
+            <StatBlock label="Ten tydzień" value={String(stats.weekCount)} unit="tren." />
+            <StatBlock label="Seria" value={String(stats.streak)} unit="tyg." />
+            <StatBlock
+              label="Objętość"
+              value={Math.round(stats.monthVol).toLocaleString("pl-PL")}
+              unit="kg"
+              delta={volumeDelta}
             />
-            <Metric value={`${stats.streak} tyg.`} label="Seria bez przerwy" />
-            <Metric
-              value={`${Math.round(stats.monthVol).toLocaleString("pl-PL")} kg`}
-              label="Objętość · miesiąc"
-            />
-            <Metric
-              value={
-                stats.deltaPct == null
-                  ? "—"
-                  : `${stats.deltaPct > 0 ? "+" : ""}${stats.deltaPct}%`
-              }
-              label="Objętość vs poprzedni"
-            />
-          </div>
+          </section>
 
-          <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-            <p className="text-xs font-semibold uppercase tracking-caps text-muted">
-              Aktywność tygodniowa
+          <section aria-label="Aktywność tygodniowa">
+            <p className="mb-3 font-mono text-xs font-medium uppercase tracking-caps text-muted">
+              Aktywność · 8 tyg.
             </p>
-            <div className="mt-3">
-              <WeeklyActivityBar dates={stats.dates} weeks={8} />
-            </div>
-          </div>
+            <WeeklyActivityBar dates={stats.dates} weeks={8} />
+          </section>
 
-          <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-            <p className="text-xs font-semibold uppercase tracking-caps text-muted">
-              Tonaż · 12 tygodni
+          <section aria-label="Tonaż">
+            <p className="mb-3 font-mono text-xs font-medium uppercase tracking-caps text-muted">
+              Tonaż · 12 tyg.
             </p>
-            <div className="mt-3">
-              <LineChart
-                points={(trends?.weeks ?? []).map((w) => ({
-                  label: formatDayShort(w.weekStart),
-                  value: w.volumeKg,
-                }))}
-                unit="kg"
-                emptyHint="Za mało treningów na trend tonażu."
-                ariaLabel="Tonaż tygodniowy"
-              />
-            </div>
-          </div>
+            <LineChart
+              points={(trends?.weeks ?? []).map((w) => ({
+                label: formatDayShort(w.weekStart),
+                value: w.volumeKg,
+              }))}
+              unit="kg"
+              emptyHint="Za mało treningów na trend tonażu."
+              ariaLabel="Tonaż tygodniowy"
+            />
+          </section>
 
-          <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-            <p className="text-xs font-semibold uppercase tracking-caps text-muted">
+          <section aria-label="Objętość mięśniowa">
+            <p className="mb-3 font-mono text-xs font-medium uppercase tracking-caps text-muted">
               Objętość mięśniowa · 4 tyg.
             </p>
-            <div className="mt-3">
-              <MuscleVolumeBars
-                groups={muscleVolume?.groups ?? []}
-                mode="sets"
-                emptyHint="Tu zobaczysz balans mięśniowy po zapisanych seriach."
-              />
-            </div>
-          </div>
+            <MuscleVolumeBars
+              groups={muscleVolume?.groups ?? []}
+              mode="sets"
+              emptyHint="Tu zobaczysz balans mięśniowy po zapisanych seriach."
+            />
+          </section>
 
-          <div className="rounded-2xl border border-border bg-surface px-4 py-1.5 shadow-card">
-            <p className="px-0 py-3 text-xs font-semibold uppercase tracking-caps text-muted">
-              Rekordy · szacowany 1RM
+          <section aria-label="Rekordy">
+            <p className="mb-1 font-mono text-xs font-medium uppercase tracking-caps text-muted">
+              Rekordy · est. 1RM
             </p>
             {records.length === 0 ? (
-              <div className="py-4 text-center">
+              <div className="space-y-3 pt-3">
                 <p className="text-sm text-muted">
                   Tu zobaczysz rekordy per ćwiczenie — po zapisaniu serii.
                 </p>
                 <Link
                   href={`/portal/${token}`}
-                  className="mt-3 inline-block text-[15px] font-semibold text-accent-text"
+                  className="inline-flex min-h-11 items-center text-sm font-medium text-accent-text transition-colors hover:text-accent-strong focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
                 >
                   Rozpocznij trening
                 </Link>
               </div>
             ) : (
-              records.map((r) => (
-                <div
-                  key={r.exerciseId}
-                  className="flex min-h-14 items-center gap-3 border-b border-border last:border-0"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="break-words text-[15px] font-semibold text-foreground-secondary">
-                      {r.exerciseName}
+              <ul className="mt-2 divide-y divide-border border-y border-border">
+                {records.map((r) => (
+                  <li
+                    key={r.exerciseId}
+                    className="flex min-h-14 items-baseline justify-between gap-3 py-3.5"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="break-words text-[15px] font-medium leading-snug text-foreground">
+                        {r.exerciseName}
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted">{formatDay(r.performedOn)}</p>
+                    </div>
+                    <p className="shrink-0 font-mono text-lg font-semibold tabular-nums tracking-tight text-pr">
+                      {formatKg(r.estimated1Rm)}
+                      <span className="ml-1 text-sm font-medium text-muted">kg</span>
                     </p>
-                    <p className="mt-0.5 text-[13px] text-muted-faint">{formatDay(r.performedOn)}</p>
-                  </div>
-                  <p className="shrink-0 font-mono text-xl font-semibold tabular-nums text-pr">
-                    {r.estimated1Rm.toLocaleString("pl-PL", {
-                      maximumFractionDigits: 1,
-                    })}{" "}
-                    kg
-                  </p>
-                </div>
-              ))
+                  </li>
+                ))}
+              </ul>
             )}
-          </div>
+          </section>
         </>
       )}
-    </div>
-  );
-}
-
-function Metric({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-      <p className="font-mono text-3xl font-semibold tabular-nums text-foreground">{value}</p>
-      <p className="mt-1.5 text-xs font-semibold uppercase tracking-caps text-muted">{label}</p>
     </div>
   );
 }
