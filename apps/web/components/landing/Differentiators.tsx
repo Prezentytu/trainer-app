@@ -2,9 +2,9 @@ import { LandingReveal } from "./LandingReveal";
 
 const CARDS = [
   {
-    n: "01 / Szablony",
+    n: "01 / Biblioteka",
     title: "Jeden plan.\nWielu klientów.",
-    body: "Plan zapisujesz jako szablon i przypisujesz kolejnym podopiecznym. Ciężary i progresję ustawiasz osobno dla każdego.",
+    body: "Plan zapisujesz do biblioteki i przypisujesz kolejnym podopiecznym. Ciężary i progresję ustawiasz osobno dla każdego.",
   },
   {
     n: "02 / Trening na żywo",

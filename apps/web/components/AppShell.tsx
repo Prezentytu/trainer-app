@@ -1,12 +1,21 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { UserButton, useUser } from "@clerk/nextjs";
-import { ClipboardList, Dumbbell, Home, Menu, Users, X } from "lucide-react";
+import { useClerk, useUser } from "@clerk/nextjs";
+import {
+  ChevronUp,
+  ClipboardList,
+  Dumbbell,
+  Home,
+  LogOut,
+  Menu,
+  Settings,
+  Users,
+  X,
+} from "lucide-react";
 import { api, clerkEnabled } from "@/lib/api";
-import { clerkAppearance } from "@/lib/clerkAppearance";
 import { Avatar } from "@/components/ui";
 import { Wordmark } from "@/components/Wordmark";
 
@@ -15,6 +24,7 @@ const NAV = [
   { href: "/clients", label: "Klienci", icon: Users, countKey: "clients" as const },
   { href: "/exercises", label: "Ćwiczenia", icon: Dumbbell, countKey: null },
   { href: "/plans", label: "Plany", icon: ClipboardList, countKey: "plans" as const },
+  { href: "/settings", label: "Ustawienia", icon: Settings, countKey: null },
 ];
 
 function NavLinks({
@@ -40,27 +50,27 @@ function NavLinks({
             onClick={onNavigate}
             title={compact ? item.label : undefined}
             aria-current={active ? "page" : undefined}
-            className={`relative flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
+            className={`relative flex items-center rounded-[10px] py-2.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
               active
                 ? "bg-accent-dim text-foreground"
                 : "text-muted hover:bg-surface-hover hover:text-foreground"
-            } ${compact ? "justify-center" : "justify-between"}`}
+            } ${compact ? "justify-center px-0" : "gap-3 px-3"}`}
           >
             {active ? (
               <span aria-hidden className="absolute top-2 bottom-2 left-0 w-0.5 bg-accent" />
             ) : null}
-            <span className={`flex items-center gap-3 ${compact ? "justify-center" : "min-w-0"}`}>
-              <Icon aria-hidden className="h-6 w-6 shrink-0" strokeWidth={1.75} />
-              {!compact && (
-                <span className="truncate font-mono text-xs font-medium uppercase tracking-caps">
+            <Icon aria-hidden className="h-5 w-5 shrink-0" strokeWidth={1.75} />
+            {!compact && (
+              <>
+                <span className="min-w-0 flex-1 truncate font-mono text-xs font-medium uppercase tracking-caps">
                   {item.label}
                 </span>
-              )}
-            </span>
-            {!compact && count != null && (
-              <span className="shrink-0 rounded-full bg-surface-active px-2 py-0.5 font-mono text-xs font-semibold tabular-nums text-foreground-secondary">
-                {count}
-              </span>
+                {count != null ? (
+                  <span className="shrink-0 rounded-full bg-surface-active px-2 py-0.5 font-mono text-xs font-semibold tabular-nums text-foreground-secondary">
+                    {count}
+                  </span>
+                ) : null}
+              </>
             )}
           </Link>
         );
@@ -69,60 +79,219 @@ function NavLinks({
   );
 }
 
-function LocalTrainerFooter({ compact, clientCount }: { compact?: boolean; clientCount: number | null }) {
+function AccountMenu({
+  open,
+  onClose,
+  onSignOut,
+  onOpenProfile,
+  anchorId,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSignOut?: () => void;
+  onOpenProfile?: () => void;
+  anchorId: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    const onPointer = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (ref.current?.contains(target)) return;
+      const anchor = document.getElementById(anchorId);
+      if (anchor?.contains(target)) return;
+      onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onPointer);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onPointer);
+    };
+  }, [open, onClose, anchorId]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      ref={ref}
+      role="menu"
+      className="absolute bottom-full left-0 z-50 mb-2 w-full min-w-[12rem] overflow-hidden rounded-[10px] border border-border bg-surface shadow-modal"
+    >
+      {onOpenProfile ? (
+        <button
+          type="button"
+          role="menuitem"
+          onClick={() => {
+            onOpenProfile();
+            onClose();
+          }}
+          className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm text-foreground-secondary transition-colors hover:bg-surface-hover hover:text-foreground focus-visible:outline-none focus-visible:bg-surface-hover"
+        >
+          <Settings aria-hidden className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+          Konto
+        </button>
+      ) : null}
+      {onSignOut ? (
+        <button
+          type="button"
+          role="menuitem"
+          onClick={() => {
+            onSignOut();
+            onClose();
+          }}
+          className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm text-foreground-secondary transition-colors hover:bg-surface-hover hover:text-foreground focus-visible:outline-none focus-visible:bg-surface-hover"
+        >
+          <LogOut aria-hidden className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+          Wyloguj się
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function AccountTile({
+  compact,
+  name,
+  interactive,
+  onActivate,
+  menuOpen,
+  onMenuClose,
+  onSignOut,
+  onOpenProfile,
+}: {
+  compact?: boolean;
+  name: string;
+  interactive: boolean;
+  onActivate?: () => void;
+  menuOpen: boolean;
+  onMenuClose: () => void;
+  onSignOut?: () => void;
+  onOpenProfile?: () => void;
+}) {
+  const triggerId = useId();
+
   if (compact) {
     return (
-      <div className="mt-auto flex justify-center px-1 pt-4">
-        <Avatar name="Trener" size="sm" />
+      <div className="relative mt-auto border-t border-border pt-3">
+        <button
+          id={triggerId}
+          type="button"
+          disabled={!interactive}
+          onClick={onActivate}
+          aria-haspopup={interactive ? "menu" : undefined}
+          aria-expanded={interactive ? menuOpen : undefined}
+          aria-label={interactive ? `Konto: ${name}` : name}
+          className="mx-auto flex h-10 w-10 items-center justify-center rounded-[10px] transition-colors duration-[var(--dur-fast)] hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] disabled:pointer-events-none"
+        >
+          <Avatar name={name} size="sm" />
+        </button>
+        {interactive ? (
+          <AccountMenu
+            open={menuOpen}
+            onClose={onMenuClose}
+            onSignOut={onSignOut}
+            onOpenProfile={onOpenProfile}
+            anchorId={triggerId}
+          />
+        ) : null}
       </div>
     );
   }
+
+  const body = (
+    <>
+      <Avatar name={name} size="md" />
+      <span className="min-w-0 flex-1 truncate text-left text-sm font-medium text-foreground">{name}</span>
+      {interactive ? (
+        <ChevronUp
+          aria-hidden
+          className={`h-4 w-4 shrink-0 text-muted transition-transform duration-[var(--dur-fast)] ${
+            menuOpen ? "" : "rotate-180"
+          }`}
+          strokeWidth={1.75}
+        />
+      ) : null}
+    </>
+  );
+
   return (
-    <div className="mt-auto flex items-center gap-3 border-t border-border px-2 pt-4">
-      <Avatar name="Trener" size="md" />
-      <div className="min-w-0">
-        <div className="truncate text-sm font-medium text-foreground">Trener</div>
-        <div className="truncate font-mono text-xs tabular-nums text-muted">
-          {clientCount != null ? `${clientCount} klientów` : "—"}
-        </div>
-      </div>
+    <div className="relative mt-auto w-full border-t border-border pt-3">
+      {interactive ? (
+        <button
+          id={triggerId}
+          type="button"
+          onClick={onActivate}
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          className="flex w-full min-w-0 items-center gap-3 rounded-[10px] px-3 py-2.5 transition-colors duration-[var(--dur-fast)] hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+        >
+          {body}
+        </button>
+      ) : (
+        <div className="flex w-full min-w-0 items-center gap-3 rounded-[10px] px-3 py-2.5">{body}</div>
+      )}
+      {interactive ? (
+        <AccountMenu
+          open={menuOpen}
+          onClose={onMenuClose}
+          onSignOut={onSignOut}
+          onOpenProfile={onOpenProfile}
+          anchorId={triggerId}
+        />
+      ) : null}
     </div>
   );
 }
 
-/** Stopka z sesją Clerk — tylko gdy ClerkProvider jest aktywny. */
-function ClerkTrainerFooter({ compact, clientCount }: { compact?: boolean; clientCount: number | null }) {
+function LocalTrainerFooter({ compact, name }: { compact?: boolean; name: string }) {
+  return (
+    <AccountTile
+      compact={compact}
+      name={name}
+      interactive={false}
+      menuOpen={false}
+      onMenuClose={() => {}}
+    />
+  );
+}
+
+/** Stopka z sesją Clerk — pełnoszerokościowy kafelek z imieniem i nazwiskiem + menu wylogowania. */
+function ClerkTrainerFooter({ compact, fallbackName }: { compact?: boolean; fallbackName: string }) {
   const { user } = useUser();
+  const { signOut, openUserProfile } = useClerk();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const fromClerk = [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim();
   const displayName =
+    fromClerk ||
     user?.fullName?.trim() ||
-    user?.firstName?.trim() ||
+    fallbackName ||
     user?.primaryEmailAddress?.emailAddress ||
     "Trener";
 
-  const button = <UserButton appearance={clerkAppearance} />;
-
-  if (compact) {
-    return <div className="mt-auto flex justify-center px-1 pt-4">{button}</div>;
-  }
-
   return (
-    <div className="mt-auto flex items-center gap-3 border-t border-border px-2 pt-4">
-      {button}
-      <div className="min-w-0">
-        <div className="truncate text-sm font-medium text-foreground">{displayName}</div>
-        <div className="truncate font-mono text-xs tabular-nums text-muted">
-          {clientCount != null ? `${clientCount} klientów` : "—"}
-        </div>
-      </div>
-    </div>
+    <AccountTile
+      compact={compact}
+      name={displayName}
+      interactive
+      menuOpen={menuOpen}
+      onActivate={() => setMenuOpen((v) => !v)}
+      onMenuClose={() => setMenuOpen(false)}
+      onSignOut={() => void signOut({ redirectUrl: "/sign-in" })}
+      onOpenProfile={() => openUserProfile()}
+    />
   );
 }
 
-function TrainerFooter({ compact, clientCount }: { compact?: boolean; clientCount: number | null }) {
+function TrainerFooter({ compact, name }: { compact?: boolean; name: string }) {
   if (!clerkEnabled) {
-    return <LocalTrainerFooter compact={compact} clientCount={clientCount} />;
+    return <LocalTrainerFooter compact={compact} name={name} />;
   }
-  return <ClerkTrainerFooter compact={compact} clientCount={clientCount} />;
+  return <ClerkTrainerFooter compact={compact} fallbackName={name} />;
 }
 
 function BottomNav() {
@@ -148,7 +317,7 @@ function BottomNav() {
             >
               <Icon
                 aria-hidden
-                className={`h-6 w-6 ${active ? "text-foreground" : "text-muted"}`}
+                className={`h-5 w-5 ${active ? "text-foreground" : "text-muted"}`}
                 strokeWidth={1.75}
               />
             </span>
@@ -167,6 +336,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     clients: null,
     plans: null,
   });
+  const [trainerName, setTrainerName] = useState("Trener");
   const pathname = usePathname();
   // Kreator/podgląd planu (/plans/new, /plans/[id]) potrzebuje szerokiej siatki na dni tygodnia —
   // lista planów (/plans) zostaje przy wąskim, czytelnym kontenerze jak reszta stron. Te same
@@ -180,6 +350,15 @@ export function AppShell({ children }: { children: ReactNode }) {
       .then((c) => setCounts({ clients: c.clients, plans: c.plans }))
       .catch(() => {
         // Liczniki nawigacji to tylko usprawnienie orientacji — brak backendu nie może wywrócić layoutu.
+      });
+    api
+      .me()
+      .then((me) => {
+        const n = me.name?.trim();
+        if (n) setTrainerName(n);
+      })
+      .catch(() => {
+        // Imię z /api/me jest opcjonalne — zostaje fallback „Trener”.
       });
   }, []);
 
@@ -200,13 +379,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       <aside
         onMouseEnter={() => showRail && setRailExpanded(true)}
         onMouseLeave={() => isPlanEditor && setRailExpanded(false)}
-        className={`hidden shrink-0 flex-col gap-6 border-r border-border bg-surface p-4 transition-[width] duration-150 md:sticky md:top-0 md:flex md:h-screen md:overflow-y-auto ${
+        className={`hidden shrink-0 flex-col gap-6 border-r border-border bg-surface p-3 transition-[width] duration-150 md:sticky md:top-0 md:flex md:h-screen md:overflow-y-auto ${
           showRail ? "md:w-16" : "md:w-56"
         }`}
       >
-        <Wordmark compact={showRail} className="px-2" />
+        <Wordmark compact={showRail} className="px-3" />
         <NavLinks counts={counts} compact={showRail} />
-        <TrainerFooter compact={showRail} clientCount={counts.clients} />
+        <TrainerFooter compact={showRail} name={trainerName} />
       </aside>
 
       {drawerOpen && (
@@ -217,8 +396,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             onClick={() => setDrawerOpen(false)}
             className="absolute inset-0 bg-[var(--overlay-scrim)]"
           />
-          <aside className="relative flex h-full w-64 max-w-[80vw] flex-col gap-6 border-r border-border bg-surface p-4 shadow-modal">
-            <div className="flex items-center justify-between">
+          <aside className="relative flex h-full w-64 max-w-[80vw] flex-col gap-6 border-r border-border bg-surface p-3 shadow-modal">
+            <div className="flex items-center justify-between px-1">
               <Wordmark />
               <button
                 type="button"
@@ -230,7 +409,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </button>
             </div>
             <NavLinks counts={counts} onNavigate={() => setDrawerOpen(false)} />
-            <TrainerFooter clientCount={counts.clients} />
+            <TrainerFooter name={trainerName} />
           </aside>
         </div>
       )}

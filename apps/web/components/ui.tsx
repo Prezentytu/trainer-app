@@ -4,7 +4,11 @@ import { ReactNode, useCallback, useEffect, useId, useRef, useState } from "reac
 
 export function PageHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: ReactNode }) {
   return (
-    <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div
+      className={`mb-8 flex flex-col gap-3 sm:flex-row sm:justify-between ${
+        subtitle ? "sm:items-start" : "sm:items-center"
+      }`}
+    >
       <div className="min-w-0">
         <h1 className="break-words font-display text-xl font-bold sm:text-2xl">{title}</h1>
         {subtitle ? <p className="mt-1 max-w-[70ch] break-words text-sm leading-[var(--leading-body)] text-muted-strong">{subtitle}</p> : null}
@@ -24,6 +28,14 @@ export function Skeleton({ className = "" }: { className?: string }) {
   );
 }
 
+type CardIconTone = "neutral" | "pr" | "danger";
+
+const CARD_ICON_TONE: Record<CardIconTone, string> = {
+  neutral: "bg-surface-active text-muted-strong",
+  pr: "border border-pr-border bg-pr-dim text-pr",
+  danger: "bg-danger-bg text-danger",
+};
+
 export function Card({
   children,
   className = "",
@@ -31,6 +43,9 @@ export function Card({
   eyebrowMark,
   title,
   meta,
+  icon,
+  iconTone = "neutral",
+  headerAction,
   interactive,
   selected,
   pending,
@@ -43,6 +58,11 @@ export function Card({
   eyebrowMark?: boolean;
   title?: string;
   meta?: string;
+  /** Kafelek ikony po lewej nagłówka — bez limonki (budżet accent). */
+  icon?: ReactNode;
+  iconTone?: CardIconTone;
+  /** Akcja / meta po prawej stronie nagłówka. */
+  headerAction?: ReactNode;
   interactive?: boolean;
   selected?: boolean;
   /** Dashed border — stan pending / next. */
@@ -61,18 +81,27 @@ export function Card({
       : "",
     className,
   ].join(" ");
-  const header =
-    eyebrow || title || meta ? (
-      <div className="mb-3 min-w-0">
+  const hasHeader = Boolean(eyebrow || title || meta || icon || headerAction);
+  const header = hasHeader ? (
+    <div className="mb-4 flex items-start gap-3">
+      {icon ? (
+        <span
+          aria-hidden
+          className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${CARD_ICON_TONE[iconTone]}`}
+        >
+          {icon}
+        </span>
+      ) : null}
+      <div className="min-w-0 flex-1">
         {eyebrow ? (
-          <div className="eyebrow mb-1">
-            {eyebrowMark ? `/// ${eyebrow}` : eyebrow}
-          </div>
+          <div className="eyebrow mb-1">{eyebrowMark ? `/// ${eyebrow}` : eyebrow}</div>
         ) : null}
         {title ? <div className="break-words font-display text-lg font-bold text-foreground">{title}</div> : null}
         {meta ? <div className="mt-0.5 break-words text-sm leading-[var(--leading-label)] text-muted">{meta}</div> : null}
       </div>
-    ) : null;
+      {headerAction ? <div className="shrink-0">{headerAction}</div> : null}
+    </div>
+  ) : null;
 
   if (interactive || onClick) {
     return (

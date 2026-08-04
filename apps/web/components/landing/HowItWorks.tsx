@@ -9,7 +9,7 @@ const STEPS = [
   {
     n: "02",
     title: "Ułóż plan",
-    body: "Szablon albo własny układ — i gotowe.",
+    body: "Gotowy plan z biblioteki albo własny układ — i gotowe.",
   },
   {
     n: "03",

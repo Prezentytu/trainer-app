@@ -66,7 +66,7 @@ export function PlanHeader({
         <div className="min-w-0 flex-1">
           <p className="eyebrow mb-2 text-muted">
             {"/// "}
-            {isTemplate ? "Szablon" : "Plan klienta"} · Tydzień {activeWeek}
+            {isTemplate ? "Wielokrotnego użytku" : "Plan klienta"} · Tydzień {activeWeek}
           </p>
           <div className="flex flex-wrap items-center gap-2">
             {editingName ? (
@@ -87,7 +87,9 @@ export function PlanHeader({
                 {name.trim() || "Bez nazwy"}
               </button>
             )}
-            <Badge tone={isTemplate ? "accent" : "neutral"}>{isTemplate ? "Szablon" : "Plan"}</Badge>
+            <Badge tone={isTemplate ? "accent" : "neutral"}>
+              {isTemplate ? "Wielokrotnego użytku" : "Plan"}
+            </Badge>
           </div>
           <p className="mt-1 text-sm text-muted-strong">
             {daysPerWeek} {daysPerWeek === 1 ? "dzień" : "dni"}/tydz. ·{" "}
@@ -162,7 +164,7 @@ export function PlanHeader({
               onChange={(e) => onIsTemplateChange(e.target.value === "template")}
             >
               <option value="plan">Plan klienta (przypisywalny)</option>
-              <option value="template">Szablon (wielokrotnego użytku)</option>
+              <option value="template">Do wielokrotnego użytku</option>
             </select>
           </Field>
           <Field label="Zasady ogólne / opis">

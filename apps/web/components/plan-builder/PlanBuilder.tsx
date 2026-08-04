@@ -176,13 +176,7 @@ export default function PlanBuilder({
   }, [weekItems, library.exercises]);
 
   const daysPerWeek = draft.visibleDays.length;
-  const submitLabel = plan
-    ? draft.isTemplate
-      ? "Zapisz szablon"
-      : "Zapisz plan"
-    : draft.isTemplate
-      ? "Utwórz szablon"
-      : "Utwórz plan";
+  const submitLabel = plan ? "Zapisz plan" : "Utwórz plan";
 
   const boardCallbacks = {
     onAddDay: () => draft.addDay(draft.activeWeek),

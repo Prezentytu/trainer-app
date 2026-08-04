@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
+  CalendarCheck,
   CheckCircle2,
+  Circle,
   ClipboardX,
-  Download,
+  History,
   Trophy,
+  Users,
 } from "lucide-react";
 import {
   api,
@@ -21,7 +24,6 @@ import {
   Card,
   EmptyState,
   ErrorBanner,
-  IconButton,
   PageHeader,
   Dialog,
   ProgressRing,
@@ -107,21 +109,6 @@ export function TrainerDashboard() {
     }
   };
 
-  const downloadCsv = async () => {
-    try {
-      const csv = await api.exportCsv();
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = `workout-alchemist-export-${new Date().toISOString().slice(0, 10)}.csv`;
-      anchor.click();
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      setError((e as Error).message);
-    }
-  };
-
   const sendReminder = async () => {
     if (!reminder) return;
     setSendingReminder(true);
@@ -141,34 +128,11 @@ export function TrainerDashboard() {
     <div>
       <PageHeader
         title="Panel"
+        subtitle="Przegląd ostatnich 7 dni"
         action={
-          <div className="flex flex-wrap items-center gap-2">
-            <IconButton
-              title="Eksportuj dane"
-              size="md"
-              onClick={async () => {
-                try {
-                  const data = await api.export();
-                  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-                  const a = document.createElement("a");
-                  a.href = URL.createObjectURL(blob);
-                  a.download = `workout-alchemist-export-${new Date().toISOString().slice(0, 10)}.json`;
-                  a.click();
-                  URL.revokeObjectURL(a.href);
-                } catch (e) {
-                  setError((e as Error).message);
-                }
-              }}
-            >
-              <Download aria-hidden className="h-4 w-4" strokeWidth={1.75} />
-            </IconButton>
-            <Button variant="secondary" size="sm" onClick={() => void downloadCsv()}>
-              CSV
-            </Button>
-            <Link href="/plans/new">
-              <Button>+ Nowy szablon</Button>
-            </Link>
-          </div>
+          <Link href="/plans/new">
+            <Button>+ Nowy plan</Button>
+          </Link>
         }
       />
       <ErrorBanner message={error} />
@@ -183,28 +147,37 @@ export function TrainerDashboard() {
             </p>
           </div>
           <ol className="space-y-3 text-sm text-foreground-secondary">
-            <li className="flex items-start gap-3">
-              <span className="font-mono text-muted-faint">1.</span>
-              <span>
-                <Link href="/clients" className="font-semibold text-accent-text hover:underline">
-                  Dodaj klienta
-                </Link>{" "}
-                — imię i cel wystarczą.
-              </span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="font-mono text-muted-faint">2.</span>
-              <span>
-                <Link href="/plans" className="font-semibold text-accent-text hover:underline">
-                  Przypisz plan
-                </Link>{" "}
-                — użyj szablonu startowego albo zbuduj własny.
-              </span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="font-mono text-muted-faint">3.</span>
-              <span>Skopiuj link portalu z karty klienta i wyślij go podopiecznemu.</span>
-            </li>
+            <OnboardingStep done={onboardingSteps[0]}>
+              {onboardingSteps[0] ? (
+                <span>Klient dodany</span>
+              ) : (
+                <span>
+                  <Link href="/clients" className="font-semibold text-accent-text hover:underline">
+                    Dodaj klienta
+                  </Link>{" "}
+                  — imię i cel wystarczą.
+                </span>
+              )}
+            </OnboardingStep>
+            <OnboardingStep done={onboardingSteps[1]}>
+              {onboardingSteps[1] ? (
+                <span>Plan przypisany</span>
+              ) : (
+                <span>
+                  <Link href="/plans" className="font-semibold text-accent-text hover:underline">
+                    Przypisz plan
+                  </Link>{" "}
+                  — wybierz gotowy plan z biblioteki albo zbuduj własny.
+                </span>
+              )}
+            </OnboardingStep>
+            <OnboardingStep done={onboardingSteps[2]}>
+              {onboardingSteps[2] ? (
+                <span>Link portalu wysłany</span>
+              ) : (
+                <span>Skopiuj link portalu z karty klienta i wyślij go podopiecznemu.</span>
+              )}
+            </OnboardingStep>
           </ol>
         </Card>
       )}
@@ -215,11 +188,13 @@ export function TrainerDashboard() {
             label="Trenowało (7 dni)"
             value={`${trainedCount} z ${clientActivity.length}`}
             href="/clients"
+            icon={<Users aria-hidden className="h-4 w-4 text-muted-faint" strokeWidth={1.75} />}
           />
           <StatCard
             label="Sesje (7 dni)"
             value={sessionsThisWeek}
             href="/clients"
+            icon={<CalendarCheck aria-hidden className="h-4 w-4 text-muted-faint" strokeWidth={1.75} />}
             delta={
               sessionsDelta === 0
                 ? "bez zmian vs poprz. tydz."
@@ -230,13 +205,26 @@ export function TrainerDashboard() {
             label="Nowe rekordy (7 dni)"
             value={prsLast7Days}
             href="/clients"
+            icon={<Trophy aria-hidden className="h-4 w-4 text-pr" strokeWidth={1.75} />}
             valueClassName="text-pr"
           />
         </div>
       )}
 
       {needsAttention.length > 0 ? (
-        <Card className="mb-6" eyebrow="Wymagają uwagi" eyebrowMark pending>
+        <Card
+          className="mb-6"
+          eyebrow="Wymagają uwagi"
+          eyebrowMark
+          pending
+          icon={<AlertTriangle className="h-4 w-4" strokeWidth={1.75} />}
+          iconTone="danger"
+          headerAction={
+            <span className="font-mono text-xs tabular-nums text-muted">
+              {needsAttention.length}
+            </span>
+          }
+        >
           <ul className="divide-y divide-border">
             {needsAttention.map(({ client, status }) => (
               <li key={client.clientId} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -276,13 +264,14 @@ export function TrainerDashboard() {
       ) : null}
 
       {!showOnboarding && (
-        <Card className="mb-6">
-          <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-            <div>
-              <p className="eyebrow text-muted">{"/// Ten tydzień"}</p>
-              <h2 className="mt-1 font-display text-lg font-bold">Klienci w tym tygodniu</h2>
-            </div>
-            {needsAttention.length === 0 ? (
+        <Card
+          className="mb-6"
+          eyebrow="Ten tydzień"
+          eyebrowMark
+          title="Klienci w tym tygodniu"
+          icon={<Users className="h-4 w-4" strokeWidth={1.75} />}
+          headerAction={
+            needsAttention.length === 0 ? (
               <span className="inline-flex items-center gap-1.5 text-sm text-positive">
                 <CheckCircle2 aria-hidden className="h-4 w-4" strokeWidth={1.75} />
                 Wszyscy trenują zgodnie z planem
@@ -291,9 +280,9 @@ export function TrainerDashboard() {
               <span className="font-mono text-xs tabular-nums text-muted">
                 {needsAttention.length} wymaga uwagi
               </span>
-            )}
-          </div>
-
+            )
+          }
+        >
           {rows.length === 0 ? (
             <EmptyState
               title="Brak klientów"
@@ -360,11 +349,12 @@ export function TrainerDashboard() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <div className="mb-4">
-            <p className="eyebrow text-muted">{"/// Historia"}</p>
-            <h2 className="mt-1 font-display text-lg font-bold">Ostatnie sesje</h2>
-          </div>
+        <Card
+          eyebrow="Historia"
+          eyebrowMark
+          title="Ostatnie sesje"
+          icon={<History className="h-4 w-4" strokeWidth={1.75} />}
+        >
           {recentSessions.length === 0 ? (
             <EmptyState
               title="Brak treningów"
@@ -401,14 +391,13 @@ export function TrainerDashboard() {
           )}
         </Card>
 
-        <Card>
-          <div className="mb-4 flex items-center gap-2">
-            <Trophy aria-hidden className="h-4 w-4 text-pr" strokeWidth={1.75} />
-            <div>
-              <p className="eyebrow">{"/// Personal bests"}</p>
-              <h2 className="mt-0.5 font-display text-lg font-bold">Rekordy PR</h2>
-            </div>
-          </div>
+        <Card
+          eyebrow="Rekordy"
+          eyebrowMark
+          title="Nowe rekordy"
+          icon={<Trophy className="h-4 w-4" strokeWidth={1.75} />}
+          iconTone="pr"
+        >
           {recentPrs.length === 0 ? (
             <EmptyState
               title="Dodaj pierwszą serię z ciężarem"
@@ -458,25 +447,41 @@ export function TrainerDashboard() {
   );
 }
 
+function OnboardingStep({ done, children }: { done: boolean; children: ReactNode }) {
+  return (
+    <li className={`flex items-start gap-3 ${done ? "text-muted" : ""}`}>
+      {done ? (
+        <CheckCircle2 aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-positive" strokeWidth={1.75} />
+      ) : (
+        <Circle aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-muted-faint" strokeWidth={1.75} />
+      )}
+      <span className={done ? "line-through decoration-border-strong" : undefined}>{children}</span>
+    </li>
+  );
+}
+
 function StatCard({
   label,
   value,
   href,
   delta,
   valueClassName,
+  icon,
 }: {
   label: string;
   value: string | number;
   href: string;
   delta?: string;
   valueClassName?: string;
+  icon?: ReactNode;
 }) {
   return (
     <Link
       href={href}
       className="block h-full rounded-xl focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
     >
-      <Card className="h-full transition-colors hover:border-border-strong">
+      <Card className="relative h-full transition-colors hover:border-border-strong">
+        {icon ? <span className="absolute top-5 right-5 sm:top-6 sm:right-6">{icon}</span> : null}
         <StatBlock
           label={label}
           value={value}

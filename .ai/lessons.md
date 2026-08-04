@@ -176,6 +176,24 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 4. Metadata (`layout.tsx`) i OG image muszą mieć to samo hasło co landing.
 **Dotyczy**: `apps/web/components/landing/*`, `AuthScreen.tsx`, `app/layout.tsx`, `opengraph-image.tsx`.
 
+## Sidebar: kafelek konta na pełną szerokość, nie osobny UserButton
+
+**Kontekst**: Stopka sidebara miała mały `UserButton` (avatar Clerka) obok tekstu „Trener" — klikalny był tylko okrąg, nie cały rząd; padding `px-2` vs nawigacja `px-3` rozjeżdżał kolumnę.
+**Problem**: Wylogowanie niewidoczne / nieosiągalne jak w Linear/Notion; ikony i etykiety NAV nie leżały w jednej osi z awatarem.
+**Zasada**: Pełnoszerokościowy kafelek konta (`w-full`, ten sam `px-3` co pozycje NAV) otwiera menu z „Wyloguj się" (`useClerk().signOut`). Ikony NAV w jednym rzędzie z `flex-1` na etykiecie — bez zagnieżdżonego `justify-between` rozjeżdżającego kolumnę.
+**Dotyczy**: `AppShell.tsx` (AccountTile / TrainerFooter / NavLinks).
+
+## Nagłówek karty i język UI: jedno źródło prawdy, zero żargonu IT
+
+**Kontekst**: Panel miał ręczne nagłówki kart (`mt-1` vs `mt-0.5`, ikona tylko przy PR) — tytuły w siatce 2 kolumn się rozjeżdżały. W nagłówku strony stały „CSV" i ikona eksportu JSON obok „+ Nowy szablon" (mylące: `/plans/new` tworzy plan klienta).
+**Problem**: Brak wspólnego prymitywu nagłówka karty; etykiety IT/programistyczne na głównym CTA; słowo „szablon" nie istnieje w języku trenera.
+**Zasada**:
+1. Nagłówek karty tylko przez propsy `Card` (`eyebrow`/`title`/`icon`/`iconTone`/`headerAction`) — nigdy ręczny `mb-4` + różne marginesy.
+2. Narzędzia administracyjne (kopia danych) → Ustawienia, nie obok primary CTA. Copy: „Pobierz plik dla Excela (.csv)", nie „CSV" / „Eksportuj".
+3. W UI: „plan" / „biblioteka planów" / „wielokrotnego użytku" — nigdy „szablon". Pole API `isTemplate` zostaje.
+4. Eyebrowy i UI wyłącznie po polsku (zakaz `PERSONAL BESTS` itd.).
+**Dotyczy**: `ui.tsx` Card, `TrainerDashboard.tsx`, `/settings`, moduł planów, landing.
+
 ## Copy marketingowe: język trenera, nie kalki i metafory
 
 **Kontekst**: Landing i AuthScreen dostały teksty typu „Plan jak w notatniku", „Ułóż raz, przypisuj kolejnym", „tapnięciem", „dogrywa", „plateau", „leci do studia".

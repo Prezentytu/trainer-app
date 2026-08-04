@@ -5,12 +5,12 @@ import { Skeleton } from "@/components/ui";
 export function DashboardSkeleton() {
   return (
     <div aria-busy aria-label="Wczytuję panel">
-      <div className="mb-8 flex items-center justify-between gap-3">
-        <Skeleton className="h-7 w-32" />
-        <div className="flex gap-2">
-          <Skeleton className="h-10 w-10 rounded-md" />
-          <Skeleton className="h-10 w-36 rounded-md" />
+      <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-32" />
+          <Skeleton className="h-4 w-48" />
         </div>
+        <Skeleton className="h-10 w-36 rounded-md" />
       </div>
       <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
@@ -78,7 +78,7 @@ export function ClientDetailSkeleton() {
 export function PlanListSkeleton() {
   return (
     <div aria-busy aria-label="Wczytuję plany" className="space-y-10">
-      {["Szablony", "Plany klientów"].map((section) => (
+      {["Biblioteka planów", "Plany klientów"].map((section) => (
         <div key={section}>
           <div className="mb-1 flex items-center gap-3">
             <Skeleton className="h-4 w-24" />

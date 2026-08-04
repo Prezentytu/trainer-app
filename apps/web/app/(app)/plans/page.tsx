@@ -68,7 +68,7 @@ export default function PlansPage() {
     <div>
       <PageHeader
         title="Plany treningowe"
-        subtitle="Szablony wielokrotnego użytku i plany gotowe do przypisania"
+        subtitle="Twoja biblioteka planów i plany przypisane klientom"
         action={
           <div className="flex flex-wrap gap-2">
             <Link href="/plans/import">
@@ -87,21 +87,21 @@ export default function PlansPage() {
       {!loading ? (
         <>
           <Section
-            title="Szablony"
+            title="Biblioteka planów"
             count={templates.length}
-            hint="Metodyka wielokrotnego użytku — klonuj ją na plan konkretnego klienta."
+            hint="Plany wielokrotnego użytku — skopiuj na plan konkretnego klienta."
           >
             {templates.length === 0 ? (
               <div className="sm:col-span-2 xl:col-span-3">
                 <EmptyState
-                  title="Zacznij od pierwszego szablonu"
+                  title="Zacznij od pierwszego planu"
                   action={
                     <Link href="/plans/new">
-                      <Button size="sm">Utwórz szablon</Button>
+                      <Button size="sm">Utwórz plan</Button>
                     </Link>
                   }
                 >
-                  Szablon wielokrotnego użytku — sklonujesz go na plan klienta.
+                  Plan, który skopiujesz dla dowolnego klienta.
                 </EmptyState>
               </div>
             ) : (
@@ -134,7 +134,7 @@ export default function PlansPage() {
                     </Link>
                   }
                 >
-                  Stwórz nowy plan albo użyj szablonu → „Utwórz plan klienta”.
+                  Stwórz nowy plan albo skopiuj z biblioteki → „Utwórz plan klienta”.
                 </EmptyState>
               </div>
             ) : (
@@ -235,7 +235,7 @@ function PlanCard({
             {plan.name}
           </Link>
           <div className="mt-1 text-xs font-semibold uppercase tracking-caps text-muted">
-            {isTemplate ? "Szablon" : "Plan klienta"}
+            {isTemplate ? "Wielokrotnego użytku" : "Plan klienta"}
           </div>
         </div>
 
