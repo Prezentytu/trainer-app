@@ -61,6 +61,7 @@ Największy błąd to jeden layout dla obu. Projektuj je osobno.
 - Tokeny/typografia/spacing: skill `design-system`.
 - Responsywność: skill `responsive-ui`.
 - Psychologia konwersji, hierarchia uwagi, empty states, gotchas (poziom "10/10"): skill `senior-ux-cro` — czytaj przy każdej implementacji UI.
+- Interakcje, materiały, craft (Apple): skill `apple-design`.
 
 ## Źródła
 

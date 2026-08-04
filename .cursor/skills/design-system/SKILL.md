@@ -180,4 +180,5 @@ Utilities: .display-caps, .eyebrow (///), .texture-scan, pending dashed Card.
 - Responsywność: skill `responsive-ui`.
 - Domenowe UX: skill `fitness-ui-ux`.
 - CRO / psychologia: skill `senior-ux-cro`.
+- Interakcje, materiały, craft (Apple): skill `apple-design`.
 - Spec Acid: `.ai/specs/2026-08-03-acid-design-system.md`.

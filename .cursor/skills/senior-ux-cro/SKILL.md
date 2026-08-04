@@ -12,6 +12,7 @@ Stosuj ŁĄCZNIE z:
 - `design-system` — tokeny semantyczne (`bg-surface`, `text-foreground`, `text-muted`, `accent`), typografia, spacing, radius. Zero surowych `zinc-*`/`yellow-*`.
 - `fitness-ui-ux` — domena (kreator = gęstość; logowanie sesji = wielka typografia, minimum tapnięć).
 - `responsive-ui` — mobile-first, nic ucięte, nic poza kontenerem.
+- `apple-design` — response/press feedback, materiały (`.session-chrome`), spójność przestrzenna, typografia optyczna, craft — bez nowej biblioteki motion.
 
 Kontekst: dark-only (Workout Alchemist), UI po polsku, portal trenera (B2B) + portal klienta. Brak konsumenckiego premium — hooki subskrypcyjne tylko przy realnym billingu.
 

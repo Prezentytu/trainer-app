@@ -62,4 +62,5 @@ Stały sidebar (`w-56`) zajmuje zbyt dużo miejsca na telefonie:
 ## Powiązane
 
 - Domenowe wytyczne UI/UX kreatora planów i logowania sesji: skill `fitness-ui-ux`.
+- Interakcje, materiały, craft (Apple): skill `apple-design`.
 - Prymitywy: `apps/web/components/ui.tsx` (`PageHeader`, `Card`, `Button`, `IconButton`, `Field`, `inputClass`, `Badge`, `Pill`).
