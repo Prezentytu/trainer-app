@@ -1,13 +1,27 @@
 "use client";
 
-import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Search, X } from "lucide-react";
 import { api, PlanSummary } from "@/lib/api";
-import { Avatar, Button, Card, Dialog, EmptyState, ErrorBanner, IconButton, PageHeader } from "@/components/ui";
+import { daysAgo, formatDayShort, relativeDayLabel } from "@/lib/dates";
+import { polishDayCount, polishExerciseCount, polishWeekCount } from "@/lib/plural";
+import {
+  Avatar,
+  Button,
+  Dialog,
+  EmptyState,
+  ErrorBanner,
+  IconButton,
+  PageHeader,
+  SegmentedControl,
+  inputClass,
+} from "@/components/ui";
 import { PlanListSkeleton } from "@/components/skeletons";
 
 type AssignmentSummary = { planId: number; clientName: string };
+type KindFilter = "all" | "library" | "clients";
 
 export default function PlansPage() {
   const router = useRouter();
@@ -16,6 +30,8 @@ export default function PlansPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<PlanSummary | null>(null);
+  const [query, setQuery] = useState("");
+  const [kind, setKind] = useState<KindFilter>("all");
 
   const load = useCallback(() => {
     Promise.all([api.plans.list(), api.assignments.list()])
@@ -39,6 +55,23 @@ export default function PlansPage() {
     return map;
   }, [assignments]);
 
+  const libraryCount = useMemo(() => plans.filter((p) => p.isTemplate).length, [plans]);
+  const clientCount = useMemo(() => plans.filter((p) => !p.isTemplate).length, [plans]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return plans.filter((p) => {
+      if (kind === "library" && !p.isTemplate) return false;
+      if (kind === "clients" && p.isTemplate) return false;
+      if (!q) return true;
+      const name = p.name.toLowerCase();
+      const desc = (p.description ?? "").toLowerCase();
+      return name.includes(q) || desc.includes(q);
+    });
+  }, [plans, kind, query]);
+
+  const filtersActive = kind !== "all" || query.trim().length > 0;
+
   const handleDuplicate = async (plan: PlanSummary, asClientPlan: boolean) => {
     try {
       const created = await api.plans.duplicate(plan.id, {
@@ -60,9 +93,6 @@ export default function PlansPage() {
       setError((err as Error).message);
     }
   };
-
-  const templates = plans.filter((p) => p.isTemplate);
-  const clientPlans = plans.filter((p) => !p.isTemplate);
 
   return (
     <div>
@@ -86,70 +116,106 @@ export default function PlansPage() {
 
       {!loading ? (
         <>
-          <Section
-            title="Biblioteka planów"
-            count={templates.length}
-            hint="Plany wielokrotnego użytku — skopiuj na plan konkretnego klienta."
-          >
-            {templates.length === 0 ? (
-              <div className="sm:col-span-2 xl:col-span-3">
-                <EmptyState
-                  title="Zacznij od pierwszego planu"
-                  action={
-                    <Link href="/plans/new">
-                      <Button size="sm">Utwórz plan</Button>
-                    </Link>
-                  }
-                >
-                  Plan, który skopiujesz dla dowolnego klienta.
-                </EmptyState>
-              </div>
-            ) : (
-              templates.map((p) => (
-                <PlanCard
-                  key={p.id}
-                  plan={p}
-                  clientNames={clientNamesByPlan.get(p.id) ?? []}
-                  kind="formula"
-                  onDuplicate={() => void handleDuplicate(p, false)}
-                  onCreateClientPlan={() => void handleDuplicate(p, true)}
-                  onDelete={() => setDeleteTarget(p)}
+          <div className="mb-4 flex flex-col gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="relative min-w-0 flex-1">
+                <Search
+                  aria-hidden
+                  className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-faint"
+                  strokeWidth={1.75}
                 />
-              ))
-            )}
-          </Section>
+                <input
+                  type="search"
+                  className={`${inputClass} pl-9 pr-9`}
+                  placeholder="Szukaj po nazwie lub opisie…"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  aria-label="Szukaj planu"
+                />
+                {query ? (
+                  <button
+                    type="button"
+                    aria-label="Wyczyść wyszukiwanie"
+                    className="absolute top-1/2 right-2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted hover:bg-surface-hover hover:text-foreground"
+                    onClick={() => setQuery("")}
+                  >
+                    <X className="h-4 w-4" strokeWidth={1.75} />
+                  </button>
+                ) : null}
+              </div>
+              <div className="w-full overflow-x-auto sm:w-auto sm:shrink-0">
+                <SegmentedControl
+                  full
+                  value={kind}
+                  onChange={(v) => setKind(v as KindFilter)}
+                  items={[
+                    { value: "all", label: "Wszystkie", count: plans.length },
+                    { value: "library", label: "Biblioteka", count: libraryCount },
+                    { value: "clients", label: "Plany klientów", count: clientCount },
+                  ]}
+                />
+              </div>
+            </div>
+            {filtersActive ? (
+              <p className="text-sm text-muted">
+                {filtered.length === 1 ? "1 wynik" : `${filtered.length} wyników`}
+                {query.trim() ? ` dla „${query.trim()}"` : ""}
+              </p>
+            ) : null}
+          </div>
 
-          <Section
-            title="Plany klientów"
-            count={clientPlans.length}
-            hint="Spersonalizowane kopie — to je widzi klient w swoim portalu."
-          >
-            {clientPlans.length === 0 ? (
-              <div className="sm:col-span-2 xl:col-span-3">
-                <EmptyState
-                  title="Zacznij od planu klienta"
-                  action={
-                    <Link href="/plans/new">
-                      <Button size="sm">Utwórz plan klienta</Button>
-                    </Link>
-                  }
-                >
-                  Stwórz nowy plan albo skopiuj z biblioteki → „Utwórz plan klienta”.
-                </EmptyState>
+          {plans.length === 0 ? (
+            <EmptyState
+              title="Zacznij od pierwszego planu"
+              action={
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <Link href="/plans/new">
+                    <Button size="sm">+ Nowy plan</Button>
+                  </Link>
+                  <Link href="/plans/import">
+                    <Button size="sm" variant="secondary">
+                      Importuj
+                    </Button>
+                  </Link>
+                </div>
+              }
+            >
+              Plan, który skopiujesz dla dowolnego klienta — albo zaimportuj gotowy.
+            </EmptyState>
+          ) : filtered.length === 0 ? (
+            <PlansEmptyState
+              kind={kind}
+              query={query}
+              onClearQuery={() => setQuery("")}
+            />
+          ) : (
+            <div>
+              <div
+                className="mb-2 hidden px-4 font-mono text-xs uppercase tracking-caps text-muted lg:grid lg:grid-cols-[minmax(0,1fr)_12rem_10rem_6rem_auto] lg:gap-4"
+                aria-hidden
+              >
+                <span>Plan</span>
+                <span>Struktura</span>
+                <span>Klienci</span>
+                <span>Dodano</span>
+                <span className="text-right">Akcje</span>
               </div>
-            ) : (
-              clientPlans.map((p) => (
-                <PlanCard
-                  key={p.id}
-                  plan={p}
-                  clientNames={clientNamesByPlan.get(p.id) ?? []}
-                  kind="client"
-                  onDuplicate={() => void handleDuplicate(p, false)}
-                  onDelete={() => setDeleteTarget(p)}
-                />
-              ))
-            )}
-          </Section>
+              <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface">
+                {filtered.map((p) => (
+                  <PlanRow
+                    key={p.id}
+                    plan={p}
+                    clientNames={clientNamesByPlan.get(p.id) ?? []}
+                    onDuplicate={() => void handleDuplicate(p, false)}
+                    onCreateClientPlan={
+                      p.isTemplate ? () => void handleDuplicate(p, true) : undefined
+                    }
+                    onDelete={() => setDeleteTarget(p)}
+                  />
+                ))}
+              </ul>
+            </div>
+          )}
         </>
       ) : null}
 
@@ -168,98 +234,107 @@ export default function PlansPage() {
   );
 }
 
-function Section({
-  title,
-  count,
-  hint,
-  children,
+function PlansEmptyState({
+  kind,
+  query,
+  onClearQuery,
 }: {
-  title: string;
-  count: number;
-  hint?: string;
-  children: ReactNode;
+  kind: KindFilter;
+  query: string;
+  onClearQuery: () => void;
 }) {
-  return (
-    <section className="mb-10">
-      <div className="mb-4">
-        <div className="flex items-center gap-3">
-          <h2 className="text-xs font-semibold uppercase tracking-caps text-muted-strong">{title}</h2>
-          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-surface-active px-1.5 font-mono text-xs tabular-nums text-foreground-secondary">
-            {count}
-          </span>
-          <span aria-hidden className="h-px flex-1 bg-border" />
-        </div>
-        {hint ? <p className="mt-1.5 max-w-[62ch] text-sm text-muted">{hint}</p> : null}
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{children}</div>
-    </section>
-  );
+  const q = query.trim();
+  if (q) {
+    return (
+      <EmptyState
+        title={`Brak planów dla „${q}"`}
+        action={
+          <Button variant="ghost" size="sm" onClick={onClearQuery}>
+            Wyczyść szukanie
+          </Button>
+        }
+      >
+        Spróbuj innej nazwy albo wyczyść filtr.
+      </EmptyState>
+    );
+  }
+  if (kind === "library") {
+    return (
+      <EmptyState
+        title="Biblioteka jest pusta"
+        action={
+          <Link href="/plans/new">
+            <Button size="sm">+ Nowy plan</Button>
+          </Link>
+        }
+      >
+        Plan, który skopiujesz dla dowolnego klienta.
+      </EmptyState>
+    );
+  }
+  if (kind === "clients") {
+    return (
+      <EmptyState title="Żaden plan nie jest jeszcze przypisany">
+        Skopiuj plan z biblioteki → „Utwórz plan klienta”, albo utwórz nowy bez oznaczenia wielokrotnego użytku.
+      </EmptyState>
+    );
+  }
+  return null;
 }
 
-function PlanCard({
+function PlanRow({
   plan,
   clientNames,
-  kind,
   onDuplicate,
   onCreateClientPlan,
   onDelete,
 }: {
   plan: PlanSummary;
   clientNames: string[];
-  kind: "formula" | "client";
   onDuplicate: () => void;
   onCreateClientPlan?: () => void;
   onDelete: () => void;
 }) {
-  const isTemplate = kind === "formula";
   const visibleClients = clientNames.slice(0, 3);
   const extraClients = clientNames.length - visibleClients.length;
+  const structure = [
+    polishWeekCount(plan.weeksCount),
+    polishDayCount(plan.daysCount),
+    polishExerciseCount(plan.exerciseCount),
+  ].join(" · ");
+  const addedLabel = planAddedLabel(plan.createdAt);
 
   return (
-    <Card className="group relative flex h-full flex-col gap-4 hover:border-border-strong hover:bg-surface-hover">
-      <div className="flex items-start gap-3">
+    <li
+      className="group relative flex flex-col gap-3 p-4 transition-colors hover:bg-surface-hover
+        sm:grid sm:grid-cols-[minmax(0,1fr)_12rem_10rem_auto] sm:items-center sm:gap-4
+        lg:grid-cols-[minmax(0,1fr)_12rem_10rem_6rem_auto]"
+    >
+      <div className="flex min-w-0 items-start gap-3">
         <span
           aria-hidden
-          className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${
-            isTemplate ? "bg-accent-dim text-accent" : "bg-surface-active text-muted-strong"
-          }`}
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-active text-muted-strong"
         >
-          {isTemplate ? <TemplateIcon /> : <ClientPlanIcon />}
+          {plan.isTemplate ? <TemplateIcon /> : <ClientPlanIcon />}
         </span>
-
         <div className="min-w-0 flex-1">
           <Link
             href={`/plans/${plan.id}`}
-            className="break-words font-display text-base font-semibold text-foreground transition-colors duration-[var(--dur-fast)] after:absolute after:inset-0 after:rounded-xl group-hover:text-accent"
+            className="break-words font-display text-base font-semibold text-foreground transition-colors duration-[var(--dur-fast)] after:absolute after:inset-0 group-hover:text-foreground"
           >
             {plan.name}
           </Link>
-          <div className="mt-1 text-xs font-semibold uppercase tracking-caps text-muted">
-            {isTemplate ? "Wielokrotnego użytku" : "Plan klienta"}
-          </div>
-        </div>
-
-        <div className="relative z-10 flex shrink-0 items-center gap-0.5 transition-opacity duration-[var(--dur-fast)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
-          <IconButton title={`Duplikuj „${plan.name}"`} size="sm" onClick={onDuplicate}>
-            <DuplicateIcon />
-          </IconButton>
-          <IconButton title={`Usuń „${plan.name}"`} size="sm" variant="danger" onClick={onDelete}>
-            <TrashIcon />
-          </IconButton>
+          {plan.description?.trim() ? (
+            <p className="mt-0.5 line-clamp-1 break-words text-xs text-muted">{plan.description}</p>
+          ) : null}
         </div>
       </div>
 
-      <p className="line-clamp-2 min-h-[2.625rem] break-words text-sm leading-[var(--leading-body)] text-muted">
-        {plan.description?.trim() ? plan.description : <span className="text-muted-faint">Bez opisu</span>}
-      </p>
-
-      <div className="grid grid-cols-3 divide-x divide-border overflow-hidden rounded-md border border-border bg-surface-sunken">
-        <StatCell value={plan.weeksCount} label="tyg." />
-        <StatCell value={plan.daysCount} label="dni" />
-        <StatCell value={plan.exerciseCount} label="ćwiczeń" />
+      <div className="font-mono text-xs tabular-nums text-muted-strong sm:min-w-0">
+        {structure}
       </div>
 
-      <div className="relative z-10 mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
+      <div className="min-w-0">
         {clientNames.length > 0 ? (
           <div className="flex min-w-0 items-center gap-2">
             <div className="flex shrink-0 -space-x-1.5">
@@ -278,26 +353,36 @@ function PlanCard({
             </span>
           </div>
         ) : (
-          <span className="text-xs text-muted-faint">Brak aktywnych przypisań</span>
+          <span className="text-xs text-muted-faint">Nieprzypisany</span>
         )}
+      </div>
 
+      <div className="hidden font-mono text-xs tabular-nums text-muted lg:block">{addedLabel}</div>
+
+      <div className="relative z-10 flex shrink-0 flex-wrap items-center gap-1 sm:justify-end">
         {onCreateClientPlan ? (
           <Button variant="secondary" size="sm" onClick={onCreateClientPlan}>
             Utwórz plan klienta
           </Button>
         ) : null}
+        <div className="flex items-center gap-0.5 transition-opacity duration-[var(--dur-fast)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+          <IconButton title={`Duplikuj „${plan.name}"`} size="sm" onClick={onDuplicate}>
+            <DuplicateIcon />
+          </IconButton>
+          <IconButton title={`Usuń „${plan.name}"`} size="sm" variant="danger" onClick={onDelete}>
+            <TrashIcon />
+          </IconButton>
+        </div>
       </div>
-    </Card>
+    </li>
   );
 }
 
-function StatCell({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="min-w-0 px-2 py-2.5 text-center">
-      <div className="font-mono text-base font-semibold tabular-nums text-foreground">{value}</div>
-      <div className="mt-0.5 truncate text-xs uppercase tracking-caps text-muted">{label}</div>
-    </div>
-  );
+function planAddedLabel(createdAt?: string): string {
+  if (!createdAt) return "—";
+  const iso = createdAt.slice(0, 10);
+  if (daysAgo(iso) > 30) return formatDayShort(iso);
+  return relativeDayLabel(iso);
 }
 
 const iconProps = {

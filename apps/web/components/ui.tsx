@@ -511,7 +511,7 @@ export function SegmentedControl({
             key={v}
             type="button"
             onClick={() => onChange(v)}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
+            className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
               full ? "flex-1" : ""
             } ${
               active
@@ -520,6 +520,9 @@ export function SegmentedControl({
             }`}
           >
             {tabLabel(item)}
+            {tabCount(item) != null ? (
+              <span className="font-mono text-xs tabular-nums text-muted">{tabCount(item)}</span>
+            ) : null}
           </button>
         );
       })}

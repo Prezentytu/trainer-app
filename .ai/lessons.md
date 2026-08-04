@@ -15,6 +15,16 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Enumeracja = lista; liczebniki przez wspólny helper
+
+**Kontekst**: `/plans` pokazywał dwie sekcje kafelków (`sm:grid-cols-2 xl:grid-cols-3`) ze sztywnymi etykietami „1 DNI” / „1 ĆWICZEŃ” i limonkową ikoną biblioteki na każdej karcie.
+**Problem**: Przeglądanie planów to enumeracja — ściana kafelków zostawia dziury w siatce, puchnie przy skali i łamie budżet lime; sztywne labelki ignorują polską odmianę.
+**Zasada**:
+1. Zadanie „przeleć listę i znajdź X” → gęsta lista/tabela z wyszukiwaniem i filtrem (`SegmentedControl`), nie karty w siatce. Skeleton 1:1 z docelowym układem.
+2. Liczebniki tylko przez `lib/plural.ts` (`polishWeekCount` / `polishDayCount` / `polishExerciseCount`) — nigdy sztywne „tyg./dni/ćwiczeń”.
+3. Ikony wiersza: `bg-surface-active text-muted-strong`; jedna limonka na ekranie = primary CTA w `PageHeader`.
+**Dotyczy**: `apps/web/app/(app)/plans/page.tsx`, `lib/plural.ts`, listy enumeracyjne.
+
 ## Formularz w Dialogu: błąd i busy wewnątrz, nie na stronie
 
 **Kontekst**: Dodawanie ćwiczenia w bibliotece ustawiało `setError` na stronie, a dialog to `z-50` ze scrimem — komunikat 409 był niewidoczny; przycisk „Dodaj” nie był `disabled` podczas zapisu.
