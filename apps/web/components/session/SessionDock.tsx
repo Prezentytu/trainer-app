@@ -52,7 +52,7 @@ function DockBtn({
       className={`inline-flex h-11 min-w-11 items-center justify-center rounded-[10px] px-2.5 text-[13px] font-semibold focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.96] ${
         primary
           ? "bg-accent text-accent-foreground"
-          : "border border-border-strong bg-surface text-foreground-secondary hover:border-accent-border hover:text-accent-strong"
+          : "border border-border-strong bg-surface text-foreground-secondary hover:border-accent-border hover:text-foreground"
       } ${mono ? "font-mono tabular-nums" : ""}`}
     >
       {children}
@@ -92,7 +92,7 @@ export function SessionDock({
 
   return (
     <div
-      className="fixed inset-x-0 z-50 border-t border-border bg-background/95 px-3 pt-2 backdrop-blur-md"
+      className="session-chrome fixed inset-x-0 z-50 border-t border-border px-3 pt-2"
       style={{
         bottom: inset,
         paddingBottom: `max(0.75rem, env(safe-area-inset-bottom))`,
@@ -100,7 +100,7 @@ export function SessionDock({
     >
       <div className="mx-auto flex w-full max-w-lg flex-col gap-2">
         {showRest && rest ? (
-          <div className="rounded-[10px] border border-dashed border-border-strong bg-surface-raised px-3 py-2">
+          <div className="rounded-[10px] border border-border bg-surface-raised px-3 py-2">
             <div className="flex items-center gap-2">
               <button
                 type="button"

@@ -18,6 +18,7 @@ import {
   Badge,
   Button,
   Card,
+  Dialog,
   EmptyState,
   ErrorBanner,
   formatRest,
@@ -26,7 +27,7 @@ import {
   useUndoToast,
 } from "@/components/ui";
 import { demoMedia } from "@/lib/youtube";
-import { unlockAudio } from "@/lib/restAlarm";
+import { lightHaptic, unlockAudio } from "@/lib/restAlarm";
 import { clearLocalDraft, readLocalDraft, saveLocalDraft } from "@/lib/sessionDraft";
 import { readAutoRest } from "@/lib/portalPrefs";
 import { SetValueInput } from "@/components/session/SetValueInput";
@@ -39,8 +40,11 @@ import { PlateCalculator } from "@/components/session/PlateCalculator";
 import { formatKg } from "@/lib/plates";
 import { polishSetCount } from "@/lib/plural";
 
+/** SET | POPRZ | wynik (kg × powt) | ✓ | ⋯ — płaska siatka arkusza. */
 const SET_GRID =
-  "grid grid-cols-[2rem_minmax(3.5rem,1fr)_4.5rem_4rem_2.75rem_2.25rem] gap-1.5 items-center";
+  "grid grid-cols-[1.75rem_minmax(3.5rem,1fr)_minmax(7.5rem,auto)_2.5rem_2rem] gap-x-2 items-center";
+
+const REST_OPTIONS_SEC = [60, 90, 120, 180] as const;
 
 export type SessionLoggerMode = "client" | "behalf" | "completedEdit";
 
@@ -308,7 +312,9 @@ export function SessionLogger({
   const [swapExIdx, setSwapExIdx] = useState<number | null>(null);
   const [swapSearch, setSwapSearch] = useState("");
   const [menuExIdx, setMenuExIdx] = useState<number | null>(null);
-  const [setTypeMenu, setSetTypeMenu] = useState<{ exIdx: number; setIdx: number } | null>(null);
+  const [setRowMenu, setSetRowMenu] = useState<{ exIdx: number; setIdx: number } | null>(null);
+  const [restPickerEx, setRestPickerEx] = useState<number | null>(null);
+  const [finishConfirmOpen, setFinishConfirmOpen] = useState(false);
   const [videoId, setVideoId] = useState<string | null>(null);
   const [videoTitle, setVideoTitle] = useState("");
   const [prCelebrate, setPrCelebrate] = useState<string | null>(null);
@@ -322,6 +328,7 @@ export function SessionLogger({
   const [noteOpenEx, setNoteOpenEx] = useState<Set<number>>(() => new Set());
   const [restOverrideByEx, setRestOverrideByEx] = useState<Record<number, number>>({});
   const { showUndoToast, toastNode } = useUndoToast();
+  const menusOpen = menuExIdx != null || setRowMenu != null || restPickerEx != null;
 
   const draftRef = useRef(draft);
   const dirtyRef = useRef(initial.restored);
@@ -344,6 +351,19 @@ export function SessionLogger({
       if (prFlashTimer.current) clearTimeout(prFlashTimer.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (!menusOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest("[data-session-menu]")) return;
+      setMenuExIdx(null);
+      setSetRowMenu(null);
+      setRestPickerEx(null);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [menusOpen]);
 
   useEffect(() => {
     if (!summary || !portalToken) return;
@@ -520,6 +540,7 @@ export function SessionLogger({
     const set = exercise?.sets[setIdx];
     if (!set) return;
     const nextCompleted = !set.completed;
+    if (nextCompleted) lightHaptic();
     const exerciseId = exercise.exerciseId;
     const setNumber = set.setNumber;
     const setUid = set.uid;
@@ -548,6 +569,8 @@ export function SessionLogger({
 
     if (nextCompleted && liveClock && readAutoRest()) {
       const seconds = restOverrideByEx[exIdx] ?? exercise.restSeconds ?? 90;
+      setActiveCell(null);
+      (document.activeElement as HTMLElement | null)?.blur?.();
       startRest(seconds);
     }
 
@@ -721,6 +744,7 @@ export function SessionLogger({
   };
 
   const finish = async () => {
+    setFinishConfirmOpen(false);
     if (saveTimer.current) {
       clearTimeout(saveTimer.current);
       saveTimer.current = null;
@@ -740,6 +764,16 @@ export function SessionLogger({
     } catch {
       /* error state */
     }
+  };
+
+  const requestFinish = () => {
+    const done = draft.exercises.flatMap((ex) => ex.sets).filter((s) => s.completed).length;
+    const total = draft.exercises.flatMap((ex) => ex.sets).length;
+    if (done < total && !isBehalf && !isCompletedEdit) {
+      setFinishConfirmOpen(true);
+      return;
+    }
+    void finish();
   };
 
   const focusCell = (exIdx: number, setIdx: number, field: "weight" | "reps") => {
@@ -940,6 +974,7 @@ export function SessionLogger({
       durH > 0
         ? `${durH}:${String(durM).padStart(2, "0")}:${String(durS).padStart(2, "0")}`
         : `${durM}:${String(durS).padStart(2, "0")}`;
+    const hasPrs = summary.prs.length > 0;
 
     return (
       <div className="space-y-4 pb-28">
@@ -957,18 +992,16 @@ export function SessionLogger({
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className={`grid gap-3 ${hasPrs ? "grid-cols-2" : "grid-cols-3"}`}>
           <StatCard label="Czas" value={durationFmt} />
           <StatCard
             label="Objętość"
             value={`${Math.round(summary.totalVolumeKg).toLocaleString("pl-PL")} kg`}
           />
           <StatCard label="Serie" value={`${doneTotal.done}/${doneTotal.total}`} />
-          <StatCard
-            label="Rekordy"
-            value={String(summary.prs.length)}
-            highlight={summary.prs.length > 0}
-          />
+          {hasPrs ? (
+            <StatCard label="Rekordy" value={String(summary.prs.length)} highlight />
+          ) : null}
         </div>
 
         {portalToken && celebrationFacts.length > 0 ? (
@@ -986,6 +1019,12 @@ export function SessionLogger({
             </ul>
           </Card>
         ) : null}
+
+        <div className="space-y-3">
+          <ScorePicker label="Samopoczucie" value={feelingScore} onChange={setFeelingScore} />
+          <ScorePicker label="Sen (ostatnia noc)" value={sleepScore} onChange={setSleepScore} />
+          <ScorePicker label="Energia" value={energyScore} onChange={setEnergyScore} />
+        </div>
 
         <div className="rounded-2xl border border-border bg-surface px-4 py-1 shadow-card">
           {summary.exercises.map((ex) => {
@@ -1064,12 +1103,6 @@ export function SessionLogger({
           </Card>
         ) : null}
 
-        <div className="space-y-3">
-          <ScorePicker label="Samopoczucie" value={feelingScore} onChange={setFeelingScore} />
-          <ScorePicker label="Sen (ostatnia noc)" value={sleepScore} onChange={setSleepScore} />
-          <ScorePicker label="Energia" value={energyScore} onChange={setEnergyScore} />
-        </div>
-
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-caps text-muted">
             Wiadomość do trenera
@@ -1083,7 +1116,7 @@ export function SessionLogger({
           />
         </div>
 
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/80 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md">
+        <div className="session-chrome fixed inset-x-0 bottom-0 z-30 border-t border-border px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3">
           <div className="mx-auto max-w-lg">
             <Button className="w-full" size="lg" disabled={saving} onClick={() => void sendSummaryAndClose()}>
               {saving ? "Wysyłanie…" : "Wyślij do trenera i zakończ"}
@@ -1155,16 +1188,16 @@ export function SessionLogger({
       {restoredBanner ? (
         <div
           role="status"
-          className="rounded-md border border-accent-border bg-accent-dim/40 px-3 py-2 text-sm text-accent-strong"
+          className="rounded-md border border-border bg-surface-raised px-3 py-2 text-sm text-foreground-secondary"
         >
           Przywrócono niezapisane zmiany
         </div>
       ) : null}
 
-      <div className="sticky top-0 z-20 -mx-4 border-b border-border bg-background/80 px-4 pb-2.5 pt-[max(0.5rem,env(safe-area-inset-top))] backdrop-blur-md">
+      <div className="session-chrome session-chrome-edge relative sticky top-0 z-20 -mx-4 px-4 pb-2.5 pt-[max(0.5rem,env(safe-area-inset-top))]">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="break-words font-display text-lg font-semibold">
+            <h1 className="break-words font-display text-base font-semibold">
               {draft.dayLabel ?? draft.planName ?? (isCompletedEdit || isBehalf ? "Poprawa" : "Trening")}
             </h1>
             <p className="mt-0.5 font-mono text-[13px] tabular-nums text-muted">
@@ -1186,7 +1219,7 @@ export function SessionLogger({
               </span>
             </p>
           </div>
-          <Button variant="secondary" disabled={saving} onClick={() => void finish()}>
+          <Button variant="secondary" disabled={saving} onClick={requestFinish}>
             {isBehalf || isCompletedEdit ? "Zapisz wynik" : "Zakończ"}
           </Button>
         </div>
@@ -1197,6 +1230,17 @@ export function SessionLogger({
           />
         </div>
       </div>
+
+      <Dialog
+        open={finishConfirmOpen}
+        title="Zakończyć trening?"
+        description={`${doneSetsCount} z ${totalSetsCount} serii ukończone — zakończyć?`}
+        confirmLabel="Zakończ trening"
+        cancelLabel="Wróć"
+        onConfirm={() => void finish()}
+        onCancel={() => setFinishConfirmOpen(false)}
+        busy={saving}
+      />
 
       {videoId ? (
         <div className="rounded-xl border border-border bg-surface p-3">
@@ -1240,7 +1284,7 @@ export function SessionLogger({
                 })
               }
             >
-              <h2 className="display-caps min-w-0 flex-1 break-words text-base text-foreground">
+              <h2 className="display-caps min-w-0 flex-1 break-words text-base leading-tight text-foreground">
                 {exercise.exerciseName}
               </h2>
               <span className="shrink-0 font-mono text-[13px] tabular-nums text-positive">
@@ -1250,6 +1294,9 @@ export function SessionLogger({
           );
         }
 
+        const hasVideo = Boolean(thumb.youtubeId);
+        const restPickerOpen = restPickerEx === exIdx;
+
         return (
           <section
             key={exercise.id > 0 ? exercise.id : `ex-${exIdx}`}
@@ -1258,24 +1305,25 @@ export function SessionLogger({
             }`}
           >
             <div className="flex items-start gap-2">
-              <button
-                type="button"
-                className="h-10 w-10 shrink-0 rounded-[10px] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
-                onClick={() => {
-                  if (!thumb.youtubeId) return;
-                  setVideoId(thumb.youtubeId);
-                  setVideoTitle(exercise.exerciseName);
-                }}
-                aria-label={`Film: ${exercise.exerciseName}`}
-              >
-                <ExerciseThumb
-                  variant="square"
-                  youtubeId={thumb.youtubeId}
-                  category={exercise.category}
-                  alt={exercise.exerciseName}
-                />
-              </button>
-              <h2 className="display-caps min-w-0 flex-1 break-words text-lg leading-snug text-foreground">
+              {hasVideo ? (
+                <button
+                  type="button"
+                  className="h-10 w-10 shrink-0 rounded-[10px] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+                  onClick={() => {
+                    setVideoId(thumb.youtubeId!);
+                    setVideoTitle(exercise.exerciseName);
+                  }}
+                  aria-label={`Film: ${exercise.exerciseName}`}
+                >
+                  <ExerciseThumb
+                    variant="square"
+                    youtubeId={thumb.youtubeId}
+                    category={exercise.category}
+                    alt={exercise.exerciseName}
+                  />
+                </button>
+              ) : null}
+              <h2 className="display-caps min-w-0 flex-1 break-words text-base leading-tight text-foreground">
                 {exercise.exerciseName}
                 {exercise.substitutedFromName ? (
                   <span className="mt-0.5 block font-sans text-xs font-normal normal-case tracking-normal text-muted">
@@ -1283,16 +1331,20 @@ export function SessionLogger({
                   </span>
                 ) : null}
               </h2>
-              <div className="relative shrink-0">
+              <div className="relative shrink-0" data-session-menu>
                 <IconButton
                   title="Więcej"
                   size="md"
-                  onClick={() => setMenuExIdx(menuOpen ? null : exIdx)}
+                  onClick={() => {
+                    setSetRowMenu(null);
+                    setRestPickerEx(null);
+                    setMenuExIdx(menuOpen ? null : exIdx);
+                  }}
                 >
                   <MoreIcon />
                 </IconButton>
                 {menuOpen ? (
-                  <div className="absolute right-0 top-full z-10 mt-1 min-w-[10rem] rounded-[10px] border border-border bg-surface-raised py-1 shadow-[var(--shadow-raised)]">
+                  <div className="absolute right-0 top-full z-10 mt-1 min-w-[10rem] origin-top-right rounded-[10px] border border-border bg-surface-raised py-1 shadow-[var(--shadow-raised)]">
                     {allDone ? (
                       <button
                         type="button"
@@ -1330,7 +1382,7 @@ export function SessionLogger({
                         Podmień ćwiczenie
                       </button>
                     ) : null}
-                    {thumb.youtubeId ? (
+                    {hasVideo ? (
                       <button
                         type="button"
                         className="block w-full px-3 py-2.5 text-left text-[13px] hover:bg-surface-hover"
@@ -1357,17 +1409,39 @@ export function SessionLogger({
                 </>
               ) : null}
               <span aria-hidden>·</span>
-              <button
-                type="button"
-                className="inline-flex min-h-9 items-center rounded-[8px] px-1.5 hover:bg-surface-hover hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
-                title="Ustaw przerwę dla tego ćwiczenia"
-                onClick={() => {
-                  const next = restSec === 90 ? 120 : restSec === 120 ? 60 : 90;
-                  setRestOverrideByEx((prev) => ({ ...prev, [exIdx]: next }));
-                }}
-              >
-                ⏱ {restPillLabel(restSec)}
-              </button>
+              <span className="relative inline-flex" data-session-menu>
+                <button
+                  type="button"
+                  className="inline-flex min-h-9 items-center rounded-[8px] px-1.5 hover:bg-surface-hover hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+                  title="Ustaw przerwę dla tego ćwiczenia"
+                  onClick={() => {
+                    setMenuExIdx(null);
+                    setSetRowMenu(null);
+                    setRestPickerEx(restPickerOpen ? null : exIdx);
+                  }}
+                >
+                  {restPillLabel(restSec)}
+                </button>
+                {restPickerOpen ? (
+                  <div className="absolute left-0 top-full z-10 mt-1 min-w-[7.5rem] origin-top-left rounded-[10px] border border-border bg-surface-raised py-1 shadow-[var(--shadow-raised)]">
+                    {REST_OPTIONS_SEC.map((sec) => (
+                      <button
+                        key={sec}
+                        type="button"
+                        className={`block w-full px-3 py-2.5 text-left font-mono text-[13px] tabular-nums hover:bg-surface-hover ${
+                          restSec === sec ? "text-foreground" : "text-foreground-secondary"
+                        }`}
+                        onClick={() => {
+                          setRestOverrideByEx((prev) => ({ ...prev, [exIdx]: sec }));
+                          setRestPickerEx(null);
+                        }}
+                      >
+                        {restPillLabel(sec)}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </span>
             </p>
 
             {trainerNote ? (
@@ -1403,110 +1477,124 @@ export function SessionLogger({
               </div>
             ) : null}
 
-            <div className="border-t border-border pt-2">
+            <div className="border-t border-border pt-1">
               <div
-                className={`${SET_GRID} px-0.5 pb-1.5 font-mono text-[10px] font-medium uppercase tracking-caps text-muted`}
+                className={`${SET_GRID} px-0 pb-1 font-mono text-[10px] font-medium uppercase tracking-caps text-muted`}
               >
                 <div>#</div>
                 <div>{prevHeader}</div>
-                <div>{isTime ? "" : "kg"}</div>
-                <div>{isTime ? "sek." : "powt."}</div>
-                <div className="text-center">✓</div>
+                <div className="text-right">{isTime ? "sek." : "kg × powt."}</div>
+                <div />
                 <div />
               </div>
 
-              {exercise.sets.map((s, setIdx) => {
-                const prev = exercise.prevSets[setIdx];
-                const isNext = exIdx === nextExIdx && setIdx === nextSetIdx;
-                const typeMenuOpen =
-                  setTypeMenu?.exIdx === exIdx && setTypeMenu?.setIdx === setIdx;
-                return (
-                  <div
-                    key={s.uid}
-                    ref={(el) => {
-                      setRowRefs.current.set(s.uid, el);
-                    }}
-                    className="relative"
-                  >
-                    <SetRow
-                      set={s}
-                      prev={prev}
-                      isTime={isTime}
-                      isNext={isNext}
-                      onWeight={(v) => patchSet(exIdx, setIdx, { weightKg: v })}
-                      onReps={(v) =>
-                        patchSet(
-                          exIdx,
-                          setIdx,
-                          isTime ? { durationSeconds: v, reps: v } : { reps: v },
-                        )
-                      }
-                      onFocusWeight={() => setActiveCell({ exIdx, setIdx, field: "weight" })}
-                      onFocusReps={() => setActiveCell({ exIdx, setIdx, field: "reps" })}
-                      onToggle={() => toggleComplete(exIdx, setIdx)}
-                      onCopyPrev={() => copyPrevSet(exIdx, setIdx)}
-                      onSetType={() =>
-                        setSetTypeMenu(typeMenuOpen ? null : { exIdx, setIdx })
-                      }
-                      onRowMenu={() => {
-                        if (exercise.sets.length <= 1) return;
-                        removeSet(exIdx, setIdx);
+              <div>
+                {exercise.sets.map((s, setIdx) => {
+                  const prev = exercise.prevSets[setIdx];
+                  const isNext = exIdx === nextExIdx && setIdx === nextSetIdx;
+                  const rowMenuOpen =
+                    setRowMenu?.exIdx === exIdx && setRowMenu?.setIdx === setIdx;
+                  return (
+                    <div
+                      key={s.uid}
+                      ref={(el) => {
+                        setRowRefs.current.set(s.uid, el);
                       }}
-                      canRemove={exercise.sets.length > 1}
-                    />
-                    {typeMenuOpen ? (
-                      <div className="absolute left-0 top-full z-10 mt-0.5 min-w-[9rem] rounded-[10px] border border-border bg-surface-raised py-1 shadow-[var(--shadow-raised)]">
-                        <button
-                          type="button"
-                          className="block w-full px-3 py-2.5 text-left text-[13px] hover:bg-surface-hover"
-                          onClick={() => {
-                            patchSet(exIdx, setIdx, { isWarmup: false });
-                            setSetTypeMenu(null);
-                          }}
-                        >
-                          Robocza
-                        </button>
-                        <button
-                          type="button"
-                          className="block w-full px-3 py-2.5 text-left text-[13px] hover:bg-surface-hover"
-                          onClick={() => {
-                            patchSet(exIdx, setIdx, { isWarmup: true });
-                            setSetTypeMenu(null);
-                          }}
-                        >
-                          Rozgrzewkowa
-                        </button>
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })}
+                      className="relative"
+                      data-session-menu
+                    >
+                      <SetRow
+                        set={s}
+                        prev={prev}
+                        isTime={isTime}
+                        isNext={isNext}
+                        onWeight={(v) => patchSet(exIdx, setIdx, { weightKg: v })}
+                        onReps={(v) =>
+                          patchSet(
+                            exIdx,
+                            setIdx,
+                            isTime ? { durationSeconds: v, reps: v } : { reps: v },
+                          )
+                        }
+                        onFocusWeight={() => setActiveCell({ exIdx, setIdx, field: "weight" })}
+                        onFocusReps={() => setActiveCell({ exIdx, setIdx, field: "reps" })}
+                        onToggle={() => toggleComplete(exIdx, setIdx)}
+                        onCopyPrev={() => copyPrevSet(exIdx, setIdx)}
+                        onRowMenu={() => {
+                          setMenuExIdx(null);
+                          setRestPickerEx(null);
+                          setSetRowMenu(rowMenuOpen ? null : { exIdx, setIdx });
+                        }}
+                      />
+                      {rowMenuOpen ? (
+                        <div className="absolute right-0 top-full z-10 mt-0.5 min-w-[10rem] origin-top-right rounded-[10px] border border-border bg-surface-raised py-1 shadow-[var(--shadow-raised)]">
+                          <button
+                            type="button"
+                            className="block w-full px-3 py-2.5 text-left text-[13px] hover:bg-surface-hover"
+                            onClick={() => {
+                              patchSet(exIdx, setIdx, { isWarmup: false });
+                              setSetRowMenu(null);
+                            }}
+                          >
+                            Robocza
+                          </button>
+                          <button
+                            type="button"
+                            className="block w-full px-3 py-2.5 text-left text-[13px] hover:bg-surface-hover"
+                            onClick={() => {
+                              patchSet(exIdx, setIdx, { isWarmup: true });
+                              setSetRowMenu(null);
+                            }}
+                          >
+                            Rozgrzewkowa
+                          </button>
+                          {exercise.sets.length > 1 ? (
+                            <button
+                              type="button"
+                              className="block w-full px-3 py-2.5 text-left text-[13px] text-danger hover:bg-surface-hover"
+                              onClick={() => {
+                                removeSet(exIdx, setIdx);
+                                setSetRowMenu(null);
+                              }}
+                            >
+                              Usuń serię
+                            </button>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
-            <button
-              type="button"
-              className="flex min-h-11 w-full items-center justify-center rounded-[10px] text-[15px] font-semibold text-muted hover:bg-surface-hover hover:text-foreground-secondary focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
-              onClick={() => addSet(exIdx)}
-            >
-              + Dodaj serię
-            </button>
+            <div className="flex items-center gap-4 pt-1">
+              <button
+                type="button"
+                className="min-h-10 text-[13px] font-medium text-muted hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+                onClick={() => addSet(exIdx)}
+              >
+                + Dodaj serię
+              </button>
+              {noteOpen ? null : (
+                <button
+                  type="button"
+                  className="min-h-10 text-[13px] font-medium text-muted hover:text-foreground"
+                  onClick={() => setNoteOpenEx((prev) => new Set(prev).add(exIdx))}
+                >
+                  + Notatka
+                </button>
+              )}
+            </div>
 
             {noteOpen ? (
               <input
-                className={`${inputClass} bg-surface-raised px-2 py-1.5`}
+                className="w-full border-0 border-b border-border bg-transparent px-0 py-2 text-sm text-foreground outline-none placeholder:text-muted-faint focus:border-accent-strong"
                 placeholder="Notatka do ćwiczenia…"
                 value={exercise.note ?? ""}
                 onChange={(e) => patchNote(exIdx, e.target.value)}
               />
-            ) : (
-              <button
-                type="button"
-                className="text-[13px] font-medium text-muted hover:text-foreground-secondary"
-                onClick={() => setNoteOpenEx((prev) => new Set(prev).add(exIdx))}
-              >
-                + Notatka
-              </button>
-            )}
+            ) : null}
           </section>
         );
       })}
@@ -1575,68 +1663,64 @@ const SetRow = memo(function SetRow({
   prev,
   isTime,
   isNext,
-  canRemove,
   onWeight,
   onReps,
   onFocusWeight,
   onFocusReps,
   onToggle,
   onCopyPrev,
-  onSetType,
   onRowMenu,
 }: {
   set: LocalSet;
   prev: PrevLoggedSet | undefined;
   isTime: boolean;
   isNext: boolean;
-  canRemove: boolean;
   onWeight: (v: number | null) => void;
   onReps: (v: number | null) => void;
   onFocusWeight: () => void;
   onFocusReps: () => void;
   onToggle: () => void;
   onCopyPrev: () => void;
-  onSetType: () => void;
   onRowMenu: () => void;
 }) {
   const completed = set.completed;
   const below = isBelowTarget(set, isTime);
   const targetLabel = formatTargetLabel(set, isTime);
-  const valColor = completed ? "text-foreground" : "text-foreground-secondary";
-  const rowBg = completed
-    ? "bg-surface-active"
+  const valColor = completed
+    ? "font-semibold text-foreground"
     : isNext
-      ? "rounded-[var(--radius-well)] border border-dashed border-border-strong bg-surface-sunken"
-      : "bg-transparent";
-  const checkBg = completed ? "bg-accent border-accent" : "bg-transparent";
-  const checkBorder = "border-border-strong";
+      ? "font-semibold text-foreground"
+      : "font-medium text-foreground-secondary";
   const checkColor = completed
-    ? "text-accent-foreground"
+    ? "text-foreground"
     : isNext
-      ? "text-foreground"
+      ? "text-accent-text"
       : "text-muted-faint";
   const prevLabel = formatPrev(prev);
 
   return (
-    <div className={`${SET_GRID} h-12 rounded-[var(--radius-well)] px-0.5 ${rowBg}`}>
-      <button
-        type="button"
-        className={`flex h-11 w-full items-center justify-center font-mono text-[13px] tabular-nums focus-visible:outline-none ${
-          completed ? "text-foreground" : "text-muted"
+    <div
+      className={`relative ${SET_GRID} border-b border-border last:border-b-0 ${
+        isNext && !completed ? "bg-surface-raised/40" : ""
+      }`}
+    >
+      <div
+        className={`flex min-h-11 items-center font-mono text-[13px] tabular-nums ${
+          completed || isNext ? "text-foreground-secondary" : "text-muted"
         }`}
-        onClick={onSetType}
-        title="Typ serii"
-        aria-label={`Seria ${set.setNumber}, typ: ${set.isWarmup ? "rozgrzewkowa" : "robocza"}`}
+        aria-label={`Seria ${set.setNumber}${set.isWarmup ? ", rozgrzewkowa" : ""}`}
       >
-        {String(set.setNumber).padStart(2, "0")}
-        {set.isWarmup ? <span className="ml-0.5 text-[10px]">W</span> : null}
-      </button>
+        {set.setNumber}
+        {set.isWarmup ? <span className="ml-0.5 text-[10px] text-muted">W</span> : null}
+      </div>
 
-      <div className="flex min-w-0 items-center gap-1">
+      <div className="flex min-w-0 items-center gap-1.5">
         {prev ? (
           <button
             type="button"
-            className="min-w-0 truncate font-mono text-[13px] italic tabular-nums text-muted-faint hover:text-foreground-secondary focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+            className={`min-h-11 min-w-0 truncate text-left font-mono text-[13px] tabular-nums hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
+              completed ? "text-muted-faint" : "text-muted"
+            }`}
             onClick={onCopyPrev}
             aria-label={`Wpisz ${prevLabel} z poprzedniego treningu`}
             title={`Wpisz ${prevLabel}`}
@@ -1649,7 +1733,7 @@ const SetRow = memo(function SetRow({
         {completed && set.isPr ? <Badge tone="pr">PR</Badge> : null}
         {below && targetLabel ? (
           <span
-            className="shrink-0 whitespace-nowrap text-xs font-semibold text-danger-hover"
+            className="shrink-0 text-xs font-semibold text-danger-hover"
             title="Poniżej celu — trener to zobaczy"
           >
             ▾
@@ -1657,36 +1741,51 @@ const SetRow = memo(function SetRow({
         ) : null}
       </div>
 
-      {isTime ? (
-        <div className="flex h-11 items-center justify-center rounded-[10px] border border-border bg-surface-raised font-mono text-[13px] text-muted">
-          —
-        </div>
-      ) : (
-        <SetValueInput
-          kind="weight"
-          value={set.weightKg}
-          placeholder="kg"
-          ariaLabel="kg"
-          className={`h-11 ${valColor}`}
-          onCommit={onWeight}
-          onFocusField={onFocusWeight}
-        />
-      )}
-
-      <SetValueInput
-        kind="reps"
-        value={isTime ? (set.durationSeconds ?? set.reps) : set.reps}
-        placeholder={isTime ? "sek" : "powt"}
-        ariaLabel={isTime ? "sekundy" : "powtórzenia"}
-        className={`h-11 ${valColor}`}
-        onCommit={onReps}
-        onFocusField={onFocusReps}
-      />
+      <div className="flex min-w-0 items-center justify-end gap-0.5">
+        {isTime ? (
+          <SetValueInput
+            kind="reps"
+            value={set.durationSeconds ?? set.reps}
+            placeholder="sek"
+            ariaLabel="sekundy"
+            className={`w-[3.5rem] ${valColor}`}
+            emphasizeEmpty={isNext && !completed}
+            onCommit={onReps}
+            onFocusField={onFocusReps}
+          />
+        ) : (
+          <>
+            <SetValueInput
+              kind="weight"
+              value={set.weightKg}
+              placeholder="—"
+              ariaLabel="kg"
+              className={`w-[3.25rem] ${valColor}`}
+              emphasizeEmpty={isNext && !completed}
+              onCommit={onWeight}
+              onFocusField={onFocusWeight}
+            />
+            <span className="select-none px-0.5 font-mono text-[13px] text-muted-faint" aria-hidden>
+              ×
+            </span>
+            <SetValueInput
+              kind="reps"
+              value={set.reps}
+              placeholder="—"
+              ariaLabel="powtórzenia"
+              className={`w-[2.75rem] ${valColor}`}
+              emphasizeEmpty={isNext && !completed}
+              onCommit={onReps}
+              onFocusField={onFocusReps}
+            />
+          </>
+        )}
+      </div>
 
       <button
         type="button"
         onClick={onToggle}
-        className={`mx-auto flex h-11 w-11 items-center justify-center rounded-[10px] border transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.94] ${checkBg} ${checkBorder} ${checkColor}`}
+        className={`flex min-h-11 min-w-10 items-center justify-center transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.94] ${checkColor}`}
         aria-label={completed ? "Cofnij ukończenie" : "Zalicz serię"}
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -1697,10 +1796,9 @@ const SetRow = memo(function SetRow({
       <button
         type="button"
         onClick={onRowMenu}
-        disabled={!canRemove}
-        className="flex h-11 w-9 items-center justify-center rounded-[10px] text-muted-faint hover:bg-surface-hover hover:text-danger disabled:opacity-30 focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
-        aria-label="Usuń serię"
-        title="Usuń serię"
+        className="flex min-h-11 min-w-8 items-center justify-center text-muted hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+        aria-label="Więcej opcji serii"
+        title="Więcej"
       >
         <MoreIcon />
       </button>
@@ -1753,10 +1851,10 @@ function ScorePicker({
             key={n}
             type="button"
             onClick={() => onChange(n)}
-            className={`rounded-[8px] border py-2 font-mono text-sm font-semibold tabular-nums transition-colors ${
+            className={`min-h-11 rounded-[8px] border py-2 font-mono text-sm font-semibold tabular-nums transition-colors ${
               value === n
-                ? "border-accent-border bg-accent text-accent-foreground"
-                : "border-border-strong text-muted hover:border-accent-border"
+                ? "border-accent-border bg-accent-dim text-foreground"
+                : "border-border-strong text-muted hover:border-border-strong hover:bg-surface-hover"
             }`}
           >
             {n}

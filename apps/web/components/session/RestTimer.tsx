@@ -17,78 +17,24 @@ function mmss(seconds: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+/** Pełnoekranowy timer przerwy — mini-widok żyje w SessionDock. */
 export function RestTimer({ rest, nextLabel, onAdjust, onDismiss, onExpand }: Props) {
   const progress =
     rest.totalSeconds > 0 ? Math.min(1, rest.leftSeconds / rest.totalSeconds) : 0;
-  const pct = `${Math.round(progress * 100)}%`;
 
-  if (!rest.expanded) {
-    return (
-      <div className="fixed inset-x-3 bottom-3 z-50 rounded-2xl border border-dashed border-border-strong bg-surface-raised p-3.5 shadow-[var(--shadow-raised)] sm:inset-x-auto sm:left-1/2 sm:w-full sm:max-w-lg sm:-translate-x-1/2">
-        <div className="flex items-center justify-between gap-3">
-          <button
-            type="button"
-            className="min-w-0 flex-1 text-left focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
-            onClick={() => onExpand(true)}
-            aria-label="Powiększ timer przerwy"
-          >
-            <p className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-muted">
-              Rest_timer
-            </p>
-            <p className="mt-0.5 font-mono text-[28px] font-semibold tabular-nums text-foreground">
-              {mmss(rest.leftSeconds)}
-            </p>
-            {nextLabel ? (
-              <p className="mt-0.5 truncate text-[13px] text-muted">Dalej: {nextLabel}</p>
-            ) : null}
-          </button>
-          <div className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              className="inline-flex min-h-11 min-w-[52px] items-center justify-center rounded-[10px] border border-border-strong font-mono text-[13px] tabular-nums text-foreground-secondary hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.96]"
-              onClick={() => onAdjust(-15)}
-            >
-              −15
-            </button>
-            <button
-              type="button"
-              className="inline-flex min-h-11 min-w-[52px] items-center justify-center rounded-[10px] border border-border-strong font-mono text-[13px] tabular-nums text-foreground-secondary hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.96]"
-              onClick={() => onAdjust(15)}
-            >
-              +15
-            </button>
-            <button
-              type="button"
-              className="inline-flex min-h-11 min-w-16 items-center justify-center rounded-[10px] bg-accent px-3 text-[15px] font-semibold text-accent-foreground hover:bg-accent-strong focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.96]"
-              onClick={onDismiss}
-            >
-              Pomiń
-            </button>
-          </div>
-        </div>
-        <div className="mt-3 h-1 overflow-hidden rounded-full bg-surface-active">
-          <div
-            className="h-full rounded-full bg-accent transition-[width] duration-1000 ease-linear"
-            style={{ width: pct }}
-          />
-        </div>
-      </div>
-    );
-  }
+  if (!rest.expanded) return null;
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-background px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
       <div className="flex items-center justify-between">
-        <p className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-muted">
-          Rest_timer
-        </p>
+        <p className="eyebrow">Przerwa</p>
         <button
           type="button"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-[10px] text-xl text-muted-strong hover:bg-surface-hover hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+          className="inline-flex h-11 items-center justify-center rounded-[10px] px-3 text-[13px] font-semibold text-muted-strong hover:bg-surface-hover hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
           onClick={() => onExpand(false)}
-          aria-label="Zwiń timer — pokaż ćwiczenia"
+          aria-label="Zminimalizuj timer — pokaż ćwiczenia"
         >
-          ×
+          Zwiń
         </button>
       </div>
 

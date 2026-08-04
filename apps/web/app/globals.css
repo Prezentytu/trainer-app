@@ -314,9 +314,44 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .skeleton-pulse,
   .stagger-in,
+  .pr-celebrate-in,
   .texture-scan::before,
   .acid-tick {
     animation: none;
+  }
+}
+
+/* Floating chrome — blur + semi-transparent; solid fallback for reduced transparency */
+.session-chrome {
+  background: color-mix(in srgb, var(--background) 85%, transparent);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+}
+
+.session-chrome-edge::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -12px;
+  height: 12px;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--background) 55%, transparent),
+    transparent
+  );
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .session-chrome {
+    background: var(--background);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .session-chrome-edge::after {
+    display: none;
   }
 }
 

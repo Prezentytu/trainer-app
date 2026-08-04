@@ -144,7 +144,8 @@ export function useRestTimer(sessionId: number) {
       alarmedRef.current = false;
       const endsAt = Date.now() + seconds * 1000;
       writeStored({ endsAt, totalSeconds: seconds, sessionId });
-      setRest({ endsAt, totalSeconds: seconds, leftSeconds: seconds, expanded: false });
+      // Pełny ekran na start — użytkownik może zminimalizować do docka.
+      setRest({ endsAt, totalSeconds: seconds, leftSeconds: seconds, expanded: true });
     },
     [sessionId],
   );

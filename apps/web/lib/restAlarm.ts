@@ -14,6 +14,15 @@ function getCtx(): AudioContext | null {
   return ctx;
 }
 
+/** Krótka haptyka przy zaliczeniu serii (guard na wsparcie API). */
+export function lightHaptic(): void {
+  try {
+    navigator.vibrate?.(10);
+  } catch {
+    /* ignore */
+  }
+}
+
 /** Wywołaj w handlerze gestu użytkownika (np. ✓ serii) — odblokowuje audio na iOS. */
 export function unlockAudio(): void {
   const c = getCtx();

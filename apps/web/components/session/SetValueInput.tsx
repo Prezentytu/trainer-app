@@ -1,7 +1,6 @@
 "use client";
 
 import { memo, useEffect, useRef, useState } from "react";
-import { inputNumericClass } from "@/components/ui";
 
 type Kind = "weight" | "reps";
 
@@ -13,6 +12,8 @@ type Props = {
   onCommit: (value: number | null) => void;
   onFocusField?: () => void;
   className?: string;
+  /** Następna seria — placeholder w accent (jak Gravitus „lb × reps”). */
+  emphasizeEmpty?: boolean;
 };
 
 function formatDisplay(n: number | null): string {
@@ -32,6 +33,10 @@ function isValidDraft(kind: Kind, raw: string): boolean {
   return /^\d{0,3}$/.test(raw);
 }
 
+/**
+ * Płaskie pole jak arkusz — bez tła/ramki.
+ * Hierarchia z typografii; fokus = subtelne podkreślenie accent.
+ */
 export const SetValueInput = memo(function SetValueInput({
   kind,
   value,
@@ -40,6 +45,7 @@ export const SetValueInput = memo(function SetValueInput({
   onCommit,
   onFocusField,
   className = "",
+  emphasizeEmpty = false,
 }: Props) {
   const [raw, setRaw] = useState(() => formatDisplay(value));
   const focused = useRef(false);
@@ -48,9 +54,21 @@ export const SetValueInput = memo(function SetValueInput({
     if (!focused.current) setRaw(formatDisplay(value));
   }, [value]);
 
+  const empty = raw === "";
+
   return (
     <input
-      className={`${inputNumericClass} h-11 min-w-0 flex-1 px-1.5 text-center ${className}`}
+      className={[
+        "min-h-11 min-w-0 border-0 border-b border-transparent bg-transparent",
+        "px-0.5 py-2 text-center font-mono text-base tabular-nums outline-none sm:text-sm",
+        "transition-[border-color,color] duration-[var(--dur-fast)]",
+        "placeholder:font-normal",
+        emphasizeEmpty && empty
+          ? "placeholder:text-accent-text"
+          : "placeholder:text-muted-faint",
+        "focus:border-accent-strong",
+        className,
+      ].join(" ")}
       value={raw}
       inputMode={kind === "weight" ? "decimal" : "numeric"}
       aria-label={ariaLabel}
@@ -63,7 +81,6 @@ export const SetValueInput = memo(function SetValueInput({
         const next = e.target.value;
         if (!isValidDraft(kind, next)) return;
         setRaw(next);
-        // Nie commituj niepełnych draftów typu "10," / "10." — dopiero blur / gotowe.
         if (next === "" || !/[.,]$/.test(next)) {
           onCommit(parseNum(next));
         }

@@ -58,8 +58,9 @@ export function PlateCalculator({ targetKg, onApply, onClose }: Props) {
         role="dialog"
         aria-modal
         aria-labelledby="plates-title"
-        className="relative w-full max-w-md rounded-t-xl border border-border bg-surface-sunken p-5 shadow-modal sm:rounded-xl"
+        className="relative w-full max-w-md rounded-t-[var(--radius-xl)] border border-border bg-surface-sunken p-5 shadow-modal sm:rounded-[var(--radius-xl)]"
       >
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-border-strong sm:hidden" aria-hidden />
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-caps text-muted">Kalkulator</p>
