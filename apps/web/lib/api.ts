@@ -535,6 +535,8 @@ export type LoggedExercise = {
   targetRir?: number | null;
   tempo?: string | null;
   planNote?: string | null;
+  /** Data poprzedniej sesji tego ćwiczenia (nagłówek kolumny Poprz.). */
+  prevPerformedOn?: string | null;
   prevSets: PrevLoggedSet[];
   sets: LoggedSet[];
 };

@@ -76,7 +76,8 @@ public static class Stats
         HashSet<(int ExerciseId, int SetId)> prSetIds,
         IReadOnlyDictionary<int, List<object>>? prevSetsByExercise = null,
         IReadOnlyDictionary<int, int?>? restSecondsByExercise = null,
-        IReadOnlyDictionary<int, ExerciseTargets>? targetsByExercise = null)
+        IReadOnlyDictionary<int, ExerciseTargets>? targetsByExercise = null,
+        IReadOnlyDictionary<int, DateOnly>? prevPerformedOnByExercise = null)
     {
         var allSets = s.Exercises.SelectMany(e => e.Sets).ToList();
         var prs = s.Exercises
@@ -142,6 +143,10 @@ public static class Stats
                         && restSecondsByExercise.TryGetValue(e.ExerciseId, out var rest)
                         ? rest
                         : 90,
+                    PrevPerformedOn = prevPerformedOnByExercise is not null
+                        && prevPerformedOnByExercise.TryGetValue(e.ExerciseId, out var prevOn)
+                        ? prevOn
+                        : (DateOnly?)null,
                     PrevSets = prevSetsByExercise is not null
                         && prevSetsByExercise.TryGetValue(e.ExerciseId, out var prev)
                         ? prev

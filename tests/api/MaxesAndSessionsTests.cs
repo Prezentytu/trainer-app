@@ -196,6 +196,127 @@ public class MaxesAndSessionsTests : IClassFixture<TestWebAppFactory>
     }
 
     [Fact]
+    public async Task SessionCreatedAt_SerializesWithUtcZ()
+    {
+        var clients = await _client.GetFromJsonAsync<List<ClientRow>>("/api/clients");
+        var jan = clients!.First(c => c.Name == "Jan Kowalski");
+        var assignments = await _client.GetFromJsonAsync<List<AssignmentRow>>("/api/assignments");
+        var active = assignments!.First(a => a.ClientId == jan.Id && a.Status == "active");
+        var planRes = await _client.GetAsync($"/api/plans/{active.PlanId}");
+        var planJson = await planRes.Content.ReadAsStringAsync();
+        using var planDoc = JsonDocument.Parse(planJson);
+        var dayId = planDoc.RootElement.GetProperty("days")[0].GetProperty("id").GetInt32();
+
+        var start = await _client.PostAsJsonAsync("/api/sessions/start", new
+        {
+            clientId = jan.Id,
+            assignmentId = active.Id,
+            planId = active.PlanId,
+            planDayId = dayId,
+        });
+        Assert.Equal(HttpStatusCode.Created, start.StatusCode);
+        var json = await start.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        var createdAt = doc.RootElement.GetProperty("createdAt").GetString();
+        Assert.NotNull(createdAt);
+        Assert.EndsWith("Z", createdAt!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task CompleteSession_RespectsClientDurationSeconds()
+    {
+        var clients = await _client.GetFromJsonAsync<List<ClientRow>>("/api/clients");
+        var jan = clients!.First(c => c.Name == "Jan Kowalski");
+        var assignments = await _client.GetFromJsonAsync<List<AssignmentRow>>("/api/assignments");
+        var active = assignments!.First(a => a.ClientId == jan.Id && a.Status == "active");
+        var planRes = await _client.GetAsync($"/api/plans/{active.PlanId}");
+        var planJson = await planRes.Content.ReadAsStringAsync();
+        using var planDoc = JsonDocument.Parse(planJson);
+        var dayId = planDoc.RootElement.GetProperty("days")[0].GetProperty("id").GetInt32();
+
+        var start = await _client.PostAsJsonAsync("/api/sessions/start", new
+        {
+            clientId = jan.Id,
+            assignmentId = active.Id,
+            planId = active.PlanId,
+            planDayId = dayId,
+        });
+        var sessionJson = await start.Content.ReadAsStringAsync();
+        using var sessionDoc = JsonDocument.Parse(sessionJson);
+        var sessionId = sessionDoc.RootElement.GetProperty("id").GetInt32();
+
+        var exercises = sessionDoc.RootElement.GetProperty("exercises").EnumerateArray().Select(e => new
+        {
+            id = e.GetProperty("id").GetInt32(),
+            exerciseId = e.GetProperty("exerciseId").GetInt32(),
+            order = e.GetProperty("order").GetInt32(),
+            note = (string?)null,
+            sets = e.GetProperty("sets").EnumerateArray().Select(s => new
+            {
+                id = s.GetProperty("id").GetInt32(),
+                setNumber = s.GetProperty("setNumber").GetInt32(),
+                weightKg = (double?)40,
+                reps = (int?)8,
+                durationSeconds = (int?)null,
+                distanceMeters = (int?)null,
+                rir = (double?)null,
+                rpe = (double?)null,
+                isWarmup = false,
+                completed = true,
+            }).ToList(),
+        }).ToList();
+
+        var put = await _client.PutAsJsonAsync($"/api/sessions/{sessionId}", new
+        {
+            clientId = jan.Id,
+            performedOn = sessionDoc.RootElement.GetProperty("performedOn").GetString(),
+            assignmentId = active.Id,
+            planId = active.PlanId,
+            planDayId = dayId,
+            durationSeconds = 420,
+            status = "in_progress",
+            exercises,
+        });
+        Assert.Equal(HttpStatusCode.OK, put.StatusCode);
+
+        var complete = await _client.PatchAsync($"/api/sessions/{sessionId}/complete", null);
+        Assert.Equal(HttpStatusCode.OK, complete.StatusCode);
+        var completeJson = await complete.Content.ReadAsStringAsync();
+        using var completeDoc = JsonDocument.Parse(completeJson);
+        Assert.Equal(420, completeDoc.RootElement.GetProperty("durationSeconds").GetInt32());
+    }
+
+    [Fact]
+    public async Task UpdateSession_RejectsFuturePerformedOn()
+    {
+        var clients = await _client.GetFromJsonAsync<List<ClientRow>>("/api/clients");
+        var jan = clients!.First(c => c.Name == "Jan Kowalski");
+        var create = await _client.PostAsJsonAsync("/api/sessions", new
+        {
+            clientId = jan.Id,
+            performedOn = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd"),
+            status = "in_progress",
+            exercises = Array.Empty<object>(),
+        });
+        Assert.Equal(HttpStatusCode.Created, create.StatusCode);
+        var json = await create.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        var sessionId = doc.RootElement.GetProperty("id").GetInt32();
+
+        var future = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(3).ToString("yyyy-MM-dd");
+        var put = await _client.PutAsJsonAsync($"/api/sessions/{sessionId}", new
+        {
+            clientId = jan.Id,
+            performedOn = future,
+            status = "in_progress",
+            exercises = Array.Empty<object>(),
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, put.StatusCode);
+        var err = await put.Content.ReadAsStringAsync();
+        Assert.Contains("przyszłą datą", err, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task SessionWithoutPlanDay_HasNullTargets()
     {
         var clients = await _client.GetFromJsonAsync<List<ClientRow>>("/api/clients");

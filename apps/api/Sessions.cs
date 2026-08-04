@@ -68,6 +68,10 @@ public static class Sessions
             }
         }
 
+        var performedOn = input.PerformedOn ?? DateOnly.FromDateTime(DateTime.UtcNow);
+        var dateErr = ValidatePerformedOn(performedOn);
+        if (dateErr is not null) return (null, dateErr);
+
         var maxes = await PlanLoads.LatestMaxesAsync(db, input.ClientId);
         var session = new WorkoutSession
         {
@@ -75,7 +79,7 @@ public static class Sessions
             AssignmentId = input.AssignmentId,
             PlanDayId = input.PlanDayId,
             PlanId = input.PlanId ?? day?.PlanId,
-            PerformedOn = input.PerformedOn ?? DateOnly.FromDateTime(DateTime.UtcNow),
+            PerformedOn = performedOn,
             Status = "in_progress",
         };
 
@@ -149,6 +153,15 @@ public static class Sessions
     }
 
     /// <summary>Upsert ćwiczeń/serii po Id — stabilne klucze UI.</summary>
+    /// <summary>TrueCoach: nie zapisujemy wyników na przyszłą datę.</summary>
+    public static IResult? ValidatePerformedOn(DateOnly performedOn)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        if (performedOn > today)
+            return Results.BadRequest(new { message = "Nie można zapisać treningu z przyszłą datą." });
+        return null;
+    }
+
     public static void ApplyUpdate(AppDb db, WorkoutSession session, WorkoutSessionInput input)
     {
         session.ClientId = input.ClientId;
@@ -273,10 +286,10 @@ public static class Sessions
                 .ToListAsync();
 
         var prs = Stats.FindPrSets(session, historical);
-        var prevSets = await LoadPrevSetsAsync(db, session, exerciseIds);
+        var (prevSets, prevDates) = await LoadPrevSetsAsync(db, session, exerciseIds);
         var restSeconds = await LoadRestSecondsAsync(db, session, exerciseIds);
         var targets = await LoadTargetsAsync(db, session, exerciseIds);
-        return Stats.SessionDetail(session, prs, prevSets, restSeconds, targets);
+        return Stats.SessionDetail(session, prs, prevSets, restSeconds, targets, prevDates);
     }
 
     /// <summary>
@@ -348,11 +361,12 @@ public static class Sessions
         return result;
     }
 
-    static async Task<Dictionary<int, List<object>>> LoadPrevSetsAsync(
+    static async Task<(Dictionary<int, List<object>> Sets, Dictionary<int, DateOnly> Dates)> LoadPrevSetsAsync(
         AppDb db, WorkoutSession session, List<int> exerciseIds)
     {
         var result = new Dictionary<int, List<object>>();
-        if (exerciseIds.Count == 0) return result;
+        var dates = new Dictionary<int, DateOnly>();
+        if (exerciseIds.Count == 0) return (result, dates);
 
         var prevExercises = await db.LoggedExercises
             .Include(e => e.Sets)
@@ -372,6 +386,7 @@ public static class Sessions
                 .OrderByDescending(e => e.Session!.PerformedOn)
                 .ThenByDescending(e => e.Session!.Id)
                 .First();
+            dates[group.Key] = latest.Session!.PerformedOn;
             result[group.Key] = latest.Sets
                 .OrderBy(s => s.SetNumber)
                 .Select(s => (object)new
@@ -387,7 +402,7 @@ public static class Sessions
                 })
                 .ToList();
         }
-        return result;
+        return (result, dates);
     }
 
     static async Task<Dictionary<int, int?>> LoadRestSecondsAsync(

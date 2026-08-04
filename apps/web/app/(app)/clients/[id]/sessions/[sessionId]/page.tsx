@@ -3,15 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { api, Exercise, SessionDetail, WorkoutSessionInput } from "@/lib/api";
-import { SessionLogger } from "@/components/SessionLogger";
+import { api, SessionDetail } from "@/lib/api";
+import { SessionReview } from "@/components/SessionReview";
 import { SessionLoggerSkeleton } from "@/components/skeletons";
 import { Button, ErrorBanner, PageHeader } from "@/components/ui";
-import {
-  clearSessionQueueItem,
-  enqueueSessionWrite,
-  readSessionQueue,
-} from "@/lib/sessionQueue";
 
 export default function ClientSessionPage() {
   const params = useParams<{ id: string; sessionId: string }>();
@@ -19,39 +14,17 @@ export default function ClientSessionPage() {
   const clientId = Number(params.id);
   const sessionId = Number(params.sessionId);
   const [session, setSession] = useState<SessionDetail | null>(null);
-  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [clientName, setClientName] = useState<string | undefined>();
   const [error, setError] = useState<string | null>(null);
 
-  const flushQueue = useCallback(async () => {
-    if (typeof navigator !== "undefined" && !navigator.onLine) return;
-    for (const item of readSessionQueue().filter((q) => q.scope === "trainer")) {
-      try {
-        await api.sessions.update(item.sessionId, item.body as WorkoutSessionInput);
-        if (item.complete) await api.sessions.complete(item.sessionId);
-        clearSessionQueueItem(item.id);
-      } catch {
-        // zostaw w kolejce
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    void flushQueue();
-    const onOnline = () => {
-      void flushQueue();
-    };
-    window.addEventListener("online", onOnline);
-    return () => window.removeEventListener("online", onOnline);
-  }, [flushQueue]);
-
   const load = useCallback(() => {
-    Promise.all([api.sessions.get(sessionId), api.exercises.list()])
-      .then(([s, ex]) => {
+    Promise.all([api.sessions.get(sessionId), api.clients.get(clientId)])
+      .then(([s, c]) => {
         setSession(s);
-        setExercises(ex);
+        setClientName(c.name);
       })
       .catch((e: Error) => setError(e.message));
-  }, [sessionId]);
+  }, [sessionId, clientId]);
 
   useEffect(load, [load]);
 
@@ -75,20 +48,11 @@ export default function ClientSessionPage() {
           </Link>
         }
       />
-      <SessionLogger
-        key={session.id}
+      <SessionReview
         session={session}
-        libraryExercises={exercises}
+        clientName={clientName}
         onUpdated={setSession}
-        onPersistFailed={(input, complete) => {
-          enqueueSessionWrite({
-            scope: "trainer",
-            sessionId,
-            body: input,
-            complete,
-          });
-        }}
-        onCompleted={() => router.push(`/clients/${clientId}`)}
+        onEdit={() => router.push(`/clients/${clientId}/sessions/${sessionId}/edit`)}
       />
     </div>
   );

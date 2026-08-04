@@ -1028,6 +1028,9 @@ app.MapPut("/api/sessions/{id:int}", async (int id, WorkoutSessionInput input, H
         if (session is null) return Results.NotFound();
         if (session.ClientId != input.ClientId) return Results.NotFound();
 
+        var dateErr = Sessions.ValidatePerformedOn(input.PerformedOn);
+        if (dateErr is not null) return dateErr;
+
         Sessions.ApplyUpdate(db, session, input);
         await db.SaveChangesAsync();
         return Results.Ok(await Sessions.LoadDto(db, session.Id));
@@ -1994,6 +1997,9 @@ app.MapPut("/api/portal/{token}/sessions/{id:int}", async (string token, int id,
     if (session is null || session.ClientId != access.ClientId) return Results.NotFound();
 
     input = input with { ClientId = access.ClientId };
+    var dateErr = Sessions.ValidatePerformedOn(input.PerformedOn);
+    if (dateErr is not null) return dateErr;
+
     Sessions.ApplyUpdate(db, session, input);
     await db.SaveChangesAsync();
     return Results.Ok(await Sessions.LoadDto(db, session.Id));

@@ -20,3 +20,7 @@ export function polishDayCount(n: number): string {
 export function polishExerciseCount(n: number): string {
   return polishPlural(n, "ćwiczenie", "ćwiczenia", "ćwiczeń");
 }
+
+export function polishSetCount(n: number): string {
+  return polishPlural(n, "seria", "serie", "serii");
+}

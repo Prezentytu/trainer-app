@@ -30,6 +30,17 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
+    /// <summary>
+    /// SQLite zwraca DateTime z Kind=Unspecified; bez UTC System.Text.Json
+    /// serializuje bez „Z”, a przeglądarka traktuje string jako czas lokalny.
+    /// Na Npgsql (timestamptz) Kind jest już Utc — SpecifyKind jest no-op.
+    /// </summary>
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.Properties<DateTime>().HaveConversion<UtcDateTimeConverter>();
+        configurationBuilder.Properties<DateTime?>().HaveConversion<UtcNullableDateTimeConverter>();
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Trainer>()
@@ -252,3 +263,14 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
             ? new List<ExerciseMedia>()
             : (JsonSerializer.Deserialize<List<ExerciseMedia>>(v, JsonOpts) ?? new List<ExerciseMedia>());
 }
+
+/// <summary>Oznacza DateTime jako UTC przy odczycie z bazy (tożsamościowy zapis).</summary>
+sealed class UtcDateTimeConverter() : ValueConverter<DateTime, DateTime>(
+    v => v.Kind == DateTimeKind.Utc ? v : DateTime.SpecifyKind(v, DateTimeKind.Utc),
+    v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+
+sealed class UtcNullableDateTimeConverter() : ValueConverter<DateTime?, DateTime?>(
+    v => v.HasValue
+        ? (v.Value.Kind == DateTimeKind.Utc ? v : DateTime.SpecifyKind(v.Value, DateTimeKind.Utc))
+        : v,
+    v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v);

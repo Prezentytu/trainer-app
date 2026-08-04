@@ -144,7 +144,7 @@ export function useRestTimer(sessionId: number) {
       alarmedRef.current = false;
       const endsAt = Date.now() + seconds * 1000;
       writeStored({ endsAt, totalSeconds: seconds, sessionId });
-      setRest({ endsAt, totalSeconds: seconds, leftSeconds: seconds, expanded: true });
+      setRest({ endsAt, totalSeconds: seconds, leftSeconds: seconds, expanded: false });
     },
     [sessionId],
   );

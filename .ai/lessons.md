@@ -15,6 +15,25 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## DateTime z SQLite bez Kind=Utc psuje zegary w przeglądarce
+
+**Kontekst**: Po starcie sesji zegar pokazywał `2:00:18` zamiast `0:00`.
+**Problem**: EF/SQLite zwraca `DateTime` z `Kind=Unspecified`; JSON bez `Z`; ES traktuje string jako czas lokalny → offset strefy (CEST +2 h).
+**Zasada**: W `AppDb.ConfigureConventions` konwertuj wszystkie `DateTime`/`DateTime?` na UTC przy odczycie (`SpecifyKind(Utc)`). Test: `createdAt` kończy się na `Z`. Czas trwania sesji przy `finish` wysyłaj z zegara klienta (`durationSeconds`), nie licz wyłącznie z `UtcNow − CreatedAt` na serwerze.
+**Dotyczy**: `AppDb.cs`, `SessionLogger`, każdy licznik oparty o timestamp z API.
+
+## Pasek narzędzi w przepływie dokumentu rozpycha listę serii
+
+**Kontekst**: Fokus na kg/powt. wstawiał toolbar pod wierszem — elementy „rozjeżdżały się”, a „Talerze” pojawiały się też przy powtórzeniach.
+**Zasada**: Narzędzia kontekstowe (steppery, Talerze, Prev/Next) idą do przyklejonego doku nad klawiaturą (`visualViewport`), zależnego od **pola** (nie wiersza). Talerze tylko przy `kg`.
+**Dotyczy**: `SessionLogger`, `SessionDock`, `useKeyboardInset`.
+
+## Trener nie wykonuje sesji klienta — tylko podgląd + jawne „wpisz za”
+
+**Kontekst**: „Dodaj trening” otwierało pełny logger trenerowi; brak read-only, ryzyko nadpisania serii klienta.
+**Zasada**: `/sessions/[id]` = `SessionReview` (podgląd). Logger tylko na `/edit` z banerem „Wpisujesz wynik za klienta”. CTA profilu: primary = plan, secondary = wpisz za klienta (Dialog z dniem i datą).
+**Dotyczy**: panel trenera, `SessionReview`, role trener/klient.
+
 ## Enumeracja = lista; liczebniki przez wspólny helper
 
 **Kontekst**: `/plans` pokazywał dwie sekcje kafelków (`sm:grid-cols-2 xl:grid-cols-3`) ze sztywnymi etykietami „1 DNI” / „1 ĆWICZEŃ” i limonkową ikoną biblioteki na każdej karcie.

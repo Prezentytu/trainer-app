@@ -119,6 +119,11 @@ export default function ClientDetailsPage() {
   const [statsCache, setStatsCache] = useState<Record<number, ExerciseStats | "loading" | "error">>({});
   const [nextDay, setNextDay] = useState<{ assignmentId: number; label: string } | null>(null);
   const [deleteClientOpen, setDeleteClientOpen] = useState(false);
+  const [logBehalfOpen, setLogBehalfOpen] = useState(false);
+  const [logBehalfDays, setLogBehalfDays] = useState<{ id: number; label: string; weekNumber: number }[]>([]);
+  const [logBehalfDayId, setLogBehalfDayId] = useState<number | "">("");
+  const [logBehalfDate, setLogBehalfDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [logBehalfStarting, setLogBehalfStarting] = useState(false);
   const [intake, setIntake] = useState<ClientIntake | null>(null);
   const [intakeEditing, setIntakeEditing] = useState(false);
   const [muscleVolume, setMuscleVolume] = useState<MuscleVolumeResponse | null>(null);
@@ -372,22 +377,45 @@ export default function ClientDetailsPage() {
     return days.find((d) => !doneDayIds.has(d.id)) ?? days[0];
   };
 
-  const handleStartSession = async (assignment: ClientDetails["assignments"][number]) => {
+  const openLogBehalf = async (assignment: ClientDetails["assignments"][number]) => {
+    setError(null);
     try {
-      const day = await resolveNextDayId(assignment);
-      if (!day) {
+      const plan = await api.plans.get(assignment.planId, clientId);
+      const days = [...plan.days]
+        .sort((a, b) => a.weekNumber - b.weekNumber || a.order - b.order)
+        .map((d) => ({ id: d.id, label: d.label, weekNumber: d.weekNumber }));
+      if (days.length === 0) {
         setError("Plan nie ma dni treningowych.");
         return;
       }
-      const session = await api.sessions.start({
-        clientId,
-        assignmentId: assignment.id,
-        planId: assignment.planId,
-        planDayId: day.id,
-      });
-      router.push(`/clients/${clientId}/sessions/${session.id}`);
+      const next = await resolveNextDayId(assignment);
+      setLogBehalfDays(days);
+      setLogBehalfDayId(next?.id ?? days[0].id);
+      setLogBehalfDate(new Date().toISOString().slice(0, 10));
+      setLogBehalfOpen(true);
     } catch (err) {
       setError((err as Error).message);
+    }
+  };
+
+  const confirmLogBehalf = async () => {
+    if (!activeAssignment || logBehalfDayId === "") return;
+    setLogBehalfStarting(true);
+    setError(null);
+    try {
+      const session = await api.sessions.start({
+        clientId,
+        assignmentId: activeAssignment.id,
+        planId: activeAssignment.planId,
+        planDayId: logBehalfDayId,
+        performedOn: logBehalfDate,
+      });
+      setLogBehalfOpen(false);
+      router.push(`/clients/${clientId}/sessions/${session.id}/edit`);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLogBehalfStarting(false);
     }
   };
 
@@ -529,10 +557,12 @@ export default function ClientDetailsPage() {
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Button onClick={() => void handleStartSession(activeAssignment)}>Dodaj trening</Button>
-                <Link href={`/plans/${activeAssignment.planId}`} className="text-sm text-accent hover:text-accent-strong">
-                  Otwórz plan
+                <Link href={`/plans/${activeAssignment.planId}`}>
+                  <Button>Otwórz plan</Button>
                 </Link>
+                <Button variant="secondary" onClick={() => void openLogBehalf(activeAssignment)}>
+                  Wpisz trening za klienta
+                </Button>
               </div>
             </>
           ) : (
@@ -706,13 +736,15 @@ export default function ClientDetailsPage() {
                 title="Brak treningów"
                 action={
                   activeAssignment ? (
-                    <Button onClick={() => void handleStartSession(activeAssignment)}>Dodaj trening</Button>
+                    <Button variant="secondary" onClick={() => void openLogBehalf(activeAssignment)}>
+                      Wpisz trening za klienta
+                    </Button>
                   ) : (
                     <Button onClick={openAssignTab}>Przypisz plan</Button>
                   )
                 }
               >
-                Dodaj pierwszy trening — historia i aktywność pojawią się tutaj.
+                Klient loguje treningi w portalu. Możesz też wpisać wynik za niego — np. po sesji na sali.
               </EmptyState>
             ) : (
               <div className="grid gap-2">
@@ -1108,6 +1140,41 @@ export default function ClientDetailsPage() {
         onConfirm={() => void handleDeleteClient()}
         onCancel={() => setDeleteClientOpen(false)}
       />
+
+      <Dialog
+        open={logBehalfOpen}
+        title="Wpisz trening za klienta"
+        description="Wynik zapisze się na profilu klienta — np. po sesji na sali. Klient loguje sam w portalu."
+        confirmLabel={logBehalfStarting ? "Startuję…" : "Otwórz logger"}
+        busy={logBehalfStarting}
+        onConfirm={() => void confirmLogBehalf()}
+        onCancel={() => setLogBehalfOpen(false)}
+      >
+        <div className="space-y-3">
+          <Field label="Dzień planu">
+            <select
+              className={inputClass}
+              value={logBehalfDayId === "" ? "" : String(logBehalfDayId)}
+              onChange={(e) => setLogBehalfDayId(e.target.value ? Number(e.target.value) : "")}
+            >
+              {logBehalfDays.map((d) => (
+                <option key={d.id} value={d.id}>
+                  Tydz. {d.weekNumber} · {d.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Data treningu">
+            <input
+              type="date"
+              className={inputClass}
+              value={logBehalfDate}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setLogBehalfDate(e.target.value)}
+            />
+          </Field>
+        </div>
+      </Dialog>
 
       {toastNode}
     </div>
