@@ -1,19 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Pencil, Search, SlidersHorizontal, Trash2, X } from "lucide-react";
 import {
   api,
   CATEGORY_LABELS,
   CATEGORY_ORDER,
-  EQUIPMENT_LABELS,
   Exercise,
   ExerciseCategory,
   ExerciseType,
   EXERCISE_TYPE_LABELS,
-  PATTERN_LABELS,
-  ExercisePattern,
 } from "@/lib/api";
+import {
+  advancedFilterCount,
+  equipmentLabel,
+  facetCounts,
+  filterExercisesLibrary,
+  hasActiveFilters,
+  patternLabel,
+  polishExerciseCount,
+  polishPartCount,
+  typeLabel,
+  type ExerciseFilters,
+} from "@/lib/exerciseSearch";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { YoutubeExternalLink, YoutubeLite } from "@/components/YoutubeLite";
 import {
@@ -24,6 +34,7 @@ import {
   ErrorBanner,
   Field,
   formatRest,
+  IconButton,
   inputClass,
   PageHeader,
   Pill,
@@ -69,6 +80,16 @@ const EMPTY_FORM: FormState = {
   primaryMuscles: "",
   instructions: "",
   youtubeId: "",
+};
+
+const EMPTY_FILTERS: ExerciseFilters = {
+  query: "",
+  category: "all",
+  equipment: "all",
+  pattern: "all",
+  typeFilter: "all",
+  onlyVideo: false,
+  unilateralOnly: false,
 };
 
 function volumeLabel(exercise: Exercise): string {
@@ -147,16 +168,11 @@ export default function ExercisesPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<ExerciseCategory | "all">("all");
-  const [equipment, setEquipment] = useState<string | "all">("all");
-  const [pattern, setPattern] = useState<string | "all">("all");
-  const [onlyVideo, setOnlyVideo] = useState(false);
-  const [unilateralOnly, setUnilateralOnly] = useState(false);
-  const [typeFilter, setTypeFilter] = useState<ExerciseType | "all">("all");
+  const [filters, setFilters] = useState<ExerciseFilters>(EMPTY_FILTERS);
   const [moreFilters, setMoreFilters] = useState(false);
   const [preview, setPreview] = useState<Exercise | null>(null);
   const [loading, setLoading] = useState(true);
+  const searchRef = useRef<HTMLInputElement>(null);
   const { showUndoToast, toastNode } = useUndoToast();
 
   const load = useCallback(() => {
@@ -169,8 +185,24 @@ export default function ExercisesPage() {
 
   useEffect(load, [load]);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if ((e.target as HTMLElement | null)?.isContentEditable) return;
+      e.preventDefault();
+      searchRef.current?.focus();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
+
+  const setFilter = <K extends keyof ExerciseFilters>(key: K, value: ExerciseFilters[K]) =>
+    setFilters((f) => ({ ...f, [key]: value }));
 
   const startCreate = (prefillName = "") => {
     setForm({ ...EMPTY_FORM, name: prefillName });
@@ -240,144 +272,200 @@ export default function ExercisesPage() {
     }
   };
 
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: exercises.length };
-    for (const c of CATEGORY_ORDER) counts[c] = 0;
-    for (const ex of exercises) {
-      if (ex.category && ex.category in counts) counts[ex.category] += 1;
-    }
-    return counts;
-  }, [exercises]);
-
-  const equipmentOptions = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const ex of exercises) {
-      for (const eq of ex.equipment ?? []) {
-        map.set(eq, (map.get(eq) ?? 0) + 1);
-      }
-    }
-    return [...map.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  }, [exercises]);
-
-  const patternOptions = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const ex of exercises) {
-      if (ex.pattern) map.set(ex.pattern, (map.get(ex.pattern) ?? 0) + 1);
-    }
-    return [...map.entries()].sort((a, b) => b[1] - a[1]);
-  }, [exercises]);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return exercises.filter((ex) => {
-      if (q && !ex.name.toLowerCase().includes(q)) return false;
-      if (category !== "all" && ex.category !== category) return false;
-      if (equipment !== "all" && !(ex.equipment ?? []).includes(equipment)) return false;
-      if (pattern !== "all" && ex.pattern !== pattern) return false;
-      if (typeFilter !== "all" && ex.type !== typeFilter) return false;
-      if (onlyVideo && !(ex.media?.length > 0)) return false;
-      if (unilateralOnly && !ex.isUnilateral) return false;
-      return true;
-    });
-  }, [exercises, query, category, equipment, pattern, typeFilter, onlyVideo, unilateralOnly]);
+  const facets = useMemo(() => facetCounts(exercises, filters), [exercises, filters]);
+  const filtered = useMemo(() => filterExercisesLibrary(exercises, filters), [exercises, filters]);
 
   const withVideo = exercises.filter((e) => e.media?.length > 0).length;
-  const categoriesUsed = CATEGORY_ORDER.filter((c) => (categoryCounts[c] ?? 0) > 0).length;
+  const categoriesUsedTotal = CATEGORY_ORDER.filter((c) => exercises.some((e) => e.category === c)).length;
   const previewMedia = preview ? primaryMedia(preview) : null;
-  const hasActiveFilters =
-    category !== "all" ||
-    equipment !== "all" ||
-    pattern !== "all" ||
-    typeFilter !== "all" ||
-    onlyVideo ||
-    unilateralOnly ||
-    query.trim().length > 0;
+  const filtersActive = hasActiveFilters(filters);
+  const advancedCount = advancedFilterCount(filters);
 
-  const clearFilters = () => {
-    setQuery("");
-    setCategory("all");
-    setEquipment("all");
-    setPattern("all");
-    setTypeFilter("all");
-    setOnlyVideo(false);
-    setUnilateralOnly(false);
-  };
+  const clearFilters = () => setFilters(EMPTY_FILTERS);
+
+  const subtitle = filtersActive
+    ? `Pokazuję ${filtered.length} z ${exercises.length}`
+    : `${polishExerciseCount(exercises.length)} · ${polishPartCount(categoriesUsedTotal)} · ${withVideo} z filmem`;
 
   return (
     <div>
       <PageHeader
         title="Ćwiczenia"
-        subtitle={`${exercises.length} ćwiczeń w ${categoriesUsed} partiach · ${withVideo} z filmem`}
-        action={
-          <Button onClick={() => (showForm ? setShowForm(false) : startCreate())}>
-            {showForm ? "Anuluj" : "+ Nowe ćwiczenie"}
-          </Button>
-        }
+        subtitle={subtitle}
+        action={<Button onClick={() => startCreate()}>+ Nowe ćwiczenie</Button>}
       />
       <ErrorBanner message={error} />
 
-      <div className="sticky top-0 z-20 -mx-1 mb-4 space-y-3 bg-background/95 px-1 py-3 backdrop-blur-sm">
-        <input
-          className={inputClass}
-          placeholder="Szukaj po nazwie polskiej lub angielskiej…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          autoFocus
-        />
+      <div className="mb-4 space-y-3 md:sticky md:top-0 md:z-20 md:-mx-1 md:bg-background/95 md:px-1 md:py-3 md:backdrop-blur-sm">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative min-w-0 flex-1">
+            <Search
+              aria-hidden
+              className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-faint"
+              strokeWidth={1.75}
+            />
+            <input
+              ref={searchRef}
+              type="search"
+              className={`${inputClass} pl-9 pr-9`}
+              placeholder="Szukaj po nazwie, sprzęcie, mięśniu…"
+              value={filters.query}
+              onChange={(e) => setFilter("query", e.target.value)}
+              aria-label="Szukaj ćwiczenia"
+            />
+            {filters.query ? (
+              <button
+                type="button"
+                aria-label="Wyczyść wyszukiwanie"
+                className="absolute top-1/2 right-2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted hover:bg-surface-hover hover:text-foreground"
+                onClick={() => setFilter("query", "")}
+              >
+                <X className="h-4 w-4" strokeWidth={1.75} />
+              </button>
+            ) : null}
+          </div>
+          <Button
+            variant="secondary"
+            onClick={() => setMoreFilters((v) => !v)}
+            aria-expanded={moreFilters}
+            className="shrink-0"
+          >
+            <SlidersHorizontal className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+            {advancedCount > 0 ? `Filtry · ${advancedCount}` : "Filtry"}
+          </Button>
+        </div>
+
         <div className="flex flex-wrap gap-2">
-          <Pill active={category === "all"} onClick={() => setCategory("all")}>
-            Wszystkie · {categoryCounts.all}
+          <Pill quiet active={filters.category === "all"} onClick={() => setFilter("category", "all")}>
+            Wszystkie · {facets.category.all}
           </Pill>
-          {CATEGORY_ORDER.filter((c) => (categoryCounts[c] ?? 0) > 0).map((c) => (
-            <Pill key={c} active={category === c} onClick={() => setCategory(c)}>
-              {CATEGORY_LABELS[c]} · {categoryCounts[c]}
+          {CATEGORY_ORDER.filter((c) => (facets.category[c] ?? 0) > 0 || filters.category === c).map((c) => (
+            <Pill
+              key={c}
+              quiet
+              active={filters.category === c}
+              onClick={() => setFilter("category", c)}
+            >
+              {CATEGORY_LABELS[c]} · {facets.category[c] ?? 0}
             </Pill>
           ))}
         </div>
-        {equipmentOptions.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            <Pill active={equipment === "all"} onClick={() => setEquipment("all")}>
-              Sprzęt: wszystkie
-            </Pill>
-            {equipmentOptions.slice(0, 10).map(([eq, count]) => (
-              <Pill key={eq} active={equipment === eq} onClick={() => setEquipment(eq)}>
-                {EQUIPMENT_LABELS[eq] ?? eq} · {count}
-              </Pill>
-            ))}
+
+        {moreFilters ? (
+          <div className="space-y-3 rounded-xl border border-border bg-surface-raised p-3 sm:p-4">
+            {facets.equipment.length > 0 || filters.equipment !== "all" ? (
+              <div>
+                <p className="mb-2 font-mono text-xs font-medium uppercase tracking-caps text-muted">Sprzęt</p>
+                <div className="flex flex-wrap gap-2">
+                  <Pill quiet active={filters.equipment === "all"} onClick={() => setFilter("equipment", "all")}>
+                    Wszystkie
+                  </Pill>
+                  {facets.equipment
+                    .filter(([eq, count]) => count > 0 || filters.equipment === eq)
+                    .map(([eq, count]) => (
+                      <Pill
+                        key={eq}
+                        quiet
+                        active={filters.equipment === eq}
+                        onClick={() => setFilter("equipment", eq)}
+                      >
+                        {equipmentLabel(eq)} · {count}
+                      </Pill>
+                    ))}
+                </div>
+              </div>
+            ) : null}
+
+            {facets.pattern.length > 0 || filters.pattern !== "all" ? (
+              <div>
+                <p className="mb-2 font-mono text-xs font-medium uppercase tracking-caps text-muted">Wzorzec ruchu</p>
+                <div className="flex flex-wrap gap-2">
+                  <Pill quiet active={filters.pattern === "all"} onClick={() => setFilter("pattern", "all")}>
+                    Wszystkie
+                  </Pill>
+                  {facets.pattern
+                    .filter(([p, count]) => count > 0 || filters.pattern === p)
+                    .map(([p, count]) => (
+                      <Pill
+                        key={p}
+                        quiet
+                        active={filters.pattern === p}
+                        onClick={() => setFilter("pattern", p)}
+                      >
+                        {patternLabel(p)} · {count}
+                      </Pill>
+                    ))}
+                </div>
+              </div>
+            ) : null}
+
+            <div>
+              <p className="mb-2 font-mono text-xs font-medium uppercase tracking-caps text-muted">Typ</p>
+              <div className="flex flex-wrap gap-2">
+                {(Object.keys(EXERCISE_TYPE_LABELS) as ExerciseType[]).map((t) => (
+                  <Pill
+                    key={t}
+                    quiet
+                    active={filters.typeFilter === t}
+                    onClick={() => setFilter("typeFilter", filters.typeFilter === t ? "all" : t)}
+                  >
+                    {typeLabel(t)}
+                    {facets.type[t] > 0 ? ` · ${facets.type[t]}` : ""}
+                  </Pill>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 font-mono text-xs font-medium uppercase tracking-caps text-muted">Opcje</p>
+              <div className="flex flex-wrap gap-2">
+                <Pill quiet active={filters.onlyVideo} onClick={() => setFilter("onlyVideo", !filters.onlyVideo)}>
+                  Tylko z filmem · {facets.withVideo}
+                </Pill>
+                <Pill
+                  quiet
+                  active={filters.unilateralOnly}
+                  onClick={() => setFilter("unilateralOnly", !filters.unilateralOnly)}
+                >
+                  Jednostronne · {facets.unilateral}
+                </Pill>
+              </div>
+            </div>
           </div>
         ) : null}
-        <div>
-          <button
-            type="button"
-            className="text-sm font-medium text-accent hover:text-accent-strong"
-            onClick={() => setMoreFilters((v) => !v)}
-          >
-            {moreFilters ? "Mniej filtrów" : "Więcej filtrów"}
-          </button>
-          {moreFilters ? (
-            <div className="mt-2 flex flex-wrap gap-2">
-              <Pill active={pattern === "all"} onClick={() => setPattern("all")}>
-                Wzorzec: wszystkie
-              </Pill>
-              {patternOptions.map(([p, count]) => (
-                <Pill key={p} active={pattern === p} onClick={() => setPattern(p)}>
-                  {PATTERN_LABELS[p as ExercisePattern] ?? p} · {count}
-                </Pill>
-              ))}
-              <Pill active={onlyVideo} onClick={() => setOnlyVideo((v) => !v)}>
-                Tylko z filmem
-              </Pill>
-              <Pill active={unilateralOnly} onClick={() => setUnilateralOnly((v) => !v)}>
-                Jednostronne
-              </Pill>
-              {(Object.keys(EXERCISE_TYPE_LABELS) as ExerciseType[]).map((t) => (
-                <Pill key={t} active={typeFilter === t} onClick={() => setTypeFilter(typeFilter === t ? "all" : t)}>
-                  {EXERCISE_TYPE_LABELS[t]}
-                </Pill>
-              ))}
-            </div>
-          ) : null}
-        </div>
+
+        {filtersActive ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {filters.query.trim() ? (
+              <Tag onRemove={() => setFilter("query", "")}>„{filters.query.trim()}”</Tag>
+            ) : null}
+            {filters.category !== "all" ? (
+              <Tag onRemove={() => setFilter("category", "all")}>
+                {CATEGORY_LABELS[filters.category]}
+              </Tag>
+            ) : null}
+            {filters.equipment !== "all" ? (
+              <Tag onRemove={() => setFilter("equipment", "all")}>{equipmentLabel(filters.equipment)}</Tag>
+            ) : null}
+            {filters.pattern !== "all" ? (
+              <Tag onRemove={() => setFilter("pattern", "all")}>{patternLabel(filters.pattern)}</Tag>
+            ) : null}
+            {filters.typeFilter !== "all" ? (
+              <Tag onRemove={() => setFilter("typeFilter", "all")}>{typeLabel(filters.typeFilter)}</Tag>
+            ) : null}
+            {filters.onlyVideo ? <Tag onRemove={() => setFilter("onlyVideo", false)}>Z filmem</Tag> : null}
+            {filters.unilateralOnly ? (
+              <Tag onRemove={() => setFilter("unilateralOnly", false)}>Jednostronne</Tag>
+            ) : null}
+            <button
+              type="button"
+              className="text-sm font-medium text-accent-text hover:text-accent-strong"
+              onClick={clearFilters}
+            >
+              Wyczyść
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {loading ? (
@@ -394,14 +482,14 @@ export default function ExercisesPage() {
           title="Brak ćwiczeń dla filtrów"
           action={
             <div className="flex flex-wrap justify-center gap-2">
-              {hasActiveFilters ? (
+              {filtersActive ? (
                 <Button variant="secondary" onClick={clearFilters}>
                   Wyczyść filtry
                 </Button>
               ) : null}
-              {query.trim() ? (
-                <Button onClick={() => startCreate(query.trim())}>
-                  Utwórz ćwiczenie „{query.trim()}”
+              {filters.query.trim() ? (
+                <Button onClick={() => startCreate(filters.query.trim())}>
+                  Utwórz ćwiczenie „{filters.query.trim()}”
                 </Button>
               ) : (
                 <Button onClick={() => startCreate()}>+ Nowe ćwiczenie</Button>
@@ -421,37 +509,50 @@ export default function ExercisesPage() {
                 : null;
             const eqLabel = (ex.equipment ?? [])
               .slice(0, 2)
-              .map((e) => EQUIPMENT_LABELS[e] ?? e)
+              .map((e) => equipmentLabel(e))
               .join(" · ");
             return (
               <div
                 key={ex.id}
-                className="flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-card transition-colors hover:border-border-strong"
+                className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-card transition-colors duration-[var(--dur-fast)] hover:bg-surface-hover"
               >
-                <button
-                  type="button"
-                  className="block w-full text-left"
-                  onClick={() => (media ? setPreview(ex) : undefined)}
-                  disabled={!media}
-                  aria-label={media ? `Podgląd wideo: ${ex.name}` : ex.name}
-                >
-                  <ExerciseThumb
-                    youtubeId={media?.youtubeId}
-                    category={ex.category}
-                    alt={ex.name}
-                    seconds={media?.seconds}
-                    showPlay={Boolean(media)}
-                    className="rounded-none"
-                  />
-                </button>
-                <div className="flex flex-1 flex-col gap-2 p-3">
+                <Link
+                  href={`/exercises/${ex.id}`}
+                  className="absolute inset-0 z-0"
+                  aria-label={ex.name}
+                />
+                {media ? (
+                  <button
+                    type="button"
+                    className="relative z-10 block w-full text-left focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+                    onClick={() => setPreview(ex)}
+                    aria-label={`Podgląd wideo: ${ex.name}`}
+                  >
+                    <ExerciseThumb
+                      youtubeId={media.youtubeId}
+                      category={ex.category}
+                      alt={ex.name}
+                      seconds={media.seconds}
+                      play="hover"
+                      className="rounded-none"
+                    />
+                  </button>
+                ) : (
+                  <div className="relative z-0">
+                    <ExerciseThumb
+                      youtubeId={null}
+                      category={ex.category}
+                      alt={ex.name}
+                      play="none"
+                      className="rounded-none"
+                    />
+                  </div>
+                )}
+                <div className="relative z-10 flex flex-1 flex-col gap-2 p-3 pointer-events-none">
                   <div className="min-w-0">
-                    <Link
-                      href={`/exercises/${ex.id}`}
-                      className="break-words text-sm font-medium text-foreground hover:text-accent"
-                    >
+                    <p className="min-h-[2.5rem] break-words text-sm font-medium text-foreground">
                       {ex.name}
-                    </Link>
+                    </p>
                     <p className="mt-1 text-xs text-muted">
                       {[cat, eqLabel].filter(Boolean).join(" · ") || EXERCISE_TYPE_LABELS[ex.type]}
                       {ex.isUnilateral ? " · 1-str." : ""}
@@ -462,20 +563,23 @@ export default function ExercisesPage() {
                       {volumeLabel(ex)}
                       <span className="mx-1.5 text-muted-faint">·</span>
                       {formatRest(ex.defaultRestBetweenSetsSeconds)}
-                      {ex.media?.length ? (
-                        <>
-                          <span className="mx-1.5 text-muted-faint">·</span>
-                          {ex.media.length} ▶
-                        </>
-                      ) : null}
                     </p>
-                    <div className="flex shrink-0 gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => startEdit(ex)}>
-                        Edytuj
-                      </Button>
-                      <Button variant="danger" size="md" onClick={() => void handleDelete(ex)}>
-                        Usuń
-                      </Button>
+                    <div className="flex shrink-0 gap-0.5 opacity-100 transition-opacity duration-[var(--dur-fast)] pointer-events-auto md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
+                      <IconButton
+                        title="Edytuj"
+                        size="sm"
+                        onClick={() => startEdit(ex)}
+                      >
+                        <Pencil className="h-4 w-4" strokeWidth={1.4} />
+                      </IconButton>
+                      <IconButton
+                        title="Usuń"
+                        variant="danger"
+                        size="sm"
+                        onClick={() => void handleDelete(ex)}
+                      >
+                        <Trash2 className="h-4 w-4" strokeWidth={1.4} />
+                      </IconButton>
                     </div>
                   </div>
                 </div>
@@ -632,30 +736,22 @@ export default function ExercisesPage() {
         </form>
       </Dialog>
 
-      {preview && previewMedia ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <button
-            type="button"
-            aria-label="Zamknij"
-            className="absolute inset-0 bg-[var(--overlay-scrim)]"
-            onClick={() => setPreview(null)}
-          />
-          <div className="relative w-full max-w-2xl rounded-2xl border border-border bg-surface p-4 shadow-modal sm:p-5">
-            <div className="mb-3 flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h2 className="break-words font-display text-lg font-semibold">{preview.name}</h2>
-                <div className="mt-1 flex flex-wrap gap-1.5">
-                  {preview.category && preview.category in CATEGORY_LABELS ? (
-                    <Badge tone="accent">
-                      {CATEGORY_LABELS[preview.category as ExerciseCategory]}
-                    </Badge>
-                  ) : null}
-                  <Tag>{EXERCISE_TYPE_LABELS[preview.type]}</Tag>
-                </div>
-              </div>
-              <Button variant="ghost" size="sm" onClick={() => setPreview(null)}>
-                Zamknij
-              </Button>
+      <Dialog
+        open={Boolean(preview && previewMedia)}
+        title={preview?.name ?? "Podgląd wideo"}
+        onCancel={() => setPreview(null)}
+        footer={null}
+        className="max-w-2xl"
+      >
+        {preview && previewMedia ? (
+          <>
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {preview.category && preview.category in CATEGORY_LABELS ? (
+                <Badge tone="accent">
+                  {CATEGORY_LABELS[preview.category as ExerciseCategory]}
+                </Badge>
+              ) : null}
+              <Tag>{EXERCISE_TYPE_LABELS[preview.type]}</Tag>
             </div>
             <YoutubeLite
               youtubeId={previewMedia.youtubeId}
@@ -668,14 +764,14 @@ export default function ExercisesPage() {
               <YoutubeExternalLink youtubeId={previewMedia.youtubeId} />
               <Link
                 href={`/exercises/${preview.id}`}
-                className="text-sm font-medium text-accent hover:text-accent-strong"
+                className="text-sm font-medium text-accent-text hover:text-accent-strong"
               >
                 Pełne szczegóły →
               </Link>
             </div>
-          </div>
-        </div>
-      ) : null}
+          </>
+        ) : null}
+      </Dialog>
 
       {toastNode}
     </div>

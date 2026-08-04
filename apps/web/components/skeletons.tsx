@@ -118,10 +118,19 @@ export function ExerciseListSkeleton() {
   return (
     <div aria-busy aria-label="Wczytuję ćwiczenia" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="rounded-xl border border-border bg-surface p-4">
-          <Skeleton className="mb-3 aspect-video w-full rounded-md" />
-          <Skeleton className="mb-2 h-4 w-3/4" />
-          <Skeleton className="h-3 w-1/2" />
+        <div
+          key={i}
+          className="flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-card"
+        >
+          <Skeleton className="aspect-video w-full rounded-none" />
+          <div className="flex flex-1 flex-col gap-2 p-3">
+            <Skeleton className="h-5 w-4/5" />
+            <Skeleton className="h-3 w-1/2" />
+            <div className="mt-auto flex items-center justify-between gap-2 pt-1">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-8 w-16" />
+            </div>
+          </div>
         </div>
       ))}
     </div>

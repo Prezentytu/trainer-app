@@ -15,6 +15,17 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Biblioteka: nie maluj play/CTA na każdej pozycji listy
+
+**Kontekst**: Zakładka Ćwiczenia po imporcie YT pokazywała ~35 pigułek filtrów naraz i limonkowy play na ~124 miniaturach.
+**Problem**: Hick's Law (ściana opcji) + budżet lime ≤3% złamany — główne CTA ginęło; sticky filtry chowały się pod mobilnym headerem; unicode `▶` zamiast SVG.
+**Zasada**:
+1. Fasety: jeden rząd (partie) zawsze widoczny; reszta za progressive disclosure („Filtry · N”) + chipy aktywnych. Liczniki fasetowe liczone kontekstowo.
+2. Play/akcent limonkowy nie na każdej pozycji siatki — na liście `play="hover"` (cichy), limonka zostaje dla 1 CTA strony. Ikony = lucide/SVG, nie `▶`.
+3. Sticky paski filtrów tylko od `md:` (mobile header ma `z-40` i `top-0`).
+4. Destrukcja na karcie: `IconButton` ujawniany na hover, nie pełny czerwony „Usuń”.
+**Dotyczy**: `apps/web/app/(app)/exercises/page.tsx`, `ExerciseThumb.tsx`, `lib/exerciseSearch.ts`.
+
 ## Poprzedni wynik w kolumnie, nie w placeholderze inputu
 
 **Kontekst**: SessionLogger pokazywał poprzednią sesję jako ghost-placeholder w polach kg/powt. („Dziś").

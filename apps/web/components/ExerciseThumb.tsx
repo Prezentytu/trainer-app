@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Dumbbell } from "lucide-react";
+import { Dumbbell, Play } from "lucide-react";
 import { CATEGORY_LABELS, ExerciseCategory } from "@/lib/api";
 import { formatVideoSeconds, thumbUrl } from "@/lib/youtube";
 
@@ -12,8 +12,13 @@ type Props = {
   alt: string;
   seconds?: number | null;
   className?: string;
-  /** Pokaż przycisk play overlay. */
-  showPlay?: boolean;
+  /**
+   * Overlay play:
+   * - `none` — brak (domyślnie)
+   * - `hover` — cichy play tylko na hover/focus (biblioteka)
+   * - `always` — zawsze widoczny (YoutubeLite, gdzie miniatura *jest* odtwarzaczem)
+   */
+  play?: "none" | "hover" | "always";
   /**
    * `video` — landscape 16:9 (biblioteka, modal).
    * `square` — mała kwadratowa miniaturka w wierszach planu / composerze.
@@ -27,7 +32,7 @@ export function ExerciseThumb({
   alt,
   seconds,
   className = "",
-  showPlay = false,
+  play = "none",
   variant = "video",
 }: Props) {
   const [failed, setFailed] = useState(false);
@@ -41,7 +46,7 @@ export function ExerciseThumb({
 
   return (
     <div
-      className={`relative overflow-hidden bg-surface-sunken ${
+      className={`group/thumb relative overflow-hidden bg-surface-sunken ${
         square
           ? "aspect-square w-full rounded-lg"
           : "aspect-video w-full rounded-[10px]"
@@ -68,10 +73,16 @@ export function ExerciseThumb({
           ) : null}
         </div>
       )}
-      {showPlay && src ? (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[var(--overlay-scrim)]/30">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-accent text-sm font-bold text-accent-foreground shadow-raised">
-            ▶
+      {play !== "none" && src ? (
+        <div
+          className={`pointer-events-none absolute inset-0 flex items-center justify-center transition-opacity duration-[var(--dur-fast)] ${
+            play === "hover"
+              ? "bg-background/40 opacity-0 group-hover/thumb:opacity-100 group-focus-within/thumb:opacity-100"
+              : "bg-background/40"
+          }`}
+        >
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-background/80 text-foreground shadow-raised">
+            <Play className="h-4 w-4 fill-current" aria-hidden />
           </span>
         </div>
       ) : null}

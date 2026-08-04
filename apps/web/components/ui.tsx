@@ -251,19 +251,26 @@ export function Pill({
   children,
   active,
   onClick,
+  /** Cichy stan aktywny (tint + border) — używany gdy limonkowy fill konkuruje z CTA strony. */
+  quiet,
 }: {
   children: ReactNode;
   active?: boolean;
   onClick?: () => void;
+  quiet?: boolean;
 }) {
+  const activeClass = quiet
+    ? "border-accent-border bg-accent-dim text-foreground"
+    : "border-transparent bg-accent text-accent-foreground";
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 rounded-[var(--radius-pill)] px-3.5 py-1.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
+      aria-pressed={active ?? false}
+      className={`shrink-0 rounded-[var(--radius-pill)] border px-3.5 py-1.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
         active
-          ? "bg-accent text-accent-foreground"
-          : "bg-surface-hover text-foreground-secondary hover:bg-surface-active"
+          ? activeClass
+          : "border-transparent bg-surface-hover text-foreground-secondary hover:bg-surface-active"
       }`}
     >
       {children}
@@ -536,6 +543,10 @@ export function Dialog({
   onConfirm,
   onCancel,
   children,
+  /** `null` ukrywa stopkę z Anuluj/Potwierdź (np. podgląd wideo z własnymi akcjami). */
+  footer,
+  /** Nadpisanie klas panelu (domyślnie max-w-lg). */
+  className = "max-w-lg",
 }: {
   open?: boolean;
   title: string;
@@ -546,8 +557,11 @@ export function Dialog({
   onConfirm?: () => void;
   onCancel?: () => void;
   children?: ReactNode;
+  footer?: ReactNode | null;
+  className?: string;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
 
   useEffect(() => {
     if (!open) return;
@@ -592,6 +606,7 @@ export function Dialog({
   }, [open, onCancel]);
 
   if (!open) return null;
+  const showDefaultFooter = footer === undefined;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button
@@ -604,22 +619,26 @@ export function Dialog({
         ref={panelRef}
         role="dialog"
         aria-modal
-        aria-labelledby="dialog-title"
-        className="relative w-full max-w-lg rounded-3xl border border-border bg-surface-sunken p-6 shadow-modal"
+        aria-labelledby={titleId}
+        className={`relative w-full rounded-3xl border border-border bg-surface-sunken p-6 shadow-modal ${className}`}
       >
-        <h2 id="dialog-title" className="font-display text-xl font-bold text-foreground">
+        <h2 id={titleId} className="font-display text-xl font-bold text-foreground">
           {title}
         </h2>
         {description ? <p className="mt-2 max-w-[70ch] text-sm leading-[var(--leading-body)] text-muted-strong">{description}</p> : null}
         {children ? <div className="mt-4">{children}</div> : null}
-        <div className="mt-6 flex justify-end gap-2">
-          <Button variant="ghost" onClick={onCancel}>
-            {cancelLabel}
-          </Button>
-          <Button variant={danger ? "danger" : "primary"} onClick={onConfirm}>
-            {confirmLabel}
-          </Button>
-        </div>
+        {showDefaultFooter ? (
+          <div className="mt-6 flex justify-end gap-2">
+            <Button variant="ghost" onClick={onCancel}>
+              {cancelLabel}
+            </Button>
+            <Button variant={danger ? "danger" : "primary"} onClick={onConfirm}>
+              {confirmLabel}
+            </Button>
+          </div>
+        ) : footer ? (
+          <div className="mt-6">{footer}</div>
+        ) : null}
       </div>
     </div>
   );

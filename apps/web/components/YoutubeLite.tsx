@@ -54,7 +54,7 @@ export function YoutubeLite({
         category={category}
         alt={title}
         seconds={seconds}
-        showPlay
+        play="always"
       />
     </button>
   );
@@ -66,7 +66,7 @@ export function YoutubeExternalLink({ youtubeId, children }: { youtubeId: string
       href={watchUrl(youtubeId)}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-sm font-medium text-accent hover:text-accent-strong"
+      className="text-sm font-medium text-accent-text hover:text-accent-strong"
     >
       {children ?? "Otwórz w YouTube"}
     </a>
