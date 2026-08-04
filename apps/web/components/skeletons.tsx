@@ -75,6 +75,10 @@ export function ClientDetailSkeleton() {
   );
 }
 
+const PLAN_SKELETON_PAD = "px-4 py-3.5";
+const PLAN_SKELETON_COLS =
+  "gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(11rem,13rem)_minmax(8rem,10rem)_auto] sm:items-center sm:gap-x-5 lg:grid-cols-[minmax(0,1fr)_minmax(11rem,13rem)_minmax(8rem,10rem)_4.5rem_auto] lg:gap-x-5";
+
 export function PlanListSkeleton() {
   return (
     <div aria-busy aria-label="Wczytuję plany" className="space-y-4">
@@ -82,16 +86,23 @@ export function PlanListSkeleton() {
         <Skeleton className="h-10 min-w-0 flex-1 rounded-[10px]" />
         <Skeleton className="h-10 w-full rounded-md sm:w-80" />
       </div>
-      <div className="overflow-hidden rounded-xl border border-border bg-surface">
+      <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface">
+        <div
+          className={`${PLAN_SKELETON_PAD} ${PLAN_SKELETON_COLS} hidden bg-surface-raised lg:grid`}
+        >
+          <Skeleton className="h-3 w-10" />
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-3 w-14" />
+          <Skeleton className="h-3 w-12" />
+          <Skeleton className="h-3 w-10" />
+        </div>
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
-            className={`flex flex-col gap-3 p-4 sm:grid sm:grid-cols-[minmax(0,1fr)_12rem_10rem_auto] sm:items-center sm:gap-4 lg:grid-cols-[minmax(0,1fr)_12rem_10rem_6rem_auto] ${
-              i > 0 ? "border-t border-border" : ""
-            }`}
+            className={`grid grid-cols-1 sm:grid ${PLAN_SKELETON_PAD} ${PLAN_SKELETON_COLS}`}
           >
-            <div className="flex min-w-0 items-start gap-3">
-              <Skeleton className="h-9 w-9 shrink-0 rounded-md" />
+            <div className="flex min-w-0 items-center gap-3">
+              <Skeleton className="h-9 w-9 shrink-0 rounded-[10px]" />
               <div className="min-w-0 flex-1 space-y-2">
                 <Skeleton className="h-5 w-3/4" />
                 <Skeleton className="h-3 w-1/2" />
@@ -99,8 +110,8 @@ export function PlanListSkeleton() {
             </div>
             <Skeleton className="h-3 w-36" />
             <Skeleton className="h-6 w-28" />
-            <Skeleton className="hidden h-3 w-16 lg:block" />
-            <div className="flex items-center gap-1 sm:justify-end">
+            <Skeleton className="hidden h-3 w-14 lg:block" />
+            <div className="flex items-center gap-1">
               <Skeleton className="h-8 w-36 rounded-md" />
               <Skeleton className="h-8 w-8 rounded-md" />
               <Skeleton className="h-8 w-8 rounded-md" />

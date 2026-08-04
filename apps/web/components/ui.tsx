@@ -500,7 +500,9 @@ export function SegmentedControl({
 }) {
   return (
     <div
-      className={`inline-flex rounded-md border border-border bg-surface-sunken p-0.5 ${full ? "w-full" : ""}`}
+      className={`inline-flex rounded-md border border-border bg-surface-sunken p-0.5 ${
+        full ? "h-full min-h-10 w-full" : ""
+      }`}
       role="group"
     >
       {items.map((item) => {
@@ -511,8 +513,8 @@ export function SegmentedControl({
             key={v}
             type="button"
             onClick={() => onChange(v)}
-            className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
-              full ? "flex-1" : ""
+            className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-medium transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
+              full ? "h-full flex-1" : "py-1.5"
             } ${
               active
                 ? "bg-surface-active text-foreground shadow-[var(--shadow-segment-active)]"

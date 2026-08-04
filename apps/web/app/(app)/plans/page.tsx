@@ -23,6 +23,11 @@ import { PlanListSkeleton } from "@/components/skeletons";
 type AssignmentSummary = { planId: number; clientName: string };
 type KindFilter = "all" | "library" | "clients";
 
+/** Wspólna siatka nagłówka i wierszy — 1fr bierze luz, akcje max-content przy lewej krawędzi kolumny. */
+const PLAN_ROW_PAD = "px-4 py-3.5";
+const PLAN_ROW_COLS =
+  "gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(11rem,13rem)_minmax(8rem,10rem)_auto] sm:items-center sm:gap-x-5 lg:grid-cols-[minmax(0,1fr)_minmax(11rem,13rem)_minmax(8rem,10rem)_4.5rem_auto] lg:gap-x-5";
+
 export default function PlansPage() {
   const router = useRouter();
   const [plans, setPlans] = useState<PlanSummary[]>([]);
@@ -143,7 +148,7 @@ export default function PlansPage() {
                   </button>
                 ) : null}
               </div>
-              <div className="w-full overflow-x-auto sm:w-auto sm:shrink-0">
+              <div className="flex h-10 w-full sm:w-auto sm:shrink-0">
                 <SegmentedControl
                   full
                   value={kind}
@@ -189,32 +194,30 @@ export default function PlansPage() {
               onClearQuery={() => setQuery("")}
             />
           ) : (
-            <div>
-              <div
-                className="mb-2 hidden px-4 font-mono text-xs uppercase tracking-caps text-muted lg:grid lg:grid-cols-[minmax(0,1fr)_12rem_10rem_6rem_auto] lg:gap-4"
+            <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface">
+              <li
+                className={`${PLAN_ROW_PAD} ${PLAN_ROW_COLS} hidden bg-surface-raised font-mono text-xs uppercase tracking-caps text-muted lg:grid`}
                 aria-hidden
               >
                 <span>Plan</span>
                 <span>Struktura</span>
                 <span>Klienci</span>
                 <span>Dodano</span>
-                <span className="text-right">Akcje</span>
-              </div>
-              <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface">
-                {filtered.map((p) => (
-                  <PlanRow
-                    key={p.id}
-                    plan={p}
-                    clientNames={clientNamesByPlan.get(p.id) ?? []}
-                    onDuplicate={() => void handleDuplicate(p, false)}
-                    onCreateClientPlan={
-                      p.isTemplate ? () => void handleDuplicate(p, true) : undefined
-                    }
-                    onDelete={() => setDeleteTarget(p)}
-                  />
-                ))}
-              </ul>
-            </div>
+                <span>Akcje</span>
+              </li>
+              {filtered.map((p) => (
+                <PlanRow
+                  key={p.id}
+                  plan={p}
+                  clientNames={clientNamesByPlan.get(p.id) ?? []}
+                  onDuplicate={() => void handleDuplicate(p, false)}
+                  onCreateClientPlan={
+                    p.isTemplate ? () => void handleDuplicate(p, true) : undefined
+                  }
+                  onDelete={() => setDeleteTarget(p)}
+                />
+              ))}
+            </ul>
           )}
         </>
       ) : null}
@@ -306,21 +309,19 @@ function PlanRow({
 
   return (
     <li
-      className="group relative flex flex-col gap-3 p-4 transition-colors hover:bg-surface-hover
-        sm:grid sm:grid-cols-[minmax(0,1fr)_12rem_10rem_auto] sm:items-center sm:gap-4
-        lg:grid-cols-[minmax(0,1fr)_12rem_10rem_6rem_auto]"
+      className={`group relative grid grid-cols-1 transition-colors hover:bg-surface-hover sm:grid ${PLAN_ROW_PAD} ${PLAN_ROW_COLS}`}
     >
-      <div className="flex min-w-0 items-start gap-3">
+      <div className="flex min-w-0 items-center gap-3">
         <span
           aria-hidden
-          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-active text-muted-strong"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-active text-muted-strong"
         >
           {plan.isTemplate ? <TemplateIcon /> : <ClientPlanIcon />}
         </span>
         <div className="min-w-0 flex-1">
           <Link
             href={`/plans/${plan.id}`}
-            className="break-words font-display text-base font-semibold text-foreground transition-colors duration-[var(--dur-fast)] after:absolute after:inset-0 group-hover:text-foreground"
+            className="break-words font-display text-base font-semibold text-foreground after:absolute after:inset-0"
           >
             {plan.name}
           </Link>
@@ -330,7 +331,7 @@ function PlanRow({
         </div>
       </div>
 
-      <div className="font-mono text-xs tabular-nums text-muted-strong sm:min-w-0">
+      <div className="font-mono text-xs leading-snug tabular-nums text-muted-strong sm:min-w-0">
         {structure}
       </div>
 
@@ -359,7 +360,7 @@ function PlanRow({
 
       <div className="hidden font-mono text-xs tabular-nums text-muted lg:block">{addedLabel}</div>
 
-      <div className="relative z-10 flex shrink-0 flex-wrap items-center gap-1 sm:justify-end">
+      <div className="relative z-10 flex shrink-0 flex-wrap items-center gap-1">
         {onCreateClientPlan ? (
           <Button variant="secondary" size="sm" onClick={onCreateClientPlan}>
             Utwórz plan klienta

@@ -38,7 +38,7 @@ function NavLinks({
 }) {
   const pathname = usePathname();
   return (
-    <nav className="flex flex-col gap-1">
+    <nav className={`flex flex-col gap-1 ${compact ? "w-full" : ""}`}>
       {NAV.map((item) => {
         const active = item.href === "/" ? pathname === "/" : pathname?.startsWith(item.href);
         const count = item.countKey ? counts[item.countKey] : null;
@@ -50,14 +50,19 @@ function NavLinks({
             onClick={onNavigate}
             title={compact ? item.label : undefined}
             aria-current={active ? "page" : undefined}
-            className={`relative flex items-center rounded-[10px] py-2.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
+            className={`relative flex w-full items-center rounded-[10px] py-2.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
               active
                 ? "bg-accent-dim text-foreground"
                 : "text-muted hover:bg-surface-hover hover:text-foreground"
             } ${compact ? "justify-center px-0" : "gap-3 px-3"}`}
           >
             {active ? (
-              <span aria-hidden className="absolute top-2 bottom-2 left-0 w-0.5 bg-accent" />
+              <span
+                aria-hidden
+                className={`absolute top-1.5 bottom-1.5 w-0.5 rounded-full bg-accent ${
+                  compact ? "left-1" : "left-0"
+                }`}
+              />
             ) : null}
             <Icon aria-hidden className="h-5 w-5 shrink-0" strokeWidth={1.75} />
             {!compact && (
@@ -177,7 +182,7 @@ function AccountTile({
 
   if (compact) {
     return (
-      <div className="relative mt-auto border-t border-border pt-3">
+      <div className="relative mt-auto w-full border-t border-border pt-3">
         <button
           id={triggerId}
           type="button"
@@ -379,11 +384,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       <aside
         onMouseEnter={() => showRail && setRailExpanded(true)}
         onMouseLeave={() => isPlanEditor && setRailExpanded(false)}
-        className={`hidden shrink-0 flex-col gap-6 border-r border-border bg-surface p-3 transition-[width] duration-150 md:sticky md:top-0 md:flex md:h-screen md:overflow-y-auto ${
-          showRail ? "md:w-16" : "md:w-56"
+        className={`hidden shrink-0 flex-col gap-6 border-r border-border bg-surface transition-[width] duration-150 md:sticky md:top-0 md:flex md:h-screen md:overflow-hidden ${
+          showRail ? "md:w-14 md:items-stretch md:px-1.5 md:py-3" : "md:w-56 md:overflow-y-auto md:p-3"
         }`}
       >
-        <Wordmark compact={showRail} className="px-3" />
+        <Wordmark compact={showRail} className={showRail ? "justify-center" : "px-3"} />
         <NavLinks counts={counts} compact={showRail} />
         <TrainerFooter compact={showRail} name={trainerName} />
       </aside>
