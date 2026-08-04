@@ -88,7 +88,8 @@ Wyjątek: sam `globals.css`, lustra SDK (`clerkAppearance.ts`, OG image, manifes
 
 | Rola | Font | Klasa |
 |---|---|---|
-| Display / nagłówki / wordmark | Archivo 700–900 | `font-display` / `.display-caps` |
+| Display / wordmark / sesja | Archivo 900 UPPERCASE | `.display-caps` |
+| Display landing / auth | Archivo 700 sentence case | `.display-soft` |
 | Body / UI | Space Grotesk | `font-sans` (domyślny) |
 | Liczby (serie, kg, sekundy, StatBlock) | IBM Plex Mono | `font-mono` + `tabular-nums` |
 
@@ -100,14 +101,16 @@ Wyjątek: sam `globals.css`, lustra SDK (`clerkAppearance.ts`, OG image, manifes
 |---|---|---|
 | Micro / meta uppercase | `font-mono text-xs tracking-caps uppercase` / `.eyebrow` | `font-medium` |
 | Body / etykiety | `text-sm` | `font-normal` / `font-medium` |
-| Nazwa ćwiczenia (logger, landing brand) | `.display-caps` | 900 |
+| Nazwa ćwiczenia (logger) / wordmark | `.display-caps` | 900 |
+| Nagłówek landingu / auth | `.display-soft` | 700 — **sentence case** |
 | Nagłówek karty | `font-display text-lg font-bold` | bold |
 | Tytuł strony (`PageHeader`) | `font-display text-xl sm:text-2xl font-bold` | bold — **sentence case** |
 
 ### Zasady casingu Acid
 
-- **UPPERCASE** tylko: landing headings, wordmark, nazwy ćwiczeń w SessionLoggerze, mikro-etykiety mono (`SERIE`, `PRZERWA`, `TYDZIEŃ 3`).
-- Eyebrowy mogą mieć prefiks `///` (`Card eyebrowMark`, klasa `.eyebrow`).
+- **UPPERCASE** tylko: wordmark, nazwy ćwiczeń w SessionLoggerze, mikro-etykiety mono (`SERIE`, `PRZERWA`, `TYDZIEŃ 3`).
+- **Landing i auth:** nagłówki w **sentence case** przez `.display-soft` (Archivo 700). Bez `///`, bez obrysów liter, bez wersalików w H1–H3.
+- Eyebrowy w panelu mogą mieć prefiks `///` (`Card eyebrowMark`, klasa `.eyebrow`). Na landingu eyebrow = zwykły `text-sm text-muted`, sentence case.
 - Tytuły stron panelu i portalu: **sentence case**.
 - Body i kontrolki: sentence case („Start workout” → PL: „Rozpocznij trening”).
 - Liczby zawsze `font-mono tabular-nums`. Zero emoji; Unicode tylko `×` i `·`.

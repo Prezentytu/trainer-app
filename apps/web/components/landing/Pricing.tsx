@@ -4,28 +4,21 @@ import { LandingReveal } from "./LandingReveal";
 
 export function Pricing() {
   return (
-    <LandingReveal as="section" id="cennik" className="scroll-mt-20 px-5 py-24 sm:px-6 sm:py-32">
-      <div className="mx-auto max-w-xl">
-        <p className="eyebrow text-center">{"/// Cennik"}</p>
-        <div className="mt-6 rounded-xl border border-border-strong bg-surface p-7 text-center shadow-raised sm:p-9">
-          <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
-            Wczesny dostęp
-          </p>
-          <p className="mt-4 font-mono text-4xl font-semibold tabular-nums text-foreground">
-            0 zł <span className="text-lg font-normal text-muted">/ wczesny dostęp</span>
-          </p>
-          <p className="mt-2 font-mono text-sm tabular-nums text-muted">
-            <span className="line-through">149 zł / mies.</span>
-            <span className="ml-2 text-muted-faint">po premierze</span>
-          </p>
-          <p className="mt-4 text-sm text-muted">
-            Wszystko w cenie — analityka, portal klienta, eksport danych.
-          </p>
-          <div className="mt-7">
-            <Link href="/sign-up">
-              <Button>Zacznij za darmo</Button>
-            </Link>
-          </div>
+    <LandingReveal as="section" id="cennik" className="scroll-mt-20 px-5 py-32 sm:px-6 sm:py-40">
+      <div className="mx-auto max-w-xl text-center">
+        <p className="text-sm text-muted">Cennik</p>
+        <h2 className="mt-4 display-soft text-[clamp(1.875rem,3.4vw,2.75rem)] text-foreground">
+          Za darmo we wczesnym dostępie
+        </h2>
+        <p className="mt-8 font-mono text-5xl font-semibold tabular-nums text-foreground">0 zł</p>
+        <p className="mt-6 text-[15px] leading-relaxed text-muted text-pretty">
+          Później 149 zł miesięcznie. Wszystko w cenie — plany, portal klienta, statystyki, eksport
+          danych.
+        </p>
+        <div className="mt-10">
+          <Link href="/sign-up">
+            <Button size="lg">Zacznij za darmo</Button>
+          </Link>
         </div>
       </div>
     </LandingReveal>

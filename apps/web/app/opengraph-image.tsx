@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "Workout Alchemist — plany, które klienci robią";
+export const alt = "Workout Alchemist — układasz plan, widzisz każdą serię";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -15,8 +15,8 @@ export default function OpenGraphImage() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          background: "#0B0D08",
-          padding: 64,
+          background: "#0C0D0C",
+          padding: 72,
           fontFamily: "system-ui, sans-serif",
         }}
       >
@@ -24,8 +24,8 @@ export default function OpenGraphImage() {
           <div style={{ width: 12, height: 12, background: "#C6F135" }} />
           <div
             style={{
-              fontSize: 22,
-              fontWeight: 900,
+              fontSize: 20,
+              fontWeight: 700,
               color: "#F2F4EC",
               letterSpacing: "-0.02em",
               textTransform: "uppercase",
@@ -35,36 +35,33 @@ export default function OpenGraphImage() {
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div
             style={{
-              fontSize: 56,
-              fontWeight: 900,
+              fontSize: 52,
+              fontWeight: 700,
               color: "#F2F4EC",
-              lineHeight: 1.05,
+              lineHeight: 1.1,
               maxWidth: 900,
-              textTransform: "uppercase",
-              letterSpacing: "-0.03em",
+              letterSpacing: "-0.02em",
             }}
           >
-            Układasz plan. Widzisz każdą serię<span style={{ color: "#C6F135" }}>.</span>
+            Układasz plan. Widzisz każdą serię.
           </div>
-          <div style={{ fontSize: 24, color: "#8A9280", maxWidth: 720, lineHeight: 1.4 }}>
-            Ułóż plan, wyślij link — klient trenuje w telefonie.
+          <div style={{ fontSize: 22, color: "#9AA193", maxWidth: 640, lineHeight: 1.45 }}>
+            Wysyłasz klientowi jeden link. On trenuje w telefonie, Ty widzisz każdy trening.
           </div>
         </div>
 
         <div
           style={{
             display: "flex",
-            gap: 24,
-            fontSize: 14,
-            color: "#8A9280",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
+            gap: 20,
+            fontSize: 15,
+            color: "#6E7566",
           }}
         >
-          <span>Za darmo we wczesnym dostępie</span>
+          <span>Wczesny dostęp za darmo</span>
           <span>·</span>
           <span>Bez karty</span>
           <span>·</span>

@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     template: "%s · Workout Alchemist",
   },
   description:
-    "Układasz plan. Widzisz każdą serię. Klient dostaje link — bez aplikacji i bez konta. Zapisuje wyniki w trakcie treningu, a Ty widzisz jego postępy na żywo.",
+    "Układasz plan. Widzisz każdą serię. Wysyłasz klientowi jeden link — on zapisuje serie w telefonie, Ty widzisz każdy trening na żywo.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
@@ -43,13 +43,13 @@ export const metadata: Metadata = {
     siteName: "Workout Alchemist",
     title: "Workout Alchemist — układasz plan, widzisz każdą serię",
     description:
-      "Ułóż plan i wyślij klientowi link. On trenuje w telefonie, Ty widzisz każdy trening.",
+      "Wysyłasz klientowi jeden link. On trenuje w telefonie, Ty widzisz każdy trening na żywo.",
   },
   twitter: {
     card: "summary_large_image",
     title: "Workout Alchemist — układasz plan, widzisz każdą serię",
     description:
-      "Ułóż plan i wyślij klientowi link. On trenuje w telefonie, Ty widzisz każdy trening.",
+      "Wysyłasz klientowi jeden link. On trenuje w telefonie, Ty widzisz każdy trening na żywo.",
   },
 };
 

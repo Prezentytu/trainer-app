@@ -28,4 +28,30 @@ export const clerkAppearance = {
     socialButtonsVariant: "blockButton" as const,
     unsafe_disableDevelopmentModeWarnings: true,
   },
+  elements: {
+    // AuthScreen ma własny tytuł — unikamy dublowania z kartą Clerka
+    header: { display: "none" },
+    // AuthScreen ma własny przełącznik sign-in / sign-up
+    footerAction: { display: "none" },
+    socialButtonsBlockButton: {
+      backgroundColor: "#121312", // --surface-raised
+      borderColor: "#3a3c3a", // --border-strong
+      color: "#f2f4ec",
+      boxShadow: "none",
+      "&:hover": {
+        backgroundColor: "#222322", // --surface-hover
+      },
+    },
+    formButtonPrimary: {
+      fontWeight: "600",
+      boxShadow: "none",
+    },
+    card: {
+      boxShadow: "none",
+      border: "1px solid #2a2c2a", // --border
+    },
+    footer: {
+      background: "transparent",
+    },
+  },
 };

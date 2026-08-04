@@ -17,7 +17,7 @@ export default function SignUpPage() {
       >
         <p className="rounded-xl border border-border bg-surface p-4 text-sm text-muted">
           Otwórz{" "}
-          <Link href="/" className="font-medium text-accent hover:underline">
+          <Link href="/" className="font-medium text-accent-text hover:underline">
             Panel
           </Link>{" "}
           — lokalnie działa od razu.
@@ -28,13 +28,8 @@ export default function SignUpPage() {
 
   return (
     <AuthScreen
-      title="Utwórz konto trenera"
+      title="Załóż konto"
       subtitle="Bez karty. Dodaj klienta, ułóż plan, wyślij link."
-      footerHint={
-        <p className="rounded-[10px] border border-accent-border bg-accent-dim px-3 py-2 text-xs text-accent-strong">
-          We wczesnym dostępie — za darmo. Twoje dane zawsze możesz wyeksportować.
-        </p>
-      }
       switchLabel="Masz już konto?"
       switchHref="/sign-in"
       switchCta="Zaloguj się"

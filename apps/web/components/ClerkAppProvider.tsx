@@ -3,9 +3,9 @@
 import { ReactNode, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { ClerkProvider, RedirectToSignIn, useAuth } from "@clerk/nextjs";
-import { plPL } from "@clerk/localizations";
 import { clerkEnabled, setAuthTokenGetter } from "@/lib/api";
 import { clerkAppearance } from "@/lib/clerkAppearance";
+import { clerkLocalization } from "@/lib/clerkLocalization";
 
 function AuthTokenBridge({ children }: { children: ReactNode }) {
   const { getToken } = useAuth();
@@ -45,7 +45,7 @@ export function ClerkAppProvider({ children }: { children: ReactNode }) {
       signInFallbackRedirectUrl="/"
       signUpFallbackRedirectUrl="/"
       afterSignOutUrl="/sign-in"
-      localization={plPL}
+      localization={clerkLocalization}
       appearance={clerkAppearance}
     >
       <AuthTokenBridge>

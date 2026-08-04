@@ -19,7 +19,7 @@ export default function SignInPage() {
           Brak{" "}
           <code className="font-mono text-foreground-secondary">NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY</code>.
           Otwórz{" "}
-          <Link href="/" className="font-medium text-accent hover:underline">
+          <Link href="/" className="font-medium text-accent-text hover:underline">
             Panel
           </Link>{" "}
           bezpośrednio.
@@ -30,11 +30,11 @@ export default function SignInPage() {
 
   return (
     <AuthScreen
-      title="Zaloguj się do studia"
-      subtitle="Witaj z powrotem. Kontynuuj pracę z klientami i planami."
+      title="Zaloguj się"
+      subtitle="Wróć do swoich klientów i planów."
       switchLabel="Nie masz konta?"
       switchHref="/sign-up"
-      switchCta="Utwórz konto"
+      switchCta="Załóż konto"
     >
       <SignIn
         routing="path"

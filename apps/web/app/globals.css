@@ -109,7 +109,9 @@
   --tracking-caps: 0.14em;
   --tracking-eyebrow: 0.2em;
   --tracking-display: -0.035em;
+  --tracking-display-soft: -0.02em;
   --leading-display: 0.96;
+  --leading-display-soft: 1.06;
   --leading-body: 1.5;
   --leading-label: 1.4;
   --radius-well: 6px;
@@ -213,6 +215,14 @@ body {
   letter-spacing: var(--tracking-display);
   line-height: var(--leading-display);
   text-transform: uppercase;
+}
+
+/* Landing / auth — spokojny display w sentence case (Apple-like) */
+.display-soft {
+  font-family: var(--font-archivo), system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: var(--tracking-display-soft);
+  line-height: var(--leading-display-soft);
 }
 
 .eyebrow {

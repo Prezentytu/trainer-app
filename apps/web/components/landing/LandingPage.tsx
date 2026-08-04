@@ -1,8 +1,8 @@
 import { LandingNav } from "./LandingNav";
 import { Hero } from "./Hero";
 import { PanelPreview } from "./PanelPreview";
-import { Differentiators } from "./Differentiators";
 import { HowItWorks } from "./HowItWorks";
+import { Differentiators } from "./Differentiators";
 import { Pricing } from "./Pricing";
 import { Faq } from "./Faq";
 import { CtaBand } from "./CtaBand";
@@ -15,8 +15,8 @@ export function LandingPage() {
       <main>
         <Hero />
         <PanelPreview />
-        <Differentiators />
         <HowItWorks />
+        <Differentiators />
         <Pricing />
         <Faq />
         <CtaBand />
