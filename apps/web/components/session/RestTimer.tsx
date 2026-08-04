@@ -25,7 +25,7 @@ export function RestTimer({ rest, nextLabel, onAdjust, onDismiss, onExpand }: Pr
   if (!rest.expanded) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-background px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
+    <div className="fixed inset-0 z-[60] flex flex-col bg-background px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] isolate">
       <div className="flex items-center justify-between">
         <p className="eyebrow">Przerwa</p>
         <button

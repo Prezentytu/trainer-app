@@ -38,13 +38,24 @@ import { useRestTimer } from "@/components/session/useRestTimer";
 import { useWakeLock } from "@/components/session/useWakeLock";
 import { PlateCalculator } from "@/components/session/PlateCalculator";
 import { formatKg } from "@/lib/plates";
-import { polishSetCount } from "@/lib/plural";
+import {
+  Check,
+  History,
+  Layers,
+  MoreHorizontal,
+  Plus,
+  StickyNote,
+  Timer,
+} from "lucide-react";
 
 /** SET | POPRZ | wynik (kg × powt) | ✓ | ⋯ — płaska siatka arkusza. */
 const SET_GRID =
-  "grid grid-cols-[1.75rem_minmax(3.5rem,1fr)_minmax(7.5rem,auto)_2.5rem_2rem] gap-x-2 items-center";
+  "grid grid-cols-[1.5rem_minmax(3.25rem,1fr)_minmax(7rem,auto)_2.25rem_1.75rem] gap-x-1.5 items-center";
 
 const REST_OPTIONS_SEC = [60, 90, 120, 180] as const;
+
+const iconBtn =
+  "inline-flex min-h-10 items-center gap-1.5 text-[13px] font-medium text-muted hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]";
 
 export type SessionLoggerMode = "client" | "behalf" | "completedEdit";
 
@@ -70,20 +81,10 @@ type Props = {
   onPersistFailed?: (input: WorkoutSessionInput, complete: boolean, error: Error) => void;
 };
 
-function MoreIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <circle cx="5" cy="12" r="2" />
-      <circle cx="12" cy="12" r="2" />
-      <circle cx="19" cy="12" r="2" />
-    </svg>
-  );
-}
-
 function formatPrevDate(iso: string | null | undefined): string {
-  if (!iso) return "Poprz.";
+  if (!iso) return "";
   const d = new Date(`${iso}T12:00:00`);
-  if (Number.isNaN(d.getTime())) return "Poprz.";
+  if (Number.isNaN(d.getTime())) return "";
   return d.toLocaleDateString("pl-PL", { day: "numeric", month: "short" });
 }
 
@@ -327,6 +328,16 @@ export function SessionLogger({
   const [collapsedEx, setCollapsedEx] = useState<Set<number>>(() => new Set());
   const [noteOpenEx, setNoteOpenEx] = useState<Set<number>>(() => new Set());
   const [restOverrideByEx, setRestOverrideByEx] = useState<Record<number, number>>({});
+  /** Timestamp ostatniej zaliczonej serii — dock pokazuje count-up. */
+  const [lastSetAt, setLastSetAt] = useState<number | null>(() => {
+    if (resolvedMode !== "client") return null;
+    const hasDone = initial.draft.exercises.some((ex) =>
+      ex.sets.some((s) => s.completed),
+    );
+    if (!hasDone) return null;
+    // eslint-disable-next-line react-hooks/purity -- jednorazowy seed przy montowaniu
+    return Date.now();
+  });
   const { showUndoToast, toastNode } = useUndoToast();
   const menusOpen = menuExIdx != null || setRowMenu != null || restPickerEx != null;
 
@@ -567,14 +578,18 @@ export function SessionLogger({
       return next;
     });
 
-    if (nextCompleted && liveClock && readAutoRest()) {
-      const seconds = restOverrideByEx[exIdx] ?? exercise.restSeconds ?? 90;
-      setActiveCell(null);
-      (document.activeElement as HTMLElement | null)?.blur?.();
-      startRest(seconds);
-    }
-
     if (nextCompleted) {
+      if (liveClock) {
+        // Event handler — znacznik czasu startu count-upu „od serii”.
+        // eslint-disable-next-line react-hooks/purity -- nie render, gest użytkownika
+        setLastSetAt(Date.now());
+      }
+      if (liveClock && readAutoRest()) {
+        const seconds = restOverrideByEx[exIdx] ?? exercise.restSeconds ?? 90;
+        setActiveCell(null);
+        (document.activeElement as HTMLElement | null)?.blur?.();
+        startRest(seconds);
+      }
       queueMicrotask(() => {
         const next = draftRef.current;
         const exDone = next.exercises[exIdx]?.sets.every((s) => s.completed);
@@ -591,6 +606,13 @@ export function SessionLogger({
           }
         }
       });
+    } else {
+      // Przypadkowe zaliczenie — wyłącz przerwę; zegar znika tylko gdy nie ma już zaliczonych.
+      dismissRest();
+      const stillDone = draftRef.current.exercises.some((ex) =>
+        ex.sets.some((s) => s.completed),
+      );
+      if (!stillDone) setLastSetAt(null);
     }
 
     saveChain.current = saveChain.current
@@ -937,7 +959,7 @@ export function SessionLogger({
     const ex = draft.exercises[idx];
     if (!ex) return null;
     const nextSet = ex.sets.find((s) => !s.completed);
-    return nextSet ? `${ex.exerciseName} · seria ${nextSet.setNumber}` : ex.exerciseName;
+    return nextSet ? `${ex.exerciseName} · ${nextSet.setNumber}` : ex.exerciseName;
   }, [currentExerciseIdx, draft.exercises]);
 
   const stepActive = (field: "weight" | "reps", delta: number) => {
@@ -1174,7 +1196,13 @@ export function SessionLogger({
       : false;
 
   return (
-    <div className={`space-y-4 ${activeCell || (rest && !rest.expanded) ? "pb-40" : "pb-24"}`}>
+    <div
+      className={`space-y-4 ${
+        activeCell || (rest && !rest.expanded) || (liveClock && lastSetAt != null)
+          ? "pb-40"
+          : "pb-24"
+      }`}
+    >
       <ErrorBanner message={error} />
       {isBehalf ? (
         <div
@@ -1300,7 +1328,7 @@ export function SessionLogger({
         return (
           <section
             key={exercise.id > 0 ? exercise.id : `ex-${exIdx}`}
-            className={`space-y-3 overflow-hidden rounded-2xl border border-border bg-surface p-4 shadow-card ${
+            className={`relative space-y-2 rounded-xl border border-border bg-surface p-3 shadow-card ${
               allDone ? "opacity-80" : ""
             }`}
           >
@@ -1308,7 +1336,7 @@ export function SessionLogger({
               {hasVideo ? (
                 <button
                   type="button"
-                  className="h-10 w-10 shrink-0 self-start rounded-[10px] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+                  className="h-9 w-9 shrink-0 self-start rounded-[8px] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
                   onClick={() => {
                     setVideoId(thumb.youtubeId!);
                     setVideoTitle(exercise.exerciseName);
@@ -1334,14 +1362,14 @@ export function SessionLogger({
               <div className="relative shrink-0 self-center" data-session-menu>
                 <IconButton
                   title="Więcej"
-                  size="md"
+                  size="sm"
                   onClick={() => {
                     setSetRowMenu(null);
                     setRestPickerEx(null);
                     setMenuExIdx(menuOpen ? null : exIdx);
                   }}
                 >
-                  <MoreIcon />
+                  <MoreHorizontal className="h-5 w-5" strokeWidth={1.75} />
                 </IconButton>
                 {menuOpen ? (
                   <div className="absolute right-0 top-full z-10 mt-1 min-w-[10rem] origin-top-right rounded-[10px] border border-border bg-surface-raised py-1 shadow-[var(--shadow-raised)]">
@@ -1400,26 +1428,34 @@ export function SessionLogger({
               </div>
             </div>
 
-            <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[12px] tabular-nums text-muted">
-              <span>{polishSetCount(exercise.sets.length)}</span>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[12px] tabular-nums text-muted">
+              <span
+                className="inline-flex items-center gap-1"
+                title={String(exercise.sets.length)}
+                aria-label={`${exercise.sets.length} serii`}
+              >
+                <Layers className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden />
+                {exercise.sets.length}
+              </span>
               {exercise.targetRir != null ? (
-                <>
-                  <span aria-hidden>·</span>
-                  <span>RIR {exercise.targetRir}</span>
-                </>
+                <span className="inline-flex items-center gap-1" title={`RIR ${exercise.targetRir}`}>
+                  <span className="text-[10px] font-semibold tracking-caps">RIR</span>
+                  {exercise.targetRir}
+                </span>
               ) : null}
-              <span aria-hidden>·</span>
               <span className="relative inline-flex" data-session-menu>
                 <button
                   type="button"
-                  className="inline-flex min-h-9 items-center rounded-[8px] px-1.5 hover:bg-surface-hover hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
-                  title="Ustaw przerwę dla tego ćwiczenia"
+                  className="inline-flex min-h-8 items-center gap-1 rounded-[6px] px-1 hover:bg-surface-hover hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+                  title="Przerwa między seriami"
+                  aria-label={`Przerwa ${restPillLabel(restSec)}`}
                   onClick={() => {
                     setMenuExIdx(null);
                     setSetRowMenu(null);
                     setRestPickerEx(restPickerOpen ? null : exIdx);
                   }}
                 >
+                  <Timer className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden />
                   {restPillLabel(restSec)}
                 </button>
                 {restPickerOpen ? (
@@ -1442,7 +1478,7 @@ export function SessionLogger({
                   </div>
                 ) : null}
               </span>
-            </p>
+            </div>
 
             {trainerNote ? (
               <p className="text-[13px] text-muted">Trener: {trainerNote}</p>
@@ -1477,14 +1513,32 @@ export function SessionLogger({
               </div>
             ) : null}
 
-            {/* space-y-3 karty = 12px nad linią → pt-3 = 12px pod linią (równy gutter) */}
-            <div className="border-t border-border pt-3">
+            {/* space-y-2 karty = 8px nad linią → pt-2 = 8px pod linią */}
+            <div className="border-t border-border pt-2">
               <div
                 className={`${SET_GRID} px-0 pb-0.5 font-mono text-[10px] font-medium uppercase tracking-caps text-muted`}
               >
-                <div>#</div>
-                <div>{prevHeader}</div>
-                <div className="text-right">{isTime ? "sek." : "kg × powt."}</div>
+                <div aria-hidden>#</div>
+                <div className="flex items-center gap-1" title={prevHeader || "Poprzedni trening"}>
+                  <History className="h-3 w-3 shrink-0" strokeWidth={1.75} aria-hidden />
+                  <span className="truncate">{prevHeader}</span>
+                </div>
+                <div
+                  className="flex items-center justify-end gap-0.5"
+                  aria-label={isTime ? "sekundy" : "kg razy powtórzenia"}
+                >
+                  {isTime ? (
+                    <span className="w-[3.5rem] text-center">sek</span>
+                  ) : (
+                    <>
+                      <span className="w-[3.25rem] text-center">kg</span>
+                      <span className="px-0.5 text-muted-faint" aria-hidden>
+                        ×
+                      </span>
+                      <span className="w-[2.75rem] text-center">powt</span>
+                    </>
+                  )}
+                </div>
                 <div />
                 <div />
               </div>
@@ -1495,6 +1549,8 @@ export function SessionLogger({
                   const isNext = exIdx === nextExIdx && setIdx === nextSetIdx;
                   const rowMenuOpen =
                     setRowMenu?.exIdx === exIdx && setRowMenu?.setIdx === setIdx;
+                  // Ostatnie wiersze — menu w górę, żeby nie ucinało się o dół karty.
+                  const menuOpensUp = setIdx >= exercise.sets.length - 2;
                   return (
                     <div
                       key={s.uid}
@@ -1528,7 +1584,25 @@ export function SessionLogger({
                         }}
                       />
                       {rowMenuOpen ? (
-                        <div className="absolute right-0 top-full z-10 mt-0.5 min-w-[10rem] origin-top-right rounded-[10px] border border-border bg-surface-raised py-1 shadow-[var(--shadow-raised)]">
+                        <div
+                          className={`absolute right-0 z-30 min-w-[10.5rem] rounded-[10px] border border-border bg-surface-raised py-1 shadow-[var(--shadow-raised)] ${
+                            menuOpensUp
+                              ? "bottom-full mb-1 origin-bottom-right"
+                              : "top-full mt-1 origin-top-right"
+                          }`}
+                        >
+                          {s.completed ? (
+                            <button
+                              type="button"
+                              className="block w-full px-3 py-2.5 text-left text-[13px] hover:bg-surface-hover"
+                              onClick={() => {
+                                toggleComplete(exIdx, setIdx);
+                                setSetRowMenu(null);
+                              }}
+                            >
+                              Cofnij zaliczenie
+                            </button>
+                          ) : null}
                           <button
                             type="button"
                             className="block w-full px-3 py-2.5 text-left text-[13px] hover:bg-surface-hover"
@@ -1569,21 +1643,25 @@ export function SessionLogger({
               </div>
             </div>
 
-            <div className="flex items-center gap-4 pt-1">
+            <div className="flex items-center gap-5 pt-0.5">
               <button
                 type="button"
-                className="min-h-10 text-[13px] font-medium text-muted hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+                className={iconBtn}
                 onClick={() => addSet(exIdx)}
+                aria-label="Dodaj serię"
               >
-                + Dodaj serię
+                <Plus className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                Seria
               </button>
               {noteOpen ? null : (
                 <button
                   type="button"
-                  className="min-h-10 text-[13px] font-medium text-muted hover:text-foreground"
+                  className={iconBtn}
                   onClick={() => setNoteOpenEx((prev) => new Set(prev).add(exIdx))}
+                  aria-label="Dodaj notatkę"
                 >
-                  + Notatka
+                  <StickyNote className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                  Notatka
                 </button>
               )}
             </div>
@@ -1591,7 +1669,7 @@ export function SessionLogger({
             {noteOpen ? (
               <input
                 className="w-full border-0 border-b border-border bg-transparent px-0 py-2 text-sm text-foreground outline-none placeholder:text-muted-faint focus:border-accent-strong"
-                placeholder="Notatka do ćwiczenia…"
+                placeholder="Notatka…"
                 value={exercise.note ?? ""}
                 onChange={(e) => patchNote(exIdx, e.target.value)}
               />
@@ -1599,10 +1677,6 @@ export function SessionLogger({
           </section>
         );
       })}
-
-      <p className="px-1 pb-3 text-center text-[13px] text-muted-faint">
-        Wpisz faktyczny ciężar i powtórzenia — nawet jeśli inne niż plan. Trener widzi różnicę.
-      </p>
 
       {rest?.expanded ? (
         <RestTimer
@@ -1631,6 +1705,7 @@ export function SessionLogger({
         onAdjustRest={adjustRest}
         onDismissRest={dismissRest}
         onExpandRest={() => setExpanded(true)}
+        sinceLastSetAt={liveClock ? lastSetAt : null}
       />
 
       {platesOpen && activeCell && activeCell.field === "weight" ? (
@@ -1786,22 +1861,20 @@ const SetRow = memo(function SetRow({
       <button
         type="button"
         onClick={onToggle}
-        className={`flex min-h-11 min-w-10 items-center justify-center transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.94] ${checkColor}`}
-        aria-label={completed ? "Cofnij ukończenie" : "Zalicz serię"}
+        className={`flex min-h-11 min-w-9 items-center justify-center transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.94] ${checkColor}`}
+        aria-label={completed ? "Cofnij zaliczenie" : "Zalicz serię"}
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <path d="M20 6L9 17l-5-5" />
-        </svg>
+        <Check className="h-5 w-5" strokeWidth={completed ? 2.5 : 1.75} aria-hidden />
       </button>
 
       <button
         type="button"
         onClick={onRowMenu}
-        className="flex min-h-11 min-w-8 items-center justify-center text-muted hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+        className="flex min-h-11 min-w-7 items-center justify-center text-muted hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
         aria-label="Więcej opcji serii"
         title="Więcej"
       >
-        <MoreIcon />
+        <MoreHorizontal className="h-4 w-4" strokeWidth={1.75} aria-hidden />
       </button>
     </div>
   );

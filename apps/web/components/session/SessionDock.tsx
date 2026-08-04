@@ -1,13 +1,14 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { ChevronRight, Timer } from "lucide-react";
 import { useKeyboardInset } from "@/components/session/useKeyboardInset";
+import { SinceLastSetClock } from "@/components/session/SinceLastSetClock";
 import type { RestTimerState } from "@/components/session/useRestTimer";
 
 type ActiveField = "weight" | "reps";
 
 type Props = {
-  /** Fokus na komórce kg/powt. — pokazuje pasek narzędzi. */
   activeField: ActiveField | null;
   isTime?: boolean;
   onStepWeight: (delta: number) => void;
@@ -16,12 +17,12 @@ type Props = {
   onPrev: () => void;
   onNext: () => void;
   onDone: () => void;
-  /** Mini rest — gdy aktywny i nie fullscreen. */
   rest: RestTimerState | null;
   nextLabel?: string | null;
   onAdjustRest: (delta: number) => void;
   onDismissRest: () => void;
   onExpandRest: () => void;
+  sinceLastSetAt?: number | null;
 };
 
 function mmss(seconds: number): string {
@@ -49,7 +50,7 @@ function DockBtn({
       onClick={onClick}
       title={title}
       aria-label={title}
-      className={`inline-flex h-11 min-w-11 items-center justify-center rounded-[10px] px-2.5 text-[13px] font-semibold focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.96] ${
+      className={`inline-flex h-10 min-w-10 items-center justify-center rounded-[8px] px-2 text-[13px] font-semibold focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.96] ${
         primary
           ? "bg-accent text-accent-foreground"
           : "border border-border-strong bg-surface text-foreground-secondary hover:border-accent-border hover:text-foreground"
@@ -60,10 +61,7 @@ function DockBtn({
   );
 }
 
-/**
- * Przyklejony dok nad klawiaturą: [mini rest] + [pasek narzędzi zależny od pola].
- * Zastępuje wstawkę w przepływie dokumentu, która rozpychała wiersze serii.
- */
+/** Przyklejony dok: [przerwa | czas od serii] + [pasek narzędzi]. */
 export function SessionDock({
   activeField,
   isTime = false,
@@ -78,12 +76,17 @@ export function SessionDock({
   onAdjustRest,
   onDismissRest,
   onExpandRest,
+  sinceLastSetAt = null,
 }: Props) {
   const inset = useKeyboardInset();
-  const showTools = activeField != null;
-  const showRest = rest != null && !rest.expanded;
+  // Pełny ekran przerwy — dock musi zniknąć (inaczej „od serii” wystaje spod spodu).
+  if (rest?.expanded) return null;
 
-  if (!showTools && !showRest) return null;
+  const showTools = activeField != null;
+  const showRest = rest != null;
+  const showSince = !showRest && sinceLastSetAt != null;
+
+  if (!showTools && !showRest && !showSince) return null;
 
   const progress =
     rest && rest.totalSeconds > 0
@@ -104,16 +107,19 @@ export function SessionDock({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                className="min-w-0 flex-1 text-left focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+                className="flex min-w-0 flex-1 items-center gap-2.5 text-left focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
                 onClick={onExpandRest}
                 aria-label="Powiększ timer przerwy"
               >
-                <p className="font-mono text-[28px] font-semibold leading-none tabular-nums text-foreground">
-                  {mmss(rest.leftSeconds)}
-                </p>
-                {nextLabel ? (
-                  <p className="mt-0.5 truncate text-[12px] text-muted">Dalej: {nextLabel}</p>
-                ) : null}
+                <Timer className="h-5 w-5 shrink-0 text-muted" strokeWidth={1.75} aria-hidden />
+                <div className="min-w-0">
+                  <p className="font-mono text-[26px] font-semibold leading-none tabular-nums text-foreground">
+                    {mmss(rest.leftSeconds)}
+                  </p>
+                  {nextLabel ? (
+                    <p className="mt-0.5 truncate text-[11px] text-muted">{nextLabel}</p>
+                  ) : null}
+                </div>
               </button>
               <DockBtn mono onClick={() => onAdjustRest(-15)}>
                 −15
@@ -131,6 +137,26 @@ export function SessionDock({
                 style={{ width: `${Math.round(progress * 100)}%` }}
               />
             </div>
+          </div>
+        ) : null}
+
+        {showSince && sinceLastSetAt != null ? (
+          <div
+            className="flex items-center gap-2.5 px-0.5"
+            role="status"
+            aria-label="Czas od ostatniej serii"
+          >
+            <Timer className="h-4 w-4 shrink-0 text-muted" strokeWidth={1.75} aria-hidden />
+            <SinceLastSetClock
+              sinceAt={sinceLastSetAt}
+              className="font-mono text-[20px] font-semibold leading-none tabular-nums text-foreground"
+            />
+            {nextLabel ? (
+              <p className="ml-auto flex min-w-0 max-w-[55%] items-center gap-0.5 text-[12px] text-muted">
+                <ChevronRight className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden />
+                <span className="truncate">{nextLabel}</span>
+              </p>
+            ) : null}
           </div>
         ) : null}
 
