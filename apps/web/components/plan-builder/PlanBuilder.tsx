@@ -12,7 +12,7 @@ import {
   NewExerciseRequest,
 } from "./ExerciseLibraryContext";
 import { ListView } from "./ListView";
-import { NewExerciseDialog } from "./NewExerciseDialog";
+import { ExerciseFormDialog } from "@/components/ExerciseFormDialog";
 import { PlanHeader, AssignedClientInfo } from "./PlanHeader";
 import { PlanTable } from "./PlanTable";
 import { estimateWeekMinutes, formatDurationApprox } from "./summaryText";
@@ -318,9 +318,10 @@ export default function PlanBuilder({
           }}
         />
 
-        <NewExerciseDialog
+        <ExerciseFormDialog
           open={dialog.open}
           mode={dialog.open ? dialog.mode : "create"}
+          variant="quick"
           prefill={dialog.open ? dialog.prefill : DEFAULT_EXERCISE_INPUT}
           editExercise={dialog.open ? dialog.editExercise : undefined}
           onClose={() => setDialog({ open: false })}

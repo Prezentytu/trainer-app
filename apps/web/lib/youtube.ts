@@ -28,3 +28,41 @@ export function formatVideoSeconds(seconds: number | null | undefined): string {
   const s = seconds % 60;
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
+
+const YOUTUBE_ID_RE = /^[\w-]{11}$/;
+
+/**
+ * Wyciąga ID filmu z pełnego URL (watch?v=, youtu.be, shorts, embed)
+ * albo zwraca samo ID, gdy użytkownik wkleił 11-znakowy identyfikator.
+ */
+export function parseYoutubeId(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (YOUTUBE_ID_RE.test(trimmed)) return trimmed;
+
+  try {
+    const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    const url = new URL(withProtocol);
+    const host = url.hostname.replace(/^www\./, "");
+
+    if (host === "youtu.be") {
+      const id = url.pathname.split("/").filter(Boolean)[0] ?? "";
+      return YOUTUBE_ID_RE.test(id) ? id : null;
+    }
+
+    if (host === "youtube.com" || host === "m.youtube.com" || host === "music.youtube.com") {
+      const v = url.searchParams.get("v");
+      if (v && YOUTUBE_ID_RE.test(v)) return v;
+
+      const parts = url.pathname.split("/").filter(Boolean);
+      // /embed/ID, /shorts/ID, /live/ID, /v/ID
+      if (parts.length >= 2 && ["embed", "shorts", "live", "v"].includes(parts[0])) {
+        const id = parts[1];
+        return YOUTUBE_ID_RE.test(id) ? id : null;
+      }
+    }
+  } catch {
+    // nie-URL — nie parsujemy dalej
+  }
+  return null;
+}

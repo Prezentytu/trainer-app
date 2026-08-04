@@ -15,6 +15,17 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Formularz w Dialogu: błąd i busy wewnątrz, nie na stronie
+
+**Kontekst**: Dodawanie ćwiczenia w bibliotece ustawiało `setError` na stronie, a dialog to `z-50` ze scrimem — komunikat 409 był niewidoczny; przycisk „Dodaj” nie był `disabled` podczas zapisu.
+**Problem**: Trener nie widzi powodu nieudanego zapisu; podwójny klik = podwójny POST. `textarea` z `inputClass` (`h-10`) jest zmiażdżony. Sprzęt wpisany po polsku tworzy osobne fasety obok slugów.
+**Zasada**:
+1. Błąd walidacji/API renderuj **w** Dialogu (`ErrorBanner` nad formularzem). `Dialog` dostaje `busy` → confirm `loading`+`disabled`, Anuluj aktywny.
+2. Textarea → `textareaClass` (bez sztywnego `h-10`).
+3. Enumy (sprzęt, partia, wzorzec) wybieraj pigułkami ze slugami, nie wolnym tekstem „po przecinku”.
+4. Jeden formularz zasobu w dwóch trybach (`quick`/`full`), nie dwa niezależne komponenty.
+**Dotyczy**: `ExerciseFormDialog.tsx`, `ui.tsx` Dialog, biblioteka ćwiczeń, kreator.
+
 ## Biblioteka: nie maluj play/CTA na każdej pozycji listy
 
 **Kontekst**: Zakładka Ćwiczenia po imporcie YT pokazywała ~35 pigułek filtrów naraz i limonkowy play na ~124 miniaturach.

@@ -65,6 +65,28 @@ export function exerciseInputFromQuickEntry(
   };
 }
 
+/** Mapuje istniejące ćwiczenie na ExerciseInput (edycja w dialogu). */
+export function exerciseInputFromExercise(exercise: Exercise): ExerciseInput {
+  return {
+    name: exercise.name,
+    description: exercise.description,
+    type: exercise.type,
+    defaultSets: exercise.defaultSets,
+    defaultReps: exercise.defaultReps,
+    defaultRepDurationSeconds: exercise.defaultRepDurationSeconds,
+    defaultDistanceMeters: exercise.defaultDistanceMeters,
+    defaultRestBetweenSetsSeconds: exercise.defaultRestBetweenSetsSeconds,
+    defaultLoadKg: exercise.defaultLoadKg,
+    category: exercise.category,
+    pattern: exercise.pattern,
+    isUnilateral: exercise.isUnilateral,
+    equipment: exercise.equipment ?? [],
+    primaryMuscles: exercise.primaryMuscles ?? [],
+    instructions: exercise.instructions,
+    media: exercise.media ?? [],
+  };
+}
+
 /** Podgląd parametrów dla rzędu „Utwórz” (np. `3×8 · powtórzenia`). */
 export function createExercisePreviewLabel(
   input: Pick<

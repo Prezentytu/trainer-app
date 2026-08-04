@@ -191,6 +191,10 @@ export const inputClass =
 export const inputNumericClass =
   "h-10 w-full rounded-[10px] border border-border-strong bg-surface-raised px-3 font-mono text-base tabular-nums text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:text-muted-faint focus:border-accent-strong focus:shadow-[var(--glow-accent)] sm:text-sm";
 
+/** Textarea — bez sztywnego h-10 (inputClass zmiażdżyłby treść do jednej linii). */
+export const textareaClass =
+  "min-h-20 w-full rounded-[10px] border border-border-strong bg-surface-sunken px-3 py-2 text-base text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:text-muted-faint focus:border-accent-strong focus:shadow-[var(--glow-accent)] sm:text-sm";
+
 export function ErrorBanner({ message }: { message: string | null }) {
   if (!message) return null;
   return (
@@ -547,6 +551,8 @@ export function Dialog({
   footer,
   /** Nadpisanie klas panelu (domyślnie max-w-lg). */
   className = "max-w-lg",
+  /** Blokuje przycisk potwierdzenia + pokazuje spinner (Anuluj zostaje aktywny). */
+  busy,
 }: {
   open?: boolean;
   title: string;
@@ -559,6 +565,7 @@ export function Dialog({
   children?: ReactNode;
   footer?: ReactNode | null;
   className?: string;
+  busy?: boolean;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -632,7 +639,12 @@ export function Dialog({
             <Button variant="ghost" onClick={onCancel}>
               {cancelLabel}
             </Button>
-            <Button variant={danger ? "danger" : "primary"} onClick={onConfirm}>
+            <Button
+              variant={danger ? "danger" : "primary"}
+              onClick={onConfirm}
+              loading={busy}
+              disabled={busy}
+            >
               {confirmLabel}
             </Button>
           </div>

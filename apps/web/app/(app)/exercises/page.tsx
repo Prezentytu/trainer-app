@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pencil, Search, SlidersHorizontal, Trash2, X } from "lucide-react";
 import {
   api,
@@ -12,6 +12,11 @@ import {
   ExerciseType,
   EXERCISE_TYPE_LABELS,
 } from "@/lib/api";
+import {
+  DEFAULT_EXERCISE_INPUT,
+  ExerciseInput,
+  exerciseInputFromQuickEntry,
+} from "@/lib/exerciseDraft";
 import {
   advancedFilterCount,
   equipmentLabel,
@@ -24,6 +29,7 @@ import {
   typeLabel,
   type ExerciseFilters,
 } from "@/lib/exerciseSearch";
+import { ExerciseFormDialog } from "@/components/ExerciseFormDialog";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { YoutubeExternalLink, YoutubeLite } from "@/components/YoutubeLite";
 import {
@@ -32,55 +38,15 @@ import {
   Dialog,
   EmptyState,
   ErrorBanner,
-  Field,
   formatRest,
   IconButton,
   inputClass,
   PageHeader,
   Pill,
-  SegmentedControl,
   Tag,
   useUndoToast,
 } from "@/components/ui";
 import { ExerciseListSkeleton } from "@/components/skeletons";
-
-type FormState = {
-  name: string;
-  description: string;
-  type: ExerciseType;
-  defaultSets: number;
-  defaultReps: number;
-  defaultRepDurationSeconds: number;
-  defaultDistanceMeters: number;
-  defaultRestBetweenSetsSeconds: number;
-  defaultLoadKg: string;
-  category: string;
-  pattern: string;
-  isUnilateral: boolean;
-  equipment: string;
-  primaryMuscles: string;
-  instructions: string;
-  youtubeId: string;
-};
-
-const EMPTY_FORM: FormState = {
-  name: "",
-  description: "",
-  type: "reps",
-  defaultSets: 3,
-  defaultReps: 10,
-  defaultRepDurationSeconds: 30,
-  defaultDistanceMeters: 20,
-  defaultRestBetweenSetsSeconds: 60,
-  defaultLoadKg: "",
-  category: "",
-  pattern: "",
-  isUnilateral: false,
-  equipment: "",
-  primaryMuscles: "",
-  instructions: "",
-  youtubeId: "",
-};
 
 const EMPTY_FILTERS: ExerciseFilters = {
   query: "",
@@ -91,6 +57,15 @@ const EMPTY_FILTERS: ExerciseFilters = {
   onlyVideo: false,
   unilateralOnly: false,
 };
+
+type FormDialogState =
+  | { open: false }
+  | {
+      open: true;
+      mode: "create" | "edit";
+      prefill: ExerciseInput;
+      editExercise?: Exercise;
+    };
 
 function volumeLabel(exercise: Exercise): string {
   if (exercise.type === "time") {
@@ -108,66 +83,10 @@ function primaryMedia(ex: Exercise) {
   return ex.media?.find((m) => m.kind === "demo") ?? ex.media?.[0] ?? null;
 }
 
-function formFromExercise(exercise: Exercise): FormState {
-  return {
-    name: exercise.name,
-    description: exercise.description ?? "",
-    type: exercise.type,
-    defaultSets: exercise.defaultSets,
-    defaultReps: exercise.defaultReps,
-    defaultRepDurationSeconds: exercise.defaultRepDurationSeconds ?? 30,
-    defaultDistanceMeters: exercise.defaultDistanceMeters ?? 20,
-    defaultRestBetweenSetsSeconds: exercise.defaultRestBetweenSetsSeconds,
-    defaultLoadKg: exercise.defaultLoadKg?.toString() ?? "",
-    category: exercise.category ?? "",
-    pattern: exercise.pattern ?? "",
-    isUnilateral: exercise.isUnilateral,
-    equipment: (exercise.equipment ?? []).join(", "),
-    primaryMuscles: (exercise.primaryMuscles ?? []).join(", "),
-    instructions: exercise.instructions ?? "",
-    youtubeId: primaryMedia(exercise)?.youtubeId ?? "",
-  };
-}
-
-function payloadFromForm(form: FormState): Omit<Exercise, "id"> {
-  const equipment = form.equipment
-    .split(/[,;]+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-  const primaryMuscles = form.primaryMuscles
-    .split(/[,;]+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-  const yt = form.youtubeId.trim();
-  return {
-    name: form.name.trim(),
-    description: form.description.trim() || null,
-    type: form.type,
-    defaultSets: form.defaultSets,
-    defaultReps: form.type === "time" ? Math.max(form.defaultReps, 1) : form.defaultReps,
-    defaultRepDurationSeconds: form.type === "time" ? form.defaultRepDurationSeconds : null,
-    defaultDistanceMeters: form.type === "distance" ? form.defaultDistanceMeters : null,
-    defaultRestBetweenSetsSeconds: form.defaultRestBetweenSetsSeconds,
-    defaultLoadKg: form.defaultLoadKg === "" ? null : Number(form.defaultLoadKg),
-    category: form.category || null,
-    pattern: form.pattern || null,
-    isUnilateral: form.isUnilateral,
-    equipment,
-    primaryMuscles,
-    instructions: form.instructions.trim() || null,
-    media: yt
-      ? [{ youtubeId: yt, title: form.name.trim() || yt, seconds: null, kind: "demo" }]
-      : [],
-  };
-}
-
 export default function ExercisesPage() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
-  const [saving, setSaving] = useState(false);
+  const [formDialog, setFormDialog] = useState<FormDialogState>({ open: false });
   const [filters, setFilters] = useState<ExerciseFilters>(EMPTY_FILTERS);
   const [moreFilters, setMoreFilters] = useState(false);
   const [preview, setPreview] = useState<Exercise | null>(null);
@@ -198,45 +117,36 @@ export default function ExercisesPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
-    setForm((f) => ({ ...f, [key]: value }));
-
   const setFilter = <K extends keyof ExerciseFilters>(key: K, value: ExerciseFilters[K]) =>
     setFilters((f) => ({ ...f, [key]: value }));
 
   const startCreate = (prefillName = "") => {
-    setForm({ ...EMPTY_FORM, name: prefillName });
-    setEditingId(null);
-    setShowForm(true);
+    setFormDialog({
+      open: true,
+      mode: "create",
+      prefill: prefillName ? exerciseInputFromQuickEntry(prefillName) : DEFAULT_EXERCISE_INPUT,
+    });
   };
 
   const startEdit = (exercise: Exercise) => {
-    setForm(formFromExercise(exercise));
-    setEditingId(exercise.id);
-    setShowForm(true);
+    setFormDialog({
+      open: true,
+      mode: "edit",
+      prefill: DEFAULT_EXERCISE_INPUT,
+      editExercise: exercise,
+    });
   };
 
-  const handleSubmit = async (e?: FormEvent) => {
-    e?.preventDefault();
-    if (!form.name.trim()) {
-      setError("Podaj nazwę ćwiczenia.");
+  const handleFormSubmit = async (input: ExerciseInput) => {
+    if (!formDialog.open) return;
+    if (formDialog.mode === "edit" && formDialog.editExercise) {
+      await api.exercises.update(formDialog.editExercise.id, input);
+      load();
       return;
     }
-    setSaving(true);
-    setError(null);
-    const payload = payloadFromForm(form);
-    try {
-      if (editingId === null) await api.exercises.create(payload);
-      else await api.exercises.update(editingId, payload);
-      setShowForm(false);
-      setForm(EMPTY_FORM);
-      setEditingId(null);
-      load();
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setSaving(false);
-    }
+    await api.exercises.create(input);
+    showUndoToast(`Dodano „${input.name}” do biblioteki`);
+    load();
   };
 
   const handleDelete = async (removed: Exercise) => {
@@ -589,152 +499,15 @@ export default function ExercisesPage() {
         </div>
       )}
 
-      <Dialog
-        open={showForm}
-        title={editingId === null ? "Nowe ćwiczenie" : "Edycja ćwiczenia"}
-        confirmLabel={
-          saving ? "Zapisywanie…" : editingId === null ? "Dodaj ćwiczenie" : "Zapisz ćwiczenie"
-        }
-        onConfirm={() => void handleSubmit()}
-        onCancel={() => {
-          setShowForm(false);
-          setEditingId(null);
-        }}
-      >
-        <form
-          id="exercise-form"
-          onSubmit={(e) => void handleSubmit(e)}
-          className="grid max-h-[60vh] gap-3 overflow-y-auto sm:grid-cols-2"
-        >
-          <div className="sm:col-span-2">
-            <Field label="Nazwa *">
-              <input
-                className={inputClass}
-                value={form.name}
-                onChange={(e) => set("name", e.target.value)}
-                required
-              />
-            </Field>
-          </div>
-          <Field label="Typ">
-            <SegmentedControl
-              full
-              items={[
-                { value: "reps", label: EXERCISE_TYPE_LABELS.reps },
-                { value: "time", label: EXERCISE_TYPE_LABELS.time },
-                { value: "distance", label: EXERCISE_TYPE_LABELS.distance },
-              ]}
-              value={form.type}
-              onChange={(v) => set("type", v as ExerciseType)}
-            />
-          </Field>
-          <Field label="Partia">
-            <select className={inputClass} value={form.category} onChange={(e) => set("category", e.target.value)}>
-              <option value="">—</option>
-              {CATEGORY_ORDER.map((c) => (
-                <option key={c} value={c}>
-                  {CATEGORY_LABELS[c]}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Serie">
-            <input
-              className={inputClass}
-              type="number"
-              inputMode="numeric"
-              min={1}
-              value={form.defaultSets}
-              onChange={(e) => set("defaultSets", Number(e.target.value))}
-            />
-          </Field>
-          <Field label={form.type === "time" ? "Powtórzenia (na serię)" : "Powtórzenia"}>
-            <input
-              className={inputClass}
-              type="number"
-              inputMode="numeric"
-              min={1}
-              value={form.defaultReps}
-              onChange={(e) => set("defaultReps", Number(e.target.value))}
-            />
-          </Field>
-          {form.type === "time" ? (
-            <Field label="Czas powtórzenia (s)">
-              <input
-                className={inputClass}
-                type="number"
-                inputMode="numeric"
-                min={5}
-                value={form.defaultRepDurationSeconds}
-                onChange={(e) => set("defaultRepDurationSeconds", Number(e.target.value))}
-              />
-            </Field>
-          ) : null}
-          {form.type === "distance" ? (
-            <Field label="Dystans (m)">
-              <input
-                className={inputClass}
-                type="number"
-                inputMode="decimal"
-                min={1}
-                value={form.defaultDistanceMeters}
-                onChange={(e) => set("defaultDistanceMeters", Number(e.target.value))}
-              />
-            </Field>
-          ) : null}
-          <Field label="Przerwa (s)">
-            <input
-              className={inputClass}
-              type="number"
-              inputMode="numeric"
-              min={0}
-              value={form.defaultRestBetweenSetsSeconds}
-              onChange={(e) => set("defaultRestBetweenSetsSeconds", Number(e.target.value))}
-            />
-          </Field>
-          <Field label="Obciążenie (kg)">
-            <input
-              className={inputClass}
-              type="number"
-              inputMode="decimal"
-              min={0}
-              step={0.5}
-              value={form.defaultLoadKg}
-              onChange={(e) => set("defaultLoadKg", e.target.value)}
-              placeholder="brak"
-            />
-          </Field>
-          <Field
-            label="YouTube ID (opcjonalnie)"
-            hint="ID z URL YouTube — film demo w karcie ćwiczenia"
-          >
-            <input
-              className={inputClass}
-              value={form.youtubeId}
-              onChange={(e) => set("youtubeId", e.target.value)}
-              placeholder="np. 1fwmBAKzW4g"
-            />
-          </Field>
-          <Field label="Sprzęt (po przecinku)">
-            <input
-              className={inputClass}
-              value={form.equipment}
-              onChange={(e) => set("equipment", e.target.value)}
-              placeholder="sztanga, hantle"
-            />
-          </Field>
-          <div className="sm:col-span-2">
-            <Field label="Opis / wskazówki">
-              <textarea
-                className={inputClass}
-                rows={2}
-                value={form.description}
-                onChange={(e) => set("description", e.target.value)}
-              />
-            </Field>
-          </div>
-        </form>
-      </Dialog>
+      <ExerciseFormDialog
+        open={formDialog.open}
+        mode={formDialog.open ? formDialog.mode : "create"}
+        variant="full"
+        prefill={formDialog.open ? formDialog.prefill : DEFAULT_EXERCISE_INPUT}
+        editExercise={formDialog.open ? formDialog.editExercise : undefined}
+        onClose={() => setFormDialog({ open: false })}
+        onSubmit={handleFormSubmit}
+      />
 
       <Dialog
         open={Boolean(preview && previewMedia)}
