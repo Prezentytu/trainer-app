@@ -20,8 +20,8 @@ export function AuthScreen({
   switchCta,
 }: AuthScreenProps) {
   return (
-    <div className="flex min-h-screen bg-background">
-      <aside className="relative hidden w-[44%] flex-col justify-between overflow-hidden border-r border-border bg-surface-sunken p-10 lg:flex xl:w-[48%] xl:p-14">
+    <div className="landing-atmosphere flex min-h-screen">
+      <aside className="relative hidden w-[44%] flex-col justify-between overflow-hidden border-r border-border p-10 lg:flex xl:w-[48%] xl:p-14">
         <div className="relative">
           <Wordmark />
         </div>
@@ -38,7 +38,7 @@ export function AuthScreen({
         <p className="relative text-sm text-muted-faint">Workout Alchemist · wczesny dostęp</p>
       </aside>
 
-      <main className="flex flex-1 flex-col items-center justify-center px-4 py-12 sm:px-8">
+      <main className="flex flex-1 flex-col items-center justify-center bg-background/40 px-4 py-12 sm:px-8">
         <div className="mb-10 w-full max-w-sm lg:hidden">
           <Wordmark />
         </div>

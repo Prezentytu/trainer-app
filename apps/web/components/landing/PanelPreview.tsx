@@ -10,10 +10,10 @@ const ROWS = [
 
 export function PanelPreview() {
   return (
-    <LandingReveal as="section" className="px-5 pb-20 sm:px-6 sm:pb-28">
-      <div className="mx-auto max-w-5xl" aria-label="Podgląd produktu">
-        <div className="landing-demo mx-auto max-w-[880px] overflow-hidden rounded-t-xl border border-b-0 border-border-strong bg-surface">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
+    <LandingReveal as="section" className="relative px-4 pt-14 pb-8 sm:px-6 sm:pt-20 sm:pb-12">
+      <div className="landing-demo-stage mx-auto max-w-5xl" aria-label="Podgląd produktu">
+        <div className="landing-demo landing-demo-frame overflow-hidden rounded-xl border border-border-strong bg-surface">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3.5 sm:px-6">
             <span className="text-sm text-muted">Trening klienta</span>
             <span className="inline-flex items-center gap-2 text-sm text-muted">
               <span className="acid-tick inline-block h-1.5 w-1.5 rounded-full bg-accent" aria-hidden />
@@ -21,65 +21,67 @@ export function PanelPreview() {
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-4 sm:px-5">
-            <h3 className="display-soft text-xl text-foreground sm:text-[22px]">
+          <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border px-4 py-5 sm:px-6">
+            <h3 className="min-w-0 flex-1 break-words display-soft text-xl text-foreground sm:text-2xl">
               Wyciskanie na ławce
             </h3>
-            <p className="font-mono text-sm tabular-nums text-muted">
+            <p className="shrink-0 font-mono text-sm tabular-nums text-muted">
               Cel: 4×8 · 82,5 kg · przerwa 90 s
             </p>
           </div>
 
-          <div
-            className="grid font-mono text-[13px] tabular-nums"
-            style={{ gridTemplateColumns: "56px 1fr 1fr 1fr 90px" }}
-          >
-            {HEADER_COLS.map((col, i) => (
-              <div
-                key={`h-${i}`}
-                className="border-b border-border px-3 py-2.5 text-xs text-muted sm:px-4"
-              >
-                {col}
-              </div>
-            ))}
-
-            {ROWS.map((row, i) => {
-              const isNext = row.status === "next";
-              const isDone = row.status === "done";
-              const cell = isNext
-                ? "border-b border-dashed border-border-strong bg-surface-sunken px-3 py-3 sm:px-4"
-                : "border-b border-border px-3 py-3 sm:px-4";
-              return (
-                <div key={row.n} className="contents">
-                  <div
-                    className={`${cell} ${isDone ? "text-muted" : "text-foreground"} landing-demo-set landing-demo-set-${i + 1}`}
-                  >
-                    {row.n}
-                  </div>
-                  <div className={`${cell} ${isNext ? "text-muted" : "text-foreground"}`}>
-                    {row.kg}
-                  </div>
-                  <div className={`${cell} ${isNext ? "text-muted" : "text-foreground"}`}>
-                    {row.reps}
-                  </div>
-                  <div className={`${cell} ${isNext ? "text-muted" : "text-foreground"}`}>
-                    {row.rpe}
-                  </div>
-                  <div className={`${cell} flex items-center`}>
-                    {isDone ? (
-                      <span className="landing-demo-check text-muted">Gotowe</span>
-                    ) : (
-                      <span className="inline-flex rounded-[5px] bg-accent px-3 py-1.5 text-[11px] font-semibold text-accent-foreground">
-                        Zapisz
-                      </span>
-                    )}
-                  </div>
+          <div className="overflow-x-auto">
+            <div
+              className="grid min-w-[520px] font-mono text-[13px] tabular-nums"
+              style={{ gridTemplateColumns: "56px 1fr 1fr 1fr 96px" }}
+            >
+              {HEADER_COLS.map((col, i) => (
+                <div
+                  key={`h-${i}`}
+                  className="border-b border-border px-3 py-2.5 text-xs text-muted sm:px-4"
+                >
+                  {col}
                 </div>
-              );
-            })}
+              ))}
+
+              {ROWS.map((row, i) => {
+                const isNext = row.status === "next";
+                const isDone = row.status === "done";
+                const cell = isNext
+                  ? "border-b border-dashed border-border-strong bg-surface-sunken px-3 py-3.5 sm:px-4"
+                  : "border-b border-border px-3 py-3.5 sm:px-4";
+                return (
+                  <div key={row.n} className="contents">
+                    <div
+                      className={`${cell} ${isDone ? "text-muted" : "text-foreground"} landing-demo-set landing-demo-set-${i + 1}`}
+                    >
+                      {row.n}
+                    </div>
+                    <div className={`${cell} ${isNext ? "text-muted" : "text-foreground"}`}>
+                      {row.kg}
+                    </div>
+                    <div className={`${cell} ${isNext ? "text-muted" : "text-foreground"}`}>
+                      {row.reps}
+                    </div>
+                    <div className={`${cell} ${isNext ? "text-muted" : "text-foreground"}`}>
+                      {row.rpe}
+                    </div>
+                    <div className={`${cell} flex items-center`}>
+                      {isDone ? (
+                        <span className="landing-demo-check text-muted">Gotowe</span>
+                      ) : (
+                        <span className="inline-flex rounded-[5px] bg-accent px-3 py-1.5 text-[11px] font-semibold text-accent-foreground">
+                          Zapisz
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-3.5 sm:px-5">
+          <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
             <span className="text-sm text-muted">Przerwa</span>
             <span className="font-mono text-[28px] font-semibold tabular-nums text-foreground">
               01:24
@@ -94,9 +96,6 @@ export function PanelPreview() {
             </span>
           </div>
         </div>
-        <p className="mt-5 text-center text-sm text-muted">
-          Tak wygląda trening u Twojego klienta.
-        </p>
       </div>
     </LandingReveal>
   );

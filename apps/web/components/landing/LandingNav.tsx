@@ -9,8 +9,8 @@ const LINKS = [
 
 export function LandingNav() {
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-4 px-5 sm:px-6">
+    <header className="sticky top-0 z-50 bg-background/70 backdrop-blur-md">
+      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-4 px-5 sm:h-16 sm:px-6">
         <Wordmark />
         <nav className="hidden items-center gap-8 md:flex" aria-label="Sekcje strony">
           {LINKS.map((link) => (

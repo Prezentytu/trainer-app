@@ -376,6 +376,25 @@ textarea {
   color: var(--positive);
 }
 
+/* Landing — atmosfera (głębia bez glowów) */
+.landing-atmosphere {
+  background:
+    radial-gradient(ellipse 90% 55% at 50% -5%, var(--accent-dim) 0%, transparent 52%),
+    radial-gradient(ellipse 45% 35% at 85% 15%, var(--surface) 0%, transparent 50%),
+    var(--background);
+}
+
+/* Demo produktu — kadr jak product shot: fade w tło */
+.landing-demo-stage {
+  position: relative;
+  -webkit-mask-image: linear-gradient(to bottom, #000 58%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 58%, transparent 100%);
+}
+
+.landing-demo-frame {
+  box-shadow: var(--shadow-raised);
+}
+
 /* Landing — scroll reveal (IO dodaje .landing-inview) */
 .landing-scroll {
   opacity: 1;

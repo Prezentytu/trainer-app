@@ -4,7 +4,7 @@ import { LandingReveal } from "./LandingReveal";
 
 export function Pricing() {
   return (
-    <LandingReveal as="section" id="cennik" className="scroll-mt-20 px-5 py-32 sm:px-6 sm:py-40">
+    <LandingReveal as="section" id="cennik" className="scroll-mt-20 px-5 py-28 sm:px-6 sm:py-36">
       <div className="mx-auto max-w-xl text-center">
         <p className="text-sm text-muted">Cennik</p>
         <h2 className="mt-4 display-soft text-[clamp(1.875rem,3.4vw,2.75rem)] text-foreground">

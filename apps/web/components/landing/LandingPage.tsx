@@ -10,11 +10,14 @@ import { LandingFooter } from "./LandingFooter";
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="landing-atmosphere min-h-screen text-foreground">
       <LandingNav />
       <main>
-        <Hero />
-        <PanelPreview />
+        {/* Pierwszy viewport = jedna kompozycja: brand + copy + produkt */}
+        <div className="relative">
+          <Hero />
+          <PanelPreview />
+        </div>
         <HowItWorks />
         <Differentiators />
         <Pricing />

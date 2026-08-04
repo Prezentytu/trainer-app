@@ -21,7 +21,7 @@ const FAQ = [
 
 export function Faq() {
   return (
-    <LandingReveal as="section" id="faq" className="scroll-mt-20 px-5 py-32 sm:px-6 sm:py-40">
+    <LandingReveal as="section" id="faq" className="scroll-mt-20 px-5 py-28 sm:px-6 sm:py-36">
       <div className="mx-auto max-w-2xl">
         <p className="text-center text-sm text-muted">Pytania</p>
         <h2 className="mt-4 text-center display-soft text-[clamp(1.875rem,3.4vw,2.75rem)] text-foreground">

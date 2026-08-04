@@ -41,3 +41,4 @@ Pliki: `apps/web/components/landing/*`, `apps/web/components/auth/AuthScreen.tsx
 ## Changelog
 
 - 2026-08-04 — utworzono i wdrożono spec.
+- 2026-08-04 — craft: atmosfera radialna, wycentrowany hero z brandem, demo jako product shot z fade, glass nav.
