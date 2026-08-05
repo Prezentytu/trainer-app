@@ -6,7 +6,9 @@ import Link from "next/link";
 import { api, PortalHome } from "@/lib/api";
 import { Avatar, ErrorBanner, Switch } from "@/components/ui";
 import { PortalPageSkeleton } from "@/components/skeletons";
+import { PwaInstallPrompt } from "@/components/portal/PwaInstallPrompt";
 import { readAutoRest, writeAutoRest } from "@/lib/portalPrefs";
+import { isIosDevice, isStandaloneDisplay, useIsIos, useIsStandalone } from "@/lib/pwa";
 
 export default function PortalProfilePage() {
   const params = useParams<{ token: string }>();
@@ -16,7 +18,10 @@ export default function PortalProfilePage() {
   const [autoRest, setAutoRest] = useState(() => readAutoRest());
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushSaving, setPushSaving] = useState(false);
+  const standalone = useIsStandalone();
+  const ios = useIsIos();
   const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const pushNeedsInstall = ios && !standalone;
 
   const load = useCallback(() => {
     api.portal
@@ -29,7 +34,7 @@ export default function PortalProfilePage() {
 
   useEffect(() => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
-    void navigator.serviceWorker.register("/sw.js").then(async (registration) => {
+    void navigator.serviceWorker.ready.then(async (registration) => {
       const subscription = await registration.pushManager.getSubscription();
       setPushEnabled(Boolean(subscription));
     });
@@ -37,10 +42,14 @@ export default function PortalProfilePage() {
 
   const togglePush = async (enabled: boolean) => {
     if (!vapidKey || !("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    if (isIosDevice() && !isStandaloneDisplay()) {
+      setError("Najpierw dodaj apkę do ekranu głównego — na iPhonie push działa tylko z ikony.");
+      return;
+    }
     setPushSaving(true);
     setError(null);
     try {
-      const registration = await navigator.serviceWorker.register("/sw.js");
+      const registration = await navigator.serviceWorker.ready;
       const current = await registration.pushManager.getSubscription();
       if (!enabled) {
         if (current) {
@@ -160,16 +169,29 @@ export default function PortalProfilePage() {
                 <p className="mt-0.5 text-xs text-muted">
                   Push wymaga konfiguracji. Przypomnienia e-mail ustawia trener.
                 </p>
+              ) : pushNeedsInstall ? (
+                <p className="mt-0.5 text-xs text-muted">
+                  Najpierw dodaj apkę do ekranu głównego — na iPhonie push działa tylko z ikony.
+                </p>
               ) : null}
             </div>
             <Switch
               checked={pushEnabled}
-              disabled={!vapidKey || pushSaving}
+              disabled={!vapidKey || pushSaving || pushNeedsInstall}
               onChange={(v) => void togglePush(v)}
             />
           </li>
         </ul>
       </section>
+
+      {!standalone ? (
+        <section aria-label="Aplikacja">
+          <p className="mb-3 font-mono text-xs font-medium uppercase tracking-caps text-muted">
+            Aplikacja
+          </p>
+          <PwaInstallPrompt token={token} requireCompletedSession={false} persistent />
+        </section>
+      ) : null}
 
       <section aria-label="Więcej">
         <p className="mb-1 font-mono text-xs font-medium uppercase tracking-caps text-muted">

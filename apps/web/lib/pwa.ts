@@ -1,0 +1,62 @@
+/** Detekcja trybu PWA / iOS — wspólna dla install prompt i push gating. */
+
+import { useSyncExternalStore } from "react";
+
+export function isStandaloneDisplay(): boolean {
+  if (typeof window === "undefined") return false;
+  const nav = window.navigator as Navigator & { standalone?: boolean };
+  if (nav.standalone === true) return true;
+  return window.matchMedia("(display-mode: standalone)").matches;
+}
+
+export function isIosDevice(): boolean {
+  if (typeof window === "undefined") return false;
+  const ua = window.navigator.userAgent;
+  const iOS = /iPad|iPhone|iPod/.test(ua);
+  // iPadOS 13+ reportuje się jako MacIntel z touch
+  const iPadOs =
+    window.navigator.platform === "MacIntel" && window.navigator.maxTouchPoints > 1;
+  return iOS || iPadOs;
+}
+
+export function isIosSafari(): boolean {
+  if (!isIosDevice()) return false;
+  const ua = window.navigator.userAgent;
+  const isOtherBrowser = /CriOS|FxiOS|EdgiOS|OPiOS|DuckDuckGo/.test(ua);
+  return !isOtherBrowser;
+}
+
+function subscribeStandalone(onStoreChange: () => void): () => void {
+  const mq = window.matchMedia("(display-mode: standalone)");
+  mq.addEventListener("change", onStoreChange);
+  return () => mq.removeEventListener("change", onStoreChange);
+}
+
+export function useIsStandalone(): boolean {
+  return useSyncExternalStore(subscribeStandalone, isStandaloneDisplay, () => false);
+}
+
+export function useIsIos(): boolean {
+  return useSyncExternalStore(
+    () => () => {},
+    isIosDevice,
+    () => false,
+  );
+}
+
+function subscribeOnline(onStoreChange: () => void): () => void {
+  window.addEventListener("online", onStoreChange);
+  window.addEventListener("offline", onStoreChange);
+  return () => {
+    window.removeEventListener("online", onStoreChange);
+    window.removeEventListener("offline", onStoreChange);
+  };
+}
+
+export function useIsOffline(): boolean {
+  return useSyncExternalStore(
+    subscribeOnline,
+    () => typeof navigator !== "undefined" && !navigator.onLine,
+    () => false,
+  );
+}

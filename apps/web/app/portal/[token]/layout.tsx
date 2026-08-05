@@ -1,18 +1,54 @@
-"use client";
-
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import { useParams } from "next/navigation";
-import { PortalBottomNav } from "@/components/portal/PortalBottomNav";
-import { PortalChromeProvider } from "@/components/portal/PortalChrome";
+import { PortalShell } from "@/components/portal/PortalShell";
+import { IOS_SPLASH_ENTRIES } from "@/lib/iosSplash";
 
-export default function PortalTokenLayout({ children }: { children: ReactNode }) {
-  const params = useParams<{ token: string }>();
-  const token = params.token;
+export const viewport: Viewport = {
+  themeColor: "#0C0D0C",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+};
 
-  return (
-    <PortalChromeProvider>
-      {children}
-      <PortalBottomNav token={token} />
-    </PortalChromeProvider>
-  );
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}): Promise<Metadata> {
+  const { token } = await params;
+  const manifest = `/portal/${token}/manifest.webmanifest`;
+
+  return {
+    title: "WA Klient",
+    manifest,
+    appleWebApp: {
+      capable: true,
+      title: "WA Klient",
+      statusBarStyle: "black-translucent",
+      startupImage: IOS_SPLASH_ENTRIES.map((entry) => ({
+        url: `/splash/${entry.size}`,
+        media: entry.media,
+      })),
+    },
+    icons: {
+      apple: [{ url: "/icons/180", sizes: "180x180", type: "image/png" }],
+      icon: [
+        { url: "/icons/192", sizes: "192x192", type: "image/png" },
+        { url: "/icons/512", sizes: "512x512", type: "image/png" },
+      ],
+    },
+  };
+}
+
+export default async function PortalTokenLayout({
+  children,
+  params,
+}: {
+  children: ReactNode;
+  params: Promise<{ token: string }>;
+}) {
+  const { token } = await params;
+  return <PortalShell token={token}>{children}</PortalShell>;
 }

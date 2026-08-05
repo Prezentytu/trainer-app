@@ -38,12 +38,6 @@ export const metadata: Metadata = {
   },
   description:
     "Układasz plan. Widzisz każdą serię. Wysyłasz klientowi jeden link — on zapisuje serie w telefonie, Ty widzisz każdy trening na żywo.",
-  manifest: "/manifest.webmanifest",
-  appleWebApp: {
-    capable: true,
-    title: "WA Klient",
-    statusBarStyle: "black-translucent",
-  },
   openGraph: {
     type: "website",
     locale: "pl_PL",

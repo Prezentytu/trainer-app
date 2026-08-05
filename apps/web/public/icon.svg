@@ -1,4 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <rect width="512" height="512" rx="96" fill="#14B8A6"/>
-  <text x="256" y="310" text-anchor="middle" font-family="system-ui,sans-serif" font-size="220" font-weight="700" fill="#04120F">WA</text>
+  <rect width="512" height="512" rx="0" fill="#0C0D0C"/>
+  <rect x="64" y="64" width="384" height="384" rx="84" fill="#C6F135"/>
+  <text x="256" y="318" text-anchor="middle" font-family="system-ui,sans-serif" font-size="168" font-weight="800" fill="#0C0D0C" letter-spacing="-0.04em">WA</text>
 </svg>

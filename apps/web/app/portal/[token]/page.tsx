@@ -68,18 +68,6 @@ export default function PortalTodayPage() {
 
   useEffect(load, [load]);
 
-  useEffect(() => {
-    const href = `/portal/${token}/manifest.webmanifest`;
-    let link = document.querySelector<HTMLLinkElement>('link[data-portal-manifest="1"]');
-    if (!link) {
-      link = document.createElement("link");
-      link.rel = "manifest";
-      link.dataset.portalManifest = "1";
-      document.head.appendChild(link);
-    }
-    link.href = href;
-  }, [token]);
-
   const weekStrip = useMemo(
     () => buildWeekStrip(history.map((s) => s.performedOn)),
     [history],
