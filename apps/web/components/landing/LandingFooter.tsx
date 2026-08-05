@@ -3,7 +3,7 @@ import { Wordmark } from "@/components/Wordmark";
 
 export function LandingFooter() {
   return (
-    <footer className="border-t border-border px-5 py-10 sm:px-6">
+    <footer className="border-t border-border px-5 py-12 sm:px-6 sm:py-14">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
         <Wordmark />
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-muted">

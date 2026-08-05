@@ -22,7 +22,9 @@ export function LandingNav() {
             </span>
           </Link>
           <Link href="/sign-up">
-            <Button size="sm">Zacznij za darmo</Button>
+            <Button size="sm" variant="secondary">
+              Zacznij za darmo
+            </Button>
           </Link>
         </div>
       </div>

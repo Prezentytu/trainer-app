@@ -111,9 +111,11 @@
   --tracking-display: -0.035em;
   --tracking-display-soft: -0.02em;
   --tracking-display-editorial: -0.04em;
+  --tracking-display-serif: -0.02em;
   --leading-display: 0.96;
   --leading-display-soft: 1.06;
   --leading-display-editorial: 0.88;
+  --leading-display-serif: 1.08;
   --leading-body: 1.5;
   --leading-label: 1.4;
   --ease-editorial: cubic-bezier(0.77, 0, 0.175, 1);
@@ -229,12 +231,21 @@ body {
   line-height: var(--leading-display-soft);
 }
 
-/* Landing editorial — typografia plakatowa (Superdesign high-contrast) */
+/* Landing editorial — typografia plakatowa (Superdesign high-contrast); auth */
 .display-editorial {
   font-family: var(--font-archivo), system-ui, sans-serif;
   font-weight: 800;
   letter-spacing: var(--tracking-display-editorial);
   line-height: var(--leading-display-editorial);
+}
+
+/* Landing 2026 — editorial serif (Instrument Serif), sentence case */
+.display-serif {
+  font-family: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: var(--tracking-display-serif);
+  line-height: var(--leading-display-serif);
 }
 
 .accent-serif {
@@ -415,7 +426,7 @@ textarea {
   color: var(--positive);
 }
 
-/* Landing — atmosfera (głębia bez glowów) */
+/* Auth split — cicha głębia (landing near-mono nie używa) */
 .landing-atmosphere {
   position: relative;
   background:
@@ -424,30 +435,27 @@ textarea {
     var(--background);
 }
 
-/* Landing — scroll reveal (IO dodaje .landing-inview) */
+/* Landing — scroll reveal (IO dodaje .landing-inview); near-mono */
 .landing-scroll {
   opacity: 1;
   transform: none;
-  clip-path: none;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  @keyframes landing-clip-up {
+  @keyframes landing-fade-up {
     from {
       opacity: 0;
-      transform: translateY(18px);
-      clip-path: inset(0 0 100% 0);
+      transform: translateY(12px);
     }
     to {
       opacity: 1;
       transform: translateY(0);
-      clip-path: inset(0 0 0 0);
     }
   }
 
   .landing-reveal {
-    animation: landing-clip-up 0.7s var(--ease-editorial) both;
-    animation-delay: calc(var(--i, 0) * 90ms);
+    animation: landing-fade-up 0.7s var(--ease-editorial) both;
+    animation-delay: calc(var(--i, 0) * 80ms);
   }
 
   .landing-reveal-delay-1 {
@@ -468,14 +476,26 @@ textarea {
 
   .landing-scroll:not(.landing-inview) {
     opacity: 0;
-    transform: translateY(24px);
-    clip-path: inset(0 0 12% 0);
+    transform: translateY(12px);
   }
 
   .landing-scroll {
     transition:
       opacity 0.7s var(--ease-editorial),
-      transform 0.7s var(--ease-editorial),
-      clip-path 0.7s var(--ease-editorial);
+      transform 0.7s var(--ease-editorial);
+  }
+
+  .landing-phone {
+    transition: transform var(--dur-med) var(--ease-out);
+  }
+
+  .landing-phone:hover {
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-reveal {
+    animation: none;
   }
 }

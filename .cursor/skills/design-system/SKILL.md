@@ -101,8 +101,9 @@ Wyjątek: sam `globals.css`, lustra SDK (`clerkAppearance.ts`, OG image, manifes
 |---|---|---|
 | Display / wordmark / sesja | Archivo 900 UPPERCASE | `.display-caps` |
 | Display auth (formularz) | Archivo 700 sentence case | `.display-soft` |
-| Display landing editorial | Archivo 800, plakatowa skala | `.display-editorial` |
-| Akcent szeryfowy (landing) | Instrument Serif italic | `.accent-serif` — **max 1 na sekcję**, kolor `--foreground` (nie lime) |
+| Display auth editorial | Archivo 800, plakatowa skala | `.display-editorial` |
+| Display landing (2026) | Instrument Serif 400 | `.display-serif` — **sentence case**, near-mono |
+| Akcent szeryfowy (auth) | Instrument Serif italic | `.accent-serif` — **max 1 na sekcję**, kolor `--foreground` (nie lime) |
 | Body / UI | Space Grotesk | `font-sans` (domyślny) |
 | Liczby (serie, kg, sekundy, StatBlock) | IBM Plex Mono | `font-mono` + `tabular-nums` |
 
@@ -115,8 +116,8 @@ Wyjątek: sam `globals.css`, lustra SDK (`clerkAppearance.ts`, OG image, manifes
 | Micro / meta uppercase | `font-mono text-xs tracking-caps uppercase` / `.eyebrow` | `font-medium` |
 | Body / etykiety | `text-sm` | `font-normal` / `font-medium` |
 | Nazwa ćwiczenia (logger) / wordmark | `.display-caps` | 900 |
-| Nagłówek landingu editorial | `.display-editorial` | 800 — **sentence case**, skala plakatowa |
-| Akcent w nagłówku landingu | `.accent-serif` | 400 italic — 1 słowo na sekcję |
+| Nagłówek landingu | `.display-serif` | 400 — **sentence case**, skala editorial |
+| Akcent w nagłówku auth | `.accent-serif` | 400 italic — 1 słowo na sekcję |
 | Nagłówek auth (formularz) | `.display-soft` | 700 — **sentence case** |
 | Nagłówek karty | `font-display text-lg font-bold` | bold |
 | Tytuł strony (`PageHeader`) | `font-display text-xl sm:text-2xl font-bold` | bold — **sentence case** |
@@ -124,7 +125,7 @@ Wyjątek: sam `globals.css`, lustra SDK (`clerkAppearance.ts`, OG image, manifes
 ### Zasady casingu Acid
 
 - **UPPERCASE** tylko: wordmark, mikro-etykiety mono (`SERIA`, `KG`, `POWT`, `PRZERWA`), linki nav landingu (mono caps). **Nie** używaj `.display-caps` na nazwach ćwiczeń w SessionLoggerze — sentence case `font-semibold` (czytelność na siłowni; Archivo 900 UPPERCASE jest za ciężkie).
-- **Landing editorial:** nagłówki w **sentence case** przez `.display-editorial` (Archivo 800, skala plakatowa). Jeden akcent `.accent-serif` na sekcję — kontrast kroju, nie koloru. Bez `///`, bez obrysów liter.
+- **Landing 2026:** nagłówki w **sentence case** przez `.display-serif` (Instrument Serif 400). Near-mono: lime tylko na głównym CTA (hero + final). Bez `landing-atmosphere`, bez dekoracyjnych `.accent-serif` w nagłówkach. Sekcje `py-32 sm:py-44`. Reveal: fade + rise 12px.
 - **Auth:** `.display-soft` na tytułach formularza; H1 lewego panelu może użyć `.display-editorial` + `.accent-serif`.
 - Eyebrowy w panelu mogą mieć prefiks `///` (`Card eyebrowMark`, klasa `.eyebrow`). Na landingu: `font-mono text-xs uppercase tracking-caps text-muted`.
 - Tytuły stron panelu i portalu: **sentence case**.
