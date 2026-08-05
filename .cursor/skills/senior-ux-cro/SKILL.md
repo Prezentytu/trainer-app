@@ -66,6 +66,7 @@ Cel: jak najszybciej doprowadzić do **pierwszej wartości** (pierwszy klient / 
 - **Wartość przed wysiłkiem**: podgląd / sample zanim wymagasz pełnej konfiguracji (Reciprocity).
 - **Naucz 1 kluczowej interakcji**: ta, która koreluje z retencją (np. „przypisz plan klientowi", „zaloguj pierwszą serię") — nie checklista-tour („dodaj zdjęcie").
 - **Micro-celebracja pierwszego sukcesu**: krótki, spokojny feedback po pierwszym planie/sesji (tone of voice z `design-system` — bez infantylizacji).
+- **Zaufanie przez odejmowanie** (benchmark Styrka): brak konta dla klienta, brak zbędnych pól, obietnice negatywne w copy („bez X") sygnalizują szacunek dla czasu. Minimalizm to sygnał zaufania, nie pustka — dotyczy portalu **i** panelu trenera (test odejmowania w `design-system`). Spec: `.ai/specs/2026-08-05-styrka-minimalizm-analiza.md`.
 
 ---
 
@@ -83,6 +84,8 @@ Cel: jak najszybciej doprowadzić do **pierwszej wartości** (pierwszy klient / 
 
 ## Perceived performance
 
+**Płynność = feature produktu**, nie polish na końcu. Styrka shipowała osobne release'y tylko o scrollowaniu, kontraście i responsywności inputów. Te same progi obowiązują **logger klienta i panel trenera** (nawigacja, kreator, listy, dashboard).
+
 Progi (Doherty Threshold i praktyka product craft):
 
 | Czas | Zachowanie UI |
@@ -95,6 +98,7 @@ Progi (Doherty Threshold i praktyka product craft):
 - **Optimistic UI** tylko dla akcji odwracalnych (toggle, usunięcie z undo, reorder) + rollback przy błędzie + `useUndoToast`.
 - **Nigdy** optimistic dla destrukcyjnych / nieodwracalnych (trwałe usunięcie bez undo, billing).
 - Logowanie sesji: efekt < 100 ms, sync w tle (`fitness-ui-ux`).
+- Prefetch / natychmiastowy feedback nawigacji w panelu — unikaj pustego ekranu między trasami.
 
 ---
 
@@ -173,6 +177,7 @@ Zakazane:
 - **Hidden options / banery**: kluczowa treść za dropdownem lub „Odkryj więcej".
 - **Wiele dominant**: więcej niż 1 primary CTA na widok.
 - **Ściana kafelków** zamiast tabeli przy zadaniu enumeracyjnym.
+- **Gęstość UI zamiast gęstości danych**: dużo ramek/ikonek/akcji zamiast treści — złamanie minimalizmu (test odejmowania).
 - **Wykres z uciętą osią** wyolbrzymiający drobne różnice.
 - **Ikony nieoczywiste**; znaczenie tylko kolorem.
 - **Niski kontrast**: tekst &lt; 4.5:1; inactive/UI &lt; 3:1.
@@ -202,6 +207,7 @@ Zakazane:
 - [ ] Cognitive Mapping — zastosowano właściwą grupę (Decyzja / Motywacja / Percepcja)
 - [ ] Smart defaults/presety; prefill; default bezpieczny i odwracalny
 - [ ] Hick: mniej widocznych opcji naraz; progressive disclosure dla zaawansowanych
+- [ ] **Test odejmowania** — czy coś można usunąć zamiast dodać? (portal i panel; `design-system`)
 - [ ] Progress/kreator nie startuje od 0%; Zeigarnik widoczny gdzie sensowne
 - [ ] Peak-End: koniec flow ma podsumowanie / celebrację (PR tylko gdy prawdziwy)
 - [ ] 1 primary CTA; Von Restorff — jedna dominanta

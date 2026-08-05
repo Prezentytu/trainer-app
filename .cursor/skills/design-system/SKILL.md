@@ -23,6 +23,17 @@ Każdy ekran musi być czytelny **po całkowitym usunięciu akcentu**. Lime tylk
 
 **Lime budget ≤3%.** Dozwolone: fill CTA, focus ring, active-nav tint + 2px bar, progress/completed fill, linki (`text-accent-text`). Zakazane: eyebrows, labels, list numbers, inactive icons, headings, stats, outer glow. Jeśli dwa elementy lime widać naraz — jeden jest zbędny.
 
+## Minimalizm — test odejmowania
+
+Benchmark: Styrka (Feji Studios) — czystość przez odejmowanie, nie przez nowy styl. Spec: `.ai/specs/2026-08-05-styrka-minimalizm-analiza.md`.
+
+**Dotyczy obu stron** — portalu klienta i panelu trenera. Minimalizm nie jest „trybem klienta".
+
+1. **Reguła odejmowania.** Przed dodaniem elementu UI wskaż, co usuwasz albo dlaczego nic nie zabierasz. Ekran musi przejść test: „co można zabrać, żeby nic nie stracić?". Jeśli nie umiesz odpowiedzieć — nie dodawaj.
+2. **Treść = interfejs.** Liczby, nazwy ćwiczeń i tabele niosą ekran. Chrome (ramki, ikony dekoracyjne, tła kart, drugi rząd akcji) tylko gdy porządkuje skanowanie. Jeden ekran = jedno główne zadanie.
+3. **Gęstość ≠ bałagan.** Panel trenera może być gęsty informacyjnie (tabele serii, KPI, lista klientów) — to gęsta **treść** na cichym tle, nie dużo elementów UI. Progressive disclosure dla zaawansowanych; wspólna ścieżka najpierw.
+4. **Acid zostaje.** Nie idziemy w pełny monochrom Styrki. Lime budget ≤3% i gold na PR to nasz wyróżnik. Domyślna odpowiedź na „czego użyć" to **neutral** (`foreground` / `muted` / `surface`), nie akcent.
+
 **Elevation:** `surface-sunken` → `background` → `surface-raised` → `surface` (card) → `surface-hover` → `surface-active`. Max 3 stopnie na ekran. Karta oddziela się wartością + 1px `border`, nie glowem.
 
 **No blooms:** `--glow-cta` i `--texture-scan` = `none`. `--glow-accent` tylko jako focus ring.
@@ -190,3 +201,4 @@ Utilities: .display-caps, .eyebrow (///), .texture-scan, pending dashed Card.
 - CRO / psychologia: skill `senior-ux-cro`.
 - Interakcje, materiały, craft (Apple): skill `apple-design`.
 - Spec Acid: `.ai/specs/2026-08-03-acid-design-system.md`.
+- Kurs minimalizmu (Styrka → obie strony app): `.ai/specs/2026-08-05-styrka-minimalizm-analiza.md`.

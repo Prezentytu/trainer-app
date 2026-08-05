@@ -2,7 +2,7 @@
 
 ## TLDR
 
-Arc / Setify / Gravitus to trackery B2C (benchmark oczekiwań podopiecznego). Realni konkurenci PL: CoachGuru, TreningLab, Fitebo, Trainero. Nasza przewaga: AI import planów, portal bez konta, programowanie siłowe (RIR/tempo/%1RM). Fala 1 domyka obietnice landingu (push, objętość mięśniowa, wykresy, detektor zastoju) bez zmian schematu bazy.
+Arc / Setify / Gravitus / **Styrka** to trackery B2C (benchmark oczekiwań podopiecznego — Styrka dodatkowo jako kurs minimalizmu i craftu logowania). Realni konkurenci PL: CoachGuru, TreningLab, Fitebo, Trainero. Nasza przewaga: AI import planów, portal bez konta, programowanie siłowe (RIR/tempo/%1RM), trener w pętli. Fala 1 domyka obietnice landingu (push, objętość mięśniowa, wykresy, detektor zastoju) bez zmian schematu bazy. Backlog minimalizmu (fale A–D): `.ai/specs/2026-08-05-styrka-minimalizm-analiza.md`.
 
 ## Problem
 
@@ -70,3 +70,4 @@ Typy i metody w `apps/web/lib/api.ts` lustrzane.
 
 - 2026-08-03 — utworzono spec (analiza + backlog fal + kontrakt Fali 1).
 - 2026-08-03 — wdrożono Falę 1: NuGet `WebPush`, `PushService` (komentarz trenera, send-reminder, `POST /api/cron/reminders` + workflow), `Analytics` (muscle-volume / trends), `Stagnation` + reguła w `ChurnRadar`, UI `MuscleVolumeBars` + `LineChart` (profil klienta, portal Progres), testy `AnalyticsAndPushTests` + izolacja tenanta.
+- 2026-08-05 — dodano Styrkę do benchmarków B2C (minimalizm); backlog craft/retencji/audytu panelu przeniesiony do `.ai/specs/2026-08-05-styrka-minimalizm-analiza.md` (bez przepisywania Fal 2–3 tego specu).
