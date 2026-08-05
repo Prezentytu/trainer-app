@@ -27,7 +27,6 @@ import {
   PageHeader,
   StatBlock,
   Tag,
-  useDelayedFlag,
 } from "@/components/ui";
 import { ExerciseDetailSkeleton } from "@/components/skeletons";
 
@@ -83,8 +82,6 @@ export default function ExerciseDetailPage() {
       .slice(0, 8);
   }, [exercise, library]);
 
-  const showSkeleton = useDelayedFlag(validId && !exercise && !error);
-
   if (!validId) {
     return (
       <div>
@@ -131,7 +128,7 @@ export default function ExerciseDetailPage() {
     return (
       <div>
         <ErrorBanner message={error} />
-        {showSkeleton ? <ExerciseDetailSkeleton /> : <div aria-busy aria-label="Wczytuję ćwiczenie" />}
+        <ExerciseDetailSkeleton />
       </div>
     );
   }

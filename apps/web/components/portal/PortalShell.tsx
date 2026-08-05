@@ -9,6 +9,8 @@ import { PortalOfflineBanner } from "@/components/portal/PortalOfflineBanner";
 /** Klientowa otoczka portalu: SW, banner offline, chrome, bottom nav. */
 export function PortalShell({ token, children }: { token: string; children: ReactNode }) {
   useEffect(() => {
+    // Tylko produkcja: w dev SW serwuje /_next/static cache-first, czyli stare chunki (błędy hydracji).
+    if (process.env.NODE_ENV !== "production") return;
     if ("serviceWorker" in navigator) {
       void navigator.serviceWorker.register("/sw.js");
     }

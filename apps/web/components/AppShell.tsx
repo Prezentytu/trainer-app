@@ -16,7 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { api, clerkEnabled } from "@/lib/api";
-import { Avatar } from "@/components/ui";
+import { Avatar, useIsClient } from "@/components/ui";
 import { Wordmark } from "@/components/Wordmark";
 
 const NAV = [
@@ -267,16 +267,19 @@ function LocalTrainerFooter({ compact, name }: { compact?: boolean; name: string
 
 /** Stopka z sesją Clerk — pełnoszerokościowy kafelek z imieniem i nazwiskiem + menu wylogowania. */
 function ClerkTrainerFooter({ compact, fallbackName }: { compact?: boolean; fallbackName: string }) {
+  const isClient = useIsClient();
   const { user } = useUser();
   const { signOut, openUserProfile } = useClerk();
   const [menuOpen, setMenuOpen] = useState(false);
+  // SSR + hydracja: ten sam fallbackName; imię z Clerka dopiero po mount (bez mismatch).
   const fromClerk = [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim();
-  const displayName =
-    fromClerk ||
-    user?.fullName?.trim() ||
-    fallbackName ||
-    user?.primaryEmailAddress?.emailAddress ||
-    "Trener";
+  const displayName = !isClient
+    ? fallbackName
+    : fromClerk ||
+      user?.fullName?.trim() ||
+      fallbackName ||
+      user?.primaryEmailAddress?.emailAddress ||
+      "Trener";
 
   return (
     <AccountTile

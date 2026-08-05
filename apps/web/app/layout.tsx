@@ -3,6 +3,15 @@ import { Archivo, IBM_Plex_Mono, Instrument_Serif, Space_Grotesk } from "next/fo
 import "./globals.css";
 import { ClerkAppProvider } from "@/components/ClerkAppProvider";
 
+/**
+ * SW portalu ma scope `/` i cache'uje `/_next/static` cache-first — w dev daje to stare chunki
+ * przy świeżym HTML (błędy hydracji). Inline, bo stary bundle nie zawierałby tego kodu.
+ */
+const DEV_SW_CLEANUP = `
+if (navigator.serviceWorker) navigator.serviceWorker.getRegistrations().then(function (rs) { rs.forEach(function (r) { r.unregister(); }); });
+if (typeof caches !== "undefined") caches.keys().then(function (ks) { ks.filter(function (k) { return k.indexOf("wa-portal-") === 0; }).forEach(function (k) { caches.delete(k); }); });
+`;
+
 const fontDisplay = Archivo({
   variable: "--font-archivo",
   weight: ["700", "800", "900"],
@@ -74,6 +83,9 @@ export default function RootLayout({
       className={`${fontDisplay.variable} ${fontBody.variable} ${fontMono.variable} ${fontSerif.variable} h-full antialiased`}
     >
       <body className="min-h-screen bg-background font-sans text-foreground">
+        {process.env.NODE_ENV === "production" ? null : (
+          <script dangerouslySetInnerHTML={{ __html: DEV_SW_CLEANUP }} />
+        )}
         <ClerkAppProvider>{children}</ClerkAppProvider>
       </body>
     </html>

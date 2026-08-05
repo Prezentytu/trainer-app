@@ -21,6 +21,8 @@ export default async function HomePage() {
     return <LandingPage />;
   }
 
+  await auth.protect();
+
   return (
     <AppShell>
       <TrainerDashboard />

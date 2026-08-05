@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -28,7 +28,6 @@ import {
   Dialog,
   ProgressRing,
   StatBlock,
-  useDelayedFlag,
 } from "@/components/ui";
 import { DashboardSkeleton } from "@/components/skeletons";
 
@@ -40,6 +39,22 @@ type RowStatus = {
   attention?: AttentionItem;
 };
 
+const PORTAL_LINK_SENT_KEY = "wa-portal-link-sent";
+const PORTAL_LINK_SENT_EVENT = "wa-portal-link-sent";
+
+function subscribePortalLinkSent(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(PORTAL_LINK_SENT_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(PORTAL_LINK_SENT_EVENT, onChange);
+  };
+}
+
+function getPortalLinkSent() {
+  return localStorage.getItem(PORTAL_LINK_SENT_KEY) === "1";
+}
+
 export function TrainerDashboard() {
   const [dash, setDash] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -47,18 +62,28 @@ export function TrainerDashboard() {
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [reminder, setReminder] = useState<AttentionItem | null>(null);
   const [sendingReminder, setSendingReminder] = useState(false);
+  const portalLinkSent = useSyncExternalStore(subscribePortalLinkSent, getPortalLinkSent, () => false);
 
   useEffect(() => {
+    let cancelled = false;
     api
       .dashboard()
-      .then(setDash)
-      .catch((e: Error) => setError(`${e.message}. Czy backend działa na porcie 5210?`))
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (!cancelled) setDash(data);
+      })
+      .catch((e: Error) => {
+        if (!cancelled) setError(`${e.message}. Czy backend działa na porcie 5210?`);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const recentSessions = dash?.recentSessions ?? [];
   const recentPrs = dash?.recentPrs ?? [];
-  const portalLinkSent = typeof window !== "undefined" && localStorage.getItem("wa-portal-link-sent") === "1";
   const onboardingSteps = [
     (dash?.clients ?? 0) > 0,
     (dash?.clientActivity.some((client) => client.activePlans > 0) ?? false),
@@ -108,7 +133,8 @@ export function TrainerDashboard() {
     const url = `${window.location.origin}/portal/${portalToken}`;
     try {
       await navigator.clipboard.writeText(url);
-      localStorage.setItem("wa-portal-link-sent", "1");
+      localStorage.setItem(PORTAL_LINK_SENT_KEY, "1");
+      window.dispatchEvent(new Event(PORTAL_LINK_SENT_EVENT));
       setCopiedId(clientId);
       setTimeout(() => setCopiedId(null), 2000);
     } catch {
@@ -129,8 +155,7 @@ export function TrainerDashboard() {
     }
   };
 
-  const showSkeleton = useDelayedFlag(loading);
-  if (loading) return showSkeleton ? <DashboardSkeleton /> : <div aria-busy aria-label="Wczytuję panel" />;
+  if (loading) return <DashboardSkeleton />;
 
   return (
     <div>

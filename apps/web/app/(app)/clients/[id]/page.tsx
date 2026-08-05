@@ -49,7 +49,6 @@ import {
   ProgressRing,
   StatBlock,
   Tabs,
-  useDelayedFlag,
   useUndoToast,
 } from "@/components/ui";
 import { ClientDetailSkeleton } from "@/components/skeletons";
@@ -497,17 +496,11 @@ export default function ClientDetailsPage() {
       .catch(() => setStatsCache((prev) => ({ ...prev, [exerciseId]: "error" })));
   };
 
-  const showDetailSkeleton = useDelayedFlag(!client && !error);
-
   if (!client) {
     return (
       <div>
         <ErrorBanner message={error} />
-        {error ? null : showDetailSkeleton ? (
-          <ClientDetailSkeleton />
-        ) : (
-          <div aria-busy aria-label="Wczytuję profil klienta" />
-        )}
+        {error ? null : <ClientDetailSkeleton />}
       </div>
     );
   }

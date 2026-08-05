@@ -15,6 +15,20 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Hydration mismatch w dev = najpierw sprawdź service workera
+
+**Kontekst**: Uporczywy „Hydration failed" na `/`. Klient renderował skeleton sprzed kilku commitów (`h-64`), którego nie było już w repo.
+**Problem**: `/sw.js` (rejestrowany w portalu, ale scope `/`) łapie `/_next/static/` strategią **cache-first**. W dev chunki mają stałe nazwy, więc przeglądarka trwale serwowała stary JS przy nowym HTML z serwera. Zmiany w komponentach nic nie dawały — kolejne „naprawy" (`useDelayedFlag` → CSS, `useIsClient`, `next/dynamic`) leczyły objaw, a `dynamic` na named export dodatkowo wywalił stronę („Lazy element… undefined").
+**Zasada**: Gdy SSR/klient różnią się markupem, którego nie ma w kodzie — to stale cache, nie logika Reacta. SW rejestruj wyłącznie w produkcji; w dev wyrejestruj go i wyczyść `caches` (`DevServiceWorkerCleanup` w root layout). Diagnoza: porównaj markup z błędu z `git log -S`.
+**Dotyczy**: `public/sw.js`, `PortalShell`, `app/layout.tsx`, `DevServiceWorkerCleanup`.
+
+## Skeleton: opóźnienie przez CSS, nie przez rozgałęzianie DOM
+
+**Kontekst**: `useDelayedFlag` pokazywał pusty `aria-busy` przez 200 ms, potem pełny skeleton.
+**Problem**: SSR zawsze renderował pusty div (`elapsed=false`), a klient po delay / re-SSR Clerka — `DashboardSkeleton` → hydration mismatch.
+**Zasada**: Przy ładowaniu zawsze ten sam markup skeletonu. Opóźnienie widoczności = klasa `skeleton-defer` (CSS `animation-delay: 200ms`). Zero `typeof window` / `localStorage` w renderze.
+**Dotyczy**: `skeletons.tsx`, `globals.css`, panele z loading skeletonem, `TrainerDashboard`.
+
 ## Logger klienta: czytelność > display-caps
 
 **Kontekst**: Portal/sesja używały `.display-caps` (Archivo 900 UPPERCASE) na nazwach ćwiczeń; pola kg/powt były płaskie i drobne.

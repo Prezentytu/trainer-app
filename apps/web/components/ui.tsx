@@ -1,6 +1,15 @@
 "use client";
 
-import { ReactNode, useCallback, useEffect, useId, useRef, useState } from "react";
+import { ReactNode, useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
+
+const subscribeNoop = () => () => {};
+const snapshotClient = () => true;
+const snapshotServer = () => false;
+
+/** true dopiero po hydracji — getServerSnapshot=false (SSR i pierwszy pass klienta = to samo). */
+export function useIsClient(): boolean {
+  return useSyncExternalStore(subscribeNoop, snapshotClient, snapshotServer);
+}
 
 export function PageHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: ReactNode }) {
   return (
@@ -18,24 +27,7 @@ export function PageHeader({ title, subtitle, action }: { title: string; subtitl
   );
 }
 
-/**
- * Opóźnia pokazanie skeletonu — przy odpowiedzi &lt; delayMs unikamy flasha
- * (perceived performance: spinner/skeleton &lt; 100–200 ms pogarsza odczucie).
- */
-export function useDelayedFlag(active: boolean, delayMs = 200): boolean {
-  const [elapsed, setElapsed] = useState(false);
-  useEffect(() => {
-    if (!active) return;
-    const t = setTimeout(() => setElapsed(true), delayMs);
-    return () => {
-      clearTimeout(t);
-      setElapsed(false);
-    };
-  }, [active, delayMs]);
-  return active && elapsed;
-}
-
-/** Placeholder ładowania — kształt 1:1 z docelowym layoutem. Pokazuj po ≥200ms (useDelayedFlag). */
+/** Placeholder ładowania — kształt 1:1 z docelowym layoutem. Opóźnienie widoczności: klasa `skeleton-defer` na rootcie skeletonu. */
 export function Skeleton({ className = "" }: { className?: string }) {
   return (
     <div

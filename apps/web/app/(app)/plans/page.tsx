@@ -17,7 +17,6 @@ import {
   PageHeader,
   SegmentedControl,
   inputClass,
-  useDelayedFlag,
   useUndoToast,
 } from "@/components/ui";
 import { PlanListSkeleton } from "@/components/skeletons";
@@ -40,7 +39,6 @@ export default function PlansPage() {
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<KindFilter>("all");
   const { showUndoToast, toastNode } = useUndoToast();
-  const showSkeleton = useDelayedFlag(loading);
 
   const load = useCallback(() => {
     Promise.all([api.plans.list(), api.assignments.list()])
@@ -125,9 +123,7 @@ export default function PlansPage() {
       <ErrorBanner message={error} />
 
       {toastNode}
-      {loading ? (
-        showSkeleton ? <PlanListSkeleton /> : <div aria-busy aria-label="Wczytuję plany" />
-      ) : null}
+      {loading ? <PlanListSkeleton /> : null}
 
       {!loading ? (
         <>

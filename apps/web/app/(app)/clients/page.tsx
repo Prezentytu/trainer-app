@@ -16,7 +16,6 @@ import {
   PageHeader,
   Pill,
   Tabs,
-  useDelayedFlag,
   useUndoToast,
 } from "@/components/ui";
 import { ClientListSkeleton } from "@/components/skeletons";
@@ -45,7 +44,6 @@ export default function ClientsPage() {
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<TabFilter>("all");
   const { showUndoToast, toastNode } = useUndoToast();
-  const showSkeleton = useDelayedFlag(loading);
 
   const load = useCallback(() => {
     api.clients
@@ -185,7 +183,7 @@ export default function ClientsPage() {
 
       {toastNode}
       {loading ? (
-        showSkeleton ? <ClientListSkeleton /> : <div aria-busy aria-label="Wczytuję klientów" />
+        <ClientListSkeleton />
       ) : clients.length === 0 ? (
         <EmptyState
           title="Nie masz jeszcze klientów"

@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui";
 export function DashboardSkeleton() {
   // Bez 3 KPI — przy onboardingu znikają (unikamy CLS). Wspólna rama: header + lista + 2 karty.
   return (
-    <div aria-busy aria-label="Wczytuję panel">
+    <div aria-busy aria-label="Wczytuję panel" className="skeleton-defer">
       <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           <Skeleton className="h-7 w-32" />
@@ -25,7 +25,7 @@ export function DashboardSkeleton() {
 
 export function ExerciseDetailSkeleton() {
   return (
-    <div aria-busy aria-label="Wczytuję ćwiczenie" className="space-y-6">
+    <div aria-busy aria-label="Wczytuję ćwiczenie" className="skeleton-defer space-y-6">
       <div className="space-y-2">
         <Skeleton className="h-7 w-56" />
         <Skeleton className="h-4 w-40" />
@@ -41,7 +41,7 @@ export function ExerciseDetailSkeleton() {
 
 export function PlanWizardSkeleton() {
   return (
-    <div aria-busy aria-label="Wczytuję kreator" className="mx-auto max-w-2xl space-y-4">
+    <div aria-busy aria-label="Wczytuję kreator" className="skeleton-defer mx-auto max-w-2xl space-y-4">
       <div className="space-y-2">
         <Skeleton className="h-7 w-40" />
         <Skeleton className="h-4 w-64" />
@@ -56,7 +56,7 @@ export function PlanWizardSkeleton() {
 
 export function PlanBuilderLibrarySkeleton() {
   return (
-    <div aria-busy aria-label="Wczytuję bibliotekę ćwiczeń" className="space-y-2 p-2">
+    <div aria-busy aria-label="Wczytuję bibliotekę ćwiczeń" className="skeleton-defer space-y-2 p-2">
       {Array.from({ length: 6 }).map((_, i) => (
         <Skeleton key={i} className="h-10 w-full rounded-md" />
       ))}
@@ -66,7 +66,7 @@ export function PlanBuilderLibrarySkeleton() {
 
 export function ClientListSkeleton() {
   return (
-    <div aria-busy aria-label="Wczytuję klientów" className="grid gap-2">
+    <div aria-busy aria-label="Wczytuję klientów" className="skeleton-defer grid gap-2">
       {Array.from({ length: 5 }).map((_, i) => (
         <div
           key={i}
@@ -91,7 +91,7 @@ export function ClientListSkeleton() {
 
 export function ClientDetailSkeleton() {
   return (
-    <div aria-busy aria-label="Wczytuję profil klienta">
+    <div aria-busy aria-label="Wczytuję profil klienta" className="skeleton-defer">
       <div className="mb-8 flex items-start gap-3">
         <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
         <div className="space-y-2">
@@ -118,7 +118,7 @@ const PLAN_SKELETON_COLS =
 
 export function PlanListSkeleton() {
   return (
-    <div aria-busy aria-label="Wczytuję plany" className="space-y-4">
+    <div aria-busy aria-label="Wczytuję plany" className="skeleton-defer space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <Skeleton className="h-10 min-w-0 flex-1 rounded-[10px]" />
         <Skeleton className="h-10 w-full rounded-md sm:w-80" />
@@ -162,7 +162,7 @@ export function PlanListSkeleton() {
 
 export function ExerciseListSkeleton() {
   return (
-    <div aria-busy aria-label="Wczytuję ćwiczenia" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div aria-busy aria-label="Wczytuję ćwiczenia" className="skeleton-defer grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {Array.from({ length: 8 }).map((_, i) => (
         <div
           key={i}
@@ -185,7 +185,7 @@ export function ExerciseListSkeleton() {
 
 export function PortalHomeSkeleton() {
   return (
-    <div aria-busy aria-label="Wczytuję trening" className="mx-auto max-w-lg space-y-8">
+    <div aria-busy aria-label="Wczytuję trening" className="skeleton-defer mx-auto max-w-lg space-y-8">
       <div className="space-y-2">
         <Skeleton className="h-3 w-12" />
         <Skeleton className="h-9 w-44" />
@@ -207,7 +207,7 @@ export function PortalHomeSkeleton() {
 
 export function SessionLoggerSkeleton() {
   return (
-    <div aria-busy aria-label="Wczytuję sesję" className="space-y-4 pb-24">
+    <div aria-busy aria-label="Wczytuję sesję" className="skeleton-defer space-y-4 pb-24">
       <div className="flex items-center justify-between gap-3 border-b border-border py-3">
         <div className="space-y-2">
           <Skeleton className="h-3 w-20" />
@@ -240,7 +240,7 @@ export function SessionLoggerSkeleton() {
 
 export function PlanDetailSkeleton() {
   return (
-    <div aria-busy aria-label="Wczytuję plan" className="space-y-6">
+    <div aria-busy aria-label="Wczytuję plan" className="skeleton-defer space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           <Skeleton className="h-7 w-56" />
@@ -261,7 +261,7 @@ export function PlanDetailSkeleton() {
 /** Uniwersalny skeleton podstron portalu (progres, historia, pomiary, profil). */
 export function PortalPageSkeleton({ label = "Wczytuję…" }: { label?: string }) {
   return (
-    <div aria-busy aria-label={label} className="space-y-8">
+    <div aria-busy aria-label={label} className="skeleton-defer space-y-8">
       <div className="space-y-2">
         <Skeleton className="h-3 w-16" />
         <Skeleton className="h-9 w-48" />

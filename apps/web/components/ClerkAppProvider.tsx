@@ -26,9 +26,9 @@ function Guard({ children }: { children: ReactNode }) {
     pathname.startsWith("/sign-up");
 
   if (isPublic) return <>{children}</>;
-  if (!isLoaded) {
-    return <p className="p-8 text-center text-sm text-muted">Ładowanie…</p>;
-  }
+  // Nie podmieniaj drzewa przed isLoaded — SSR już przeszedł auth.protect();
+  // „Ładowanie…” vs treść strony = hydration mismatch.
+  if (!isLoaded) return <>{children}</>;
   if (!isSignedIn) return <RedirectToSignIn signInFallbackRedirectUrl="/" />;
 
   return <>{children}</>;
