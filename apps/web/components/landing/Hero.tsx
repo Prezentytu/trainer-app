@@ -12,39 +12,40 @@ export function Hero() {
           Dla trenerów personalnych
         </p>
 
-        <h1 className="mt-8 display-serif text-[clamp(3.25rem,8vw,7.5rem)] text-foreground text-pretty">
+        <h1 className="mt-8 display-serif text-[clamp(2.75rem,8vw,7rem)] text-foreground text-pretty">
           <span className="landing-mask">
             <span className="landing-mask-inner" style={{ ["--i" as string]: 0 }}>
-              Układasz plan.
+              Wysyłasz klientowi jeden link.
             </span>
           </span>
           <span className="landing-mask mt-1 sm:mt-2">
             <span className="landing-mask-inner" style={{ ["--i" as string]: 1 }}>
-              Widzisz <em className="display-serif-italic">każdą</em> serię.
+              Widzisz <em className="display-serif-italic">każdy</em> jego trening.
             </span>
           </span>
         </h1>
 
         <p className="landing-reveal landing-reveal-delay-3 mx-auto mt-8 max-w-md text-[17px] leading-relaxed text-muted text-pretty">
-          Jeden link dla klienta. Ty widzisz każdy trening.
+          Klient nie instaluje niczego. Otwiera link na telefonie, odhacza serie — ty widzisz
+          wynik od razu.
         </p>
 
         <div className="landing-reveal landing-reveal-delay-4 mt-10 flex flex-wrap items-center justify-center gap-x-7 gap-y-4">
           <Link href="/sign-up">
             <Button size="lg" className="landing-cta-pill">
-              Zacznij za darmo
+              Załóż darmowe konto
             </Button>
           </Link>
           <a
             href="#produkt"
             className="landing-link-underline font-mono text-xs uppercase tracking-caps text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
           >
-            Zobacz produkt ↓
+            Zobacz, jak to wygląda ↓
           </a>
         </div>
 
         <p className="landing-reveal landing-reveal-delay-5 mt-8 text-sm text-muted-faint">
-          Bez karty · Klient bez aplikacji
+          0 zł we wczesnym dostępie · bez karty
         </p>
       </div>
     </section>

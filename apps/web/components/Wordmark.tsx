@@ -9,11 +9,11 @@ type WordmarkProps = {
 /** Wordmark Acid — lime block + Archivo 900 UPPERCASE. Never draw a mark. */
 export function Wordmark({ href = "/", compact = false, className = "" }: WordmarkProps) {
   const content = compact ? (
-    <span className="inline-flex h-3 w-3 shrink-0 bg-accent" aria-hidden title="Workout Alchemist" />
+    <span className="inline-flex h-3 w-3 shrink-0 bg-accent" aria-hidden title="RepMaxer" />
   ) : (
     <>
       <span className="inline-flex h-2.5 w-2.5 shrink-0 bg-accent" aria-hidden />
-      <span className="display-caps text-sm text-foreground">Workout Alchemist</span>
+      <span className="display-caps text-sm text-foreground">RepMaxer</span>
     </>
   );
 
@@ -21,7 +21,7 @@ export function Wordmark({ href = "/", compact = false, className = "" }: Wordma
     return (
       <Link
         href={href}
-        aria-label={compact ? "Workout Alchemist" : undefined}
+        aria-label={compact ? "RepMaxer" : undefined}
         className={`flex items-center gap-2.5 ${className}`}
       >
         {content}

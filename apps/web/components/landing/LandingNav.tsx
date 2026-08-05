@@ -12,7 +12,7 @@ export function LandingNav() {
             href="#cennik"
             className="landing-link-underline font-mono text-xs uppercase tracking-caps text-muted transition-colors duration-[var(--dur-fast)] hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
           >
-            Cennik
+            Cena
           </a>
         </nav>
         <div className="flex shrink-0 items-center gap-2">
@@ -23,7 +23,7 @@ export function LandingNav() {
           </Link>
           <Link href="/sign-up">
             <Button size="sm" variant="secondary" className="rounded-[var(--radius-pill)]">
-              Zacznij za darmo
+              Załóż konto
             </Button>
           </Link>
         </div>

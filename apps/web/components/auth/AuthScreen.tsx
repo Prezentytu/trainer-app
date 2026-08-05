@@ -36,7 +36,7 @@ export function AuthScreen({
           </p>
         </div>
 
-        <p className="relative text-sm text-muted-faint">Workout Alchemist · wczesny dostęp</p>
+        <p className="relative text-sm text-muted-faint">RepMaxer · wczesny dostęp</p>
       </aside>
 
       <main className="flex flex-1 flex-col items-center justify-center bg-background/40 px-4 py-12 sm:px-8">

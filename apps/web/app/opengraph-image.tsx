@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "Workout Alchemist — układasz plan, widzisz każdą serię";
+export const alt = "RepMaxer — wysyłasz link, widzisz każdy trening";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -31,7 +31,7 @@ export default function OpenGraphImage() {
               textTransform: "uppercase",
             }}
           >
-            Workout Alchemist
+            RepMaxer
           </div>
         </div>
 
@@ -46,10 +46,10 @@ export default function OpenGraphImage() {
               letterSpacing: "-0.02em",
             }}
           >
-            Układasz plan. Widzisz każdą serię.
+            Wysyłasz link. Widzisz każdy trening.
           </div>
           <div style={{ fontSize: 22, color: "#9AA193", maxWidth: 640, lineHeight: 1.45 }}>
-            Wysyłasz klientowi jeden link. On trenuje w telefonie, Ty widzisz każdy trening.
+            Klient odhacza serie w telefonie — bez aplikacji i bez konta.
           </div>
         </div>
 

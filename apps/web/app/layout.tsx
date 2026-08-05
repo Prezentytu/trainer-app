@@ -50,24 +50,24 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Workout Alchemist",
-    template: "%s · Workout Alchemist",
+    default: "RepMaxer",
+    template: "%s · RepMaxer",
   },
   description:
-    "Układasz plan. Widzisz każdą serię. Wysyłasz klientowi jeden link — on zapisuje serie w telefonie, Ty widzisz każdy trening na żywo.",
+    "Wysyłasz klientowi jeden link. Widzisz każdy jego trening. Klient odhacza serie w telefonie — bez aplikacji i bez konta.",
   openGraph: {
     type: "website",
     locale: "pl_PL",
-    siteName: "Workout Alchemist",
-    title: "Workout Alchemist — układasz plan, widzisz każdą serię",
+    siteName: "RepMaxer",
+    title: "RepMaxer — wysyłasz link, widzisz każdy trening",
     description:
-      "Wysyłasz klientowi jeden link. On trenuje w telefonie, Ty widzisz każdy trening na żywo.",
+      "Wysyłasz klientowi jeden link. On trenuje w telefonie, Ty widzisz każdy trening.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Workout Alchemist — układasz plan, widzisz każdą serię",
+    title: "RepMaxer — wysyłasz link, widzisz każdy trening",
     description:
-      "Wysyłasz klientowi jeden link. On trenuje w telefonie, Ty widzisz każdy trening na żywo.",
+      "Wysyłasz klientowi jeden link. On trenuje w telefonie, Ty widzisz każdy trening.",
   },
 };
 

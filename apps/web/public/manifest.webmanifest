@@ -1,6 +1,6 @@
 {
-  "name": "Workout Alchemist",
-  "short_name": "WA",
+  "name": "RepMaxer",
+  "short_name": "RepMaxer",
   "description": "Portal trenera personalnego",
   "start_url": "/",
   "display": "browser",

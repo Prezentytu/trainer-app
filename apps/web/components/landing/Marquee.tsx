@@ -1,12 +1,8 @@
 const ITEMS = [
-  "Plan",
-  "Seria",
-  "Progres",
-  "PR",
-  "Link",
-  "Offline",
-  "Klient",
-  "Trening",
+  "Układasz plan",
+  "Wysyłasz link",
+  "Klient odhacza",
+  "Ty widzisz wynik",
 ] as const;
 
 function MarqueeHalf({ suffix }: { suffix: string }) {

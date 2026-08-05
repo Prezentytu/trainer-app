@@ -1,7 +1,7 @@
 import { plPL } from "@clerk/localizations";
 
 /**
- * Polski Clerk + nadpisania pod Workout Alchemist.
+ * Polski Clerk + nadpisania pod RepMaxer.
  * Ukrywamy angielskie placeholdery i zdublowane nagłówki karty.
  */
 export const clerkLocalization = {

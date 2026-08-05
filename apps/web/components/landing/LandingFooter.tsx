@@ -9,7 +9,7 @@ export function LandingFooter() {
           aria-hidden
           className="display-serif text-[clamp(2.5rem,8vw,6rem)] leading-none text-muted-faint"
         >
-          Workout Alchemist
+          RepMaxer
         </p>
 
         <div className="mt-12 flex flex-col gap-6 border-t border-border pt-8 sm:flex-row sm:items-center sm:justify-between">
@@ -25,10 +25,10 @@ export function LandingFooter() {
               href="/sign-up"
               className="landing-link-underline transition-colors hover:text-foreground"
             >
-              Zacznij za darmo
+              Załóż darmowe konto
             </Link>
             <span className="text-muted-faint">
-              © {new Date().getFullYear()} Workout Alchemist
+              © {new Date().getFullYear()} RepMaxer
             </span>
           </div>
         </div>

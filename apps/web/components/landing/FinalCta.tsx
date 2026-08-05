@@ -12,19 +12,20 @@ export function FinalCta() {
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-10 text-center sm:gap-12">
         <div className="min-w-0">
           <p className="font-mono text-xs uppercase tracking-caps text-muted">
-            03 — Cennik
+            04 — Cena
           </p>
           <p className="mt-6 display-serif text-[clamp(6rem,18vw,12rem)] tabular-nums leading-none text-foreground">
             0
             <span className="ml-2 text-[0.28em] text-muted sm:ml-3">zł</span>
           </p>
           <p className="mx-auto mt-8 max-w-sm text-[15px] leading-relaxed text-muted text-pretty">
-            Wczesny dostęp za darmo. Później 149 zł / miesiąc.
+            Wczesny dostęp jest darmowy i bez karty. Docelowo 149 zł miesięcznie. Twoi klienci
+            nie płacą nic.
           </p>
         </div>
         <Link href="/sign-up">
           <Button size="lg" className="landing-cta-pill">
-            Zacznij za darmo
+            Załóż darmowe konto
           </Button>
         </Link>
       </div>

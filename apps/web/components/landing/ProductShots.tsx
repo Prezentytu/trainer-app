@@ -5,12 +5,12 @@ const PHONE_SHOTS = [
   {
     src: "/landing/portal-home.png",
     alt: "Portal klienta — dzisiejszy trening",
-    caption: "Dziś",
+    caption: "Dzisiejszy trening",
   },
   {
     src: "/landing/portal-session.png",
-    alt: "Portal klienta — logowanie serii",
-    caption: "Logowanie serii",
+    alt: "Portal klienta — odhaczanie serii",
+    caption: "Odhaczanie serii",
   },
   {
     src: "/landing/portal-progress.png",
@@ -30,11 +30,15 @@ export function ProductShots() {
         <div>
           <div className="mx-auto max-w-2xl text-center">
             <p className="font-mono text-xs uppercase tracking-caps text-muted">
-              01 — Produkt
+              01 — Telefon klienta
             </p>
-            <h2 className="mt-4 display-serif text-[clamp(2rem,4.5vw,3.5rem)] text-foreground text-pretty">
-              Jeden link. Bez aplikacji.
+            <h2 className="mt-4 display-serif text-[clamp(1.875rem,4.5vw,3.5rem)] text-foreground text-pretty">
+              Klient dostaje link. To wszystko.
             </h2>
+            <p className="mx-auto mt-6 max-w-2xl text-[17px] leading-relaxed text-muted text-pretty">
+              Ciężary z poprzedniego treningu są już wpisane — poprawia tylko to, co się
+              zmieniło. Działa nawet bez zasięgu.
+            </p>
           </div>
 
           <ul className="mt-16 flex snap-x snap-mandatory justify-start gap-5 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden md:mt-20 md:justify-center md:overflow-visible md:pb-0">
@@ -68,13 +72,20 @@ export function ProductShots() {
         <div>
           <div className="mx-auto max-w-2xl text-center">
             <p className="font-mono text-xs uppercase tracking-caps text-muted">
-              Panel trenera
+              02 — Twój panel
             </p>
-            <h2 className="mt-4 display-serif text-[clamp(2rem,4.5vw,3.5rem)] text-foreground text-pretty">
-              Widzisz, czy klient naprawdę trenuje.
+            <h2 className="mt-4 display-serif text-[clamp(1.875rem,4.5vw,3.5rem)] text-foreground text-pretty">
+              Widzisz każdy zakończony trening.
             </h2>
+            <p className="mx-auto mt-6 max-w-2xl text-[17px] leading-relaxed text-muted text-pretty">
+              Które serie zrobione, jakie ciężary, gdzie nowy rekord — oznaczony automatycznie.
+              I gdzie od tygodni nic nie rośnie.
+            </p>
           </div>
-          <figure className="landing-phone landing-stagger mx-auto mt-12 max-w-5xl" style={{ ["--i" as string]: 0 }}>
+          <figure
+            className="landing-phone landing-stagger mx-auto mt-12 max-w-5xl"
+            style={{ ["--i" as string]: 0 }}
+          >
             <div className="landing-phone-frame overflow-hidden rounded-xl border border-border-strong bg-surface shadow-card">
               <Image
                 src="/landing/panel-client.png"

@@ -3,18 +3,18 @@ import { LandingReveal } from "./LandingReveal";
 const TRAINER_POINTS = [
   {
     n: "01",
-    title: "Plan w minuty",
-    body: "Szablon albo od zera.",
+    title: "Plan w kilka minut",
+    body: "Układasz raz, zapisujesz jako szablon i przypisujesz kolejnym klientom.",
   },
   {
     n: "02",
-    title: "Seria na żywo",
-    body: "Widzisz wynik od razu.",
+    title: "Wiesz, kto naprawdę trenuje",
+    body: "Zakończony trening widzisz od razu. Nie po tygodniu, nie wcale.",
   },
   {
     n: "03",
-    title: "Rekordy i zastoje",
-    body: "PR i plateau automatycznie.",
+    title: "Rekordy i zastoje na oku",
+    body: "Nowy rekord oznacza się sam. Widzisz też, gdzie od tygodni nic nie rośnie.",
   },
 ] as const;
 
@@ -22,17 +22,17 @@ const CLIENT_POINTS = [
   {
     n: "04",
     title: "Jeden link",
-    body: "Bez konta. Bez instalacji.",
+    body: "Bez instalowania i bez konta. Otwiera się jak zwykła strona.",
   },
   {
     n: "05",
-    title: "Log w sekundy",
-    body: "Prefill z ostatniego treningu.",
+    title: "Ciężary już wpisane",
+    body: "Z poprzedniego treningu. Poprawia tylko to, co się zmieniło.",
   },
   {
     n: "06",
-    title: "Bez zasięgu",
-    body: "Zapis lokalny, sync później.",
+    title: "Działa bez zasięgu",
+    body: "Trening zapisuje się na telefonie i dosyła się, gdy wróci internet.",
   },
 ] as const;
 
@@ -69,17 +69,17 @@ export function Points() {
       <div className="mx-auto max-w-6xl">
         <div className="mx-auto max-w-2xl text-center">
           <p className="font-mono text-xs uppercase tracking-caps text-muted">
-            02 — Wartość
+            03 — Co dostajesz
           </p>
-          <h2 className="mt-4 display-serif text-[clamp(2rem,4.5vw,3.5rem)] text-foreground text-pretty">
-            Tylko to, czego potrzebujesz.
+          <h2 className="mt-4 display-serif text-[clamp(1.875rem,4.5vw,3.5rem)] text-foreground text-pretty">
+            Ty układasz plan. Reszta dzieje się sama.
           </h2>
         </div>
 
         <div className="mt-16 space-y-14 sm:mt-20 sm:space-y-16">
           <div>
             <p className="mb-4 font-mono text-xs uppercase tracking-caps text-muted">
-              Dla trenera
+              Dla ciebie
             </p>
             <ol className="grid border-t border-l border-border sm:grid-cols-3">
               {TRAINER_POINTS.map((point, i) => (
@@ -90,7 +90,7 @@ export function Points() {
 
           <div>
             <p className="mb-4 font-mono text-xs uppercase tracking-caps text-muted">
-              Dla klienta
+              Dla twojego klienta
             </p>
             <ol className="grid border-t border-l border-border sm:grid-cols-3">
               {CLIENT_POINTS.map((point, i) => (

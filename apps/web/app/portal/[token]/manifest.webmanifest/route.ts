@@ -8,8 +8,8 @@ export function GET(
     const scope = `/portal/${token}`;
     const manifest = {
       id: scope,
-      name: "Workout Alchemist — klient",
-      short_name: "WA Klient",
+      name: "RepMaxer — klient",
+      short_name: "RepMaxer",
       description: "Twój plan treningowy i logowanie serii",
       start_url: scope,
       scope,

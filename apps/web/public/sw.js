@@ -1,4 +1,4 @@
-/* Workout Alchemist — portal client SW (push + app shell). */
+/* RepMaxer — portal client SW (push + app shell). */
 const CACHE_VERSION = "wa-portal-v1";
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
@@ -156,7 +156,7 @@ self.addEventListener("push", (event) => {
   } catch {
     data = { body: event.data ? event.data.text() : "" };
   }
-  const title = data.title || "Workout Alchemist";
+  const title = data.title || "RepMaxer";
   const options = {
     body: data.body || "Masz nowe przypomnienie od trenera.",
     data: { url: data.url || "/" },
