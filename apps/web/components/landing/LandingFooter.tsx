@@ -7,7 +7,7 @@ export function LandingFooter() {
       <div className="mx-auto max-w-6xl">
         <p
           aria-hidden
-          className="display-serif text-[clamp(2.5rem,8vw,6rem)] leading-none text-muted-faint"
+          className="display-landing text-[clamp(2rem,6vw,4.5rem)] leading-none text-muted-faint"
         >
           RepMaxer
         </p>

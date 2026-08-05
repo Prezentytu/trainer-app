@@ -254,3 +254,14 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 3. Słownictwo z rynku PT: układasz plan, przypisujesz klientom, podopieczny, postępy, koniec z Excelem — wzorce TrueCoach/Hevy Coach/Fitebo.
 4. Unikaj sloganów bez orzeczenia („Ułóż raz, przypisuj kolejnym") — mów pełnym, prostym zdaniem.
 **Dotyczy**: `apps/web/components/landing/*`, `AuthScreen.tsx`, metadata / OG.
+
+## Landing: grotesk, nie szeryf; krótkie zdania, nie kursywa
+
+**Kontekst**: Landing używał Fraunces (szeryf, cienkie kreski, italic „każdy") i długich zdań w hero — użytkownik uznał to za nieczytelne i „gówniane".
+**Problem**: Wysokokontrastowy szeryf na `#0C0D0C` w dużym stopniu traci nogi liter; kursywa jako ozdoba obniża skanowanie w 5 s; długie zdania konkurują z minimalizmem Feji/Apple.
+**Zasada**:
+1. Display landingu/auth = Archivo 700 sentence case (`.display-landing` / `.display-landing-xl`). Zakaz Fraunces, Instrument Serif i każdej kursywy jako środka wyrazu.
+2. Hierarchia z wagi, rozmiaru i powietrza — nie z kroju ani koloru. Lime tylko na 1 CTA w widoku.
+3. Copy: H1 maks. 5 słów w 2 liniach; lead maks. 2 krótkie zdania; opis punktu 1 zdanie ≤8 słów. Pełne zdania z orzeczeniem, bez żargonu.
+4. Maks. 3 kroje w całej aplikacji: Archivo, Space Grotesk, IBM Plex Mono.
+**Dotyczy**: `apps/web/components/landing/*`, `AuthScreen.tsx`, `globals.css`, `layout.tsx`, skill `design-system`.

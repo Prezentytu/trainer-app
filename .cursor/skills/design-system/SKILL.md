@@ -102,9 +102,7 @@ Wyjątek: sam `globals.css`, lustra SDK (`clerkAppearance.ts`, OG image, manifes
 | Display / wordmark / sesja | Archivo 900 UPPERCASE | `.display-caps` |
 | Display auth (formularz) | Archivo 700 sentence case | `.display-soft` |
 | Display auth editorial | Archivo 800, plakatowa skala | `.display-editorial` |
-| Display landing (2026) | Fraunces variable (opsz 144, SOFT 0, wght 600) | `.display-serif` — **sentence case**, near-mono |
-| Akcent w hero landingu | Fraunces italic (WONK) | `.display-serif-italic` — **max 1 słowo** na hero |
-| Akcent szeryfowy (auth) | Instrument Serif italic | `.accent-serif` — **max 1 na sekcję**, kolor `--foreground` (nie lime) |
+| Display landing / auth H1 | Archivo 700 sentence case | `.display-landing` / `.display-landing-xl` — **zero szeryfów, zero kursywy** |
 | Body / UI | Space Grotesk | `font-sans` (domyślny) |
 | Liczby (serie, kg, sekundy, StatBlock) | IBM Plex Mono | `font-mono` + `tabular-nums` |
 
@@ -117,9 +115,8 @@ Wyjątek: sam `globals.css`, lustra SDK (`clerkAppearance.ts`, OG image, manifes
 | Micro / meta uppercase | `font-mono text-xs tracking-caps uppercase` / `.eyebrow` | `font-medium` |
 | Body / etykiety | `text-sm` | `font-normal` / `font-medium` |
 | Nazwa ćwiczenia (logger) / wordmark | `.display-caps` | 900 |
-| Nagłówek landingu | `.display-serif` | Fraunces 600 / opsz 144 — **sentence case** |
-| Akcent w hero landingu | `.display-serif-italic` | Fraunces italic — 1 słowo |
-| Akcent w nagłówku auth | `.accent-serif` | 400 italic — 1 słowo na sekcję |
+| Nagłówek landingu (H1) | `.display-landing-xl` | Archivo 700 — **sentence case**, tracking −0.04em |
+| Nagłówek landingu (H2) / auth H1 | `.display-landing` | Archivo 700 — **sentence case**, tracking −0.03em |
 | Nagłówek auth (formularz) | `.display-soft` | 700 — **sentence case** |
 | Nagłówek karty | `font-display text-lg font-bold` | bold |
 | Tytuł strony (`PageHeader`) | `font-display text-xl sm:text-2xl font-bold` | bold — **sentence case** |
@@ -127,9 +124,9 @@ Wyjątek: sam `globals.css`, lustra SDK (`clerkAppearance.ts`, OG image, manifes
 ### Zasady casingu Acid
 
 - **UPPERCASE** tylko: wordmark, mikro-etykiety mono (`SERIA`, `KG`, `POWT`, `PRZERWA`), linki nav landingu (mono caps). **Nie** używaj `.display-caps` na nazwach ćwiczeń w SessionLoggerze — sentence case `font-semibold` (czytelność na siłowni; Archivo 900 UPPERCASE jest za ciężkie).
-- **Landing 2026 (awwwards):** nagłówki `.display-serif` (Fraunces variable, opsz 144, wght 560). Jedno słowo `.display-serif-italic` w hero. Near-mono: lime tylko na pill CTA (hero + final). Hero: canvas `HeroField` (dot-field). Reveal: line-mask na H1, fade+rise gdzie indziej. Marquee mono między hero a produktem. Sekcje `py-32 sm:py-44`, numeracja `01 —`. Bez `landing-atmosphere` na landingu.
-- **Auth:** `.display-soft` na tytułach formularza; H1 lewego panelu może użyć `.display-editorial` + `.accent-serif`.
-- Eyebrowy w panelu mogą mieć prefiks `///` (`Card eyebrowMark`, klasa `.eyebrow`). Na landingu: `font-mono text-xs uppercase tracking-caps text-muted`.
+- **Landing (Feji/Apple):** nagłówki `.display-landing` / `.display-landing-xl` (Archivo 700 sentence case). **Zakaz szeryfów i kursywy** jako środka wyrazu. Hierarchia z wagi, rozmiaru i powietrza. Near-mono: lime tylko na pill CTA (hero + final). Hero: canvas `HeroField` (dot-field). Reveal: line-mask na H1, fade+rise gdzie indziej. Marquee mono między hero a produktem. Sekcje `py-32 sm:py-44`, numeracja `01 —`. Bez `landing-atmosphere` na landingu. Copy: krótkie, pełne zdania (H1 maks. 5 słów w 2 liniach).
+- **Auth:** `.display-soft` na tytułach formularza; H1 lewego panelu = `.display-landing-xl` (ten sam grotesk co landing, zero kursywy).
+- Eyebrowy w panelu mogą mieć prefiks `///` (`Card eyebrowMark`, klasa `.eyebrow`). Na landingu: `font-mono text-[11px] uppercase tracking-[var(--tracking-eyebrow)] text-muted`.
 - Tytuły stron panelu i portalu: **sentence case**.
 - Body i kontrolki: sentence case („Start workout” → PL: „Rozpocznij trening”).
 - Liczby zawsze `font-mono tabular-nums`. Zero emoji; Unicode tylko `×` i `·`.

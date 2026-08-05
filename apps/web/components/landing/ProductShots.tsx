@@ -5,12 +5,12 @@ const PHONE_SHOTS = [
   {
     src: "/landing/portal-home.png",
     alt: "Portal klienta — dzisiejszy trening",
-    caption: "Dzisiejszy trening",
+    caption: "Dziś",
   },
   {
     src: "/landing/portal-session.png",
     alt: "Portal klienta — odhaczanie serii",
-    caption: "Odhaczanie serii",
+    caption: "Serie",
   },
   {
     src: "/landing/portal-progress.png",
@@ -29,15 +29,14 @@ export function ProductShots() {
       <div className="mx-auto max-w-6xl space-y-20 sm:space-y-28">
         <div>
           <div className="mx-auto max-w-2xl text-center">
-            <p className="font-mono text-xs uppercase tracking-caps text-muted">
+            <p className="font-mono text-[11px] uppercase tracking-[var(--tracking-eyebrow)] text-muted">
               01 — Telefon klienta
             </p>
-            <h2 className="mt-4 display-serif text-[clamp(1.875rem,4.5vw,3.5rem)] text-foreground text-pretty">
-              Klient dostaje link. To wszystko.
+            <h2 className="mt-4 display-landing text-[clamp(1.5rem,3.4vw,2.75rem)] text-foreground text-pretty">
+              Klient otwiera link i trenuje.
             </h2>
-            <p className="mx-auto mt-6 max-w-2xl text-[17px] leading-relaxed text-muted text-pretty">
-              Ciężary z poprzedniego treningu są już wpisane — poprawia tylko to, co się
-              zmieniło. Działa nawet bez zasięgu.
+            <p className="mx-auto mt-6 max-w-[34ch] text-[16px] leading-relaxed text-muted text-pretty sm:text-[17px]">
+              Ciężary z ostatniego treningu są już wpisane. Działa bez zasięgu.
             </p>
           </div>
 
@@ -60,7 +59,7 @@ export function ProductShots() {
                       priority={shot.src === "/landing/portal-home.png"}
                     />
                   </div>
-                  <figcaption className="landing-phone-caption mt-4 text-center font-mono text-xs uppercase tracking-caps text-muted">
+                  <figcaption className="landing-phone-caption mt-4 text-center font-mono text-[11px] uppercase tracking-[var(--tracking-eyebrow)] text-muted">
                     {shot.caption}
                   </figcaption>
                 </figure>
@@ -71,15 +70,14 @@ export function ProductShots() {
 
         <div>
           <div className="mx-auto max-w-2xl text-center">
-            <p className="font-mono text-xs uppercase tracking-caps text-muted">
+            <p className="font-mono text-[11px] uppercase tracking-[var(--tracking-eyebrow)] text-muted">
               02 — Twój panel
             </p>
-            <h2 className="mt-4 display-serif text-[clamp(1.875rem,4.5vw,3.5rem)] text-foreground text-pretty">
-              Widzisz każdy zakończony trening.
+            <h2 className="mt-4 display-landing text-[clamp(1.5rem,3.4vw,2.75rem)] text-foreground text-pretty">
+              Wszystko widzisz od razu.
             </h2>
-            <p className="mx-auto mt-6 max-w-2xl text-[17px] leading-relaxed text-muted text-pretty">
-              Które serie zrobione, jakie ciężary, gdzie nowy rekord — oznaczony automatycznie.
-              I gdzie od tygodni nic nie rośnie.
+            <p className="mx-auto mt-6 max-w-[34ch] text-[16px] leading-relaxed text-muted text-pretty sm:text-[17px]">
+              Serie, ciężary, rekordy. I gdzie nic nie rośnie.
             </p>
           </div>
           <figure
@@ -96,7 +94,7 @@ export function ProductShots() {
                 sizes="(max-width: 1152px) 100vw, 1152px"
               />
             </div>
-            <figcaption className="landing-phone-caption mt-4 text-center font-mono text-xs uppercase tracking-caps text-muted">
+            <figcaption className="landing-phone-caption mt-4 text-center font-mono text-[11px] uppercase tracking-[var(--tracking-eyebrow)] text-muted">
               Panel trenera
             </figcaption>
           </figure>

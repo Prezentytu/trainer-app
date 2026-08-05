@@ -111,11 +111,13 @@
   --tracking-display: -0.035em;
   --tracking-display-soft: -0.02em;
   --tracking-display-editorial: -0.04em;
-  --tracking-display-serif: -0.03em;
+  --tracking-display-landing: -0.03em;
+  --tracking-display-landing-xl: -0.04em;
   --leading-display: 0.96;
   --leading-display-soft: 1.06;
   --leading-display-editorial: 0.88;
-  --leading-display-serif: 0.98;
+  --leading-display-landing: 1.06;
+  --leading-display-landing-xl: 1;
   --leading-body: 1.5;
   --leading-label: 1.4;
   --ease-editorial: cubic-bezier(0.77, 0, 0.175, 1);
@@ -140,7 +142,6 @@
   --font-sans: var(--font-space-grotesk);
   --font-display: var(--font-archivo);
   --font-mono: var(--font-ibm-plex-mono);
-  --font-serif: var(--font-fraunces);
 
   --color-background: var(--background);
   --color-surface: var(--surface);
@@ -239,30 +240,19 @@ body {
   line-height: var(--leading-display-editorial);
 }
 
-/* Landing 2026 — Fraunces variable (opsz 144, sharp), sentence case */
-.display-serif {
-  font-family: var(--font-fraunces), Georgia, "Times New Roman", serif;
-  font-weight: 600;
-  font-style: normal;
-  font-variation-settings: "opsz" 144, "SOFT" 0, "WONK" 0;
-  letter-spacing: var(--tracking-display-serif);
-  line-height: var(--leading-display-serif);
+/* Landing / auth display — Archivo 700 sentence case (Feji/Apple), zero szeryfów */
+.display-landing {
+  font-family: var(--font-archivo), system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: var(--tracking-display-landing);
+  line-height: var(--leading-display-landing);
 }
 
-/* Jedno słowo akcentowe w hero — italic + lekki WONK */
-.display-serif-italic {
-  font-family: var(--font-fraunces), Georgia, "Times New Roman", serif;
-  font-weight: 480;
-  font-style: italic;
-  font-variation-settings: "opsz" 144, "SOFT" 40, "WONK" 1;
-  letter-spacing: -0.01em;
-}
-
-.accent-serif {
-  font-family: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
-  font-weight: 400;
-  font-style: italic;
-  letter-spacing: -0.01em;
+.display-landing-xl {
+  font-family: var(--font-archivo), system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: var(--tracking-display-landing-xl);
+  line-height: var(--leading-display-landing-xl);
 }
 
 .eyebrow {

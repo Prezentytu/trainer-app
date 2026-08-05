@@ -49,7 +49,7 @@ export default function OpenGraphImage() {
             Wysyłasz link. Widzisz każdy trening.
           </div>
           <div style={{ fontSize: 22, color: "#9AA193", maxWidth: 640, lineHeight: 1.45 }}>
-            Klient odhacza serie w telefonie — bez aplikacji i bez konta.
+            Klient odhacza serie w telefonie. Bez aplikacji, bez konta.
           </div>
         </div>
 

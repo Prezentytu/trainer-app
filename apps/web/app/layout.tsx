@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, Fraunces, IBM_Plex_Mono, Instrument_Serif, Space_Grotesk } from "next/font/google";
+import { Archivo, IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { ClerkAppProvider } from "@/components/ClerkAppProvider";
 
@@ -30,21 +30,6 @@ const fontMono = IBM_Plex_Mono({
   subsets: ["latin", "latin-ext"],
 });
 
-const fontSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
-  weight: "400",
-  style: ["normal", "italic"],
-  subsets: ["latin", "latin-ext"],
-});
-
-/** Landing display — variable opsz/SOFT/WONK (awwwards editorial). */
-const fontFraunces = Fraunces({
-  variable: "--font-fraunces",
-  subsets: ["latin", "latin-ext"],
-  axes: ["opsz", "SOFT", "WONK"],
-  style: ["normal", "italic"],
-});
-
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
@@ -54,20 +39,20 @@ export const metadata: Metadata = {
     template: "%s · RepMaxer",
   },
   description:
-    "Wysyłasz klientowi jeden link. Widzisz każdy jego trening. Klient odhacza serie w telefonie — bez aplikacji i bez konta.",
+    "Wysyłasz link. Widzisz każdy trening. Klient odhacza serie w telefonie. Bez aplikacji, bez konta.",
   openGraph: {
     type: "website",
     locale: "pl_PL",
     siteName: "RepMaxer",
     title: "RepMaxer — wysyłasz link, widzisz każdy trening",
     description:
-      "Wysyłasz klientowi jeden link. On trenuje w telefonie, Ty widzisz każdy trening.",
+      "Klient odhacza serie w telefonie. Bez aplikacji, bez konta.",
   },
   twitter: {
     card: "summary_large_image",
     title: "RepMaxer — wysyłasz link, widzisz każdy trening",
     description:
-      "Wysyłasz klientowi jeden link. On trenuje w telefonie, Ty widzisz każdy trening.",
+      "Klient odhacza serie w telefonie. Bez aplikacji, bez konta.",
   },
 };
 
@@ -88,7 +73,7 @@ export default function RootLayout({
   return (
     <html
       lang="pl"
-      className={`${fontDisplay.variable} ${fontBody.variable} ${fontMono.variable} ${fontSerif.variable} ${fontFraunces.variable} h-full antialiased`}
+      className={`${fontDisplay.variable} ${fontBody.variable} ${fontMono.variable} h-full antialiased`}
     >
       <body className="min-h-screen bg-background font-sans text-foreground">
         {process.env.NODE_ENV === "production" ? null : (

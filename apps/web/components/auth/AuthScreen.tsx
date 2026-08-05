@@ -27,12 +27,11 @@ export function AuthScreen({
         </div>
 
         <div className="relative max-w-md space-y-5">
-          <h1 className="display-editorial text-3xl text-foreground xl:text-4xl text-pretty">
-            Układasz plan. Widzisz{" "}
-            <span className="accent-serif">każdą</span> serię.
+          <h1 className="display-landing-xl text-3xl text-foreground xl:text-4xl text-pretty">
+            Wysyłasz link. Widzisz każdy trening.
           </h1>
           <p className="text-[15px] leading-relaxed text-muted">
-            Wysyłasz klientowi jeden link. On trenuje w telefonie, Ty widzisz każdy trening.
+            Klient odhacza serie w telefonie. Bez aplikacji, bez konta.
           </p>
         </div>
 

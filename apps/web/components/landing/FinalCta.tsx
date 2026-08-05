@@ -11,16 +11,15 @@ export function FinalCta() {
     >
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-10 text-center sm:gap-12">
         <div className="min-w-0">
-          <p className="font-mono text-xs uppercase tracking-caps text-muted">
+          <p className="font-mono text-[11px] uppercase tracking-[var(--tracking-eyebrow)] text-muted">
             04 — Cena
           </p>
-          <p className="mt-6 display-serif text-[clamp(6rem,18vw,12rem)] tabular-nums leading-none text-foreground">
+          <p className="mt-6 display-landing-xl text-[clamp(5rem,15vw,9rem)] tabular-nums leading-none text-foreground">
             0
             <span className="ml-2 text-[0.28em] text-muted sm:ml-3">zł</span>
           </p>
-          <p className="mx-auto mt-8 max-w-sm text-[15px] leading-relaxed text-muted text-pretty">
-            Wczesny dostęp jest darmowy i bez karty. Docelowo 149 zł miesięcznie. Twoi klienci
-            nie płacą nic.
+          <p className="mx-auto mt-8 max-w-[34ch] text-[15px] leading-relaxed text-muted text-pretty">
+            Wczesny dostęp bez karty. Potem 149 zł miesięcznie. Klient nie płaci nic.
           </p>
         </div>
         <Link href="/sign-up">
