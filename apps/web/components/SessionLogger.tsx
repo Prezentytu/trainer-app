@@ -14,7 +14,6 @@ import {
   SessionDetail,
   WorkoutSessionInput,
 } from "@/lib/api";
-import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { YoutubeLite } from "@/components/YoutubeLite";
 import {
   Badge,
@@ -40,24 +39,16 @@ import { useRestTimer } from "@/components/session/useRestTimer";
 import { useWakeLock } from "@/components/session/useWakeLock";
 import { PlateCalculator } from "@/components/session/PlateCalculator";
 import { formatKg } from "@/lib/plates";
-import {
-  Check,
-  History,
-  Layers,
-  MoreHorizontal,
-  Plus,
-  StickyNote,
-  Timer,
-} from "lucide-react";
+import { Check, MoreHorizontal, Plus } from "lucide-react";
 
-/** SET | POPRZ | wynik (kg × powt) | ✓ | ⋯ — płaska siatka arkusza. */
+/** SERIA | POPRZ | KG | POWT | ✓ | ⋯ — czytelna siatka (Styrka+, zachowana kolumna prev). */
 const SET_GRID =
-  "grid grid-cols-[1.5rem_minmax(3.25rem,1fr)_minmax(7rem,auto)_2.25rem_1.75rem] gap-x-1.5 items-center";
+  "grid grid-cols-[2rem_minmax(3.25rem,0.85fr)_minmax(4.5rem,1fr)_minmax(3.75rem,0.85fr)_2.75rem_2rem] gap-x-2 items-center";
 
 const REST_OPTIONS_SEC = [60, 90, 120, 180] as const;
 
 const iconBtn =
-  "inline-flex min-h-10 items-center gap-1.5 text-[13px] font-medium text-muted hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]";
+  "inline-flex min-h-11 items-center gap-1.5 text-[15px] font-medium text-muted hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]";
 
 export type SessionLoggerMode = "client" | "behalf" | "completedEdit";
 
@@ -1319,20 +1310,20 @@ export function SessionLogger({
         </div>
       ) : null}
 
-      <div className="session-chrome session-chrome-edge relative sticky top-0 z-20 -mx-4 px-4 pb-2.5 pt-[max(0.5rem,env(safe-area-inset-top))]">
+      <div className="session-chrome session-chrome-edge relative sticky top-0 z-20 -mx-4 px-4 pb-3 pt-[max(0.5rem,env(safe-area-inset-top))]">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="break-words font-display text-base font-semibold">
+            <h1 className="break-words text-[17px] font-semibold leading-snug tracking-tight text-foreground">
               {draft.dayLabel ??
                 sessionTitleFromMuscles(draft.exercises) ??
                 draft.planName ??
                 (isCompletedEdit || isBehalf ? "Poprawa" : "Trening")}
             </h1>
-            <p className="mt-0.5 font-mono text-[13px] tabular-nums text-muted">
+            <p className="mt-1 font-mono text-sm tabular-nums text-muted">
               {doneSetsCount}/{totalSetsCount}
               {" · "}
               {liveClock ? (
-                <SessionClock startedAt={startedAt} className="font-mono text-[13px] tabular-nums text-muted" />
+                <SessionClock startedAt={startedAt} className="font-mono text-sm tabular-nums text-muted" />
               ) : (
                 formatRest(draft.durationSeconds ?? 0)
               )}
@@ -1347,11 +1338,15 @@ export function SessionLogger({
               </span>
             </p>
           </div>
-          <Button variant="secondary" onClick={requestFinish}>
-            {isBehalf || isCompletedEdit ? "Zapisz wynik" : "Zakończ"}
+          <Button
+            size="sm"
+            variant={isBehalf || isCompletedEdit ? "secondary" : "primary"}
+            onClick={requestFinish}
+          >
+            {isBehalf || isCompletedEdit ? "Zapisz" : "Zakończ"}
           </Button>
         </div>
-        <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-surface-active">
+        <div className="mt-3 h-1 overflow-hidden rounded-full bg-surface-active">
           <div
             className="h-full rounded-full bg-accent transition-[width] duration-[var(--dur-med)] ease-[var(--ease-out)]"
             style={{ width: `${progressPct}%` }}
@@ -1422,7 +1417,7 @@ export function SessionLogger({
             <button
               key={exercise.id > 0 ? exercise.id : `ex-${exIdx}`}
               type="button"
-              className="flex w-full items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 text-left shadow-card opacity-80 hover:opacity-100"
+              className="flex w-full items-center gap-3 border-t border-border py-4 text-left opacity-70 hover:opacity-100 first:border-t-0"
               onClick={() =>
                 setCollapsedEx((prev) => {
                   const next = new Set(prev);
@@ -1431,10 +1426,10 @@ export function SessionLogger({
                 })
               }
             >
-              <h2 className="display-caps min-w-0 flex-1 break-words text-base leading-tight text-foreground">
+              <h2 className="min-w-0 flex-1 break-words text-[15px] font-semibold leading-snug text-foreground">
                 {exercise.exerciseName}
               </h2>
-              <span className="shrink-0 font-mono text-[13px] tabular-nums text-positive">
+              <span className="shrink-0 font-mono text-sm tabular-nums text-muted">
                 {doneCount}/{exercise.sets.length}
               </span>
             </button>
@@ -1443,42 +1438,41 @@ export function SessionLogger({
 
         const hasVideo = Boolean(thumb.youtubeId);
         const restPickerOpen = restPickerEx === exIdx;
+        const metaBits = [
+          exercise.targetRir != null ? `RIR ${exercise.targetRir}` : null,
+          `Przerwa ${restPillLabel(restSec)}`,
+        ].filter(Boolean);
 
         return (
           <section
             key={exercise.id > 0 ? exercise.id : `ex-${exIdx}`}
-            className={`relative space-y-2 rounded-xl border border-border bg-surface p-3 shadow-card ${
-              allDone ? "opacity-80" : ""
+            className={`relative space-y-4 border-t border-border pt-6 first:border-t-0 first:pt-2 ${
+              allDone ? "opacity-70" : ""
             }`}
           >
-            <div className="flex items-center gap-2">
-              {hasVideo ? (
-                <button
-                  type="button"
-                  className="h-9 w-9 shrink-0 self-start rounded-[8px] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
-                  onClick={() => {
-                    setVideoId(thumb.youtubeId!);
-                    setVideoTitle(exercise.exerciseName);
-                  }}
-                  aria-label={`Film: ${exercise.exerciseName}`}
-                >
-                  <ExerciseThumb
-                    variant="square"
-                    youtubeId={thumb.youtubeId}
-                    category={exercise.category}
-                    alt={exercise.exerciseName}
-                  />
-                </button>
-              ) : null}
-              <h2 className="display-caps min-w-0 flex-1 break-words text-base leading-tight text-foreground">
-                {exercise.exerciseName}
+            <div className="flex items-start gap-2">
+              <div className="min-w-0 flex-1">
+                <h2 className="break-words text-[15px] font-semibold leading-snug tracking-tight text-foreground">
+                  {exercise.exerciseName}
+                </h2>
                 {exercise.substitutedFromName ? (
-                  <span className="mt-0.5 block font-sans text-xs font-normal normal-case tracking-normal text-muted">
+                  <p className="mt-0.5 text-[13px] text-muted">
                     zamieniono z {exercise.substitutedFromName}
-                  </span>
+                  </p>
                 ) : null}
-              </h2>
-              <div className="relative shrink-0 self-center" data-session-menu>
+                {metaBits.length > 0 || trainerNote ? (
+                  <p className="mt-1 text-[13px] leading-snug text-muted">
+                    {metaBits.join(" · ")}
+                    {trainerNote ? (
+                      <>
+                        {metaBits.length > 0 ? " · " : null}
+                        {trainerNote}
+                      </>
+                    ) : null}
+                  </p>
+                ) : null}
+              </div>
+              <div className="relative shrink-0" data-session-menu>
                 <IconButton
                   title="Więcej"
                   size="sm"
@@ -1491,11 +1485,11 @@ export function SessionLogger({
                   <MoreHorizontal className="h-5 w-5" strokeWidth={1.75} />
                 </IconButton>
                 {menuOpen ? (
-                  <div className="absolute right-0 top-full z-10 mt-1 min-w-[10rem] origin-top-right rounded-[10px] border border-border bg-surface-raised py-1 shadow-[var(--shadow-raised)]">
+                  <div className="absolute right-0 top-full z-10 mt-1 min-w-[11rem] origin-top-right rounded-[10px] border border-border bg-surface-raised py-1 shadow-[var(--shadow-raised)]">
                     {allDone ? (
                       <button
                         type="button"
-                        className="block w-full px-3 py-2.5 text-left text-[13px] hover:bg-surface-hover"
+                        className="block w-full px-3 py-2.5 text-left text-[15px] hover:bg-surface-hover"
                         onClick={() => {
                           setCollapsedEx((prev) => new Set(prev).add(exIdx));
                           setMenuExIdx(null);
@@ -1507,7 +1501,7 @@ export function SessionLogger({
                     {exercise.prevSets.length > 0 ? (
                       <button
                         type="button"
-                        className="block w-full px-3 py-2.5 text-left text-[13px] hover:bg-surface-hover"
+                        className="block w-full px-3 py-2.5 text-left text-[15px] hover:bg-surface-hover"
                         onClick={() => {
                           copyPrevExercise(exIdx);
                           setMenuExIdx(null);
@@ -1516,10 +1510,21 @@ export function SessionLogger({
                         Skopiuj poprzednie
                       </button>
                     ) : null}
+                    <button
+                      type="button"
+                      className="block w-full px-3 py-2.5 text-left text-[15px] hover:bg-surface-hover"
+                      onClick={() => {
+                        setMenuExIdx(null);
+                        setSetRowMenu(null);
+                        setRestPickerEx(exIdx);
+                      }}
+                    >
+                      Przerwa: {restPillLabel(restSec)}
+                    </button>
                     {libraryExercises.length > 0 ? (
                       <button
                         type="button"
-                        className="block w-full px-3 py-2.5 text-left text-[13px] hover:bg-surface-hover"
+                        className="block w-full px-3 py-2.5 text-left text-[15px] hover:bg-surface-hover"
                         onClick={() => {
                           setSwapExIdx(exIdx);
                           setSwapSearch("");
@@ -1532,7 +1537,7 @@ export function SessionLogger({
                     {hasVideo ? (
                       <button
                         type="button"
-                        className="block w-full px-3 py-2.5 text-left text-[13px] hover:bg-surface-hover"
+                        className="block w-full px-3 py-2.5 text-left text-[15px] hover:bg-surface-hover"
                         onClick={() => {
                           setVideoId(thumb.youtubeId!);
                           setVideoTitle(exercise.exerciseName);
@@ -1544,46 +1549,13 @@ export function SessionLogger({
                     ) : null}
                   </div>
                 ) : null}
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[12px] tabular-nums text-muted">
-              <span
-                className="inline-flex items-center gap-1"
-                title={String(exercise.sets.length)}
-                aria-label={`${exercise.sets.length} serii`}
-              >
-                <Layers className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden />
-                {exercise.sets.length}
-              </span>
-              {exercise.targetRir != null ? (
-                <span className="inline-flex items-center gap-1" title={`RIR ${exercise.targetRir}`}>
-                  <span className="text-[10px] font-semibold tracking-caps">RIR</span>
-                  {exercise.targetRir}
-                </span>
-              ) : null}
-              <span className="relative inline-flex" data-session-menu>
-                <button
-                  type="button"
-                  className="inline-flex min-h-8 items-center gap-1 rounded-[6px] px-1 hover:bg-surface-hover hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
-                  title="Przerwa między seriami"
-                  aria-label={`Przerwa ${restPillLabel(restSec)}`}
-                  onClick={() => {
-                    setMenuExIdx(null);
-                    setSetRowMenu(null);
-                    setRestPickerEx(restPickerOpen ? null : exIdx);
-                  }}
-                >
-                  <Timer className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden />
-                  {restPillLabel(restSec)}
-                </button>
                 {restPickerOpen ? (
-                  <div className="absolute left-0 top-full z-10 mt-1 min-w-[7.5rem] origin-top-left rounded-[10px] border border-border bg-surface-raised py-1 shadow-[var(--shadow-raised)]">
+                  <div className="absolute right-0 top-full z-10 mt-1 min-w-[8rem] origin-top-right rounded-[10px] border border-border bg-surface-raised py-1 shadow-[var(--shadow-raised)]">
                     {REST_OPTIONS_SEC.map((sec) => (
                       <button
                         key={sec}
                         type="button"
-                        className={`block w-full px-3 py-2.5 text-left font-mono text-[13px] tabular-nums hover:bg-surface-hover ${
+                        className={`block w-full px-3 py-2.5 text-left font-mono text-[15px] tabular-nums hover:bg-surface-hover ${
                           restSec === sec ? "text-foreground" : "text-foreground-secondary"
                         }`}
                         onClick={() => {
@@ -1596,15 +1568,11 @@ export function SessionLogger({
                     ))}
                   </div>
                 ) : null}
-              </span>
+              </div>
             </div>
 
-            {trainerNote ? (
-              <p className="text-[13px] text-muted">Trener: {trainerNote}</p>
-            ) : null}
-
             {swapExIdx === exIdx ? (
-              <div className="border-t border-border pt-3">
+              <div>
                 <input
                   className={`${inputClass} mb-2 w-full px-2 py-1.5`}
                   placeholder="Szukaj ćwiczenia…"
@@ -1614,13 +1582,13 @@ export function SessionLogger({
                 />
                 <ul className="max-h-48 space-y-1 overflow-y-auto">
                   {filteredSwapExercises.length === 0 ? (
-                    <li className="px-2 py-2 text-xs text-muted">Brak wyników.</li>
+                    <li className="px-2 py-2 text-sm text-muted">Brak wyników.</li>
                   ) : (
                     filteredSwapExercises.slice(0, 20).map((ex) => (
                       <li key={ex.id}>
                         <button
                           type="button"
-                          className="w-full rounded-[8px] px-2 py-2 text-left text-sm hover:bg-surface-hover"
+                          className="w-full rounded-[8px] px-2 py-2.5 text-left text-[15px] hover:bg-surface-hover"
                           onClick={() => swapExercise(exIdx, ex)}
                         >
                           {ex.name}
@@ -1632,43 +1600,26 @@ export function SessionLogger({
               </div>
             ) : null}
 
-            {/* space-y-2 karty = 8px nad linią → pt-2 = 8px pod linią */}
-            <div className="border-t border-border pt-2">
+            <div>
               <div
-                className={`${SET_GRID} px-0 pb-0.5 font-mono text-[10px] font-medium uppercase tracking-caps text-muted`}
+                className={`${SET_GRID} pb-2 text-[11px] font-medium uppercase tracking-caps text-muted`}
               >
-                <div aria-hidden>#</div>
-                <div className="flex items-center gap-1" title={prevHeader || "Poprzedni trening"}>
-                  <History className="h-3 w-3 shrink-0" strokeWidth={1.75} aria-hidden />
-                  <span className="truncate">{prevHeader}</span>
+                <div>Seria</div>
+                <div className="truncate" title={prevHeader || "Poprzedni trening"}>
+                  {prevHeader || "Poprz."}
                 </div>
-                <div
-                  className="flex items-center justify-end gap-0.5"
-                  aria-label={isTime ? "sekundy" : "kg razy powtórzenia"}
-                >
-                  {isTime ? (
-                    <span className="w-[3.5rem] text-center">sek</span>
-                  ) : (
-                    <>
-                      <span className="w-[3.25rem] text-center">kg</span>
-                      <span className="px-0.5 text-muted-faint" aria-hidden>
-                        ×
-                      </span>
-                      <span className="w-[2.75rem] text-center">powt</span>
-                    </>
-                  )}
-                </div>
+                <div className="text-center">{isTime ? "Sek" : "Kg"}</div>
+                <div className="text-center">{isTime ? "" : "Powt"}</div>
                 <div />
                 <div />
               </div>
 
-              <div>
+              <div className="space-y-1.5">
                 {exercise.sets.map((s, setIdx) => {
                   const prev = exercise.prevSets[setIdx];
                   const isNext = exIdx === nextExIdx && setIdx === nextSetIdx;
                   const rowMenuOpen =
                     setRowMenu?.exIdx === exIdx && setRowMenu?.setIdx === setIdx;
-                  // Ostatnie wiersze — menu w górę, żeby nie ucinało się o dół karty.
                   const menuOpensUp = setIdx >= exercise.sets.length - 2;
                   return (
                     <div
@@ -1714,7 +1665,7 @@ export function SessionLogger({
                           {s.completed ? (
                             <button
                               type="button"
-                              className="block w-full px-3 py-2.5 text-left text-[13px] hover:bg-surface-hover"
+                              className="block w-full px-3 py-2.5 text-left text-[15px] hover:bg-surface-hover"
                               onClick={() => {
                                 toggleComplete(exIdx, setIdx);
                                 setSetRowMenu(null);
@@ -1725,7 +1676,7 @@ export function SessionLogger({
                           ) : null}
                           <button
                             type="button"
-                            className="block w-full px-3 py-2.5 text-left text-[13px] hover:bg-surface-hover"
+                            className="block w-full px-3 py-2.5 text-left text-[15px] hover:bg-surface-hover"
                             onClick={() => {
                               patchSet(exIdx, setIdx, { isWarmup: false });
                               setSetRowMenu(null);
@@ -1735,7 +1686,7 @@ export function SessionLogger({
                           </button>
                           <button
                             type="button"
-                            className="block w-full px-3 py-2.5 text-left text-[13px] hover:bg-surface-hover"
+                            className="block w-full px-3 py-2.5 text-left text-[15px] hover:bg-surface-hover"
                             onClick={() => {
                               patchSet(exIdx, setIdx, { isWarmup: true });
                               setSetRowMenu(null);
@@ -1746,7 +1697,7 @@ export function SessionLogger({
                           {exercise.sets.length > 1 ? (
                             <button
                               type="button"
-                              className="block w-full px-3 py-2.5 text-left text-[13px] text-danger hover:bg-surface-hover"
+                              className="block w-full px-3 py-2.5 text-left text-[15px] text-danger hover:bg-surface-hover"
                               onClick={() => {
                                 removeSet(exIdx, setIdx);
                                 setSetRowMenu(null);
@@ -1763,7 +1714,7 @@ export function SessionLogger({
               </div>
             </div>
 
-            <div className="flex items-center gap-5 pt-0.5">
+            <div className="flex items-center gap-6">
               <button
                 type="button"
                 className={iconBtn}
@@ -1771,7 +1722,7 @@ export function SessionLogger({
                 aria-label="Dodaj serię"
               >
                 <Plus className="h-4 w-4" strokeWidth={1.75} aria-hidden />
-                Seria
+                Dodaj serię
               </button>
               {noteOpen ? null : (
                 <button
@@ -1780,7 +1731,6 @@ export function SessionLogger({
                   onClick={() => setNoteOpenEx((prev) => new Set(prev).add(exIdx))}
                   aria-label="Dodaj notatkę"
                 >
-                  <StickyNote className="h-4 w-4" strokeWidth={1.75} aria-hidden />
                   Notatka
                 </button>
               )}
@@ -1788,7 +1738,7 @@ export function SessionLogger({
 
             {noteOpen ? (
               <input
-                className="w-full border-0 border-b border-border bg-transparent px-0 py-2 text-sm text-foreground outline-none placeholder:text-muted-faint focus:border-accent-strong"
+                className="w-full rounded-lg border border-border bg-surface-active px-3 py-3 text-[15px] text-foreground outline-none placeholder:text-muted-faint focus:border-border-strong"
                 placeholder="Notatka…"
                 value={exercise.note ?? ""}
                 onChange={(e) => patchNote(exIdx, e.target.value)}
@@ -1884,11 +1834,11 @@ const SetRow = memo(function SetRow({
   const completed = set.completed;
   const below = isBelowTarget(set, isTime);
   const targetLabel = formatTargetLabel(set, isTime);
-  const valColor = completed
-    ? "font-semibold text-foreground"
+  const valTone = completed
+    ? "text-foreground"
     : isNext
-      ? "font-semibold text-foreground"
-      : "font-medium text-foreground-secondary";
+      ? "text-foreground"
+      : "text-foreground-secondary";
   const checkColor = completed
     ? "text-foreground"
     : isNext
@@ -1897,26 +1847,22 @@ const SetRow = memo(function SetRow({
   const prevLabel = formatPrev(prev, category);
 
   return (
-    <div
-      className={`relative ${SET_GRID} border-b border-border last:border-b-0 ${
-        isNext && !completed ? "bg-surface-raised/40" : ""
-      }`}
-    >
+    <div className={`relative ${SET_GRID}`}>
       <div
-        className={`flex min-h-11 items-center font-mono text-[13px] tabular-nums ${
+        className={`flex min-h-12 items-center font-mono text-sm tabular-nums ${
           completed || isNext ? "text-foreground-secondary" : "text-muted"
         }`}
         aria-label={`Seria ${set.setNumber}${set.isWarmup ? ", rozgrzewkowa" : ""}`}
       >
         {set.setNumber}
-        {set.isWarmup ? <span className="ml-0.5 text-[10px] text-muted">W</span> : null}
+        {set.isWarmup ? <span className="ml-0.5 text-[11px] text-muted">W</span> : null}
       </div>
 
       <div className="flex min-w-0 items-center gap-1.5">
         {prev ? (
           <button
             type="button"
-            className={`min-h-11 min-w-0 truncate text-left font-mono text-[13px] tabular-nums hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
+            className={`min-h-12 min-w-0 truncate text-left font-mono text-sm tabular-nums hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
               completed ? "text-muted-faint" : "text-muted"
             }`}
             onClick={onCopyPrev}
@@ -1926,7 +1872,7 @@ const SetRow = memo(function SetRow({
             {prevLabel}
           </button>
         ) : (
-          <span className="font-mono text-[13px] tabular-nums text-muted-faint">—</span>
+          <span className="font-mono text-sm tabular-nums text-muted-faint">—</span>
         )}
         {completed && set.isPr ? <Badge tone="pr">PR</Badge> : null}
         {below && targetLabel ? (
@@ -1939,68 +1885,66 @@ const SetRow = memo(function SetRow({
         ) : null}
       </div>
 
-      <div className="flex min-w-0 items-center justify-end gap-0.5">
-        {isTime ? (
+      {isTime ? (
+        <div className="col-span-2">
           <SetValueInput
             kind="reps"
             value={set.durationSeconds ?? set.reps}
             placeholder="sek"
             ariaLabel="sekundy"
-            className={`w-[3.5rem] ${valColor}`}
+            className={valTone}
             emphasizeEmpty={isNext && !completed}
             onCommit={onReps}
             onFocusField={onFocusReps}
           />
-        ) : (
-          <>
-            <SetValueInput
-              kind="weight"
-              value={set.weightKg}
-              placeholder="—"
-              ariaLabel="kg"
-              className={`w-[3.25rem] ${valColor}`}
-              emphasizeEmpty={isNext && !completed}
-              onCommit={onWeight}
-              onFocusField={onFocusWeight}
-            />
-            <span className="select-none px-0.5 font-mono text-[13px] text-muted-faint" aria-hidden>
-              ×
-            </span>
-            <SetValueInput
-              kind="reps"
-              value={set.reps}
-              placeholder="—"
-              ariaLabel="powtórzenia"
-              className={`w-[2.75rem] ${valColor}`}
-              emphasizeEmpty={isNext && !completed}
-              onCommit={onReps}
-              onFocusField={onFocusReps}
-            />
-          </>
-        )}
-      </div>
+        </div>
+      ) : (
+        <>
+          <SetValueInput
+            kind="weight"
+            value={set.weightKg}
+            placeholder="—"
+            ariaLabel="kg"
+            className={valTone}
+            emphasizeEmpty={isNext && !completed}
+            onCommit={onWeight}
+            onFocusField={onFocusWeight}
+          />
+          <SetValueInput
+            kind="reps"
+            value={set.reps}
+            placeholder="—"
+            ariaLabel="powtórzenia"
+            className={valTone}
+            emphasizeEmpty={isNext && !completed}
+            onCommit={onReps}
+            onFocusField={onFocusReps}
+          />
+        </>
+      )}
 
       <button
         type="button"
         onClick={onToggle}
-        className={`flex min-h-11 min-w-9 items-center justify-center transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.94] ${checkColor}`}
+        className={`flex min-h-12 min-w-11 items-center justify-center rounded-lg transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.94] ${checkColor}`}
         aria-label={completed ? "Cofnij zaliczenie" : "Zalicz serię"}
       >
-        <Check className="h-5 w-5" strokeWidth={completed ? 2.5 : 1.75} aria-hidden />
+        <Check className="h-6 w-6" strokeWidth={completed ? 2.5 : 1.75} aria-hidden />
       </button>
 
       <button
         type="button"
         onClick={onRowMenu}
-        className="flex min-h-11 min-w-7 items-center justify-center text-muted hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+        className="flex min-h-12 min-w-8 items-center justify-center text-muted hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
         aria-label="Więcej opcji serii"
         title="Więcej"
       >
-        <MoreHorizontal className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+        <MoreHorizontal className="h-4 w-4" strokeWidth={1.75} />
       </button>
     </div>
   );
 });
+
 
 function StatCard({
   label,

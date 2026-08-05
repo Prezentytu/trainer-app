@@ -129,7 +129,7 @@ export default function PortalProgressPage() {
     <div className="mx-auto max-w-lg space-y-8 pb-24">
       <header>
         <p className="text-xs font-medium uppercase tracking-caps text-muted">Progres</p>
-        <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+        <h1 className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-tight text-foreground sm:text-3xl">
           Twoje wyniki
         </h1>
       </header>

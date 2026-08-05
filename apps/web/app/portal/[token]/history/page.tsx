@@ -85,7 +85,7 @@ export default function PortalHistoryPage() {
     <div className="mx-auto max-w-lg space-y-8 pb-24">
       <header>
         <p className="text-xs font-medium uppercase tracking-caps text-muted">Historia</p>
-        <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+        <h1 className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-tight text-foreground sm:text-3xl">
           Ostatnie sesje
         </h1>
         {history && history.length > 0 ? (
@@ -148,7 +148,7 @@ export default function PortalHistoryPage() {
                       >
                         <div className="min-w-0 flex-1">
                           <div className="flex items-baseline gap-2">
-                            <p className="font-display text-lg font-bold tracking-tight text-foreground">
+                            <p className="text-[15px] font-semibold tracking-tight text-foreground">
                               {formatWhen(s.performedOn, todayIso)}
                             </p>
                             {prCount > 0 ? (

@@ -12,7 +12,7 @@ type Props = {
   onCommit: (value: number | null) => void;
   onFocusField?: () => void;
   className?: string;
-  /** Następna seria — placeholder w accent (jak Gravitus „lb × reps”). */
+  /** Następna seria — placeholder nieco jaśniejszy. */
   emphasizeEmpty?: boolean;
 };
 
@@ -34,8 +34,8 @@ function isValidDraft(kind: Kind, raw: string): boolean {
 }
 
 /**
- * Płaskie pole jak arkusz — bez tła/ramki.
- * Hierarchia z typografii; fokus = subtelne podkreślenie accent.
+ * Pole wartości w stylu Styrka: pigułka surface-active, duża mono typografia.
+ * Hierarchia z kontrastu i rozmiaru — nie z ramek/glowów.
  */
 export const SetValueInput = memo(function SetValueInput({
   kind,
@@ -59,14 +59,14 @@ export const SetValueInput = memo(function SetValueInput({
   return (
     <input
       className={[
-        "min-h-11 min-w-0 border-0 border-b border-transparent bg-transparent",
-        "px-0.5 py-2 text-center font-mono text-base tabular-nums outline-none sm:text-sm",
-        "transition-[border-color,color] duration-[var(--dur-fast)]",
-        "placeholder:font-normal",
+        "min-h-12 min-w-0 w-full rounded-lg border border-transparent bg-surface-active",
+        "px-2 py-2.5 text-center font-mono text-lg font-semibold tabular-nums outline-none",
+        "transition-[background-color,border-color,color] duration-[var(--dur-fast)]",
+        "placeholder:font-medium",
         emphasizeEmpty && empty
-          ? "placeholder:text-accent-text"
+          ? "placeholder:text-foreground-secondary"
           : "placeholder:text-muted-faint",
-        "focus:border-accent-strong",
+        "focus:border-border-strong focus:bg-surface-hover",
         className,
       ].join(" ")}
       value={raw}

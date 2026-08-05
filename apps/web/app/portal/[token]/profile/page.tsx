@@ -108,7 +108,7 @@ export default function PortalProfilePage() {
         <Avatar name={home.client.name} size="lg" />
         <div className="min-w-0">
           <p className="text-xs font-medium uppercase tracking-caps text-muted">Profil</p>
-          <h1 className="mt-1 break-words font-display text-3xl font-bold tracking-tight text-foreground">
+          <h1 className="mt-1 break-words text-[1.75rem] font-semibold leading-tight tracking-tight text-foreground">
             {home.client.name}
           </h1>
         </div>
@@ -119,7 +119,7 @@ export default function PortalProfilePage() {
           <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
             Aktualny plan
           </p>
-          <p className="mt-2 break-words font-display text-xl font-bold tracking-tight text-foreground">
+          <p className="mt-2 break-words text-lg font-semibold tracking-tight text-foreground">
             {today.planName}
           </p>
           <p className="mt-0.5 text-sm text-muted">

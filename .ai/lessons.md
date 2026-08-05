@@ -15,6 +15,13 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Logger klienta: czytelność > display-caps
+
+**Kontekst**: Portal/sesja używały `.display-caps` (Archivo 900 UPPERCASE) na nazwach ćwiczeń; pola kg/powt były płaskie i drobne.
+**Problem**: Na siłowni typografia była nieczytelna; gęsty chrome (ikony RIR/timer/thumb, karty z cieniem) konkurował z wartościami.
+**Zasada**: W SessionLoggerze nazwy ćwiczeń = sentence case `text-[15px] font-semibold` (Space Grotesk). Inputy kg/powt = pigułki `bg-surface-active` + `text-lg font-mono`. Meta (przerwa/RIR) jedną linią pod tytułem albo w menu ⋯. Kolumna poprzedniego wyniku zostaje (nie wracaj do ghost-placeholderów). Lepiej niż Styrka = wyższy kontrast, nie monochrom 10px.
+**Dotyczy**: `SessionLogger.tsx`, `SetValueInput.tsx`, portal home/progres.
+
 ## DateTime z SQLite bez Kind=Utc psuje zegary w przeglądarce
 
 **Kontekst**: Po starcie sesji zegar pokazywał `2:00:18` zamiast `0:00`.

@@ -136,7 +136,7 @@ export default function PortalTodayPage() {
     <div className={`mx-auto max-w-lg space-y-8 ${today ? "pb-36" : "pb-24"}`}>
       <header>
         <p className="text-xs font-medium uppercase tracking-caps text-muted">Dziś</p>
-        <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+        <h1 className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-tight text-foreground sm:text-3xl">
           Cześć, {firstName}
         </h1>
       </header>
@@ -185,21 +185,21 @@ export default function PortalTodayPage() {
               </p>
             ) : null}
           </div>
-          <h2 className="break-words font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+          <h2 className="break-words text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
             {today.day.label}
           </h2>
-          <p className="text-sm text-muted">
+          <p className="mt-1 text-[15px] text-muted">
             {today.planName}
             {weekMeta ? ` · ${weekMeta}` : ""}
           </p>
 
-          <ul className="mt-5 divide-y divide-border border-y border-border">
+          <ul className="mt-6 divide-y divide-border border-y border-border">
             {today.day.items.map((item) => (
-              <li key={item.id} className="py-3.5">
-                <p className="break-words text-[15px] font-medium leading-snug text-foreground">
+              <li key={item.id} className="py-4">
+                <p className="break-words text-[15px] font-semibold leading-snug text-foreground">
                   {item.exerciseName}
                 </p>
-                <p className="mt-0.5 font-mono text-sm tabular-nums text-muted">
+                <p className="mt-1 font-mono text-[15px] tabular-nums text-muted">
                   {schemeLine(item)}
                 </p>
               </li>

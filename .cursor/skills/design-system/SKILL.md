@@ -123,7 +123,7 @@ Wyjątek: sam `globals.css`, lustra SDK (`clerkAppearance.ts`, OG image, manifes
 
 ### Zasady casingu Acid
 
-- **UPPERCASE** tylko: wordmark, nazwy ćwiczeń w SessionLoggerze, mikro-etykiety mono (`SERIE`, `PRZERWA`, `TYDZIEŃ 3`), linki nav landingu (mono caps).
+- **UPPERCASE** tylko: wordmark, mikro-etykiety mono (`SERIA`, `KG`, `POWT`, `PRZERWA`), linki nav landingu (mono caps). **Nie** używaj `.display-caps` na nazwach ćwiczeń w SessionLoggerze — sentence case `font-semibold` (czytelność na siłowni; Archivo 900 UPPERCASE jest za ciężkie).
 - **Landing editorial:** nagłówki w **sentence case** przez `.display-editorial` (Archivo 800, skala plakatowa). Jeden akcent `.accent-serif` na sekcję — kontrast kroju, nie koloru. Bez `///`, bez obrysów liter.
 - **Auth:** `.display-soft` na tytułach formularza; H1 lewego panelu może użyć `.display-editorial` + `.accent-serif`.
 - Eyebrowy w panelu mogą mieć prefiks `///` (`Card eyebrowMark`, klasa `.eyebrow`). Na landingu: `font-mono text-xs uppercase tracking-caps text-muted`.
