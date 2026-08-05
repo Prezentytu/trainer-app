@@ -28,6 +28,7 @@ import {
   Dialog,
   ProgressRing,
   StatBlock,
+  useDelayedFlag,
 } from "@/components/ui";
 import { DashboardSkeleton } from "@/components/skeletons";
 
@@ -90,6 +91,12 @@ export function TrainerDashboard() {
   const clientActivity = dash?.clientActivity ?? [];
 
   const needsAttention = rows.filter((r) => r.status.kind !== "ok");
+  const attentionIds = useMemo(
+    () => new Set(needsAttention.map((r) => r.client.clientId)),
+    [needsAttention],
+  );
+  /** Bez duplikacji z kartą „Wymagają uwagi". */
+  const weeklyOkRows = rows.filter((r) => !attentionIds.has(r.client.clientId));
   const trainedCount = clientActivity.filter((c) => c.sessions7d > 0).length;
   const sessionsThisWeek = dash?.sessionsLast7Days ?? 0;
   const sessionsPrevWeek = dash?.sessionsPrev7Days ?? 0;
@@ -122,7 +129,8 @@ export function TrainerDashboard() {
     }
   };
 
-  if (loading) return <DashboardSkeleton />;
+  const showSkeleton = useDelayedFlag(loading);
+  if (loading) return showSkeleton ? <DashboardSkeleton /> : <div aria-busy aria-label="Wczytuję panel" />;
 
   return (
     <div>
@@ -188,13 +196,11 @@ export function TrainerDashboard() {
             label="Trenowało (7 dni)"
             value={`${trainedCount} z ${clientActivity.length}`}
             href="/clients"
-            icon={<Users aria-hidden className="h-4 w-4 text-muted-faint" strokeWidth={1.75} />}
           />
           <StatCard
             label="Sesje (7 dni)"
             value={sessionsThisWeek}
             href="/clients"
-            icon={<CalendarCheck aria-hidden className="h-4 w-4 text-muted-faint" strokeWidth={1.75} />}
             delta={
               sessionsDelta === 0
                 ? "bez zmian vs poprz. tydz."
@@ -205,7 +211,6 @@ export function TrainerDashboard() {
             label="Nowe rekordy (7 dni)"
             value={prsLast7Days}
             href="/clients"
-            icon={<Trophy aria-hidden className="h-4 w-4 text-pr" strokeWidth={1.75} />}
             valueClassName="text-pr"
           />
         </div>
@@ -251,7 +256,11 @@ export function TrainerDashboard() {
                       <Button size="sm" variant="secondary" onClick={() => void copyPortalLink(client.clientId, status.portalToken)}>
                         Skopiuj link
                       </Button>
-                      <Button size="sm" onClick={() => setReminder(status.attention ?? null)}>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setReminder(status.attention ?? null)}
+                      >
                         Wyślij przypomnienie
                       </Button>
                     </>
@@ -294,9 +303,13 @@ export function TrainerDashboard() {
             >
               Dodaj podopiecznego, żeby przypisać plan i śledzić treningi.
             </EmptyState>
+          ) : weeklyOkRows.length === 0 ? (
+            <p className="text-sm text-muted">
+              Wszyscy klienci wymagający uwagi są powyżej — reszta w normie.
+            </p>
           ) : (
             <ul className="divide-y divide-border">
-              {rows.map(({ client, status }) => (
+              {weeklyOkRows.map(({ client, status }) => (
                 <li
                   key={client.clientId}
                   className="flex flex-col gap-2 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3"

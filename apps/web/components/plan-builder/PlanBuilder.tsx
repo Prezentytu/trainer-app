@@ -5,6 +5,7 @@ import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { api, Exercise, Plan } from "@/lib/api";
 import { DEFAULT_EXERCISE_INPUT, ExerciseInput } from "@/lib/exerciseDraft";
 import { ErrorBanner, SegmentedControl } from "@/components/ui";
+import { PlanBuilderLibrarySkeleton } from "@/components/skeletons";
 import { DayBoard } from "./DayBoard";
 import { ExerciseDrawer } from "./ExerciseDrawer";
 import {
@@ -240,6 +241,12 @@ export default function PlanBuilder({
           onCopyWeek={draft.copyWeek}
           metaLabel={viewMode === "list" ? undefined : weekMeta}
         />
+
+        {library.loading && library.exercises.length === 0 ? (
+          <div className="mb-4 rounded-xl border border-border bg-surface p-3">
+            <PlanBuilderLibrarySkeleton />
+          </div>
+        ) : null}
 
         {viewMode === "list" ? (
           <ListView

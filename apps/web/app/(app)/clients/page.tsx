@@ -16,6 +16,8 @@ import {
   PageHeader,
   Pill,
   Tabs,
+  useDelayedFlag,
+  useUndoToast,
 } from "@/components/ui";
 import { ClientListSkeleton } from "@/components/skeletons";
 
@@ -42,6 +44,8 @@ export default function ClientsPage() {
   const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<TabFilter>("all");
+  const { showUndoToast, toastNode } = useUndoToast();
+  const showSkeleton = useDelayedFlag(loading);
 
   const load = useCallback(() => {
     api.clients
@@ -63,12 +67,24 @@ export default function ClientsPage() {
     if (!name.trim() || saving) return;
     setSaving(true);
     setError(null);
+    const payload = { name: name.trim(), email: email.trim() || null, note: goal };
+    const tempId = -Date.now();
+    const optimistic: ClientSummary = {
+      id: tempId,
+      name: payload.name,
+      email: payload.email,
+      note: payload.note,
+      activePlans: 0,
+      lastSessionOn: null,
+    };
+    setClients((prev) => [optimistic, ...prev]);
+    resetForm();
+    setShowForm(false);
     try {
-      await api.clients.create({ name: name.trim(), email: email.trim() || null, note: goal });
-      resetForm();
-      setShowForm(false);
+      await api.clients.create(payload);
       load();
     } catch (err) {
+      setClients((prev) => prev.filter((c) => c.id !== tempId));
       setError((err as Error).message);
     } finally {
       setSaving(false);
@@ -167,8 +183,9 @@ export default function ClientsPage() {
         />
       </div>
 
+      {toastNode}
       {loading ? (
-        <ClientListSkeleton />
+        showSkeleton ? <ClientListSkeleton /> : <div aria-busy aria-label="Wczytuję klientów" />
       ) : clients.length === 0 ? (
         <EmptyState
           title="Nie masz jeszcze klientów"

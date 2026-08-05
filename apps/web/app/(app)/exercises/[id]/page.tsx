@@ -27,7 +27,9 @@ import {
   PageHeader,
   StatBlock,
   Tag,
+  useDelayedFlag,
 } from "@/components/ui";
+import { ExerciseDetailSkeleton } from "@/components/skeletons";
 
 function volumeValue(exercise: Exercise): string {
   if (exercise.type === "time") {
@@ -81,6 +83,8 @@ export default function ExerciseDetailPage() {
       .slice(0, 8);
   }, [exercise, library]);
 
+  const showSkeleton = useDelayedFlag(validId && !exercise && !error);
+
   if (!validId) {
     return (
       <div>
@@ -126,7 +130,8 @@ export default function ExerciseDetailPage() {
   if (!exercise) {
     return (
       <div>
-        <PageHeader title="Ćwiczenie" subtitle="Ładowanie…" />
+        <ErrorBanner message={error} />
+        {showSkeleton ? <ExerciseDetailSkeleton /> : <div aria-busy aria-label="Wczytuję ćwiczenie" />}
       </div>
     );
   }

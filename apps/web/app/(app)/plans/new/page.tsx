@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import PlanBuilder from "@/components/plan-builder/PlanBuilder";
 import { consumeImportHandoff, PlanImportHandoff } from "@/lib/planImportHandoff";
 import { Button, Card, Field, PageHeader, Pill, inputClass } from "@/components/ui";
+import { PlanWizardSkeleton } from "@/components/skeletons";
 
 type StructurePreset = {
   id: string;
@@ -62,11 +63,7 @@ export default function NewPlanPage() {
   }, [preset]);
 
   if (boot.status === "loading") {
-    return (
-      <div className="mx-auto max-w-2xl py-12 text-center text-sm text-muted">
-        Ładowanie…
-      </div>
-    );
+    return <PlanWizardSkeleton />;
   }
 
   if (boot.status === "import") {

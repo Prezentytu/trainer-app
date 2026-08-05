@@ -210,40 +210,43 @@ export default function PortalTodayPage() {
         </section>
       )}
 
-      {!hasTodayCheckIn ? (
-        <CheckInCard
-          token={token}
-          onSaved={() => {
-            void api.portal
-              .checkIns(token)
-              .then(setCheckIns)
-              .catch((e: Error) => setError(e.message));
-          }}
-        />
-      ) : null}
+      {/* Poniżej foldu — nie konkurują z CTA „Rozpocznij trening". */}
+      <div className="space-y-6 border-t border-border pt-8">
+        {!hasTodayCheckIn ? (
+          <CheckInCard
+            token={token}
+            onSaved={() => {
+              void api.portal
+                .checkIns(token)
+                .then(setCheckIns)
+                .catch((e: Error) => setError(e.message));
+            }}
+          />
+        ) : null}
 
-      {needsIntake ? (
-        <section className="rounded-xl border border-dashed border-border-strong bg-surface-raised px-4 py-4">
-          <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
-            Ankieta startowa
-          </p>
-          <p className="mt-2 text-[15px] font-semibold text-foreground">
-            Uzupełnij kilka informacji o sobie
-          </p>
-          <p className="mt-1 text-sm text-muted">
-            Cele, zdrowie i styl życia — dzięki temu trener ułoży bezpieczny plan.
-          </p>
-          <div className="mt-4">
-            <Link href={`/portal/${token}/intake`} className="block">
-              <Button variant="secondary" full>
-                Uzupełnij ankietę
-              </Button>
-            </Link>
-          </div>
-        </section>
-      ) : null}
+        {needsIntake ? (
+          <section className="rounded-xl border border-dashed border-border-strong bg-surface-raised px-4 py-4">
+            <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
+              Ankieta startowa
+            </p>
+            <p className="mt-2 text-[15px] font-semibold text-foreground">
+              Uzupełnij kilka informacji o sobie
+            </p>
+            <p className="mt-1 text-sm text-muted">
+              Cele, zdrowie i styl życia — dzięki temu trener ułoży bezpieczny plan.
+            </p>
+            <div className="mt-4">
+              <Link href={`/portal/${token}/intake`} className="block">
+                <Button variant="secondary" full>
+                  Uzupełnij ankietę
+                </Button>
+              </Link>
+            </div>
+          </section>
+        ) : null}
 
-      <PwaInstallPrompt token={token} />
+        <PwaInstallPrompt token={token} />
+      </div>
     </div>
   );
 }

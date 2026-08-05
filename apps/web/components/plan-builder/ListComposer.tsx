@@ -281,7 +281,7 @@ export function ListComposer({
           </div>
         )}
         <div className="flex items-center gap-2.5 px-3.5 py-2.5">
-          <span className="inline-flex h-7 min-w-[34px] shrink-0 items-center justify-center rounded-lg border border-dashed border-accent-border bg-accent-dim px-2 font-mono text-xs font-semibold tabular-nums text-accent-strong">
+          <span className="inline-flex h-7 min-w-[34px] shrink-0 items-center justify-center rounded-lg border border-dashed border-border-strong bg-surface-sunken px-2 font-mono text-xs font-semibold tabular-nums text-muted">
             {nextLabel}
           </span>
           <input
@@ -298,7 +298,7 @@ export function ListComposer({
             className="min-w-0 flex-1 bg-transparent py-1.5 text-sm text-foreground outline-none placeholder:text-muted-faint disabled:opacity-60"
           />
           {pendingNum != null && (
-            <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-accent-border bg-accent-dim px-2.5 py-1 text-xs text-accent-strong whitespace-nowrap">
+            <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-border-strong bg-surface-hover px-2.5 py-1 text-xs text-foreground-secondary whitespace-nowrap">
               superseria z {pendingNum}{" "}
               <button type="button" onClick={onCancelPending} className="text-foreground-secondary hover:text-foreground">
                 ×

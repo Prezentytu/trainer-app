@@ -18,6 +18,23 @@ export function PageHeader({ title, subtitle, action }: { title: string; subtitl
   );
 }
 
+/**
+ * Opóźnia pokazanie skeletonu — przy odpowiedzi &lt; delayMs unikamy flasha
+ * (perceived performance: spinner/skeleton &lt; 100–200 ms pogarsza odczucie).
+ */
+export function useDelayedFlag(active: boolean, delayMs = 200): boolean {
+  const [elapsed, setElapsed] = useState(false);
+  useEffect(() => {
+    if (!active) return;
+    const t = setTimeout(() => setElapsed(true), delayMs);
+    return () => {
+      clearTimeout(t);
+      setElapsed(false);
+    };
+  }, [active, delayMs]);
+  return active && elapsed;
+}
+
 /** Placeholder ładowania — kształt 1:1 z docelowym layoutem. Pokazuj po ≥200ms (useDelayedFlag). */
 export function Skeleton({ className = "" }: { className?: string }) {
   return (
@@ -758,7 +775,7 @@ export function useUndoToast() {
     <div
       role="status"
       aria-live="polite"
-      className="fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-md border border-border-strong bg-surface px-4 py-3 text-sm shadow-raised"
+      className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-50 flex items-center gap-3 rounded-md border border-border-strong bg-surface px-4 py-3 text-sm shadow-raised sm:bottom-4"
     >
       <span className="text-foreground-secondary">{toast.message}</span>
       {toast.onUndo && (

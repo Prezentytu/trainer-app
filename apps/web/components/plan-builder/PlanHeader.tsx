@@ -137,14 +137,14 @@ export function PlanHeader({
           ) : null}
 
           {assignCta && !assigned ? (
-            <Button type="button" onClick={() => setAssignOpen(true)}>
+            <Button type="button" variant="secondary" onClick={() => setAssignOpen(true)}>
               {assignCta}
             </Button>
-          ) : (
-            <Button type="submit" disabled={saving || !name.trim()}>
-              {saving ? "Zapisywanie…" : submitLabel}
-            </Button>
-          )}
+          ) : null}
+
+          <Button type="submit" disabled={saving || !name.trim()}>
+            {saving ? "Zapisywanie…" : submitLabel}
+          </Button>
         </div>
       </div>
 

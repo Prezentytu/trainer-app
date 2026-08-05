@@ -17,6 +17,8 @@ import {
   PageHeader,
   SegmentedControl,
   inputClass,
+  useDelayedFlag,
+  useUndoToast,
 } from "@/components/ui";
 import { PlanListSkeleton } from "@/components/skeletons";
 
@@ -37,6 +39,8 @@ export default function PlansPage() {
   const [deleteTarget, setDeleteTarget] = useState<PlanSummary | null>(null);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<KindFilter>("all");
+  const { showUndoToast, toastNode } = useUndoToast();
+  const showSkeleton = useDelayedFlag(loading);
 
   const load = useCallback(() => {
     Promise.all([api.plans.list(), api.assignments.list()])
@@ -90,11 +94,14 @@ export default function PlansPage() {
   };
 
   const handleDelete = async (plan: PlanSummary) => {
+    const snapshot = plans;
+    setDeleteTarget(null);
+    setPlans((prev) => prev.filter((p) => p.id !== plan.id));
     try {
       await api.plans.remove(plan.id);
-      setDeleteTarget(null);
-      load();
+      showUndoToast("Usunięto plan");
     } catch (err) {
+      setPlans(snapshot);
       setError((err as Error).message);
     }
   };
@@ -117,7 +124,10 @@ export default function PlansPage() {
       />
       <ErrorBanner message={error} />
 
-      {loading ? <PlanListSkeleton /> : null}
+      {toastNode}
+      {loading ? (
+        showSkeleton ? <PlanListSkeleton /> : <div aria-busy aria-label="Wczytuję plany" />
+      ) : null}
 
       {!loading ? (
         <>

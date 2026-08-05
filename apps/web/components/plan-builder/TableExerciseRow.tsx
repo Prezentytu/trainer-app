@@ -140,7 +140,7 @@ export function TableExerciseRow({
           {expanded ? "▾" : "▸"}
         </IconButton>
 
-        <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-accent-dim font-mono text-xs font-semibold tabular-nums text-accent-strong">
+        <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-surface-hover font-mono text-xs font-semibold tabular-nums text-muted">
           {supersetLabel ?? index + 1}
         </span>
 

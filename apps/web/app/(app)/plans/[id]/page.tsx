@@ -59,7 +59,7 @@ function PrescribedSets({ item }: { item: PlanItem }) {
                 </span>
                 <span>
                   <span className="text-muted">Obc. </span>
-                  <span className="font-mono font-semibold tabular-nums text-accent">{load}</span>
+                  <span className="font-mono font-semibold tabular-nums text-foreground">{load}</span>
                 </span>
                 {s.targetRir != null ? (
                   <span>
@@ -93,7 +93,7 @@ function PrescribedSets({ item }: { item: PlanItem }) {
                   <td className="px-3 py-1.5 font-mono tabular-nums text-muted">{s.order}</td>
                   <td className="px-3 py-1.5 text-muted-strong">{s.role ?? "—"}</td>
                   <td className="px-3 py-1.5 font-mono text-sm font-semibold tabular-nums">{reps}</td>
-                  <td className="px-3 py-1.5 font-mono text-sm font-semibold tabular-nums text-accent">
+                  <td className="px-3 py-1.5 font-mono text-sm font-semibold tabular-nums text-foreground">
                     {load}
                     {s.computedLoadKg != null && s.loadPercent != null && (
                       <span className="ml-1 text-xs font-normal text-muted">({s.loadPercent}%)</span>
@@ -144,7 +144,7 @@ function ItemView({
           {item.sets} <span className="text-muted">×</span> {repsText(item)}
         </span>
         {item.loadKg != null && (
-          <span className="text-sm font-semibold text-accent">{item.loadKg} kg</span>
+          <span className="text-sm font-semibold text-foreground">{item.loadKg} kg</span>
         )}
         {intensityText(item) && <span className="text-sm font-semibold text-foreground">{intensityText(item)}</span>}
       </div>

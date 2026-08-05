@@ -49,6 +49,7 @@ import {
   ProgressRing,
   StatBlock,
   Tabs,
+  useDelayedFlag,
   useUndoToast,
 } from "@/components/ui";
 import { ClientDetailSkeleton } from "@/components/skeletons";
@@ -135,35 +136,55 @@ export default function ClientDetailsPage() {
       api.clients.get(clientId),
       api.plans.list(),
       api.exercises.list(),
-      api.clients.maxes(clientId),
-      api.clients.measurements(clientId),
       api.clients.sessions(clientId),
-      api.clients.records(clientId),
       api.clients.progress(clientId),
       api.clients.getIntake(clientId),
-      api.clients.muscleVolume(clientId, 4),
-      api.clients.trends(clientId, 12),
-      api.clients.stagnation(clientId),
+      api.clients.records(clientId),
     ])
-      .then(([c, p, ex, m, meas, s, r, prog, intk, mv, tr, st]) => {
+      .then(([c, p, ex, s, prog, intk, r]) => {
         setClient(c);
         const assignable = p.filter((plan) => !plan.isTemplate);
         setPlans(assignable);
         setExercises(ex);
-        setMaxes(m);
-        setMeasurements(meas);
         setSessions(s);
-        setRecords(r);
-        setMuscleVolume(mv);
-        setTrends(tr);
-        setStagnation(st);
         setProgress(prog);
         setIntake(intk);
+        setRecords(r);
         setPlanId((prev) => (prev === "" && assignable.length > 0 ? assignable[0].id : prev));
         setMaxExerciseId((prev) => (prev === "" && ex.length > 0 ? ex[0].id : prev));
-        const hasActive = c.assignments.some((a) => a.status === "active");
-        setAssignOpen(!hasActive);
+        // Nie otwieraj automatycznie ściany kafelków — CTA „Przypisz plan" na żądanie.
+        setAssignOpen(false);
         setTab((prev) => prev ?? (s.length > 0 ? "history" : "plans"));
+
+        const active =
+          c.assignments.find((a) => a.status === "active" && a.id === prog?.assignmentId) ??
+          c.assignments.find((a) => a.status === "active") ??
+          null;
+        if (!active) {
+          setNextDay(null);
+          return;
+        }
+        const assignmentId = active.id;
+        void api.plans
+          .get(active.planId, clientId)
+          .then((plan) => {
+            const days = [...plan.days].sort(
+              (a, b) => a.weekNumber - b.weekNumber || a.order - b.order,
+            );
+            const doneDayIds = new Set(
+              s
+                .filter(
+                  (sess) =>
+                    sess.status === "completed" &&
+                    sess.assignmentId === assignmentId &&
+                    sess.planDayId != null,
+                )
+                .map((sess) => sess.planDayId!),
+            );
+            const next = days.find((d) => !doneDayIds.has(d.id)) ?? days[0] ?? null;
+            setNextDay(next ? { assignmentId, label: next.label } : null);
+          })
+          .catch(() => setNextDay(null));
       })
       .catch((e: Error) => setError(e.message));
   }, [clientId]);
@@ -178,32 +199,32 @@ export default function ClientDetailsPage() {
     [client, progress],
   );
 
+  // Wyniki: lazy — nie blokuj pierwszego malowania 6 zbędnymi endpointami.
   useEffect(() => {
-    if (!activeAssignment) return;
-    const assignmentId = activeAssignment.id;
+    if (tab !== "results") return;
     let cancelled = false;
-    api.plans
-      .get(activeAssignment.planId, clientId)
-      .then((plan) => {
+    Promise.all([
+      api.clients.maxes(clientId),
+      api.clients.measurements(clientId),
+      api.clients.muscleVolume(clientId, 4),
+      api.clients.trends(clientId, 12),
+      api.clients.stagnation(clientId),
+    ])
+      .then(([m, meas, mv, tr, st]) => {
         if (cancelled) return;
-        const days = [...plan.days].sort((a, b) => a.weekNumber - b.weekNumber || a.order - b.order);
-        const doneDayIds = new Set(
-          sessions
-            .filter(
-              (s) => s.status === "completed" && s.assignmentId === assignmentId && s.planDayId != null,
-            )
-            .map((s) => s.planDayId!),
-        );
-        const next = days.find((d) => !doneDayIds.has(d.id)) ?? days[0] ?? null;
-        setNextDay(next ? { assignmentId, label: next.label } : null);
+        setMaxes(m);
+        setMeasurements(meas);
+        setMuscleVolume(mv);
+        setTrends(tr);
+        setStagnation(st);
       })
-      .catch(() => {
-        if (!cancelled) setNextDay(null);
+      .catch((e: Error) => {
+        if (!cancelled) setError(e.message);
       });
     return () => {
       cancelled = true;
     };
-  }, [activeAssignment, clientId, sessions]);
+  }, [tab, clientId]);
 
   const nextDayLabel =
     activeAssignment && nextDay?.assignmentId === activeAssignment.id ? nextDay.label : null;
@@ -476,11 +497,17 @@ export default function ClientDetailsPage() {
       .catch(() => setStatsCache((prev) => ({ ...prev, [exerciseId]: "error" })));
   };
 
+  const showDetailSkeleton = useDelayedFlag(!client && !error);
+
   if (!client) {
     return (
       <div>
         <ErrorBanner message={error} />
-        {error ? null : <ClientDetailSkeleton />}
+        {error ? null : showDetailSkeleton ? (
+          <ClientDetailSkeleton />
+        ) : (
+          <div aria-busy aria-label="Wczytuję profil klienta" />
+        )}
       </div>
     );
   }
@@ -548,7 +575,7 @@ export default function ClientDetailsPage() {
                   </p>
                   {nextDayLabel ? (
                     <p className="mt-2 flex items-start gap-1.5 text-sm text-muted">
-                      <Dumbbell aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" strokeWidth={1.75} />
+                      <Dumbbell aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted" strokeWidth={1.75} />
                       <span>
                         Następny: <span className="font-medium text-foreground">{nextDayLabel}</span>
                       </span>
@@ -562,6 +589,9 @@ export default function ClientDetailsPage() {
                 </Link>
                 <Button variant="secondary" onClick={() => void openLogBehalf(activeAssignment)}>
                   Wpisz trening za klienta
+                </Button>
+                <Button variant="ghost" onClick={() => { setTab("plans"); setAssignOpen(true); }}>
+                  Przypisz inny
                 </Button>
               </div>
             </>
@@ -630,7 +660,9 @@ export default function ClientDetailsPage() {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <h2 className="font-display text-lg font-semibold">Przypisane plany</h2>
               {!assignOpen ? (
-                <Button onClick={() => setAssignOpen(true)}>Przypisz plan</Button>
+                <Button variant="secondary" onClick={() => setAssignOpen(true)}>
+                  Przypisz plan
+                </Button>
               ) : null}
             </div>
 
@@ -978,7 +1010,7 @@ export default function ClientDetailsPage() {
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="font-mono text-lg font-semibold tabular-nums text-accent">{m.maxKg} kg</span>
+                        <span className="font-mono text-lg font-semibold tabular-nums text-foreground">{m.maxKg} kg</span>
                         <Button variant="ghost" onClick={() => void handleRemoveMax(m)}>
                           Usuń
                         </Button>

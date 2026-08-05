@@ -62,7 +62,7 @@ export function WeightTrendSparkline({
     <div className="min-w-0">
       <svg
         viewBox={`0 0 ${w} ${height}`}
-        className="h-16 w-full text-accent"
+        className="h-16 w-full text-foreground-secondary"
         role="img"
         aria-label={`Trend od ${formatValue(first.value, unit)} do ${formatValue(last.value, unit)}`}
         preserveAspectRatio="none"

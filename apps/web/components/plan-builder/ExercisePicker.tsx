@@ -106,7 +106,7 @@ export function ExercisePicker({ exercises, onAdd }: { exercises: Exercise[]; on
           onClick={() => setCategoryFilter("all")}
           className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
             categoryFilter === "all"
-              ? "bg-accent text-accent-foreground"
+              ? "bg-surface-hover font-semibold text-foreground"
               : "bg-surface-active text-muted"
           }`}
         >
@@ -119,7 +119,7 @@ export function ExercisePicker({ exercises, onAdd }: { exercises: Exercise[]; on
             onClick={() => setCategoryFilter(c)}
             className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
               categoryFilter === c
-                ? "bg-accent text-accent-foreground"
+                ? "bg-surface-hover font-semibold text-foreground"
                 : "bg-surface-active text-muted"
             }`}
           >

@@ -127,7 +127,7 @@ export function SessionDock({
               <DockBtn mono onClick={() => onAdjustRest(15)}>
                 +15
               </DockBtn>
-              <DockBtn primary onClick={onDismissRest}>
+              <DockBtn onClick={onDismissRest}>
                 Pomiń
               </DockBtn>
             </div>

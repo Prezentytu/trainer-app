@@ -3,7 +3,9 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   api,
+  CATEGORY_LABELS,
   Exercise,
+  ExerciseCategory,
   LoggedExerciseInput,
   LoggedSet,
   PrevLoggedSet,
@@ -237,12 +239,72 @@ function reconcile(local: LocalSession, server: SessionDetail): LocalSession {
   };
 }
 
-function formatPrev(p: PrevLoggedSet | undefined): string {
+function formatPrev(p: PrevLoggedSet | undefined, category?: string | null): string {
   if (!p) return "—";
-  if (p.weightKg != null && p.reps != null) return `${formatKg(p.weightKg)}×${p.reps}`;
+  const isBw = category === "bodyweight";
+  if (p.weightKg != null && p.reps != null) {
+    if (isBw && p.weightKg === 0) return `BW×${p.reps}`;
+    return `${formatKg(p.weightKg)}×${p.reps}`;
+  }
   if (p.durationSeconds != null) return `${p.durationSeconds} s`;
-  if (p.reps != null) return `${p.reps}`;
+  if (p.reps != null) return isBw ? `BW×${p.reps}` : `${p.reps}`;
   return "—";
+}
+
+/** Literówka na siłowni: wartość >2× referencji (prev lub cel) albo absurdy absolutne. */
+function isUnusualSetValue(
+  set: LocalSet,
+  prev: PrevLoggedSet | undefined,
+  isTime: boolean,
+): boolean {
+  if (isTime) {
+    const ref = prev?.durationSeconds ?? set.targetDurationSeconds;
+    if (ref != null && ref > 0 && set.durationSeconds != null && set.durationSeconds > ref * 2) {
+      return true;
+    }
+    return set.durationSeconds != null && set.durationSeconds > 3600;
+  }
+  const refW = prev?.weightKg ?? set.targetWeightKg;
+  const refR = prev?.reps ?? set.targetReps;
+  if (refW != null && refW > 0 && set.weightKg != null && set.weightKg > refW * 2) return true;
+  if (refR != null && refR > 0 && set.reps != null && set.reps > Math.max(refR * 2, refR + 15)) {
+    return true;
+  }
+  if (set.reps != null && set.reps > 100) return true;
+  if (set.weightKg != null && set.weightKg > 500) return true;
+  return false;
+}
+
+function hasEmptyCompletedSets(exercises: LocalExercise[]): boolean {
+  return exercises.some((ex) => {
+    const isTime = ex.exerciseType === "time";
+    return ex.sets.some((s) => {
+      if (!s.completed) return false;
+      if (isTime) return s.durationSeconds == null;
+      if (ex.exerciseType === "distance") return s.distanceMeters == null;
+      // reps: brak powtórzeń = puste; 0 kg przy bodyweight OK
+      return s.reps == null;
+    });
+  });
+}
+
+/** Auto-nazwa sesji po kategoriach mięśniowych (gdy brak dayLabel). */
+function sessionTitleFromMuscles(exercises: LocalExercise[]): string | null {
+  const counts = new Map<string, number>();
+  for (const ex of exercises) {
+    const cat = ex.category;
+    if (!cat || cat === "fullbody") continue;
+    const label =
+      cat in CATEGORY_LABELS ? CATEGORY_LABELS[cat as ExerciseCategory] : cat;
+    counts.set(label, (counts.get(label) ?? 0) + 1);
+  }
+  if (counts.size === 0) {
+    if (exercises.some((ex) => ex.category === "fullbody")) return "Całe ciało";
+    return null;
+  }
+  const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  const top = ranked.slice(0, 2).map(([label]) => label);
+  return top.join(" · ");
 }
 
 function formatTargetLabel(set: LocalSet, isTime: boolean): string {
@@ -316,6 +378,12 @@ export function SessionLogger({
   const [setRowMenu, setSetRowMenu] = useState<{ exIdx: number; setIdx: number } | null>(null);
   const [restPickerEx, setRestPickerEx] = useState<number | null>(null);
   const [finishConfirmOpen, setFinishConfirmOpen] = useState(false);
+  const [finishConfirmReason, setFinishConfirmReason] = useState<"incomplete" | "empty">("incomplete");
+  const [typoConfirm, setTypoConfirm] = useState<{
+    exIdx: number;
+    setIdx: number;
+    message: string;
+  } | null>(null);
   const [videoId, setVideoId] = useState<string | null>(null);
   const [videoTitle, setVideoTitle] = useState("");
   const [prCelebrate, setPrCelebrate] = useState<string | null>(null);
@@ -335,7 +403,7 @@ export function SessionLogger({
       ex.sets.some((s) => s.completed),
     );
     if (!hasDone) return null;
-    // eslint-disable-next-line react-hooks/purity -- jednorazowy seed przy montowaniu
+     
     return Date.now();
   });
   const { showUndoToast, toastNode } = useUndoToast();
@@ -545,12 +613,33 @@ export function SessionLogger({
     }));
   };
 
-  const toggleComplete = (exIdx: number, setIdx: number) => {
-    unlockAudio();
+  const toggleComplete = (exIdx: number, setIdx: number, opts?: { skipTypoGuard?: boolean }) => {
     const exercise = draft.exercises[exIdx];
     const set = exercise?.sets[setIdx];
     if (!set) return;
     const nextCompleted = !set.completed;
+
+    if (nextCompleted && !opts?.skipTypoGuard) {
+      const isTime = exercise.exerciseType === "time";
+      const prev = exercise.prevSets[setIdx] ?? exercise.prevSets[exercise.prevSets.length - 1];
+      if (isUnusualSetValue(set, prev, isTime)) {
+        const label = isTime
+          ? `${set.durationSeconds ?? "—"} s`
+          : set.weightKg != null && set.reps != null
+            ? `${formatKg(set.weightKg)}×${set.reps}`
+            : set.reps != null
+              ? `${set.reps} powt.`
+              : "puste wartości";
+        setTypoConfirm({
+          exIdx,
+          setIdx,
+          message: `Wartość wygląda nietypowo (${label}). Zaliczyć mimo to?`,
+        });
+        return;
+      }
+    }
+
+    unlockAudio();
     if (nextCompleted) lightHaptic();
     const exerciseId = exercise.exerciseId;
     const setNumber = set.setNumber;
@@ -581,7 +670,7 @@ export function SessionLogger({
     if (nextCompleted) {
       if (liveClock) {
         // Event handler — znacznik czasu startu count-upu „od serii”.
-        // eslint-disable-next-line react-hooks/purity -- nie render, gest użytkownika
+         
         setLastSetAt(Date.now());
       }
       if (liveClock && readAutoRest()) {
@@ -791,9 +880,17 @@ export function SessionLogger({
   const requestFinish = () => {
     const done = draft.exercises.flatMap((ex) => ex.sets).filter((s) => s.completed).length;
     const total = draft.exercises.flatMap((ex) => ex.sets).length;
-    if (done < total && !isBehalf && !isCompletedEdit) {
-      setFinishConfirmOpen(true);
-      return;
+    if (!isBehalf && !isCompletedEdit) {
+      if (hasEmptyCompletedSets(draft.exercises)) {
+        setFinishConfirmReason("empty");
+        setFinishConfirmOpen(true);
+        return;
+      }
+      if (done < total) {
+        setFinishConfirmReason("incomplete");
+        setFinishConfirmOpen(true);
+        return;
+      }
     }
     void finish();
   };
@@ -1226,7 +1323,10 @@ export function SessionLogger({
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <h1 className="break-words font-display text-base font-semibold">
-              {draft.dayLabel ?? draft.planName ?? (isCompletedEdit || isBehalf ? "Poprawa" : "Trening")}
+              {draft.dayLabel ??
+                sessionTitleFromMuscles(draft.exercises) ??
+                draft.planName ??
+                (isCompletedEdit || isBehalf ? "Poprawa" : "Trening")}
             </h1>
             <p className="mt-0.5 font-mono text-[13px] tabular-nums text-muted">
               {doneSetsCount}/{totalSetsCount}
@@ -1247,7 +1347,7 @@ export function SessionLogger({
               </span>
             </p>
           </div>
-          <Button variant="secondary" disabled={saving} onClick={requestFinish}>
+          <Button variant="secondary" onClick={requestFinish}>
             {isBehalf || isCompletedEdit ? "Zapisz wynik" : "Zakończ"}
           </Button>
         </div>
@@ -1262,12 +1362,31 @@ export function SessionLogger({
       <Dialog
         open={finishConfirmOpen}
         title="Zakończyć trening?"
-        description={`${doneSetsCount} z ${totalSetsCount} serii ukończone — zakończyć?`}
+        description={
+          finishConfirmReason === "empty"
+            ? "Niektóre zaliczone serie nie mają wartości (kg/powtórzeń). Zakończyć mimo to?"
+            : `${doneSetsCount} z ${totalSetsCount} serii ukończone — zakończyć?`
+        }
         confirmLabel="Zakończ trening"
         cancelLabel="Wróć"
         onConfirm={() => void finish()}
         onCancel={() => setFinishConfirmOpen(false)}
         busy={saving}
+      />
+
+      <Dialog
+        open={typoConfirm != null}
+        title="Sprawdź wartość"
+        description={typoConfirm?.message ?? ""}
+        confirmLabel="Zaliczyć"
+        cancelLabel="Popraw"
+        onConfirm={() => {
+          if (!typoConfirm) return;
+          const { exIdx, setIdx } = typoConfirm;
+          setTypoConfirm(null);
+          toggleComplete(exIdx, setIdx, { skipTypoGuard: true });
+        }}
+        onCancel={() => setTypoConfirm(null)}
       />
 
       {videoId ? (
@@ -1563,6 +1682,7 @@ export function SessionLogger({
                       <SetRow
                         set={s}
                         prev={prev}
+                        category={exercise.category}
                         isTime={isTime}
                         isNext={isNext}
                         onWeight={(v) => patchSet(exIdx, setIdx, { weightKg: v })}
@@ -1737,6 +1857,7 @@ export function SessionLogger({
 const SetRow = memo(function SetRow({
   set,
   prev,
+  category,
   isTime,
   isNext,
   onWeight,
@@ -1749,6 +1870,7 @@ const SetRow = memo(function SetRow({
 }: {
   set: LocalSet;
   prev: PrevLoggedSet | undefined;
+  category?: string | null;
   isTime: boolean;
   isNext: boolean;
   onWeight: (v: number | null) => void;
@@ -1772,7 +1894,7 @@ const SetRow = memo(function SetRow({
     : isNext
       ? "text-accent-text"
       : "text-muted-faint";
-  const prevLabel = formatPrev(prev);
+  const prevLabel = formatPrev(prev, category);
 
   return (
     <div

@@ -3,6 +3,7 @@
 import { Skeleton } from "@/components/ui";
 
 export function DashboardSkeleton() {
+  // Bez 3 KPI — przy onboardingu znikają (unikamy CLS). Wspólna rama: header + lista + 2 karty.
   return (
     <div aria-busy aria-label="Wczytuję panel">
       <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -12,17 +13,53 @@ export function DashboardSkeleton() {
         </div>
         <Skeleton className="h-10 w-36 rounded-md" />
       </div>
-      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} className="h-28 w-full rounded-xl" />
-        ))}
-      </div>
-      <Skeleton className="mb-6 h-64 w-full rounded-xl" />
+      <Skeleton className="mb-6 h-48 w-full rounded-xl" />
       <div className="grid gap-6 lg:grid-cols-2">
         {Array.from({ length: 2 }).map((_, i) => (
           <Skeleton key={i} className="h-56 w-full rounded-xl" />
         ))}
       </div>
+    </div>
+  );
+}
+
+export function ExerciseDetailSkeleton() {
+  return (
+    <div aria-busy aria-label="Wczytuję ćwiczenie" className="space-y-6">
+      <div className="space-y-2">
+        <Skeleton className="h-7 w-56" />
+        <Skeleton className="h-4 w-40" />
+      </div>
+      <Skeleton className="aspect-video w-full max-w-xl rounded-xl" />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Skeleton className="h-24 w-full rounded-xl" />
+        <Skeleton className="h-24 w-full rounded-xl" />
+      </div>
+    </div>
+  );
+}
+
+export function PlanWizardSkeleton() {
+  return (
+    <div aria-busy aria-label="Wczytuję kreator" className="mx-auto max-w-2xl space-y-4">
+      <div className="space-y-2">
+        <Skeleton className="h-7 w-40" />
+        <Skeleton className="h-4 w-64" />
+      </div>
+      <Skeleton className="h-1.5 w-full rounded-full" />
+      <Skeleton className="h-28 w-full rounded-xl" />
+      <Skeleton className="h-40 w-full rounded-xl" />
+      <Skeleton className="h-24 w-full rounded-xl" />
+    </div>
+  );
+}
+
+export function PlanBuilderLibrarySkeleton() {
+  return (
+    <div aria-busy aria-label="Wczytuję bibliotekę ćwiczeń" className="space-y-2 p-2">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <Skeleton key={i} className="h-10 w-full rounded-md" />
+      ))}
     </div>
   );
 }

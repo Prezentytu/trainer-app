@@ -156,6 +156,49 @@ Implementacja produktu (osobne zadania po akceptacji):
 
 Styrka wypuszcza często, z jawnym „based on user feedback" i osobnymi release'ami o scroll / kontrast / inputy. Płynność i czytelność traktują jako feature, nie polish. U nas: changelog / komunikaty do trenerów po istotnych shipach; perceived performance w checkliście CRO jako twarde kryterium.
 
+### LinkedIn (Feji Studios / Miki Piispanen)
+
+Źródła: [profil Mikiego](https://linkedin.com/in/mikipiispanen), [post „100 days"](https://www.linkedin.com/posts/mikipiispanen_100-days-ago-i-launched-my-first-app-what-activity-7485245347108175873-BxmC).
+
+1. **Mały MVP wypuszczony szybko** — side project, #1 Paid Health & Fitness dzień po premierze; nie czekali na kompletność.
+2. **Feedback jako silnik** — większość ulepszeń z pierwszych 100 dni pochodzi od użytkowników; release co ~5 dni.
+3. **Dystrybucja organiczna** — 1,5 mln+ wyświetleń TikTok, 100 krajów; sprzedaje obietnica „bez nonsensu".
+4. **Lekcja dla nas:** przed MVP odchudzić i naprawić rdzeń (nie dobudowywać), potem krótkie iteracje z feedbacku trenerów.
+
+## Wynik audytu Fali D (2026-08-05)
+
+Audyt panelu trenera + portalu klienta skillami minimalizmu / CRO. Output = plan wdrożenia przed MVP:
+
+### P0 — krytyczne ścieżki
+
+- [x] Kreator: „Zapisz" zawsze dostępny przy dirty (`PlanHeader` — „Przypisz" nie wypiera zapisu)
+- [x] Logger: auto-rest startuje jako mini-dock, nie fullscreen
+- [x] Typo-guard przy odstającym kg/powt.
+- [x] Finish ostrzega też przy pustych zaliczonych seriach
+- [x] „Zakończ" nie blokowany przez `saving` zapisu serii
+
+### P1 — odchudzenie
+
+- [x] Profil klienta: lazy fetch per zakładka; 1 primary CTA; bez auto-otwartego assign
+- [x] Dashboard: dedup list; przypomnienie = secondary; bez dekoracyjnych ikon KPI
+- [x] Dyscyplina lime ≤3% (wartości/taby/wykresy → neutrale)
+- [x] Home portalu: 1 CTA; check-in/ankieta/PWA poniżej foldu
+- [x] Dock loggera: jeden primary; undo toast nad dockiem
+
+### P2 — płynność
+
+- [x] `useDelayedFlag` (~200 ms) dla skeletonów
+- [x] Skeletony: `exercises/[id]`, `plans/new`, biblioteka w kreatorze
+- [x] `DashboardSkeleton` zgodny z onboardingiem
+- [x] Optimistic UI: usuwanie planów i tworzenie klientów
+
+### P3 — craft Styrki (quick wins)
+
+- [x] „BW" zamiast „0 kg"
+- [x] Auto-nazwa sesji po grupach mięśniowych
+
 ## Changelog
 
 - 2026-08-05 — utworzono spec (analiza Styrki 1.2–3.7, mapowanie, fale A–D, zasada minimalizmu obu stron).
+- 2026-08-05 — LinkedIn + wynik audytu Fali D (lista P0–P3 przed MVP).
+- 2026-08-05 — wdrożono P0–P3 przed MVP (PlanHeader, rest mini-dock, typo-guard, odchudzenie panelu/portalu, lime, płynność, BW, auto-nazwa).

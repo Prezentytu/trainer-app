@@ -15,6 +15,7 @@ function mergeExercise(list: Exercise[], exercise: Exercise): Exercise[] {
 
 export function useExerciseLibrary() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const exercisesRef = useRef<Exercise[]>([]);
 
@@ -27,7 +28,8 @@ export function useExerciseLibrary() {
     api.exercises
       .list()
       .then(sync)
-      .catch((e: Error) => setError(e.message));
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setLoading(false));
   }, [sync]);
 
   const getExerciseById = useCallback((id: number): Exercise | undefined => {
@@ -66,6 +68,7 @@ export function useExerciseLibrary() {
 
   return {
     exercises,
+    loading,
     getExerciseById,
     createExercise,
     updateExercise,

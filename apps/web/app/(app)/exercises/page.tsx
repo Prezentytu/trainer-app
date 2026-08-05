@@ -44,6 +44,7 @@ import {
   PageHeader,
   Pill,
   Tag,
+  useDelayedFlag,
   useUndoToast,
 } from "@/components/ui";
 import { ExerciseListSkeleton } from "@/components/skeletons";
@@ -93,6 +94,7 @@ export default function ExercisesPage() {
   const [loading, setLoading] = useState(true);
   const searchRef = useRef<HTMLInputElement>(null);
   const { showUndoToast, toastNode } = useUndoToast();
+  const showSkeleton = useDelayedFlag(loading);
 
   const load = useCallback(() => {
     api.exercises
@@ -379,7 +381,7 @@ export default function ExercisesPage() {
       </div>
 
       {loading ? (
-        <ExerciseListSkeleton />
+        showSkeleton ? <ExerciseListSkeleton /> : <div aria-busy aria-label="Wczytuję ćwiczenia" />
       ) : exercises.length === 0 ? (
         <EmptyState
           title="Biblioteka jest pusta"

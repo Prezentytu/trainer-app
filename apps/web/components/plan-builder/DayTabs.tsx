@@ -27,7 +27,7 @@ export function DayTabs({
             onClick={() => onSelect(day.key)}
             className={`min-w-9 rounded-full px-3 py-2 font-mono text-sm tabular-nums transition-colors ${
               active
-                ? "bg-accent font-semibold text-accent-foreground"
+                ? "border border-border-strong bg-surface-active font-semibold text-foreground"
                 : "border border-border bg-surface text-muted hover:bg-surface-hover hover:text-foreground-secondary"
             }`}
           >
