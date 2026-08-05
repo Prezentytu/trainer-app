@@ -40,14 +40,19 @@ function PointCell({
   n,
   title,
   body,
+  index,
 }: {
   n: string;
   title: string;
   body: string;
+  index: number;
 }) {
   return (
-    <li className="flex flex-col gap-3 border-b border-r border-border p-6 sm:p-8">
-      <span className="font-mono text-xs uppercase tracking-caps text-muted-faint">{n}</span>
+    <li
+      className="landing-point-cell landing-stagger flex flex-col gap-3 border-b border-r border-border p-6 sm:p-8"
+      style={{ ["--i" as string]: index }}
+    >
+      <span className="font-mono text-lg uppercase tracking-caps text-muted-faint">{n}</span>
       <h3 className="display-serif text-xl text-foreground sm:text-2xl">{title}</h3>
       <p className="text-[15px] leading-relaxed text-muted">{body}</p>
     </li>
@@ -63,7 +68,9 @@ export function Points() {
     >
       <div className="mx-auto max-w-6xl">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="font-mono text-xs uppercase tracking-caps text-muted">Wartość</p>
+          <p className="font-mono text-xs uppercase tracking-caps text-muted">
+            02 — Wartość
+          </p>
           <h2 className="mt-4 display-serif text-[clamp(2rem,4.5vw,3.5rem)] text-foreground text-pretty">
             Tylko to, czego potrzebujesz.
           </h2>
@@ -75,8 +82,8 @@ export function Points() {
               Dla trenera
             </p>
             <ol className="grid border-t border-l border-border sm:grid-cols-3">
-              {TRAINER_POINTS.map((point) => (
-                <PointCell key={point.n} {...point} />
+              {TRAINER_POINTS.map((point, i) => (
+                <PointCell key={point.n} {...point} index={i} />
               ))}
             </ol>
           </div>
@@ -86,8 +93,8 @@ export function Points() {
               Dla klienta
             </p>
             <ol className="grid border-t border-l border-border sm:grid-cols-3">
-              {CLIENT_POINTS.map((point) => (
-                <PointCell key={point.n} {...point} />
+              {CLIENT_POINTS.map((point, i) => (
+                <PointCell key={point.n} {...point} index={i} />
               ))}
             </ol>
           </div>

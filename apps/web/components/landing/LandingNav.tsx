@@ -10,19 +10,19 @@ export function LandingNav() {
         <nav className="hidden items-center gap-8 md:flex" aria-label="Sekcje strony">
           <a
             href="#cennik"
-            className="font-mono text-xs uppercase tracking-caps text-muted transition-colors duration-[var(--dur-fast)] hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+            className="landing-link-underline font-mono text-xs uppercase tracking-caps text-muted transition-colors duration-[var(--dur-fast)] hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
           >
             Cennik
           </a>
         </nav>
         <div className="flex shrink-0 items-center gap-2">
           <Link href="/sign-in" className="hidden sm:block">
-            <span className="inline-flex h-9 items-center px-3 font-mono text-xs uppercase tracking-caps text-muted transition-colors hover:text-foreground">
+            <span className="landing-link-underline inline-flex h-9 items-center px-3 font-mono text-xs uppercase tracking-caps text-muted transition-colors hover:text-foreground">
               Zaloguj się
             </span>
           </Link>
           <Link href="/sign-up">
-            <Button size="sm" variant="secondary">
+            <Button size="sm" variant="secondary" className="rounded-[var(--radius-pill)]">
               Zacznij za darmo
             </Button>
           </Link>

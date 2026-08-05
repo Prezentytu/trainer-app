@@ -30,7 +30,7 @@ export function ProductShots() {
         <div>
           <div className="mx-auto max-w-2xl text-center">
             <p className="font-mono text-xs uppercase tracking-caps text-muted">
-              Portal klienta
+              01 — Produkt
             </p>
             <h2 className="mt-4 display-serif text-[clamp(2rem,4.5vw,3.5rem)] text-foreground text-pretty">
               Jeden link. Bez aplikacji.
@@ -38,13 +38,14 @@ export function ProductShots() {
           </div>
 
           <ul className="mt-16 flex snap-x snap-mandatory justify-start gap-5 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden md:mt-20 md:justify-center md:overflow-visible md:pb-0">
-            {PHONE_SHOTS.map((shot) => (
+            {PHONE_SHOTS.map((shot, i) => (
               <li
                 key={shot.src}
-                className="w-[min(68vw,260px)] shrink-0 snap-center md:w-[240px]"
+                className="landing-stagger w-[min(68vw,260px)] shrink-0 snap-center md:w-[240px]"
+                style={{ ["--i" as string]: i }}
               >
                 <figure className="landing-phone">
-                  <div className="overflow-hidden rounded-[1.75rem] border border-border-strong bg-surface shadow-card">
+                  <div className="landing-phone-frame overflow-hidden rounded-[1.75rem] border border-border-strong bg-surface shadow-card">
                     <Image
                       src={shot.src}
                       alt={shot.alt}
@@ -55,7 +56,7 @@ export function ProductShots() {
                       priority={shot.src === "/landing/portal-home.png"}
                     />
                   </div>
-                  <figcaption className="mt-4 text-center font-mono text-xs uppercase tracking-caps text-muted">
+                  <figcaption className="landing-phone-caption mt-4 text-center font-mono text-xs uppercase tracking-caps text-muted">
                     {shot.caption}
                   </figcaption>
                 </figure>
@@ -73,8 +74,8 @@ export function ProductShots() {
               Widzisz, czy klient naprawdę trenuje.
             </h2>
           </div>
-          <figure className="landing-phone mx-auto mt-12 max-w-5xl">
-            <div className="overflow-hidden rounded-xl border border-border-strong bg-surface shadow-card">
+          <figure className="landing-phone landing-stagger mx-auto mt-12 max-w-5xl" style={{ ["--i" as string]: 0 }}>
+            <div className="landing-phone-frame overflow-hidden rounded-xl border border-border-strong bg-surface shadow-card">
               <Image
                 src="/landing/panel-client.png"
                 alt="Panel trenera — profil klienta z historią i wynikami"
@@ -84,7 +85,7 @@ export function ProductShots() {
                 sizes="(max-width: 1152px) 100vw, 1152px"
               />
             </div>
-            <figcaption className="mt-4 text-center font-mono text-xs uppercase tracking-caps text-muted">
+            <figcaption className="landing-phone-caption mt-4 text-center font-mono text-xs uppercase tracking-caps text-muted">
               Panel trenera
             </figcaption>
           </figure>

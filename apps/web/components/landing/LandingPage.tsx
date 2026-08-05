@@ -1,5 +1,6 @@
 import { LandingNav } from "./LandingNav";
 import { Hero } from "./Hero";
+import { Marquee } from "./Marquee";
 import { ProductShots } from "./ProductShots";
 import { Points } from "./Points";
 import { FinalCta } from "./FinalCta";
@@ -11,6 +12,7 @@ export function LandingPage() {
       <LandingNav />
       <main>
         <Hero />
+        <Marquee />
         <ProductShots />
         <Points />
         <FinalCta />

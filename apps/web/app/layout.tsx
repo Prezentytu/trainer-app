@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, IBM_Plex_Mono, Instrument_Serif, Space_Grotesk } from "next/font/google";
+import { Archivo, Fraunces, IBM_Plex_Mono, Instrument_Serif, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { ClerkAppProvider } from "@/components/ClerkAppProvider";
 
@@ -35,6 +35,14 @@ const fontSerif = Instrument_Serif({
   weight: "400",
   style: ["normal", "italic"],
   subsets: ["latin", "latin-ext"],
+});
+
+/** Landing display — variable opsz/SOFT/WONK (awwwards editorial). */
+const fontFraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin", "latin-ext"],
+  axes: ["opsz", "SOFT", "WONK"],
+  style: ["normal", "italic"],
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -80,7 +88,7 @@ export default function RootLayout({
   return (
     <html
       lang="pl"
-      className={`${fontDisplay.variable} ${fontBody.variable} ${fontMono.variable} ${fontSerif.variable} h-full antialiased`}
+      className={`${fontDisplay.variable} ${fontBody.variable} ${fontMono.variable} ${fontSerif.variable} ${fontFraunces.variable} h-full antialiased`}
     >
       <body className="min-h-screen bg-background font-sans text-foreground">
         {process.env.NODE_ENV === "production" ? null : (

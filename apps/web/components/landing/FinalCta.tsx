@@ -11,17 +11,21 @@ export function FinalCta() {
     >
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-10 text-center sm:gap-12">
         <div className="min-w-0">
-          <p className="font-mono text-xs uppercase tracking-caps text-muted">Cennik</p>
-          <p className="mt-6 display-serif text-[clamp(4.5rem,14vw,8rem)] tabular-nums leading-none text-foreground">
-            0{" "}
-            <span className="text-[0.35em] text-muted">zł</span>
+          <p className="font-mono text-xs uppercase tracking-caps text-muted">
+            03 — Cennik
+          </p>
+          <p className="mt-6 display-serif text-[clamp(6rem,18vw,12rem)] tabular-nums leading-none text-foreground">
+            0
+            <span className="ml-2 text-[0.28em] text-muted sm:ml-3">zł</span>
           </p>
           <p className="mx-auto mt-8 max-w-sm text-[15px] leading-relaxed text-muted text-pretty">
             Wczesny dostęp za darmo. Później 149 zł / miesiąc.
           </p>
         </div>
         <Link href="/sign-up">
-          <Button size="lg">Zacznij za darmo</Button>
+          <Button size="lg" className="landing-cta-pill">
+            Zacznij za darmo
+          </Button>
         </Link>
       </div>
     </LandingReveal>

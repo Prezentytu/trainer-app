@@ -47,3 +47,4 @@ Pliki: `apps/web/components/landing/*`, tokeny w `apps/web/app/globals.css`, ski
 
 - 2026-08-05 — utworzono spec.
 - 2026-08-05 — wdrożono redesign (serif, near-mono, przestrzeń, siatka wartości).
+- 2026-08-05 — v2 art direction: Fraunces variable, HeroField canvas, line-mask reveals, marquee, pill CTA, craft hoverów.
