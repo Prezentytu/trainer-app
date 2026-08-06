@@ -187,7 +187,8 @@ public static class ProgressReports
             var end = bySession.Last().E1;
             if (start < 0.5) continue;
             var pct = (end - start) / start * 100.0;
-            if (pct <= bestPct) continue;
+            // Tylko realny przyrost — 0% / regres nie jest „największym progresem".
+            if (pct <= 0 || pct <= bestPct) continue;
 
             bestPct = pct;
             best = new

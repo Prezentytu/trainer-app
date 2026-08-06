@@ -58,7 +58,7 @@ export function WeightTrendSparkline({
     delta === 0
       ? `bez zmian od ${formatDayShort(first.date)}`
       : `${delta > 0 ? "+" : ""}${formatValue(delta, unit)} od ${formatDayShort(first.date)}`;
-  const yTicks = [min, (min + max) / 2, max];
+  const yTicks = max - min < 0.01 ? [max] : [min, (min + max) / 2, max];
 
   return (
     <div className="min-w-0">
@@ -69,11 +69,11 @@ export function WeightTrendSparkline({
         aria-label={`Trend od ${formatValue(first.value, unit)} do ${formatValue(last.value, unit)}`}
         preserveAspectRatio="none"
       >
-        {yTicks.map((tick) => {
+        {yTicks.map((tick, i) => {
           const y = padY + innerH - ((tick - min) / range) * innerH;
           return (
             <text
-              key={tick}
+              key={`ytick-${i}`}
               x={w - padR + 8}
               y={y + 3}
               fill="var(--fg-ghost)"

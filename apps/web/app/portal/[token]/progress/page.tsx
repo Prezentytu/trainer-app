@@ -268,7 +268,7 @@ export default function PortalProgressPage() {
             <StatBlock label="Śr. czas" value={avgDur.value} unit={avgDur.unit || undefined} />
           </section>
 
-          {mostImproved ? (
+          {mostImproved && mostImproved.percentGain > 0 ? (
             <section
               aria-label="Największy progres"
               className="border-y border-border py-5"
@@ -281,13 +281,12 @@ export default function PortalProgressPage() {
               </p>
               <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <p className="font-mono text-2xl font-semibold tabular-nums tracking-tight text-gain">
-                  ▲ {mostImproved.percentGain > 0 ? "+" : ""}
-                  {String(mostImproved.percentGain).replace(".", ",")}%
+                  ▲ +{String(mostImproved.percentGain).replace(".", ",")}%
                 </p>
                 <p className="font-mono text-sm tabular-nums text-muted">
                   {formatKg(mostImproved.startE1Rm)} → {formatKg(mostImproved.endE1Rm)} kg
-                  {mostImproved.deltaKg !== 0
-                    ? ` (${mostImproved.deltaKg > 0 ? "+" : ""}${formatKg(mostImproved.deltaKg)} kg)`
+                  {mostImproved.deltaKg > 0
+                    ? ` (+${formatKg(mostImproved.deltaKg)} kg)`
                     : ""}
                 </p>
               </div>

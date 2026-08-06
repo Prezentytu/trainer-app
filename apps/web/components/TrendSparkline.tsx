@@ -63,7 +63,8 @@ export function TrendSparkline({
     delta === 0
       ? `bez zmian od ${formatDayShort(first.date)}`
       : `${delta > 0 ? "+" : ""}${formatKg(delta)} kg od ${formatDayShort(first.date)}`;
-  const yTicks = [min, (min + max) / 2, max];
+  // Przy płaskim trendzie min===max — jeden tick, inaczej zduplikowane key={v}.
+  const yTicks = max - min < 0.01 ? [max] : [min, (min + max) / 2, max];
 
   return (
     <div className="min-w-0">
@@ -75,11 +76,11 @@ export function TrendSparkline({
         preserveAspectRatio="none"
       >
         {showAxes
-          ? yTicks.map((v) => {
+          ? yTicks.map((v, i) => {
               const y = padY + innerH - ((v - min) / range) * innerH;
               return (
                 <text
-                  key={v}
+                  key={`ytick-${i}`}
                   x={w - padR + 8}
                   y={y + 3}
                   fill="var(--fg-ghost)"

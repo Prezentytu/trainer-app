@@ -41,7 +41,7 @@ export function LineChart({
   });
 
   const line = coords.map((c) => `${c.x},${c.y}`).join(" ");
-  const yTicks = [min, (min + max) / 2, max];
+  const yTicks = max - min < 0.01 ? [max] : [min, (min + max) / 2, max];
   const first = coords[0];
   const last = coords[coords.length - 1];
 
@@ -60,11 +60,11 @@ export function LineChart({
         }
         preserveAspectRatio="none"
       >
-        {yTicks.map((v) => {
+        {yTicks.map((v, i) => {
           const y = padY + innerH - ((v - min) / range) * innerH;
           return (
             <text
-              key={`y-${v}`}
+              key={`ytick-${i}`}
               x={w - padR + 8}
               y={y + 3}
               fill="var(--fg-ghost)"
