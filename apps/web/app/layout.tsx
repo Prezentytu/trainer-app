@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Instrument_Sans, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkAppProvider } from "@/components/ClerkAppProvider";
+import { DevSwCleanup } from "@/components/DevSwCleanup";
+import { ThemeBoot } from "@/components/ThemeBoot";
 
 /**
  * SW portalu ma scope `/` i cache'uje `/_next/static` cache-first — w dev daje to stare chunki
@@ -67,6 +69,7 @@ export default function RootLayout({
   return (
     <html
       lang="pl"
+      suppressHydrationWarning
       className={`${fontSans.variable} ${fontMono.variable} h-full antialiased`}
     >
       <head>
@@ -76,8 +79,9 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-background font-sans text-foreground">
+        <ThemeBoot />
         {process.env.NODE_ENV === "production" ? null : (
-          <script dangerouslySetInnerHTML={{ __html: DEV_SW_CLEANUP }} />
+          <DevSwCleanup script={DEV_SW_CLEANUP} />
         )}
         <ClerkAppProvider>{children}</ClerkAppProvider>
       </body>

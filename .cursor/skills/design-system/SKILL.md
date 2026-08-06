@@ -36,7 +36,7 @@ Cichy instrument: near-black / white / greys. Emfaza = **invert fill**, nigdy hu
 | `accent` | invert white | primary fill (legacy alias) |
 | `pr` / `gain` / `loss` / `danger` | gold / green / red | tylko dane (+ destrukcja) |
 
-Light: `[data-theme="light"]` przygotowany; przełącznika jeszcze nie ma. `prefers-contrast: more` podnosi secondary.
+Light: `[data-theme="light"]` — przełącznik w `/settings` (`lib/theme.ts`, klucz `repmaxer-theme`). `prefers-contrast: more` podnosi secondary.
 
 ## Typografia
 

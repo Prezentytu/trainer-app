@@ -3,13 +3,15 @@
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { api, NavCounts } from "@/lib/api";
-import { Button, Card, ErrorBanner, PageHeader } from "@/components/ui";
+import { useTheme } from "@/lib/theme";
+import { Button, Card, ErrorBanner, PageHeader, Switch } from "@/components/ui";
 
 export default function SettingsPage() {
   const [counts, setCounts] = useState<NavCounts | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [downloadingCsv, setDownloadingCsv] = useState(false);
   const [downloadingJson, setDownloadingJson] = useState(false);
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     api
@@ -64,9 +66,25 @@ export default function SettingsPage() {
       : "Kopia obejmuje klientów, plany i historię treningów.";
 
   return (
-    <div>
-      <PageHeader title="Ustawienia" subtitle="Twoje konto i kopia danych" />
+    <div className="space-y-4">
+      <PageHeader title="Ustawienia" subtitle="Wygląd, konto i kopia danych" />
       <ErrorBanner message={error} />
+
+      <Card
+        className="max-w-2xl"
+        icon={<Icon name="sliders-horizontal" size={16} decorative />}
+        title="Wygląd"
+        meta="Motyw zapisuje się w tej przeglądarce."
+      >
+        <Switch
+          label="Jasny motyw"
+          checked={theme === "light"}
+          onChange={(light) => setTheme(light ? "light" : "dark")}
+        />
+        <p className="mt-3 text-xs text-muted">
+          Wyłączony = ciemny interfejs (domyślny).
+        </p>
+      </Card>
 
       <Card
         className="max-w-2xl"

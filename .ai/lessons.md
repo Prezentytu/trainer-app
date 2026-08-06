@@ -43,6 +43,13 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: Chrome (header/taby) `shrink-0`; board `flex-1 min-h-0` wypełnia viewport (`md:h-dvh` w AppShell dla `/plans/*`); w kolumnie lista kart `overflow-y-auto`, composer `shrink-0` na dole. Poziomo tylko tor kolumn.
 **Dotyczy**: `AppShell`, `PlanBuilder`, `DayBoard`/`DayColumn`, `PlanBoard`/`PlanDayColumn`, `/plans/[id]`.
 
+## Motyw: `data-theme` + `useServerInsertedHTML`, nie `<script>` w JSX
+
+**Kontekst**: Tokeny light były w `globals.css`, ale bez przełącznika.
+**Problem**: React 19 / Next 16 rzuca „Encountered a script tag…” gdy `<script>` jest w drzewie komponentu; FOUC przy ustawieniu motywu po hydracji.
+**Zasada**: Preferencja w `localStorage` (`repmaxer-theme`); boot przez `ThemeBoot` + `useServerInsertedHTML` (poza drzewem klienta); UI w `/settings` przez `useTheme()` / `Switch`. Landing (`.theme-acid`) ma własne tokeny — nie ruszaj.
+**Dotyczy**: `lib/theme.ts`, `components/ThemeBoot.tsx`, `app/layout.tsx`, `/settings`.
+
 ## Chrome planu = 2 pasy, zero powtórzeń
 
 **Kontekst**: Edycja/podgląd planu miały 4 pasy (~200 px): PageHeader „Edycja: X”, eyebrow, badge, „tydzień 1 z 1”, osobny wiersz Lista/Tablica/Arkusz, label „TYDZIEŃ”.
