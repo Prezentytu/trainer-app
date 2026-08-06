@@ -1798,11 +1798,41 @@ app.MapGet("/api/portal/{token}/exercises", async (string token, AppDb db) =>
     var access = await ResolvePortalToken(db, token);
     if (access?.Client is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
     var trainerId = access.Client.TrainerId;
+    var clientId = access.ClientId;
+
+    var lastByExercise = await db.LoggedExercises
+        .Where(le => le.Session!.ClientId == clientId && le.Session.Status == "completed")
+        .GroupBy(le => le.ExerciseId)
+        .Select(g => new { ExerciseId = g.Key, Last = g.Max(x => x.Session!.PerformedOn) })
+        .ToDictionaryAsync(x => x.ExerciseId, x => (DateOnly?)x.Last);
+
     var rows = await db.Exercises
         .Where(e => e.TrainerId == null || e.TrainerId == trainerId)
         .OrderBy(e => e.Name)
         .ToListAsync();
-    return Results.Ok(rows);
+
+    return Results.Ok(rows.Select(e => new
+    {
+        e.Id,
+        e.TrainerId,
+        e.Name,
+        e.Description,
+        e.Type,
+        e.DefaultSets,
+        e.DefaultReps,
+        e.DefaultRepDurationSeconds,
+        e.DefaultDistanceMeters,
+        e.DefaultRestBetweenSetsSeconds,
+        e.DefaultLoadKg,
+        e.Category,
+        e.Pattern,
+        e.IsUnilateral,
+        e.Equipment,
+        e.PrimaryMuscles,
+        e.Instructions,
+        e.Media,
+        LastPerformedOn = lastByExercise.TryGetValue(e.Id, out var d) ? d : null,
+    }));
 }).RequireRateLimiting("portal");
 
 app.MapGet("/api/portal/{token}/measurements", async (string token, AppDb db) =>

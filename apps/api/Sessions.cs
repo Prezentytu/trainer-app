@@ -83,12 +83,54 @@ public static class Sessions
             Status = "in_progress",
         };
 
-        if (day is not null)
+        if (input.RepeatSessionId is int repeatId)
+        {
+            var source = await db.WorkoutSessions
+                .Include(s => s.Exercises).ThenInclude(e => e.Sets)
+                .FirstOrDefaultAsync(s => s.Id == repeatId && s.ClientId == input.ClientId);
+            if (source is null || source.Status != "completed")
+                return (null, Results.BadRequest(new { message = "Nie można powtórzyć tej sesji." }));
+            PrefillFromSession(session, source);
+            if (session.PlanId is null)
+                session.PlanId = source.PlanId;
+        }
+        else if (day is not null)
             PrefillFromDay(session, day, maxes);
 
         db.WorkoutSessions.Add(session);
         await db.SaveChangesAsync();
         return (session, null);
+    }
+
+    /// <summary>Kopia ćwiczeń/serii z poprzedniej sesji — bez completed, z wagami z ostatniego razu.</summary>
+    public static void PrefillFromSession(WorkoutSession session, WorkoutSession source)
+    {
+        var order = 0;
+        foreach (var ex in source.Exercises.OrderBy(e => e.Order))
+        {
+            var logged = new LoggedExercise
+            {
+                ExerciseId = ex.ExerciseId,
+                Order = order++,
+                Note = ex.Note,
+            };
+            foreach (var s in ex.Sets.OrderBy(x => x.SetNumber))
+            {
+                logged.Sets.Add(new LoggedSet
+                {
+                    SetNumber = s.SetNumber,
+                    WeightKg = s.WeightKg,
+                    Reps = s.Reps,
+                    DurationSeconds = s.DurationSeconds,
+                    DistanceMeters = s.DistanceMeters,
+                    Rir = s.Rir,
+                    Rpe = s.Rpe,
+                    IsWarmup = s.IsWarmup,
+                    Completed = false,
+                });
+            }
+            session.Exercises.Add(logged);
+        }
     }
 
     public static void PrefillFromDay(WorkoutSession session, PlanDay day, Dictionary<int, double> maxes)
@@ -233,11 +275,21 @@ public static class Sessions
             db.LoggedExercises.RemoveRange(removeExercises);
     }
 
+    /// <summary>Styrka: cap 4 h — zapomniane treningi nie zawyżają czasu.</summary>
+    public const int MaxDurationSeconds = 4 * 60 * 60;
+
     public static async Task CompleteAsync(AppDb db, WorkoutSession session)
     {
         session.Status = "completed";
         if (session.DurationSeconds is null)
-            session.DurationSeconds = (int)Math.Max(60, (DateTime.UtcNow - session.CreatedAt).TotalSeconds);
+        {
+            var elapsed = (int)(DateTime.UtcNow - session.CreatedAt).TotalSeconds;
+            session.DurationSeconds = Math.Clamp(elapsed, 60, MaxDurationSeconds);
+        }
+        else if (session.DurationSeconds > MaxDurationSeconds)
+        {
+            session.DurationSeconds = MaxDurationSeconds;
+        }
         await db.SaveChangesAsync();
     }
 

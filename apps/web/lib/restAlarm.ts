@@ -73,3 +73,43 @@ export function playRestEndAlarm(): void {
     /* ignore */
   }
 }
+
+/**
+ * Lokalne powiadomienie końca przerwy (gdy karta w tle).
+ * Wymaga wcześniej przyznanego Notification.permission (push w profilu).
+ */
+export async function notifyRestEnd(opts?: {
+  nextLabel?: string | null;
+  url?: string;
+}): Promise<void> {
+  if (typeof window === "undefined") return;
+  if (typeof Notification === "undefined") return;
+  if (Notification.permission !== "granted") return;
+  // Na foreground wystarczy alarm dźwiękowy — nie spamuj.
+  if (document.visibilityState === "visible") return;
+
+  const body = opts?.nextLabel?.trim()
+    ? `Dalej: ${opts.nextLabel.trim()}`
+    : "Czas na następną serię.";
+  const url = opts?.url ?? window.location.href;
+
+  try {
+    if ("serviceWorker" in navigator) {
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification("Koniec przerwy", {
+        body,
+        tag: "wa-rest-end",
+        data: { url },
+      });
+      return;
+    }
+  } catch {
+    /* fall through */
+  }
+
+  try {
+    new Notification("Koniec przerwy", { body, tag: "wa-rest-end" });
+  } catch {
+    /* ignore */
+  }
+}

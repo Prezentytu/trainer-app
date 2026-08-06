@@ -131,6 +131,7 @@ public static class Stats
                     ExerciseName = e.Exercise?.Name ?? "",
                     ExerciseType = e.Exercise?.Type ?? "reps",
                     Category = e.Exercise?.Category,
+                    Equipment = e.Exercise?.Equipment ?? new List<string>(),
                     Media = e.Exercise?.Media ?? [],
                     e.SubstitutedFromExerciseId,
                     SubstitutedFromName = e.SubstitutedFromExercise?.Name,

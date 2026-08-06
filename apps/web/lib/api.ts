@@ -527,6 +527,8 @@ export type LoggedExercise = {
   exerciseName: string;
   exerciseType: ExerciseType;
   category: string | null;
+  /** Sprzęt z biblioteki — `"bodyweight"` oznacza ćwiczenie z masą ciała. */
+  equipment?: string[];
   media: ExerciseMedia[];
   order: number;
   note: string | null;
@@ -539,6 +541,11 @@ export type LoggedExercise = {
   prevPerformedOn?: string | null;
   prevSets: PrevLoggedSet[];
   sets: LoggedSet[];
+};
+
+/** Ćwiczenie w portalu z datą ostatniego wykonania przez klienta. */
+export type PortalExercise = Exercise & {
+  lastPerformedOn?: string | null;
 };
 
 export type SessionPr = {
@@ -1051,6 +1058,7 @@ export const api = {
         planDayId?: number | null;
         planId?: number | null;
         performedOn?: string | null;
+        repeatSessionId?: number | null;
       },
     ) =>
       request<SessionDetail>(`/api/portal/${token}/sessions/start`, {
@@ -1092,7 +1100,7 @@ export const api = {
         method: "PATCH",
         body: JSON.stringify(input),
       }),
-    exercises: (token: string) => request<Exercise[]>(`/api/portal/${token}/exercises`),
+    exercises: (token: string) => request<PortalExercise[]>(`/api/portal/${token}/exercises`),
     measurements: (token: string) => request<ClientMeasurement[]>(`/api/portal/${token}/measurements`),
     addMeasurement: (
       token: string,

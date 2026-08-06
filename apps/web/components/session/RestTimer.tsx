@@ -6,6 +6,8 @@ import type { RestTimerState } from "@/components/session/useRestTimer";
 type Props = {
   rest: RestTimerState;
   nextLabel?: string | null;
+  setsDone?: number;
+  setsTotal?: number;
   onAdjust: (deltaSeconds: number) => void;
   onDismiss: () => void;
   onExpand: (expanded: boolean) => void;
@@ -18,7 +20,15 @@ function mmss(seconds: number): string {
 }
 
 /** Pełnoekranowy timer przerwy — mini-widok żyje w SessionDock. */
-export function RestTimer({ rest, nextLabel, onAdjust, onDismiss, onExpand }: Props) {
+export function RestTimer({
+  rest,
+  nextLabel,
+  setsDone = 0,
+  setsTotal = 0,
+  onAdjust,
+  onDismiss,
+  onExpand,
+}: Props) {
   const progress =
     rest.totalSeconds > 0 ? Math.min(1, rest.leftSeconds / rest.totalSeconds) : 0;
 
@@ -30,7 +40,7 @@ export function RestTimer({ rest, nextLabel, onAdjust, onDismiss, onExpand }: Pr
         <p className="eyebrow">Przerwa</p>
         <button
           type="button"
-          className="inline-flex h-11 items-center justify-center rounded-[10px] px-3 text-[13px] font-semibold text-muted-strong hover:bg-surface-hover hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+          className="inline-flex h-11 items-center justify-center rounded-[10px] px-3 text-[13px] font-semibold text-muted-strong hover:bg-surface-hover hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
           onClick={() => onExpand(false)}
           aria-label="Zminimalizuj timer — pokaż ćwiczenia"
         >
@@ -46,11 +56,18 @@ export function RestTimer({ rest, nextLabel, onAdjust, onDismiss, onExpand }: Pr
           label={mmss(rest.leftSeconds)}
           sub="pozostało"
         />
-        {nextLabel ? (
-          <p className="max-w-[28ch] text-center text-sm text-muted">
-            Dalej: <span className="font-medium text-foreground">{nextLabel}</span>
-          </p>
-        ) : null}
+        <div className="flex flex-col items-center gap-1.5">
+          {setsTotal > 0 ? (
+            <p className="font-mono text-sm tabular-nums text-muted">
+              Seria {setsDone} z {setsTotal}
+            </p>
+          ) : null}
+          {nextLabel ? (
+            <p className="max-w-[28ch] text-center text-sm text-muted">
+              Dalej: <span className="font-medium text-foreground">{nextLabel}</span>
+            </p>
+          ) : null}
+        </div>
       </div>
 
       <div className="mx-auto grid w-full max-w-sm grid-cols-3 gap-2">

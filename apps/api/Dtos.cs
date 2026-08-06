@@ -165,7 +165,9 @@ public record StartSessionInput(
     int? AssignmentId = null,
     int? PlanDayId = null,
     int? PlanId = null,
-    DateOnly? PerformedOn = null);
+    DateOnly? PerformedOn = null,
+    /// <summary>Prefill z ukończonej sesji tego klienta (Powtórz ostatni).</summary>
+    int? RepeatSessionId = null);
 
 public record PlanImportRequest(string Text, List<int>? Weeks = null);
 

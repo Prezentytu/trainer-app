@@ -78,14 +78,17 @@ export default function PortalProgressPage() {
     const sunIso = toIso(thisSunday);
 
     const thisWeek = list.filter((s) => s.performedOn >= monIso && s.performedOn <= sunIso);
+
+    // Streak kroczący: kolejne okna 7 dni kończące się dziś (nie tydzień kalendarzowy).
+    // Styrka 3.1 — seria nie zeruje się w poniedziałek.
     let streak = 0;
     for (let i = 0; i < 52; i++) {
-      const monday = new Date(thisMonday);
-      monday.setDate(thisMonday.getDate() - i * 7);
-      const sunday = new Date(monday);
-      sunday.setDate(monday.getDate() + 6);
-      const a = toIso(monday);
-      const b = toIso(sunday);
+      const windowEnd = new Date(now);
+      windowEnd.setDate(now.getDate() - i * 7);
+      const windowStart = new Date(windowEnd);
+      windowStart.setDate(windowEnd.getDate() - 6);
+      const a = toIso(windowStart);
+      const b = toIso(windowEnd);
       const hit = list.some((s) => s.performedOn >= a && s.performedOn <= b);
       if (!hit) break;
       streak++;

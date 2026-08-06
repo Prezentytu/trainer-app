@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { api, Exercise, SessionDetail, WorkoutSessionInput } from "@/lib/api";
+import { api, PortalExercise, SessionDetail, WorkoutSessionInput } from "@/lib/api";
 import { SessionLogger } from "@/components/SessionLogger";
 import { SessionSummaryView } from "@/components/SessionSummaryView";
 import { SessionLoggerSkeleton } from "@/components/skeletons";
@@ -19,7 +19,7 @@ export default function PortalSessionPage() {
   const sessionId = Number(params.sessionId);
   const router = useRouter();
   const [session, setSession] = useState<SessionDetail | null>(null);
-  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [exercises, setExercises] = useState<PortalExercise[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [editingCompleted, setEditingCompleted] = useState(false);
 

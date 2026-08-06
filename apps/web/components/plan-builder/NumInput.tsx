@@ -1,6 +1,18 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { inputNumericClass } from "@/components/ui";
+
+function formatDisplay(n: number | null): string {
+  if (n == null) return "";
+  return String(n).replace(".", ",");
+}
+
+function parseNum(v: string): number | null {
+  if (v.trim() === "") return null;
+  const n = Number(v.replace(",", "."));
+  return Number.isFinite(n) ? n : null;
+}
 
 export function NumInput({
   value,
@@ -23,19 +35,51 @@ export function NumInput({
   "aria-label"?: string;
   title?: string;
 }) {
+  const [raw, setRaw] = useState(() => formatDisplay(value));
+  const focused = useRef(false);
+
+  useEffect(() => {
+    if (!focused.current) setRaw(formatDisplay(value));
+  }, [value]);
+
+  const commit = (parsed: number | null) => {
+    if (parsed == null) {
+      onChange(null);
+      return;
+    }
+    let next = parsed;
+    if (min != null && next < min) next = min;
+    if (max != null && next > max) next = max;
+    onChange(next);
+  };
+
   return (
     <input
       className={`${inputNumericClass} ${className}`}
-      type="number"
+      type="text"
       inputMode="decimal"
-      min={min}
-      max={max}
-      step={step}
       placeholder={placeholder}
-      value={value ?? ""}
-      onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
+      value={raw}
+      onFocus={() => {
+        focused.current = true;
+      }}
+      onChange={(e) => {
+        const next = e.target.value;
+        if (next !== "" && !/^\d*([.,]\d*)?$/.test(next)) return;
+        setRaw(next);
+        if (next === "" || !/[.,]$/.test(next)) {
+          commit(parseNum(next));
+        }
+      }}
+      onBlur={() => {
+        focused.current = false;
+        const parsed = parseNum(raw);
+        setRaw(formatDisplay(parsed));
+        commit(parsed);
+      }}
       aria-label={ariaLabel}
       title={title}
+      data-step={step}
     />
   );
 }

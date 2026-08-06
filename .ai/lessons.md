@@ -340,3 +340,17 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 3. Copy: H1 maks. 5 słów w 2 liniach; lead maks. 2 krótkie zdania; opis punktu 1 zdanie ≤8 słów. Pełne zdania z orzeczeniem, bez żargonu.
 4. Maks. 3 kroje w całej aplikacji: Archivo, Space Grotesk, IBM Plex Mono.
 **Dotyczy**: `apps/web/components/landing/*`, `AuthScreen.tsx`, `globals.css`, `layout.tsx`, skill `design-system`.
+
+## Timer przerwy na iOS: keep-alive audio, nie sam WebAudio / wakeLock
+
+**Kontekst**: Portalu klienta miał rest timer + alarm WebAudio + `navigator.wakeLock`. Na iPhonie po zgaszeniu ekranu alarm nie grał punktualnie, a Lock Screen nic nie pokazywał (Styrka ma Live Activity).
+**Problem**: Safari zawiesza `AudioContext` w tle; `setInterval` jest throttlowany; `wakeLock` nie istnieje w Safari iOS. Media Session bez aktywnego elementu `<audio>` też nie działa.
+**Zasada**: Na iOS PWA utrzymuj sesję dźwiękową cichym zapętlonym `<audio>` (`restKeepAlive` + `/silence.wav`). Koniec przerwy = `setTimeout` na `endsAt` (nie polling). Metadane na Lock Screen przez `navigator.mediaSession`. Preferencja użytkownika + etykieta o kontrolkach odtwarzania. `wakeLock` zostaje jako bonus na Android/desktop.
+**Dotyczy**: `lib/restKeepAlive.ts`, `useRestTimer.ts`, `restAlarm.ts`, profil portalu, `public/silence.wav`.
+
+## Bodyweight = `equipment`, nie `category`
+
+**Kontekst**: Spec odhaczył „BW zamiast 0 kg" jako wdrożone; `formatPrev` sprawdzał `category === "bodyweight"`.
+**Problem**: `Exercise.Category` to tylko grupy mięśniowe (`chest`, `back`…); masa ciała żyje w `equipment: ["bodyweight"]`. Warunek był zawsze fałszywy — martwy kod. DTO sesji nie zwracało `equipment`.
+**Zasada**: Przed odhaczeniem „mamy" zweryfikuj ścieżkę danych end-to-end. Bodyweight rozpoznawaj przez `equipment.includes("bodyweight")`. Rzutowanie sesji (`Stats.LoadDto`) musi zawierać `equipment`.
+**Dotyczy**: `Stats.cs`, `SessionLogger.tsx`, `LoggedExercise` w `api.ts`, seed ćwiczeń.

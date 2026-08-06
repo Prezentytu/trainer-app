@@ -46,6 +46,7 @@ export default function PortalTodayPage() {
   const [checkIns, setCheckIns] = useState<ClientCheckIn[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
+  const [repeating, setRepeating] = useState(false);
   const { setStickyCta } = usePortalStickyCta();
 
   const load = useCallback(() => {
@@ -73,6 +74,9 @@ export default function PortalTodayPage() {
     [history],
   );
 
+  /** Historia z API to już tylko ukończone, sortowane od najnowszej. */
+  const lastCompleted = history[0] ?? null;
+
   const start = useCallback(async () => {
     if (!home?.today) return;
     setStarting(true);
@@ -96,23 +100,62 @@ export default function PortalTodayPage() {
     }
   }, [home, router, token]);
 
-  // CTA w dolnym pasku razem z nawigacją — nic nie nachodzi na przycisk.
+  const repeatLast = useCallback(async () => {
+    if (!home || !lastCompleted) return;
+    if (home.inProgressSession) {
+      router.push(`/portal/${token}/session/${home.inProgressSession.id}`);
+      return;
+    }
+    setRepeating(true);
+    setError(null);
+    try {
+      const session = await api.portal.startSession(token, {
+        clientId: home.client.id,
+        repeatSessionId: lastCompleted.id,
+        assignmentId: home.today?.assignmentId ?? null,
+        planId: home.today?.planId ?? lastCompleted.planId ?? null,
+      });
+      router.push(`/portal/${token}/session/${session.id}`);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setRepeating(false);
+    }
+  }, [home, lastCompleted, router, token]);
+
+  // CTA w dolnym pasku — plan = primary; bez planu = Powtórz ostatni jako primary.
   useEffect(() => {
-    if (!home?.today) {
-      setStickyCta(null);
+    if (home?.today) {
+      setStickyCta({
+        label: home.inProgressSession
+          ? "Kontynuuj trening"
+          : starting
+            ? "Startuję…"
+            : "Rozpocznij trening",
+        disabled: starting,
+        onClick: () => void start(),
+      });
       return () => setStickyCta(null);
     }
-    setStickyCta({
-      label: home.inProgressSession
-        ? "Kontynuuj trening"
-        : starting
-          ? "Startuję…"
-          : "Rozpocznij trening",
-      disabled: starting,
-      onClick: () => void start(),
-    });
+    if (home && lastCompleted && !home.inProgressSession) {
+      setStickyCta({
+        label: repeating ? "Startuję…" : "Powtórz ostatni trening",
+        disabled: repeating,
+        onClick: () => void repeatLast(),
+      });
+      return () => setStickyCta(null);
+    }
+    if (home?.inProgressSession) {
+      setStickyCta({
+        label: "Kontynuuj trening",
+        disabled: false,
+        onClick: () => router.push(`/portal/${token}/session/${home.inProgressSession!.id}`),
+      });
+      return () => setStickyCta(null);
+    }
+    setStickyCta(null);
     return () => setStickyCta(null);
-  }, [home, setStickyCta, start, starting]);
+  }, [home, lastCompleted, setStickyCta, start, starting, repeating, repeatLast, router, token]);
 
   if (!home) {
     return (
@@ -132,8 +175,10 @@ export default function PortalTodayPage() {
   const hasTodayCheckIn = checkIns.some((checkIn) => checkIn.date.slice(0, 10) === todayIso);
   const needsIntake = Boolean(intake && !hasEssentialIntake(intake));
 
+  const showSticky = Boolean(today || lastCompleted || home.inProgressSession);
+
   return (
-    <div className={`mx-auto max-w-lg space-y-8 ${today ? "pb-36" : "pb-24"}`}>
+    <div className={`mx-auto max-w-lg space-y-8 ${showSticky ? "pb-36" : "pb-24"}`}>
       <header>
         <p className="text-xs font-medium uppercase tracking-caps text-muted">Dziś</p>
         <h1 className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-tight text-foreground sm:text-3xl">
@@ -171,7 +216,11 @@ export default function PortalTodayPage() {
       {!today ? (
         <section className="rounded-xl border border-border bg-surface-raised px-4 py-5">
           <p className="text-[15px] font-semibold text-foreground">Brak aktywnego planu</p>
-          <p className="mt-1 text-sm text-muted">Poproś trenera o przypisanie dnia treningowego.</p>
+          <p className="mt-1 text-sm text-muted">
+            {lastCompleted
+              ? "Możesz powtórzyć ostatni trening albo poprosić trenera o plan."
+              : "Poproś trenera o przypisanie dnia treningowego."}
+          </p>
         </section>
       ) : (
         <section aria-label="Dzisiejszy trening" className="space-y-1">
@@ -207,6 +256,19 @@ export default function PortalTodayPage() {
           </ul>
 
           {tip ? <p className="pt-3 text-sm text-muted">Ostatnio: {tip}</p> : null}
+
+          {lastCompleted && !home.inProgressSession ? (
+            <div className="pt-4">
+              <Button
+                variant="secondary"
+                full
+                disabled={repeating}
+                onClick={() => void repeatLast()}
+              >
+                {repeating ? "Startuję…" : "Powtórz ostatni trening"}
+              </Button>
+            </div>
+          ) : null}
         </section>
       )}
 

@@ -8,6 +8,7 @@ import {
   ExerciseCategory,
   LoggedExerciseInput,
   LoggedSet,
+  PortalExercise,
   PrevLoggedSet,
   ProgressReport,
   SessionCheckinInput,
@@ -30,7 +31,7 @@ import {
 import { demoMedia } from "@/lib/youtube";
 import { lightHaptic, unlockAudio } from "@/lib/restAlarm";
 import { clearLocalDraft, readLocalDraft, saveLocalDraft } from "@/lib/sessionDraft";
-import { readAutoRest } from "@/lib/portalPrefs";
+import { readAutoRest, readLogRir } from "@/lib/portalPrefs";
 import { SetValueInput } from "@/components/session/SetValueInput";
 import { SessionClock } from "@/components/session/SessionClock";
 import { RestTimer } from "@/components/session/RestTimer";
@@ -41,9 +42,19 @@ import { PlateCalculator } from "@/components/session/PlateCalculator";
 import { formatKg } from "@/lib/plates";
 import { Icon } from "@/components/Icon";
 
-/** SERIA | POPRZ | KG | POWT | ✓ | ⋯ — czytelna siatka (Styrka+, zachowana kolumna prev). */
+/** SERIA | POPRZ | KG | POWT | [RIR] | ✓ | ⋯ */
 const SET_GRID =
   "grid grid-cols-[2rem_minmax(3.25rem,0.85fr)_minmax(4.5rem,1fr)_minmax(3.75rem,0.85fr)_2.75rem_2rem] gap-x-2 items-center";
+const SET_GRID_RIR =
+  "grid grid-cols-[2rem_minmax(2.5rem,0.65fr)_minmax(3.5rem,0.9fr)_minmax(3rem,0.7fr)_minmax(2.5rem,0.55fr)_2.5rem_1.75rem] gap-x-1.5 items-center";
+
+function isBodyweightExercise(ex: { equipment?: string[] | null }): boolean {
+  return Boolean(ex.equipment?.includes("bodyweight"));
+}
+
+function setGridClass(showRir: boolean): string {
+  return showRir ? SET_GRID_RIR : SET_GRID;
+}
 
 const REST_OPTIONS_SEC = [60, 90, 120, 180] as const;
 
@@ -57,7 +68,7 @@ type Props = {
   /** Gdy podane — zapis przez api.portal.*; inaczej api.sessions.* */
   portalToken?: string;
   /** Biblioteka ćwiczeń do podmiany w trakcie sesji. */
-  libraryExercises?: Exercise[];
+  libraryExercises?: (Exercise | PortalExercise)[];
   /**
    * client — portal, live clock + wake lock;
    * behalf — trener wpisuje za klienta (bez zegara live);
@@ -230,9 +241,8 @@ function reconcile(local: LocalSession, server: SessionDetail): LocalSession {
   };
 }
 
-function formatPrev(p: PrevLoggedSet | undefined, category?: string | null): string {
+function formatPrev(p: PrevLoggedSet | undefined, isBw: boolean): string {
   if (!p) return "—";
-  const isBw = category === "bodyweight";
   if (p.weightKg != null && p.reps != null) {
     if (isBw && p.weightKg === 0) return `BW×${p.reps}`;
     return `${formatKg(p.weightKg)}×${p.reps}`;
@@ -273,7 +283,7 @@ function hasEmptyCompletedSets(exercises: LocalExercise[]): boolean {
       if (!s.completed) return false;
       if (isTime) return s.durationSeconds == null;
       if (ex.exerciseType === "distance") return s.distanceMeters == null;
-      // reps: brak powtórzeń = puste; 0 kg przy bodyweight OK
+      // reps: brak powtórzeń = puste; 0 kg przy bodyweight OK (placeholder BW)
       return s.reps == null;
     });
   });
@@ -411,7 +421,24 @@ export function SessionLogger({
   const [startedAt] = useState(() => Date.parse(session.createdAt));
   const statusRef = useRef(session.status);
 
-  const { rest, startRest, adjustRest, dismissRest, setExpanded } = useRestTimer(session.id);
+  const restContext = useMemo(() => {
+    const all = draft.exercises.flatMap((ex) => ex.sets);
+    const setsDone = all.filter((s) => s.completed).length;
+    const setsTotal = all.length;
+    const idx = draft.exercises.findIndex((ex) => ex.sets.some((s) => !s.completed));
+    const ex = draft.exercises[idx >= 0 ? idx : 0];
+    let nextLabel: string | null = null;
+    if (ex) {
+      const nextSet = ex.sets.find((s) => !s.completed);
+      nextLabel = nextSet ? `${ex.exerciseName} · ${nextSet.setNumber}` : ex.exerciseName;
+    }
+    return { nextLabel, setsDone, setsTotal };
+  }, [draft.exercises]);
+
+  const { rest, startRest, adjustRest, dismissRest, setExpanded } = useRestTimer(
+    session.id,
+    restContext,
+  );
   useWakeLock(liveClock && draft.status === "in_progress");
 
   useEffect(() => {
@@ -422,14 +449,26 @@ export function SessionLogger({
     };
   }, []);
 
+  const [logRir] = useState(() => readLogRir());
+
   useEffect(() => {
-    if (!menusOpen) return;
     const onPointerDown = (e: PointerEvent) => {
       const target = e.target as HTMLElement | null;
       if (target?.closest("[data-session-menu]")) return;
-      setMenuExIdx(null);
-      setSetRowMenu(null);
-      setRestPickerEx(null);
+      // Tap poza menu / polem — zamknij menu i klawiaturę (Styrka 3.7).
+      if (menusOpen) {
+        setMenuExIdx(null);
+        setSetRowMenu(null);
+        setRestPickerEx(null);
+      }
+      if (target?.closest("input, textarea, select, [contenteditable='true']")) return;
+      if (document.activeElement instanceof HTMLElement) {
+        const tag = document.activeElement.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA") {
+          document.activeElement.blur();
+          setActiveCell(null);
+        }
+      }
     };
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
@@ -783,7 +822,7 @@ export function SessionLogger({
               reps: last?.reps ?? null,
               durationSeconds: last?.durationSeconds ?? null,
               distanceMeters: last?.distanceMeters ?? null,
-              rir: last?.rir ?? null,
+              rir: last?.rir ?? ex.targetRir ?? null,
               rpe: last?.rpe ?? null,
               isWarmup: false,
               completed: false,
@@ -797,6 +836,21 @@ export function SessionLogger({
         };
       }),
     }));
+  };
+
+  const moveExercise = (exIdx: number, delta: -1 | 1) => {
+    const target = exIdx + delta;
+    if (target < 0 || target >= draft.exercises.length) return;
+    updateDraft((prev) => {
+      const next = [...prev.exercises];
+      const [item] = next.splice(exIdx, 1);
+      next.splice(target, 0, item);
+      return {
+        ...prev,
+        exercises: next.map((ex, i) => ({ ...ex, order: i })),
+      };
+    });
+    setMenuExIdx(null);
   };
 
   const removeSet = (exIdx: number, setIdx: number) => {
@@ -853,12 +907,16 @@ export function SessionLogger({
     }
     try {
       await saveChain.current;
+      const MAX_DURATION = 4 * 60 * 60;
       const elapsedSec = liveClock
-        ? Math.max(60, Math.floor((Date.now() - startedAt) / 1000))
+        ? Math.min(MAX_DURATION, Math.max(60, Math.floor((Date.now() - startedAt) / 1000)))
         : draftRef.current.durationSeconds;
       const withDuration: LocalSession = {
         ...draftRef.current,
-        durationSeconds: elapsedSec ?? draftRef.current.durationSeconds,
+        durationSeconds:
+          elapsedSec != null
+            ? Math.min(MAX_DURATION, elapsedSec)
+            : draftRef.current.durationSeconds,
       };
       draftRef.current = withDuration;
       await persist(withDuration, true);
@@ -985,7 +1043,7 @@ export function SessionLogger({
     }
   };
 
-  const swapExercise = (exIdx: number, picked: Exercise) => {
+  const swapExercise = (exIdx: number, picked: Exercise | PortalExercise) => {
     updateDraft((prev) => ({
       ...prev,
       exercises: prev.exercises.map((ex, i) =>
@@ -997,6 +1055,7 @@ export function SessionLogger({
               exerciseName: picked.name,
               exerciseType: picked.type,
               category: picked.category,
+              equipment: picked.equipment ?? [],
               media: picked.media,
             }
           : ex,
@@ -1038,9 +1097,18 @@ export function SessionLogger({
     }
   };
 
-  const filteredSwapExercises = libraryExercises.filter((ex) =>
-    ex.name.toLowerCase().includes(swapSearch.trim().toLowerCase()),
-  );
+  const filteredSwapExercises = useMemo(() => {
+    const q = swapSearch.trim().toLowerCase();
+    const filtered = libraryExercises.filter((ex) =>
+      ex.name.toLowerCase().includes(q),
+    );
+    const withDate = filtered as PortalExercise[];
+    const recent = withDate
+      .filter((ex) => ex.lastPerformedOn)
+      .sort((a, b) => (b.lastPerformedOn ?? "").localeCompare(a.lastPerformedOn ?? ""))
+      .slice(0, 8);
+    return { all: filtered, recent: q ? [] : recent };
+  }, [libraryExercises, swapSearch]);
 
   const nextRestLabel = useMemo(() => {
     const idx = currentExerciseIdx >= 0 ? currentExerciseIdx : 0;
@@ -1486,6 +1554,24 @@ export function SessionLogger({
                 </IconButton>
                 {menuOpen ? (
                   <div className="absolute right-0 top-full z-10 mt-1 min-w-[11rem] origin-top-right rounded-[10px] border border-border bg-surface-raised py-1 shadow-[var(--shadow-raised)]">
+                    {exIdx > 0 ? (
+                      <button
+                        type="button"
+                        className="block w-full px-3 py-2.5 text-left text-[15px] hover:bg-surface-hover"
+                        onClick={() => moveExercise(exIdx, -1)}
+                      >
+                        W górę
+                      </button>
+                    ) : null}
+                    {exIdx < draft.exercises.length - 1 ? (
+                      <button
+                        type="button"
+                        className="block w-full px-3 py-2.5 text-left text-[15px] hover:bg-surface-hover"
+                        onClick={() => moveExercise(exIdx, 1)}
+                      >
+                        W dół
+                      </button>
+                    ) : null}
                     {allDone ? (
                       <button
                         type="button"
@@ -1580,21 +1666,53 @@ export function SessionLogger({
                   onChange={(e) => setSwapSearch(e.target.value)}
                   autoFocus
                 />
-                <ul className="max-h-48 space-y-1 overflow-y-auto">
-                  {filteredSwapExercises.length === 0 ? (
+                <ul className="max-h-56 space-y-1 overflow-y-auto">
+                  {filteredSwapExercises.recent.length > 0 ? (
+                    <>
+                      <li className="px-2 pt-1 font-mono text-[10px] font-medium uppercase tracking-caps text-muted">
+                        Ostatnio
+                      </li>
+                      {filteredSwapExercises.recent.map((ex) => (
+                        <li key={`recent-${ex.id}`}>
+                          <button
+                            type="button"
+                            className="flex w-full items-baseline justify-between gap-2 rounded-[8px] px-2 py-2.5 text-left text-[15px] hover:bg-surface-hover"
+                            onClick={() => swapExercise(exIdx, ex)}
+                          >
+                            <span className="min-w-0 truncate">{ex.name}</span>
+                            <span className="shrink-0 font-mono text-[11px] tabular-nums text-muted">
+                              {formatPrevDate(ex.lastPerformedOn)}
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                      <li className="px-2 pt-2 font-mono text-[10px] font-medium uppercase tracking-caps text-muted">
+                        Wszystkie
+                      </li>
+                    </>
+                  ) : null}
+                  {filteredSwapExercises.all.length === 0 ? (
                     <li className="px-2 py-2 text-sm text-muted">Brak wyników.</li>
                   ) : (
-                    filteredSwapExercises.slice(0, 20).map((ex) => (
-                      <li key={ex.id}>
-                        <button
-                          type="button"
-                          className="w-full rounded-[8px] px-2 py-2.5 text-left text-[15px] hover:bg-surface-hover"
-                          onClick={() => swapExercise(exIdx, ex)}
-                        >
-                          {ex.name}
-                        </button>
-                      </li>
-                    ))
+                    filteredSwapExercises.all.slice(0, 20).map((ex) => {
+                      const lastOn = (ex as PortalExercise).lastPerformedOn;
+                      return (
+                        <li key={ex.id}>
+                          <button
+                            type="button"
+                            className="flex w-full items-baseline justify-between gap-2 rounded-[8px] px-2 py-2.5 text-left text-[15px] hover:bg-surface-hover"
+                            onClick={() => swapExercise(exIdx, ex)}
+                          >
+                            <span className="min-w-0 truncate">{ex.name}</span>
+                            {lastOn ? (
+                              <span className="shrink-0 font-mono text-[11px] tabular-nums text-muted">
+                                {formatPrevDate(lastOn)}
+                              </span>
+                            ) : null}
+                          </button>
+                        </li>
+                      );
+                    })
                   )}
                 </ul>
               </div>
@@ -1602,7 +1720,7 @@ export function SessionLogger({
 
             <div>
               <div
-                className={`${SET_GRID} pb-2 text-[11px] font-medium uppercase tracking-caps text-muted`}
+                className={`${setGridClass(logRir && !isTime)} pb-2 text-[11px] font-medium uppercase tracking-caps text-muted`}
               >
                 <div>Seria</div>
                 <div className="truncate" title={prevHeader || "Poprzedni trening"}>
@@ -1610,6 +1728,7 @@ export function SessionLogger({
                 </div>
                 <div className="text-center">{isTime ? "Sek" : "Kg"}</div>
                 <div className="text-center">{isTime ? "" : "Powt"}</div>
+                {logRir && !isTime ? <div className="text-center">RIR</div> : null}
                 <div />
                 <div />
               </div>
@@ -1633,9 +1752,10 @@ export function SessionLogger({
                       <SetRow
                         set={s}
                         prev={prev}
-                        category={exercise.category}
+                        isBw={isBodyweightExercise(exercise)}
                         isTime={isTime}
                         isNext={isNext}
+                        showRir={logRir && !isTime}
                         onWeight={(v) => patchSet(exIdx, setIdx, { weightKg: v })}
                         onReps={(v) =>
                           patchSet(
@@ -1644,6 +1764,7 @@ export function SessionLogger({
                             isTime ? { durationSeconds: v, reps: v } : { reps: v },
                           )
                         }
+                        onRir={(v) => patchSet(exIdx, setIdx, { rir: v })}
                         onFocusWeight={() => setActiveCell({ exIdx, setIdx, field: "weight" })}
                         onFocusReps={() => setActiveCell({ exIdx, setIdx, field: "reps" })}
                         onToggle={() => toggleComplete(exIdx, setIdx)}
@@ -1752,6 +1873,8 @@ export function SessionLogger({
         <RestTimer
           rest={rest}
           nextLabel={nextRestLabel}
+          setsDone={restContext.setsDone}
+          setsTotal={restContext.setsTotal}
           onAdjust={adjustRest}
           onDismiss={dismissRest}
           onExpand={setExpanded}
@@ -1807,11 +1930,13 @@ export function SessionLogger({
 const SetRow = memo(function SetRow({
   set,
   prev,
-  category,
+  isBw,
   isTime,
   isNext,
+  showRir,
   onWeight,
   onReps,
+  onRir,
   onFocusWeight,
   onFocusReps,
   onToggle,
@@ -1820,11 +1945,13 @@ const SetRow = memo(function SetRow({
 }: {
   set: LocalSet;
   prev: PrevLoggedSet | undefined;
-  category?: string | null;
+  isBw: boolean;
   isTime: boolean;
   isNext: boolean;
+  showRir: boolean;
   onWeight: (v: number | null) => void;
   onReps: (v: number | null) => void;
+  onRir: (v: number | null) => void;
   onFocusWeight: () => void;
   onFocusReps: () => void;
   onToggle: () => void;
@@ -1844,10 +1971,12 @@ const SetRow = memo(function SetRow({
     : isNext
       ? "text-accent-text"
       : "text-muted-faint";
-  const prevLabel = formatPrev(prev, category);
+  const prevLabel = formatPrev(prev, isBw);
+  const weightPlaceholder =
+    isBw && (set.weightKg == null || set.weightKg === 0) ? "BW" : "—";
 
   return (
-    <div className={`relative ${SET_GRID}`}>
+    <div className={`relative ${setGridClass(showRir)}`}>
       <div
         className={`flex min-h-12 items-center font-mono text-sm tabular-nums ${
           completed || isNext ? "text-foreground-secondary" : "text-muted"
@@ -1902,8 +2031,8 @@ const SetRow = memo(function SetRow({
         <>
           <SetValueInput
             kind="weight"
-            value={set.weightKg}
-            placeholder="—"
+            value={isBw && set.weightKg === 0 ? null : set.weightKg}
+            placeholder={weightPlaceholder}
             ariaLabel="kg"
             className={valTone}
             emphasizeEmpty={isNext && !completed}
@@ -1922,6 +2051,17 @@ const SetRow = memo(function SetRow({
           />
         </>
       )}
+
+      {showRir ? (
+        <SetValueInput
+          kind="reps"
+          value={set.rir != null ? Math.round(set.rir) : null}
+          placeholder="—"
+          ariaLabel="RIR"
+          className={valTone}
+          onCommit={(v) => onRir(v != null ? Math.min(10, Math.max(0, v)) : null)}
+        />
+      ) : null}
 
       <button
         type="button"

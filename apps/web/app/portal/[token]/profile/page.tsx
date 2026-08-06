@@ -7,7 +7,14 @@ import { api, PortalHome } from "@/lib/api";
 import { Avatar, ErrorBanner, Switch } from "@/components/ui";
 import { PortalPageSkeleton } from "@/components/skeletons";
 import { PwaInstallPrompt } from "@/components/portal/PwaInstallPrompt";
-import { readAutoRest, writeAutoRest } from "@/lib/portalPrefs";
+import {
+  readAutoRest,
+  readLogRir,
+  readRestLockScreen,
+  writeAutoRest,
+  writeLogRir,
+  writeRestLockScreen,
+} from "@/lib/portalPrefs";
 import { isIosDevice, isStandaloneDisplay, useIsIos, useIsStandalone } from "@/lib/pwa";
 
 export default function PortalProfilePage() {
@@ -16,6 +23,8 @@ export default function PortalProfilePage() {
   const [home, setHome] = useState<PortalHome | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [autoRest, setAutoRest] = useState(() => readAutoRest());
+  const [restLockScreen, setRestLockScreen] = useState(() => readRestLockScreen());
+  const [logRir, setLogRir] = useState(() => readLogRir());
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushSaving, setPushSaving] = useState(false);
   const standalone = useIsStandalone();
@@ -155,6 +164,36 @@ export default function PortalProfilePage() {
               onChange={(v) => {
                 setAutoRest(v);
                 writeAutoRest(v);
+              }}
+            />
+          </li>
+          <li className="flex min-h-14 items-center gap-3 py-2">
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] text-foreground-secondary">Przerwa na ekranie blokady</p>
+              <p className="mt-0.5 text-xs text-muted">
+                Pokazuje odliczanie w kontrolkach odtwarzania — działa przy zgaszonym ekranie.
+              </p>
+            </div>
+            <Switch
+              checked={restLockScreen}
+              onChange={(v) => {
+                setRestLockScreen(v);
+                writeRestLockScreen(v);
+              }}
+            />
+          </li>
+          <li className="flex min-h-14 items-center gap-3 py-2">
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] text-foreground-secondary">Zapisuj RIR</p>
+              <p className="mt-0.5 text-xs text-muted">
+                Kolumna wysiłku przy każdej serii — domyślnie wyłączona.
+              </p>
+            </div>
+            <Switch
+              checked={logRir}
+              onChange={(v) => {
+                setLogRir(v);
+                writeLogRir(v);
               }}
             />
           </li>
