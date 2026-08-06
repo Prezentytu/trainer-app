@@ -16,6 +16,7 @@ import {
   writeRestLockScreen,
 } from "@/lib/portalPrefs";
 import { isIosDevice, isStandaloneDisplay, useIsIos, useIsStandalone } from "@/lib/pwa";
+import { useTheme } from "@/lib/theme";
 
 export default function PortalProfilePage() {
   const params = useParams<{ token: string }>();
@@ -27,6 +28,7 @@ export default function PortalProfilePage() {
   const [logRir, setLogRir] = useState(() => readLogRir());
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushSaving, setPushSaving] = useState(false);
+  const { theme, setTheme } = useTheme();
   const standalone = useIsStandalone();
   const ios = useIsIos();
   const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -155,6 +157,18 @@ export default function PortalProfilePage() {
           Ustawienia
         </p>
         <ul className="divide-y divide-border border-y border-border">
+          <li className="flex min-h-14 items-center gap-3 py-2">
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] text-foreground-secondary">Jasny motyw</p>
+              <p className="mt-0.5 text-xs text-muted">
+                Wyłączony = ciemny interfejs. Zapisuje się w tej przeglądarce.
+              </p>
+            </div>
+            <Switch
+              checked={theme === "light"}
+              onChange={(light) => setTheme(light ? "light" : "dark")}
+            />
+          </li>
           <li className="flex min-h-14 items-center gap-3 py-2">
             <div className="min-w-0 flex-1 text-[15px] text-foreground-secondary">
               Auto-timer odpoczynku
