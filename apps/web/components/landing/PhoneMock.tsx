@@ -40,7 +40,7 @@ export function PhoneMock() {
   useEffect(() => {
     if (reduceMotion) return;
     const id = window.setInterval(() => {
-      setDone((d) => (d >= SETS.length + 2 ? 0 : d + 1));
+      setDone((d) => (d >= SETS.length + 3 ? 0 : d + 1));
     }, 1100);
     return () => window.clearInterval(id);
   }, [reduceMotion]);
@@ -65,12 +65,10 @@ export function PhoneMock() {
         Otwiera link i odhacza serie.
       </h2>
 
-      <div
-        className="landing-stagger mt-12 flex justify-center md:mt-16"
-        style={{ ["--i" as string]: 2 }}
-      >
+      <div className="mt-12 grid grid-cols-1 items-center gap-12 md:mt-16 md:grid-cols-2 md:gap-16">
         <div
-          className="w-full max-w-[380px] rounded-3xl border border-border-strong bg-surface-sunken px-5 py-6"
+          className="landing-stagger w-full max-w-[380px] justify-self-center rounded-3xl border border-border-strong bg-surface-sunken px-6 py-7 md:order-2"
+          style={{ ["--i" as string]: 2 }}
           aria-label="Podgląd portalu klienta"
         >
           <div className="flex items-center justify-between">
@@ -89,14 +87,24 @@ export function PhoneMock() {
                   className="grid min-h-11 grid-cols-[28px_1fr_1fr_40px] items-center gap-2 border-b border-border"
                 >
                   <span className="t-num text-[13px] text-fg-faint">{s.n}</span>
-                  <span className={`t-num text-[15px] ${checked ? "text-foreground" : "text-fg-ghost"}`}>
+                  <span
+                    className={`t-num text-[15px] transition-colors duration-[var(--dur-med)] ${
+                      checked ? "text-foreground" : "text-fg-ghost"
+                    }`}
+                  >
                     {s.weight}
                   </span>
-                  <span className={`t-num text-[15px] ${checked ? "text-foreground" : "text-fg-ghost"}`}>
+                  <span
+                    className={`t-num text-[15px] transition-colors duration-[var(--dur-med)] ${
+                      checked ? "text-foreground" : "text-fg-ghost"
+                    }`}
+                  >
                     {s.reps}
                   </span>
                   <span
-                    className={`t-num text-right text-[14px] ${checked ? "text-foreground" : "text-fg-ghost"}`}
+                    className={`t-num text-right text-[14px] transition-colors duration-[var(--dur-med)] ${
+                      checked ? "text-foreground" : "text-fg-ghost"
+                    }`}
                     aria-hidden
                   >
                     {checked ? "✓" : "—"}
@@ -112,21 +120,21 @@ export function PhoneMock() {
             </Button>
           </div>
         </div>
-      </div>
 
-      <ol className="mt-12 grid list-none grid-cols-1 gap-10 border-t border-border p-0 pt-10 sm:mt-16 sm:grid-cols-3">
-        {POINTS.map((p, i) => (
-          <li
-            key={p.n}
-            className="landing-stagger grid content-start gap-3"
-            style={{ ["--i" as string]: 3 + i }}
-          >
-            <span className="t-num text-[13px] text-fg-ghost">{p.n}</span>
-            <h3 className="t-heading m-0">{p.title}</h3>
-            <p className="t-small m-0 leading-[1.6]">{p.body}</p>
-          </li>
-        ))}
-      </ol>
+        <ol className="m-0 grid list-none content-center divide-y divide-border p-0 md:order-1">
+          {POINTS.map((p, i) => (
+            <li
+              key={p.n}
+              className="landing-stagger grid content-start gap-3 py-7 first:pt-0 last:pb-0"
+              style={{ ["--i" as string]: 3 + i }}
+            >
+              <span className="t-num text-[13px] text-fg-ghost">{p.n}</span>
+              <h3 className="t-heading m-0">{p.title}</h3>
+              <p className="t-small m-0 leading-[1.6]">{p.body}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
     </LandingReveal>
   );
 }

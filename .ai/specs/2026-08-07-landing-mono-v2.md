@@ -62,3 +62,6 @@ Skille: `design-system`, `senior-ux-cro`, `responsive-ui`, `apple-design`, `fitn
 
 - 2026-08-07 — utworzono spec (cena 149 zł, zakres strict 1:1 z prototypem).
 - 2026-08-07 — wdrożono landing mono v2; usunięto `.theme-acid`, stare sekcje Acid i `public/landing/` screenshots.
+- 2026-08-07 — polish 10/10: ProgressCard z H2 + grid 1.55fr/1fr + divide-y, większy padding kart, wyrównanie ListRow, spójny cast imion + „Dane przykładowe”, LiveFeed bez remount/aria-live.
+- 2026-08-07 — korekta kompozycji: hero `items-start` (subcopy przy H1), sekcja 02 jako split (punkty 04–06 obok telefonu), dedykowany `ProgressChart` bez kolizji liczb (gold dot = PR, bez konfliktu 143 vs 142,5), delta StatTile inline w linii wartości.
+- 2026-08-07 — hero na jednej osi (wzorzec Feji Studios): blok tekstu H1→subcopy→CTA wyśrodkowany w pionie, feed pełnoszerokościowy na dole hero z maską fade-to-black („horyzont danych”); wiersze feedu w 3 kolumnach na sm+ (nazwisko | ćwiczenie | wynik).

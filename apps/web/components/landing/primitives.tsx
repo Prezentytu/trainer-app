@@ -18,7 +18,7 @@ export function SectionLabel({
   );
 }
 
-/** Mały kafelek KPI w mockach landingu. */
+/** Mały kafelek KPI w mockach landingu — delta inline w linii wartości (stały pion etykiet). */
 export function StatTile({
   value,
   label,
@@ -45,11 +45,16 @@ export function StatTile({
           {value}
         </span>
         {unit ? <span className="font-mono text-xs font-medium text-fg-faint">{unit}</span> : null}
+        {delta ? (
+          <span className="ml-1.5 inline-flex items-baseline gap-1 font-mono text-[11px] font-medium tabular-nums text-gain">
+            <span className="text-[9px] leading-none" aria-hidden>
+              ▲
+            </span>
+            {delta}
+          </span>
+        ) : null}
       </div>
       <div className="t-label tracking-[0.16em]">{label}</div>
-      {delta ? (
-        <div className="mt-0.5 font-mono text-[11px] font-medium tabular-nums text-gain">{delta}</div>
-      ) : null}
     </div>
   );
 }

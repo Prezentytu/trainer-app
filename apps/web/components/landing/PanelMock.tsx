@@ -29,33 +29,33 @@ export function PanelMock() {
       </h2>
 
       <div className="landing-stagger mt-12 md:mt-16" style={{ ["--i" as string]: 2 }}>
-        <Card>
+        <Card className="p-6 sm:p-8">
           <SectionLabel action={<span className="t-label tracking-[0.16em]">Ten tydzień</span>}>
             Klienci
           </SectionLabel>
-          <div className="mt-2">
+          <div className="-mx-2 mt-2">
             <ListRow
-              title="Anna Nowak"
+              title="Marta Lewicka"
               sub="Push A · środa"
               right={<Marker tone="gain">+2,5 kg</Marker>}
             />
             <ListRow
-              title="Marek Zieliński"
+              title="Michał Dąbrowski"
               sub="Martwy ciąg · wtorek"
               right={<Marker tone="pr">PR</Marker>}
             />
             <ListRow
-              title="Kasia Wolska"
+              title="Ola Wiśniewska"
               sub="Full Body · poniedziałek"
               right={<span className="t-num text-[14px] text-fg-faint">✓</span>}
             />
             <ListRow
-              title="Piotr Lis"
+              title="Piotr Sikora"
               sub="Brak treningu · 9 dni"
               right={<Marker tone="loss">-2</Marker>}
             />
           </div>
-          <div className="mt-6 grid grid-cols-1 gap-6 border-t border-border pt-6 sm:grid-cols-3">
+          <div className="mt-6 grid grid-cols-1 gap-6 border-t border-border pt-6 sm:grid-cols-3 sm:gap-8">
             <StatTile value="12" label="Klienci" />
             <StatTile value="38" label="Sesje / 7 dni" delta="+6" />
             <StatTile value="6" label="Rekordy" tone="pr" />
@@ -63,7 +63,7 @@ export function PanelMock() {
         </Card>
       </div>
 
-      <ol className="mt-12 grid list-none grid-cols-1 gap-10 border-t border-border p-0 pt-10 sm:mt-16 sm:grid-cols-3">
+      <ol className="mt-12 grid list-none grid-cols-1 gap-x-10 gap-y-8 border-t border-border p-0 pt-10 sm:mt-16 sm:grid-cols-3">
         {POINTS.map((p, i) => (
           <li
             key={p.n}
