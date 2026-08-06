@@ -73,6 +73,7 @@ export default function PortalSessionPage() {
           session={session}
           onBack={() => router.push(`/portal/${token}`)}
           onEdit={() => setEditingCompleted(true)}
+          shareImageUrl={`/portal/${token}/session/${session.id}/share-image`}
         />
       </div>
     );

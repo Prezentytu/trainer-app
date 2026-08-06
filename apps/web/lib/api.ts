@@ -45,6 +45,7 @@ export type ClientDetails = {
   name: string;
   email: string | null;
   note: string | null;
+  goalWeightKg?: number | null;
   assignments: ClientAssignment[];
 };
 
@@ -500,6 +501,8 @@ export type PrevLoggedSet = {
   isWarmup: boolean;
 };
 
+export type SetSide = "left" | "right";
+
 export type LoggedSet = {
   id: number;
   setNumber: number;
@@ -511,6 +514,8 @@ export type LoggedSet = {
   rpe: number | null;
   isWarmup: boolean;
   completed: boolean;
+  note: string | null;
+  side: SetSide | null;
   estimated1Rm: number | null;
   isPr: boolean;
   /** Cel z planu (additive — nie w encji). */
@@ -529,6 +534,7 @@ export type LoggedExercise = {
   category: string | null;
   /** Sprzęt z biblioteki — `"bodyweight"` oznacza ćwiczenie z masą ciała. */
   equipment?: string[];
+  isUnilateral?: boolean;
   media: ExerciseMedia[];
   order: number;
   note: string | null;
@@ -588,6 +594,8 @@ export type PortalSessionSummary = SessionSummary & {
 };
 
 export type SessionDetail = SessionSummary & {
+  clientName?: string | null;
+  trainerName?: string | null;
   prs: {
     exerciseId: number;
     exerciseName: string;
@@ -652,7 +660,7 @@ export type PortalWeekDay = {
 };
 
 export type PortalHome = {
-  client: { id: number; name: string };
+  client: { id: number; name: string; goalWeightKg?: number | null };
   today: {
     assignmentId: number;
     planId: number;
@@ -856,6 +864,8 @@ export type LoggedSetInput = {
   rpe: number | null;
   isWarmup: boolean;
   completed: boolean;
+  note?: string | null;
+  side?: SetSide | null;
 };
 
 export type LoggedExerciseInput = {
@@ -888,10 +898,21 @@ export const api = {
   clients: {
     list: () => request<ClientSummary[]>("/api/clients"),
     get: (id: number) => request<ClientDetails>(`/api/clients/${id}`),
-    create: (input: { name: string; email: string | null; note: string | null }) =>
-      request("/api/clients", { method: "POST", body: JSON.stringify(input) }),
-    update: (id: number, input: { name: string; email: string | null; note: string | null }) =>
-      request(`/api/clients/${id}`, { method: "PUT", body: JSON.stringify(input) }),
+    create: (input: {
+      name: string;
+      email: string | null;
+      note: string | null;
+      goalWeightKg?: number | null;
+    }) => request("/api/clients", { method: "POST", body: JSON.stringify(input) }),
+    update: (
+      id: number,
+      input: {
+        name: string;
+        email: string | null;
+        note: string | null;
+        goalWeightKg?: number | null;
+      },
+    ) => request(`/api/clients/${id}`, { method: "PUT", body: JSON.stringify(input) }),
     remove: (id: number) => request(`/api/clients/${id}`, { method: "DELETE" }),
     maxes: (clientId: number) => request<ClientMax[]>(`/api/clients/${clientId}/maxes`),
     addMax: (
@@ -1056,6 +1077,8 @@ export const api = {
     records: (token: string) => request<ClientRecord[]>(`/api/portal/${token}/records`),
     mostImproved: (token: string, days = 90) =>
       request<MostImproved | null>(`/api/portal/${token}/most-improved?days=${days}`),
+    stagnation: (token: string) =>
+      request<StagnationResponse | null>(`/api/portal/${token}/stagnation`),
     exerciseStats: (token: string, exerciseId: number) =>
       request<ExerciseStats>(`/api/portal/${token}/exercises/${exerciseId}/stats`),
     progressReport: (token: string) =>

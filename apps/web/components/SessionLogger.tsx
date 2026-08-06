@@ -13,6 +13,7 @@ import {
   ProgressReport,
   SessionCheckinInput,
   SessionDetail,
+  SetSide,
   WorkoutSessionInput,
 } from "@/lib/api";
 import { YoutubeLite } from "@/components/YoutubeLite";
@@ -113,7 +114,12 @@ function withUids(session: SessionDetail, prevUids?: Map<string, string>): Local
         const uid =
           prevUids?.get(stableKey) ??
           (s.id > 0 ? `s-${s.id}` : newUid());
-        return { ...s, uid };
+        return {
+          ...s,
+          uid,
+          note: s.note ?? null,
+          side: s.side ?? null,
+        };
       }),
     })),
   };
@@ -168,6 +174,8 @@ function toInput(session: LocalSession): WorkoutSessionInput {
           rpe: s.rpe,
           isWarmup: s.isWarmup,
           completed: s.completed,
+          note: s.note ?? null,
+          side: s.side ?? null,
         })),
       }),
     ),
@@ -377,6 +385,7 @@ export function SessionLogger({
   const [swapSearch, setSwapSearch] = useState("");
   const [menuExIdx, setMenuExIdx] = useState<number | null>(null);
   const [setRowMenu, setSetRowMenu] = useState<{ exIdx: number; setIdx: number } | null>(null);
+  const [setNoteEdit, setSetNoteEdit] = useState<{ exIdx: number; setIdx: number } | null>(null);
   const [restPickerEx, setRestPickerEx] = useState<number | null>(null);
   const [finishConfirmOpen, setFinishConfirmOpen] = useState(false);
   const [finishConfirmReason, setFinishConfirmReason] = useState<"incomplete" | "empty">("incomplete");
@@ -803,36 +812,62 @@ export function SessionLogger({
     }));
   };
 
+  const blankSet = (
+    last: LocalSet | undefined,
+    setNumber: number,
+    side: SetSide | null,
+    idSeed: number,
+    defaultRir: number | null,
+  ): LocalSet => ({
+    uid: newUid(),
+    id: -idSeed,
+    setNumber,
+    weightKg: last?.weightKg ?? null,
+    reps: last?.reps ?? null,
+    durationSeconds: last?.durationSeconds ?? null,
+    distanceMeters: last?.distanceMeters ?? null,
+    rir: last?.rir ?? defaultRir,
+    rpe: last?.rpe ?? null,
+    isWarmup: false,
+    completed: false,
+    note: null,
+    side,
+    estimated1Rm: null,
+    isPr: false,
+    targetWeightKg: last?.targetWeightKg ?? null,
+    targetReps: last?.targetReps ?? null,
+    targetDurationSeconds: last?.targetDurationSeconds ?? null,
+  });
+
   const addSet = (exIdx: number) => {
     updateDraft((prev) => ({
       ...prev,
       exercises: prev.exercises.map((ex, i) => {
         if (i !== exIdx) return ex;
         const last = ex.sets[ex.sets.length - 1];
-        const nextNum = (last?.setNumber ?? 0) + 1;
+        const baseNum = last?.setNumber ?? 0;
+        const now = Date.now();
+        const defaultRir = ex.targetRir ?? null;
+        // Unilateral: para L+P (jak Styrka) zamiast pojedynczej serii.
+        if (ex.isUnilateral) {
+          if (last?.side === "left") {
+            return {
+              ...ex,
+              sets: [...ex.sets, blankSet(last, baseNum + 1, "right", now, defaultRir)],
+            };
+          }
+          return {
+            ...ex,
+            sets: [
+              ...ex.sets,
+              blankSet(last, baseNum + 1, "left", now, defaultRir),
+              blankSet(last, baseNum + 2, "right", now + 1, defaultRir),
+            ],
+          };
+        }
         return {
           ...ex,
-          sets: [
-            ...ex.sets,
-            {
-              uid: newUid(),
-              id: -Date.now(),
-              setNumber: nextNum,
-              weightKg: last?.weightKg ?? null,
-              reps: last?.reps ?? null,
-              durationSeconds: last?.durationSeconds ?? null,
-              distanceMeters: last?.distanceMeters ?? null,
-              rir: last?.rir ?? ex.targetRir ?? null,
-              rpe: last?.rpe ?? null,
-              isWarmup: false,
-              completed: false,
-              estimated1Rm: null,
-              isPr: false,
-              targetWeightKg: last?.targetWeightKg ?? null,
-              targetReps: last?.targetReps ?? null,
-              targetDurationSeconds: last?.targetDurationSeconds ?? null,
-            },
-          ],
+          sets: [...ex.sets, blankSet(last, baseNum + 1, null, now, defaultRir)],
         };
       }),
     }));
@@ -1756,6 +1791,7 @@ export function SessionLogger({
                         isTime={isTime}
                         isNext={isNext}
                         showRir={logRir && !isTime}
+                        unilateral={Boolean(exercise.isUnilateral)}
                         onWeight={(v) => patchSet(exIdx, setIdx, { weightKg: v })}
                         onReps={(v) =>
                           patchSet(
@@ -1765,6 +1801,7 @@ export function SessionLogger({
                           )
                         }
                         onRir={(v) => patchSet(exIdx, setIdx, { rir: v })}
+                        onSide={(side) => patchSet(exIdx, setIdx, { side })}
                         onFocusWeight={() => setActiveCell({ exIdx, setIdx, field: "weight" })}
                         onFocusReps={() => setActiveCell({ exIdx, setIdx, field: "reps" })}
                         onToggle={() => toggleComplete(exIdx, setIdx)}
@@ -1772,9 +1809,30 @@ export function SessionLogger({
                         onRowMenu={() => {
                           setMenuExIdx(null);
                           setRestPickerEx(null);
+                          setSetNoteEdit(null);
                           setSetRowMenu(rowMenuOpen ? null : { exIdx, setIdx });
                         }}
                       />
+                      {setNoteEdit?.exIdx === exIdx && setNoteEdit?.setIdx === setIdx ? (
+                        <div className="mt-1.5 pb-1">
+                          <input
+                            className={inputClass}
+                            autoFocus
+                            placeholder="Notatka do serii…"
+                            value={s.note ?? ""}
+                            onChange={(e) =>
+                              patchSet(exIdx, setIdx, { note: e.target.value || null })
+                            }
+                            onBlur={() => setSetNoteEdit(null)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                setSetNoteEdit(null);
+                              }
+                            }}
+                          />
+                        </div>
+                      ) : null}
                       {rowMenuOpen ? (
                         <div
                           className={`absolute right-0 z-30 min-w-[10.5rem] rounded-[10px] border border-border bg-surface-raised py-1 shadow-[var(--shadow-raised)] ${
@@ -1795,6 +1853,16 @@ export function SessionLogger({
                               Cofnij zaliczenie
                             </button>
                           ) : null}
+                          <button
+                            type="button"
+                            className="block w-full px-3 py-2.5 text-left text-[15px] hover:bg-surface-hover"
+                            onClick={() => {
+                              setSetRowMenu(null);
+                              setSetNoteEdit({ exIdx, setIdx });
+                            }}
+                          >
+                            {s.note ? "Edytuj notatkę" : "Notatka do serii"}
+                          </button>
                           <button
                             type="button"
                             className="block w-full px-3 py-2.5 text-left text-[15px] hover:bg-surface-hover"
@@ -1934,9 +2002,11 @@ const SetRow = memo(function SetRow({
   isTime,
   isNext,
   showRir,
+  unilateral,
   onWeight,
   onReps,
   onRir,
+  onSide,
   onFocusWeight,
   onFocusReps,
   onToggle,
@@ -1949,9 +2019,11 @@ const SetRow = memo(function SetRow({
   isTime: boolean;
   isNext: boolean;
   showRir: boolean;
+  unilateral: boolean;
   onWeight: (v: number | null) => void;
   onReps: (v: number | null) => void;
   onRir: (v: number | null) => void;
+  onSide: (side: SetSide) => void;
   onFocusWeight: () => void;
   onFocusReps: () => void;
   onToggle: () => void;
@@ -1974,17 +2046,45 @@ const SetRow = memo(function SetRow({
   const prevLabel = formatPrev(prev, isBw);
   const weightPlaceholder =
     isBw && (set.weightKg == null || set.weightKg === 0) ? "BW" : "—";
+  const sideLabel = set.side === "left" ? "L" : set.side === "right" ? "P" : null;
 
   return (
     <div className={`relative ${setGridClass(showRir)}`}>
       <div
-        className={`flex min-h-12 items-center font-mono text-sm tabular-nums ${
+        className={`flex min-h-12 items-center gap-0.5 font-mono text-sm tabular-nums ${
           completed || isNext ? "text-foreground-secondary" : "text-muted"
         }`}
-        aria-label={`Seria ${set.setNumber}${set.isWarmup ? ", rozgrzewkowa" : ""}`}
+        aria-label={`Seria ${set.setNumber}${set.isWarmup ? ", rozgrzewkowa" : ""}${
+          sideLabel ? `, ${sideLabel === "L" ? "lewa" : "prawa"}` : ""
+        }`}
       >
         {set.setNumber}
-        {set.isWarmup ? <span className="ml-0.5 text-[11px] text-muted">W</span> : null}
+        {set.isWarmup ? <span className="text-[11px] text-muted">W</span> : null}
+        {set.note ? (
+          <span className="text-[11px] text-muted-faint" title={set.note} aria-label="Ma notatkę">
+            ·
+          </span>
+        ) : null}
+        {unilateral ? (
+          <button
+            type="button"
+            className={`ml-0.5 min-h-7 min-w-7 rounded-md border px-1 font-mono text-[11px] font-semibold focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${
+              sideLabel
+                ? "border-invert-bg bg-invert-bg text-invert-fg"
+                : "border-border-strong text-muted"
+            }`}
+            onClick={() => onSide(set.side === "left" ? "right" : "left")}
+            aria-label={
+              set.side === "left"
+                ? "Strona: lewa — przełącz na prawą"
+                : set.side === "right"
+                  ? "Strona: prawa — przełącz na lewą"
+                  : "Ustaw stronę L/P"
+            }
+          >
+            {sideLabel ?? "L/P"}
+          </button>
+        ) : null}
       </div>
 
       <div className="flex min-w-0 items-center gap-1.5">

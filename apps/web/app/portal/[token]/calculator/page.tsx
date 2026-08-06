@@ -1,0 +1,141 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import { api, ClientRecord } from "@/lib/api";
+import { ErrorBanner } from "@/components/ui";
+import { PortalPageSkeleton } from "@/components/skeletons";
+import { DEFAULT_PLATE_CONFIG, formatKg, solvePlates } from "@/lib/plates";
+
+type Zone = {
+  id: "strength" | "hypertrophy" | "endurance";
+  label: string;
+  pctFrom: number;
+  pctTo: number;
+  reps: string;
+};
+
+const ZONES: Zone[] = [
+  { id: "strength", label: "Siła", pctFrom: 85, pctTo: 100, reps: "1–5 powt." },
+  { id: "hypertrophy", label: "Hipertrofia", pctFrom: 67, pctTo: 85, reps: "6–12 powt." },
+  { id: "endurance", label: "Wytrzymałość", pctFrom: 50, pctTo: 67, reps: "12+ powt." },
+];
+
+function roundToPlate(kg: number): number {
+  const { achievedKg } = solvePlates(kg, DEFAULT_PLATE_CONFIG.barKg, DEFAULT_PLATE_CONFIG.plates);
+  // Dla obciążeń poniżej sztangi — zaokrąglij do 0,5 kg.
+  if (kg < DEFAULT_PLATE_CONFIG.barKg) return Math.round(kg * 2) / 2;
+  return achievedKg > 0 ? achievedKg : Math.round(kg * 2) / 2;
+}
+
+export default function PortalCalculatorPage() {
+  const params = useParams<{ token: string }>();
+  const token = params.token;
+  const [records, setRecords] = useState<ClientRecord[] | null>(null);
+  const [exerciseId, setExerciseId] = useState<number | "">("");
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    api.portal
+      .records(token)
+      .then((rows) => {
+        setRecords(rows);
+        if (rows.length > 0) setExerciseId(rows[0].exerciseId);
+      })
+      .catch((e: Error) => setError(e.message));
+  }, [token]);
+
+  useEffect(load, [load]);
+
+  const selected = useMemo(
+    () => records?.find((r) => r.exerciseId === exerciseId) ?? null,
+    [records, exerciseId],
+  );
+
+  const rows = useMemo(() => {
+    if (!selected) return [];
+    const e1 = selected.estimated1Rm;
+    return ZONES.map((z) => {
+      const from = roundToPlate((e1 * z.pctFrom) / 100);
+      const to = roundToPlate((e1 * z.pctTo) / 100);
+      return { ...z, from, to };
+    });
+  }, [selected]);
+
+  return (
+    <div className="mx-auto max-w-lg space-y-8 pb-24">
+      <header>
+        <Link
+          href={`/portal/${token}/progress`}
+          className="text-[13px] font-semibold text-muted hover:text-accent"
+        >
+          ‹ Progres
+        </Link>
+        <p className="mt-2 text-xs font-medium uppercase tracking-caps text-muted">Narzędzia</p>
+        <h1 className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-tight text-foreground sm:text-3xl">
+          Kalkulator %1RM
+        </h1>
+        <p className="mt-1 text-sm text-muted">
+          Strefy obciążenia z Twojego szacowanego maxu — zaokrąglone do realnych talerzy.
+        </p>
+      </header>
+
+      <ErrorBanner message={error} />
+
+      {!records ? (
+        <PortalPageSkeleton label="Wczytuję rekordy…" />
+      ) : records.length === 0 ? (
+        <p className="text-sm text-muted">
+          Najpierw zalicz serie z ciężarem — wtedy zobaczysz strefy per ćwiczenie.
+        </p>
+      ) : (
+        <>
+          <label className="block">
+            <span className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
+              Ćwiczenie
+            </span>
+            <select
+              className="mt-2 w-full min-h-11 rounded-lg border border-border bg-surface-raised px-3 text-[15px] text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+              value={exerciseId === "" ? "" : String(exerciseId)}
+              onChange={(e) => setExerciseId(Number(e.target.value))}
+            >
+              {records.map((r) => (
+                <option key={r.exerciseId} value={r.exerciseId}>
+                  {r.exerciseName} · {formatKg(r.estimated1Rm)} kg
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {selected ? (
+            <section aria-label="Strefy">
+              <p className="mb-3 font-mono text-sm tabular-nums text-muted">
+                Est. 1RM:{" "}
+                <span className="font-semibold text-foreground">
+                  {formatKg(selected.estimated1Rm)} kg
+                </span>
+              </p>
+              <ul className="divide-y divide-border border-y border-border">
+                {rows.map((z) => (
+                  <li key={z.id} className="flex min-h-16 items-baseline justify-between gap-3 py-4">
+                    <div className="min-w-0">
+                      <p className="text-[15px] font-medium text-foreground">{z.label}</p>
+                      <p className="mt-0.5 text-xs text-muted">
+                        {z.pctFrom}–{z.pctTo}% · {z.reps}
+                      </p>
+                    </div>
+                    <p className="shrink-0 font-mono text-lg font-semibold tabular-nums text-foreground">
+                      {formatKg(z.from)}–{formatKg(z.to)}
+                      <span className="ml-1 text-sm font-medium text-muted">kg</span>
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+        </>
+      )}
+    </div>
+  );
+}

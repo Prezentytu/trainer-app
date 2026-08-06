@@ -190,7 +190,7 @@ app.MapGet("/api/clients/{id:int}", async (int id, HttpContext http, AppDb db, I
 
         return Results.Ok(new
         {
-            client.Id, client.Name, client.Email, client.Note, client.CreatedAt,
+            client.Id, client.Name, client.Email, client.Note, client.GoalWeightKg, client.CreatedAt,
             Assignments = client.Assignments
                 .OrderByDescending(a => a.CreatedAt)
                 .Select(a => new
@@ -207,7 +207,14 @@ app.MapPost("/api/clients", async (ClientInput input, HttpContext http, AppDb db
     try
     {
         var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
-        var client = new Client { TrainerId = trainerId, Name = input.Name, Email = input.Email, Note = input.Note };
+        var client = new Client
+        {
+            TrainerId = trainerId,
+            Name = input.Name,
+            Email = input.Email,
+            Note = input.Note,
+            GoalWeightKg = input.GoalWeightKg,
+        };
         db.Clients.Add(client);
         await db.SaveChangesAsync();
         return Results.Created($"/api/clients/{client.Id}", client);
@@ -225,6 +232,7 @@ app.MapPut("/api/clients/{id:int}", async (int id, ClientInput input, HttpContex
         client.Name = input.Name;
         client.Email = input.Email;
         client.Note = input.Note;
+        client.GoalWeightKg = input.GoalWeightKg;
         await db.SaveChangesAsync();
         return Results.Ok(client);
     }
@@ -1634,7 +1642,7 @@ app.MapGet("/api/portal/{token}", async (string token, AppDb db) =>
 
     return Results.Ok(new
     {
-        client = new { access.Client.Id, access.Client.Name },
+        client = new { access.Client.Id, access.Client.Name, access.Client.GoalWeightKg },
         today,
         week,
         inProgressSession = inProgress,
@@ -1888,6 +1896,15 @@ app.MapGet("/api/portal/{token}/trends", async (string token, int? weeks, AppDb 
     var access = await ResolvePortalToken(db, token);
     if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
     return Results.Ok(await Analytics.ClientTrendsAsync(db, access.ClientId, weeks ?? 12));
+}).RequireRateLimiting("portal");
+
+app.MapGet("/api/portal/{token}/stagnation", async (string token, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    var items = await Stagnation.ForClientAsync(db, access.ClientId);
+    if (items.Count == 0) return Results.Content("null", "application/json");
+    return Results.Ok(await Stagnation.ForClientDtoAsync(db, access.ClientId));
 }).RequireRateLimiting("portal");
 
 app.MapGet("/api/portal/{token}/check-ins", async (string token, AppDb db) =>

@@ -109,6 +109,28 @@ public class AnalyticsAndPushTests : IClassFixture<TestWebAppFactory>
     }
 
     [Fact]
+    public async Task PortalStagnation_ReturnsOkOrJsonNull()
+    {
+        var (clientId, _) = await SeedLoggedSetsAsync(
+            muscles: ["Nogi"],
+            sessions: 1,
+            setsPerSession: 1,
+            weight: 50,
+            reps: 8,
+            daysApart: 1,
+            flatWeight: true);
+
+        var token = await PortalTokenAsync(clientId);
+        var res = await _client.GetAsync($"/api/portal/{token}/stagnation");
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        var json = await res.Content.ReadAsStringAsync();
+        Assert.False(string.IsNullOrWhiteSpace(json));
+        using var doc = JsonDocument.Parse(json);
+        Assert.True(
+            doc.RootElement.ValueKind is JsonValueKind.Null or JsonValueKind.Object);
+    }
+
+    [Fact]
     public async Task MostImproved_WhenNoData_ReturnsJsonNull()
     {
         // Results.Ok(null) dawało puste body → błąd parse JSON w portalu.

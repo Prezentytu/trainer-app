@@ -1,6 +1,6 @@
 namespace TrainerApp.Api;
 
-public record ClientInput(string Name, string? Email, string? Note);
+public record ClientInput(string Name, string? Email, string? Note, double? GoalWeightKg = null);
 
 public record ClientIntakeInput(
     string? GoalType = null,
@@ -123,7 +123,9 @@ public record LoggedSetInput(
     double? Rir = null,
     double? Rpe = null,
     bool IsWarmup = false,
-    bool Completed = false);
+    bool Completed = false,
+    string? Note = null,
+    string? Side = null);
 
 public record LoggedExerciseInput(
     int? Id = null,

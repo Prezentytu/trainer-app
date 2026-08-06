@@ -6,6 +6,7 @@ import Link from "next/link";
 import { api, ClientMeasurement } from "@/lib/api";
 import { Button, ErrorBanner, Field, inputClass, inputNumericClass } from "@/components/ui";
 import { WeightTrendSparkline } from "@/components/WeightTrendSparkline";
+import { formatKg } from "@/lib/plates";
 
 function formatDay(iso: string): string {
   const d = new Date(`${iso}T12:00:00`);
@@ -25,6 +26,7 @@ export default function PortalMeasurementsPage() {
   const params = useParams<{ token: string }>();
   const token = params.token;
   const [rows, setRows] = useState<ClientMeasurement[] | null>(null);
+  const [goalWeightKg, setGoalWeightKg] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [weight, setWeight] = useState("");
@@ -32,9 +34,11 @@ export default function PortalMeasurementsPage() {
   const [note, setNote] = useState("");
 
   const load = useCallback(() => {
-    api.portal
-      .measurements(token)
-      .then(setRows)
+    Promise.all([api.portal.measurements(token), api.portal.home(token)])
+      .then(([m, home]) => {
+        setRows(m);
+        setGoalWeightKg(home.client.goalWeightKg ?? null);
+      })
       .catch((e: Error) => setError(e.message));
   }, [token]);
 
@@ -47,6 +51,12 @@ export default function PortalMeasurementsPage() {
       .sort((a, b) => a.measuredOn.localeCompare(b.measuredOn) || a.id - b.id)
       .map((r) => ({ date: r.measuredOn, value: r.weightKg as number }));
   }, [rows]);
+
+  const latestWeight = weightTrend.length > 0 ? weightTrend[weightTrend.length - 1].value : null;
+  const goalDelta =
+    goalWeightKg != null && latestWeight != null
+      ? Math.round((goalWeightKg - latestWeight) * 10) / 10
+      : null;
 
   const add = async () => {
     setSaving(true);
@@ -126,6 +136,28 @@ export default function PortalMeasurementsPage() {
         <p className="text-sm text-muted">Brak pomiarów — dodaj pierwszy powyżej.</p>
       ) : (
         <>
+          {goalWeightKg != null ? (
+            <section aria-label="Cel wagi" className="border-y border-border py-4">
+              <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
+                Cel wagi
+              </p>
+              <p className="mt-2 font-mono text-lg font-semibold tabular-nums text-foreground">
+                Cel: {formatKg(goalWeightKg)} kg
+                {goalDelta != null ? (
+                  <>
+                    {" · "}
+                    <span className={goalDelta === 0 ? "text-muted" : goalDelta < 0 ? "text-gain" : "text-loss"}>
+                      {goalDelta === 0
+                        ? "na celu"
+                        : goalDelta < 0
+                          ? `zostało ${formatKg(Math.abs(goalDelta))} kg`
+                          : `+${formatKg(goalDelta)} kg do celu`}
+                    </span>
+                  </>
+                ) : null}
+              </p>
+            </section>
+          ) : null}
           {weightTrend.length >= 2 ? (
             <section aria-label="Trend wagi" className="border-y border-border py-4">
               <p className="mb-3 font-mono text-xs font-medium uppercase tracking-caps text-muted">

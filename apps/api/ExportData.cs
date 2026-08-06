@@ -64,7 +64,7 @@ public static class ExportData
                     Sets = e.Sets.OrderBy(x => x.SetNumber).Select(x => new
                     {
                         x.SetNumber, x.WeightKg, x.Reps, x.DurationSeconds, x.DistanceMeters,
-                        x.Rir, x.Rpe, x.IsWarmup, x.Completed,
+                        x.Rir, x.Rpe, x.IsWarmup, x.Completed, x.Note, x.Side,
                     }),
                 }),
             })

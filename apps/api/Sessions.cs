@@ -36,7 +36,16 @@ public static class Sessions
         Rpe = s.Rpe,
         IsWarmup = s.IsWarmup,
         Completed = s.Completed,
+        Note = string.IsNullOrWhiteSpace(s.Note) ? null : s.Note.Trim(),
+        Side = NormalizeSide(s.Side),
     };
+
+    static string? NormalizeSide(string? side)
+    {
+        if (string.IsNullOrWhiteSpace(side)) return null;
+        var s = side.Trim().ToLowerInvariant();
+        return s is "left" or "right" ? s : null;
+    }
 
     public static async Task<(WorkoutSession? Session, IResult? Error)> StartAsync(
         AppDb db, StartSessionInput input, bool requireDayOwnedByClient = false)
@@ -127,6 +136,7 @@ public static class Sessions
                     Rpe = s.Rpe,
                     IsWarmup = s.IsWarmup,
                     Completed = false,
+                    Side = s.Side,
                 });
             }
             session.Exercises.Add(logged);
@@ -263,6 +273,8 @@ public static class Sessions
                 set.Rpe = sInput.Rpe;
                 set.IsWarmup = sInput.IsWarmup;
                 set.Completed = sInput.Completed;
+                set.Note = string.IsNullOrWhiteSpace(sInput.Note) ? null : sInput.Note.Trim();
+                set.Side = NormalizeSide(sInput.Side);
             }
 
             var removeSets = logged.Sets.Where(s => s.Id > 0 && !keepSetIds.Contains(s.Id)).ToList();
@@ -314,6 +326,7 @@ public static class Sessions
     public static async Task<object?> LoadDto(AppDb db, int id)
     {
         var session = await db.WorkoutSessions
+            .Include(s => s.Client).ThenInclude(c => c!.Trainer)
             .Include(s => s.Plan)
             .Include(s => s.PlanDay)
             .Include(s => s.Exercises).ThenInclude(e => e.Exercise)

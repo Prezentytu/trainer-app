@@ -11,6 +11,7 @@ import {
   MostImproved,
   MuscleVolumeResponse,
   PortalSessionSummary,
+  StagnationResponse,
 } from "@/lib/api";
 import { ErrorBanner, StatBlock } from "@/components/ui";
 import { PortalPageSkeleton } from "@/components/skeletons";
@@ -18,6 +19,7 @@ import { WeeklyActivityBar } from "@/components/WeeklyActivityBar";
 import { MuscleVolumeBars } from "@/components/MuscleVolumeBars";
 import { LineChart } from "@/components/charts/LineChart";
 import { TrendSparkline } from "@/components/TrendSparkline";
+import { RepMaxList } from "@/components/RepMaxList";
 import { formatDayShort } from "@/lib/dates";
 import { formatKg } from "@/lib/plates";
 
@@ -120,6 +122,7 @@ export default function PortalProgressPage() {
   const [muscleVolume, setMuscleVolume] = useState<MuscleVolumeResponse | null>(null);
   const [trends, setTrends] = useState<ClientTrendsResponse | null>(null);
   const [mostImproved, setMostImproved] = useState<MostImproved | null | undefined>(undefined);
+  const [stagnation, setStagnation] = useState<StagnationResponse | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [expandedRecordId, setExpandedRecordId] = useState<number | null>(null);
   const [statsCache, setStatsCache] = useState<Record<number, ExerciseStats | "loading" | "error">>({});
@@ -131,13 +134,15 @@ export default function PortalProgressPage() {
       api.portal.muscleVolume(token, 4),
       api.portal.trends(token, 12),
       api.portal.mostImproved(token, 90).catch(() => null),
+      api.portal.stagnation(token).catch(() => null),
     ])
-      .then(([s, r, mv, tr, mi]) => {
+      .then(([s, r, mv, tr, mi, st]) => {
         setSessions(s);
         setRecords(r);
         setMuscleVolume(mv);
         setTrends(tr);
         setMostImproved(mi);
+        setStagnation(st);
       })
       .catch((e: Error) => setError(e.message));
   }, [token]);
@@ -249,10 +254,19 @@ export default function PortalProgressPage() {
 
       <ErrorBanner message={error} />
 
-      {!sessions || !records || mostImproved === undefined ? (
+      {!sessions || !records || mostImproved === undefined || stagnation === undefined ? (
         <PortalPageSkeleton label="Wczytuję progres…" />
       ) : (
         <>
+          <section className="flex flex-wrap gap-4">
+            <Link
+              href={`/portal/${token}/calculator`}
+              className="inline-flex min-h-11 items-center text-sm font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+            >
+              Kalkulator %1RM
+            </Link>
+          </section>
+
           <section
             aria-label="Podsumowanie"
             className="grid grid-cols-2 gap-3 border-y border-border py-5 sm:grid-cols-4"
@@ -267,6 +281,28 @@ export default function PortalProgressPage() {
             />
             <StatBlock label="Śr. czas" value={avgDur.value} unit={avgDur.unit || undefined} />
           </section>
+
+          {stagnation && stagnation.items.length > 0 ? (
+            <section aria-label="Warto ruszyć" className="border-y border-border py-5">
+              <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
+                Warto ruszyć
+              </p>
+              <ul className="mt-3 space-y-2">
+                {stagnation.items.slice(0, 3).map((item) => (
+                  <li key={item.exerciseId} className="text-[15px] text-foreground-secondary">
+                    <span className="font-medium text-foreground">{item.exerciseName}</span>
+                    {" — "}
+                    {item.reason === "volume_drop"
+                      ? `tonaż spada ${item.volumeDropWeeks ?? 2} tyg. z rzędu`
+                      : `brak progresu e1RM przez ${item.sessionsWithoutProgress ?? 3} sesje`}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-sm text-muted">
+                Napisz do trenera — razem ustawicie następny bodziec.
+              </p>
+            </section>
+          ) : null}
 
           {mostImproved && mostImproved.percentGain > 0 ? (
             <section
@@ -389,7 +425,13 @@ export default function PortalProgressPage() {
                           ) : exStats === "error" ? (
                             <p className="text-sm text-danger">Nie udało się wczytać trendu.</p>
                           ) : (
-                            <TrendSparkline points={exStats.trend} />
+                            <>
+                              <TrendSparkline points={exStats.trend} />
+                              <p className="mt-4 font-mono text-xs font-medium uppercase tracking-caps text-muted">
+                                Rep-maxy
+                              </p>
+                              <RepMaxList items={exStats.repMaxes} />
+                            </>
                           )}
                         </div>
                       ) : null}

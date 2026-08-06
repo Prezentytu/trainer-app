@@ -273,6 +273,17 @@ export default function PortalProfilePage() {
               </span>
             </Link>
           </li>
+          <li>
+            <Link
+              href={`/portal/${token}/calculator`}
+              className="flex min-h-14 items-center justify-between gap-3 py-2 text-[15px] font-medium text-foreground transition-colors duration-[var(--dur-fast)] hover:text-foreground-secondary focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+            >
+              Kalkulator %1RM
+              <span className="text-muted-faint" aria-hidden>
+                ›
+              </span>
+            </Link>
+          </li>
         </ul>
       </section>
     </div>

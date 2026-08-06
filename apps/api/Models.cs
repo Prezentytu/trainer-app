@@ -18,6 +18,8 @@ public class Client
     public string Name { get; set; } = "";
     public string? Email { get; set; }
     public string? Note { get; set; }
+    /// <summary>Cel masy ciała (kg) — opcjonalny; widoczny w portalowych pomiarach.</summary>
+    public double? GoalWeightKg { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public List<Assignment> Assignments { get; set; } = [];
@@ -333,4 +335,8 @@ public class LoggedSet
     public bool IsWarmup { get; set; }
     /// <summary>Checkmark ukończenia serii (logger Gravitus).</summary>
     public bool Completed { get; set; }
+    /// <summary>Notatka do serii (opcjonalna).</summary>
+    public string? Note { get; set; }
+    /// <summary>Strona unilateral: "left" | "right" | null.</summary>
+    public string? Side { get; set; }
 }

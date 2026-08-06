@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { SessionDetail } from "@/lib/api";
 import { Button, StatBlock } from "@/components/ui";
 import { formatKg } from "@/lib/plates";
@@ -39,15 +40,42 @@ function prHeadline(count: number): string {
   return `${count} rekordów`;
 }
 
+async function shareSessionCard(shareImageUrl: string, title: string) {
+  const res = await fetch(shareImageUrl);
+  if (!res.ok) throw new Error("Nie udało się przygotować karty.");
+  const blob = await res.blob();
+  const file = new File([blob], "trening-repmaxer.png", { type: "image/png" });
+  const canFiles =
+    typeof navigator !== "undefined" &&
+    typeof navigator.canShare === "function" &&
+    navigator.canShare({ files: [file] });
+  if (canFiles && typeof navigator.share === "function") {
+    await navigator.share({ files: [file], title, text: title });
+    return;
+  }
+  // Fallback: pobranie pliku — nigdy nie udostępniamy URL z tokenem.
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = objectUrl;
+  a.download = "trening-repmaxer.png";
+  a.click();
+  URL.revokeObjectURL(objectUrl);
+}
+
 export function SessionSummaryView({
   session,
   onBack,
   onEdit,
+  shareImageUrl,
 }: {
   session: SessionDetail;
   onBack: () => void;
   onEdit: () => void;
+  /** Relative path do PNG (bez ujawniania tokenu przez share URL). */
+  shareImageUrl?: string | null;
 }) {
+  const [sharing, setSharing] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
   const doneTotal = session.exercises.reduce(
     (acc, ex) => {
       const done = ex.sets.filter((s) => s.completed).length;
@@ -57,6 +85,7 @@ export function SessionSummaryView({
   );
   const hasPrs = session.prs.length > 0;
   const volume = Math.round(session.totalVolumeKg).toLocaleString("pl-PL");
+  const shareTitle = `${session.dayLabel ?? "Trening"}${session.planName ? ` · ${session.planName}` : ""}`;
 
   return (
     <div className="mx-auto max-w-lg space-y-8 pb-10">
@@ -159,10 +188,28 @@ export function SessionSummaryView({
         </section>
       ) : null}
 
+      {shareError ? <p className="text-sm text-danger">{shareError}</p> : null}
+
       <div className="flex flex-col gap-2 pt-1">
         <Button full onClick={onBack}>
           Gotowe
         </Button>
+        {shareImageUrl ? (
+          <Button
+            variant="secondary"
+            full
+            disabled={sharing}
+            onClick={() => {
+              setSharing(true);
+              setShareError(null);
+              void shareSessionCard(shareImageUrl, shareTitle)
+                .catch((e: Error) => setShareError(e.message || "Nie udało się udostępnić."))
+                .finally(() => setSharing(false));
+            }}
+          >
+            {sharing ? "Przygotowuję…" : "Udostępnij"}
+          </Button>
+        ) : null}
         <Button variant="ghost" full onClick={onEdit}>
           Popraw wyniki
         </Button>

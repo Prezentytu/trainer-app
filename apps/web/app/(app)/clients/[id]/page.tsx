@@ -25,6 +25,7 @@ import {
 import { daysAgo, formatDayShort, relativeDayLabel, withinLastDays } from "@/lib/dates";
 import { TrendSparkline } from "@/components/TrendSparkline";
 import { WeightTrendSparkline } from "@/components/WeightTrendSparkline";
+import { RepMaxList } from "@/components/RepMaxList";
 import { MuscleVolumeBars } from "@/components/MuscleVolumeBars";
 import { LineChart } from "@/components/charts/LineChart";
 import { ClientIntakeForm, ClientIntakeView } from "@/components/ClientIntakeForm";
@@ -46,6 +47,7 @@ import {
 import { ClientDetailSkeleton } from "@/components/skeletons";
 import { WeeklyActivityBar } from "@/components/WeeklyActivityBar";
 import { formatDurationMinutes } from "@/lib/estimateDuration";
+import { formatKg } from "@/lib/plates";
 
 function PlanPickerCard({ plan, selected, onSelect }: { plan: PlanSummary; selected: boolean; onSelect: () => void }) {
   return (
@@ -106,6 +108,8 @@ export default function ClientDetailsPage() {
   const [measureWeight, setMeasureWeight] = useState("");
   const [measureWaist, setMeasureWaist] = useState("");
   const [showMeasureForm, setShowMeasureForm] = useState(false);
+  const [goalWeightDraft, setGoalWeightDraft] = useState("");
+  const [goalWeightSaving, setGoalWeightSaving] = useState(false);
 
   const [expandedRecordId, setExpandedRecordId] = useState<number | null>(null);
   const [statsCache, setStatsCache] = useState<Record<number, ExerciseStats | "loading" | "error">>({});
@@ -134,6 +138,7 @@ export default function ClientDetailsPage() {
     ])
       .then(([c, p, ex, s, prog, intk, r]) => {
         setClient(c);
+        setGoalWeightDraft(c.goalWeightKg != null ? String(c.goalWeightKg).replace(".", ",") : "");
         const assignable = p.filter((plan) => !plan.isTemplate);
         setPlans(assignable);
         setExercises(ex);
@@ -354,6 +359,31 @@ export default function ClientDetailsPage() {
       load();
     } catch (err) {
       setError((err as Error).message);
+    }
+  };
+
+  const saveGoalWeight = async () => {
+    if (!client) return;
+    setGoalWeightSaving(true);
+    setError(null);
+    try {
+      const raw = goalWeightDraft.trim().replace(",", ".");
+      const goalWeightKg = raw === "" ? null : Number(raw);
+      if (goalWeightKg != null && (!Number.isFinite(goalWeightKg) || goalWeightKg <= 0)) {
+        setError("Podaj prawidłową wagę docelową.");
+        return;
+      }
+      await api.clients.update(client.id, {
+        name: client.name,
+        email: client.email,
+        note: client.note,
+        goalWeightKg,
+      });
+      setClient({ ...client, goalWeightKg });
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setGoalWeightSaving(false);
     }
   };
 
@@ -914,7 +944,13 @@ export default function ClientDetailsPage() {
                             ) : stats === "error" ? (
                               <p className="text-sm text-danger">Nie udało się wczytać trendu.</p>
                             ) : (
-                              <TrendSparkline points={stats.trend} />
+                              <>
+                                <TrendSparkline points={stats.trend} />
+                                <p className="mt-4 font-mono text-xs font-medium uppercase tracking-caps text-muted">
+                                  Rep-maxy
+                                </p>
+                                <RepMaxList items={stats.repMaxes} />
+                              </>
                             )}
                           </div>
                         ) : null}
@@ -1057,6 +1093,36 @@ export default function ClientDetailsPage() {
                   </form>
                 </Card>
               ) : null}
+
+              <Card className="mb-4" eyebrow="Cel" title="Waga docelowa">
+                <div className="flex flex-wrap items-end gap-3">
+                  <Field label="Cel (kg)">
+                    <input
+                      className={inputClass}
+                      inputMode="decimal"
+                      value={goalWeightDraft}
+                      onChange={(e) => setGoalWeightDraft(e.target.value)}
+                      placeholder="np. 78"
+                    />
+                  </Field>
+                  <Button
+                    variant="secondary"
+                    disabled={goalWeightSaving}
+                    onClick={() => void saveGoalWeight()}
+                  >
+                    {goalWeightSaving ? "Zapis…" : "Zapisz cel"}
+                  </Button>
+                </div>
+                {client.goalWeightKg != null ? (
+                  <p className="mt-2 font-mono text-sm tabular-nums text-muted">
+                    Aktualny cel: {formatKg(client.goalWeightKg)} kg
+                  </p>
+                ) : (
+                  <p className="mt-2 text-xs text-muted">
+                    Klient zobaczy cel i dystans na stronie pomiarów.
+                  </p>
+                )}
+              </Card>
 
               {weightTrend.length >= 2 ? (
                 <Card className="mb-4" eyebrow="Trend" title="Waga">

@@ -48,12 +48,12 @@ Status: **Mamy** / **Częściowo** / **Brak** / **Nie kopiować**. Dowody w kodz
 | RPE/RIR per seria w UI | **Mamy** (Fala 0) | Kolumna za przełącznikiem `readLogRir` |
 | Tap-to-dismiss keyboard | **Mamy** (Fala 0) | pointerdown → blur |
 | Reorder ćwiczeń mid-workout | **Mamy** (Fala 0) | W górę / W dół w menu |
-| Notatka per seria | Brak (backlog) | Brak `LoggedSet.Note` — migracja |
+| Notatka per seria | **Mamy** (Fala 3) | Menu wiersza → `LoggedSet.Note` |
 | Notatka sesji w trakcie | Częściowo | Tylko po zakończeniu |
 | Edycja daty sesji po fakcie | Brak (backlog) | Backend przyjmuje; brak UI |
 | Cap 4 h na czas treningu | **Mamy** (Fala 0) | `MaxDurationSeconds` |
 | Typ weight+distance (Farmer's Walk) | Brak (backlog) | Typy: `reps`/`time`/`distance` |
-| Logowanie L/R unilateral | Brak (backlog) | `IsUnilateral` na Exercise, brak side na LoggedSet |
+| Logowanie L/R unilateral | **Mamy** (Fala 3) | Chip L/P + para serii; `LoggedSet.Side` |
 
 ### Szybki start
 
@@ -72,16 +72,17 @@ Status: **Mamy** / **Częściowo** / **Brak** / **Nie kopiować**. Dowody w kodz
 | Wykres e1RM per ćwiczenie | **Mamy** (Fala 2) | Portal: expand rekordu → `TrendSparkline` |
 | Volume / muscle volume | Mamy | `MuscleVolumeBars`, trendy |
 | Most Improved 90 dni | **Mamy** (Fala 2) | `GET …/most-improved` + karta na `/progress` |
-| Waga docelowa | Brak (backlog) | |
+| Waga docelowa | **Mamy** (Fala 3) | `Client.GoalWeightKg` + portal pomiary |
 | Wykres masy ciała | **Mamy** (Fala 2) | Portal `/measurements`: `WeightTrendSparkline` |
 | Kalendarz miesiąca | **Mamy** (Fala 2) | Siatka miesiąca na `/progress` |
 | Śr. długość treningu | **Mamy** (Fala 2) | StatBlock z `durationSeconds` (30 dni) |
 | Cardio totals (czas/dystans) | Brak (backlog) | |
 | Avg RPE | Brak (backlog) | |
-| Kalkulator %1RM + strefy | Brak (Fala 3) | |
-| Share card | Brak (Fala 3) | |
+| Kalkulator %1RM + strefy | **Mamy** (Fala 3) | Portal `/calculator` |
+| Share card | **Mamy** (Fala 3) | PNG + `navigator.share({ files })` |
 | CSV z seriami / import | Częściowo | CSV bez serii; brak importu backupu |
-| Detektor zastoju | Mamy (trener) | Portal nie widzi |
+| Detektor zastoju | **Mamy** (Fala 3) | Portal + trener |
+| Rep-maxy w UI | **Mamy** (Fala 3) | `RepMaxList` w expandzie |
 
 ### Czego NIE kopiować
 
@@ -102,11 +103,12 @@ Kreator planów z %1RM / rampami / superseriami, import planu AI, portal bez kon
 | **0** | BW fix, RIR toggle, craft loggera, 4 h | `2026-08-06-styrka-parity-fale-0-1.md` |
 | **1** | Powtórz ostatni, ostatnio używane, streak kroczący | j.w. |
 | **2** | Most Improved, e1RM/waga w portalu, kalendarz, śr. czas | `2026-08-06-styrka-parity-fala-2.md` |
-| 3+ | share, %1RM UI, CSV, migracje… | backlog poniżej |
+| **3** | Share, %1RM, zastój portalu, rep-maxy, migracja Note/Side/Goal | `2026-08-06-styrka-parity-fala-3.md` |
+| 4+ | CSV, import, cardio, avg RPE, drill-down… | backlog poniżej |
 
-### Backlog (po Fali 2)
+### Backlog (po Fali 3)
 
-Notatka per seria (migracja), L/R, weight+distance, drill-down mięśni, waga docelowa, cardio totals, avg RPE, kalkulator %1RM ze strefami, share card, CSV z seriami + import, licznik wykonań per ćwiczenie, edycja daty sesji.
+Weight+distance w loggerze, drill-down mięśni, cardio totals, avg RPE, CSV z seriami + import, licznik wykonań per ćwiczenie, edycja daty sesji, notatka sesji w trakcie.
 
 ## Wynik audytu Fali D (2026-08-05) — historyczny
 
@@ -122,3 +124,4 @@ Styrka wypuszcza często z „based on user feedback". U nas: changelog po shipa
 - 2026-08-06 — audyt kodu: zweryfikowana inwentaryzacja; BW oznaczony jako martwy; Fale 0–1 wydzielone do `2026-08-06-styrka-parity-fale-0-1.md`.
 - 2026-08-06 — Fale 0–1 wdrożone (patrz changelog w `2026-08-06-styrka-parity-fale-0-1.md`).
 - 2026-08-06 — Fala 2 wdrożona (Most Improved, e1RM/waga w portalu, kalendarz, śr. czas) — `2026-08-06-styrka-parity-fala-2.md`.
+- 2026-08-06 — Fala 3 wdrożona (share, %1RM, zastój, rep-maxy, migracja Note/Side/Goal) — `2026-08-06-styrka-parity-fala-3.md`.
