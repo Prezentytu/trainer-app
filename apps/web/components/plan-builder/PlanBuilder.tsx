@@ -14,7 +14,7 @@ import {
 } from "./ExerciseLibraryContext";
 import { ListView } from "./ListView";
 import { ExerciseFormDialog } from "@/components/ExerciseFormDialog";
-import { PlanHeader, AssignedClientInfo } from "./PlanHeader";
+import { PlanToolbar, AssignedClientInfo } from "./PlanToolbar";
 import { PlanTable } from "./PlanTable";
 import { estimateWeekMinutes, formatDurationApprox } from "./summaryText";
 import { useBuilderDnd } from "./useBuilderDnd";
@@ -53,6 +53,7 @@ export default function PlanBuilder({
   initialWeekCount,
   initialDays,
   stepLabel,
+  onExit,
 }: {
   plan?: Plan;
   initialName?: string;
@@ -63,6 +64,8 @@ export default function PlanBuilder({
   initialDays?: BuilderDay[];
   /** np. „Krok 2 z 3 · zbuduj plan ćwiczeniami” — tylko nowy plan */
   stepLabel?: string;
+  /** Wyjście z edycji istniejącego planu (menu ··· → Anuluj edycję). */
+  onExit?: () => void;
 }) {
   const library = useExerciseLibrary();
   const [viewMode, setViewMode] = useState<ViewMode>(loadInitialViewMode);
@@ -176,7 +179,6 @@ export default function PlanBuilder({
     return `${count} ćwiczeń · ${formatDurationApprox(mins)}`;
   }, [weekItems, library.exercises]);
 
-  const daysPerWeek = draft.visibleDays.length;
   const submitLabel = plan ? "Zapisz plan" : "Utwórz plan";
 
   const boardCallbacks = {
@@ -198,116 +200,122 @@ export default function PlanBuilder({
 
   return (
     <ExerciseLibraryProvider value={libraryActions}>
-      <form onSubmit={persistence.handleSubmit}>
-        <ErrorBanner message={persistence.error} />
+      <form
+        onSubmit={persistence.handleSubmit}
+        className="flex min-h-0 min-w-0 flex-1 flex-col"
+      >
+        <div className="shrink-0">
+          <ErrorBanner message={persistence.error} />
 
-        <PlanHeader
-          name={draft.name}
-          onNameChange={draft.setName}
-          isTemplate={draft.isTemplate}
-          onIsTemplateChange={draft.setIsTemplate}
-          description={draft.description}
-          onDescriptionChange={draft.setDescription}
-          daysPerWeek={daysPerWeek}
-          activeWeek={draft.activeWeek}
-          weeksCount={draft.weeks.length}
-          lastSavedAt={persistence.lastSavedAt}
-          isDirty={persistence.isDirty}
-          planId={plan?.id}
-          assigned={assigned}
-          onAssigned={setAssigned}
-          saving={persistence.saving}
-          submitLabel={submitLabel}
-          stepLabel={stepLabel}
-        />
-
-        <div className="mb-3 flex justify-end">
-          <SegmentedControl
-            items={[
-              { value: "list", label: "Lista" },
-              { value: "board", label: "Tablica" },
-              { value: "table", label: "Arkusz" },
-            ]}
-            value={viewMode}
-            onChange={(v) => setViewMode(v as ViewMode)}
+          <PlanToolbar
+            name={draft.name}
+            onNameChange={draft.setName}
+            isTemplate={draft.isTemplate}
+            onIsTemplateChange={draft.setIsTemplate}
+            description={draft.description}
+            onDescriptionChange={draft.setDescription}
+            weeksCount={draft.weeks.length}
+            lastSavedAt={persistence.lastSavedAt}
+            isDirty={persistence.isDirty}
+            planId={plan?.id}
+            assigned={assigned}
+            onAssigned={setAssigned}
+            saving={persistence.saving}
+            submitLabel={submitLabel}
+            stepLabel={stepLabel}
+            onExit={onExit}
           />
+
+          <WeekTabs
+            weeks={draft.weeks}
+            activeWeek={draft.activeWeek}
+            onSelect={draft.setActiveWeek}
+            onAddWeek={draft.addWeek}
+            onCopyWeek={draft.copyWeek}
+            metaLabel={viewMode === "list" ? undefined : weekMeta}
+            right={
+              <SegmentedControl
+                items={[
+                  { value: "list", label: "Lista" },
+                  { value: "board", label: "Tablica" },
+                  { value: "table", label: "Arkusz" },
+                ]}
+                value={viewMode}
+                onChange={(v) => setViewMode(v as ViewMode)}
+              />
+            }
+          />
+
+          {library.loading && library.exercises.length === 0 ? (
+            <div className="mb-3 rounded-xl border border-border bg-surface p-3">
+              <PlanBuilderLibrarySkeleton />
+            </div>
+          ) : null}
         </div>
 
-        <WeekTabs
-          weeks={draft.weeks}
-          activeWeek={draft.activeWeek}
-          onSelect={draft.setActiveWeek}
-          onAddWeek={draft.addWeek}
-          onCopyWeek={draft.copyWeek}
-          metaLabel={viewMode === "list" ? undefined : weekMeta}
-        />
-
-        {library.loading && library.exercises.length === 0 ? (
-          <div className="mb-4 rounded-xl border border-border bg-surface p-3">
-            <PlanBuilderLibrarySkeleton />
-          </div>
-        ) : null}
-
         {viewMode === "list" ? (
-          <ListView
-            days={draft.visibleDays}
-            exercises={library.exercises}
-            onAddDay={() => draft.addDay(draft.activeWeek)}
-            onPatchDay={draft.patchDay}
-            onRemoveDay={draft.removeDay}
-            onDuplicateDay={draft.duplicateDay}
-            onAddItem={draft.addItem}
-            onAddItemAt={draft.addItemAt}
-            onPatchItem={draft.patchItem}
-            onRemoveItem={draft.removeItem}
-            onDuplicateItem={draft.duplicateItem}
-            onToggleWarmup={draft.toggleWarmup}
-            onAddSet={draft.addSet}
-            onPatchSet={draft.patchSet}
-            onRemoveSet={draft.removeSet}
-            onApplyPreset={draft.applyPreset}
-            onClearSets={draft.clearSets}
-          />
-        ) : viewMode === "board" ? (
-          <DndContext
-            sensors={dnd.sensors}
-            collisionDetection={dnd.collisionDetection}
-            onDragStart={dnd.handleDragStart}
-            onDragOver={dnd.handleDragOver}
-            onDragEnd={dnd.handleDragEnd}
-          >
-            <DayBoard
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <ListView
               days={draft.visibleDays}
               exercises={library.exercises}
-              dropTarget={dnd.dropTarget}
-              selectionDayKey={selectionDayKey}
-              selectedKeys={selectedKeys}
-              onSelectionChange={(dayKey, keys) => {
-                setSelectionDayKey(dayKey);
-                setSelectedKeys(keys);
-              }}
-              onOpenDrawer={setDrawerDayKey}
-              onLinkSelected={draft.linkSelected}
-              onUnlinkGroup={draft.unlinkGroup}
-              {...boardCallbacks}
+              onAddDay={() => draft.addDay(draft.activeWeek)}
+              onPatchDay={draft.patchDay}
+              onRemoveDay={draft.removeDay}
+              onDuplicateDay={draft.duplicateDay}
+              onAddItem={draft.addItem}
+              onAddItemAt={draft.addItemAt}
+              onPatchItem={draft.patchItem}
+              onRemoveItem={draft.removeItem}
+              onDuplicateItem={draft.duplicateItem}
+              onToggleWarmup={draft.toggleWarmup}
+              onAddSet={draft.addSet}
+              onPatchSet={draft.patchSet}
+              onRemoveSet={draft.removeSet}
+              onApplyPreset={draft.applyPreset}
+              onClearSets={draft.clearSets}
             />
-            <DragOverlay>
-              {dnd.activeDragItem && (
-                <div
-                  className="w-[248px] rounded-[10px] border border-accent-strong bg-surface-hover px-3 py-2.5 shadow-raised"
-                  style={{ transform: "rotate(-2deg)" }}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-accent-strong">⠿</span>
-                    <span className="text-sm font-semibold">{dnd.activeDragItem.exerciseName}</span>
+          </div>
+        ) : viewMode === "board" ? (
+          <div className="min-h-0 flex-1">
+            <DndContext
+              sensors={dnd.sensors}
+              collisionDetection={dnd.collisionDetection}
+              onDragStart={dnd.handleDragStart}
+              onDragOver={dnd.handleDragOver}
+              onDragEnd={dnd.handleDragEnd}
+            >
+              <DayBoard
+                days={draft.visibleDays}
+                exercises={library.exercises}
+                dropTarget={dnd.dropTarget}
+                selectionDayKey={selectionDayKey}
+                selectedKeys={selectedKeys}
+                onSelectionChange={(dayKey, keys) => {
+                  setSelectionDayKey(dayKey);
+                  setSelectedKeys(keys);
+                }}
+                onOpenDrawer={setDrawerDayKey}
+                onLinkSelected={draft.linkSelected}
+                onUnlinkGroup={draft.unlinkGroup}
+                {...boardCallbacks}
+              />
+              <DragOverlay>
+                {dnd.activeDragItem && (
+                  <div className="w-[280px] rounded-[10px] border border-border-strong bg-surface-active px-3 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-faint">⠿</span>
+                      <span className="text-[15px] font-medium">{dnd.activeDragItem.exerciseName}</span>
+                    </div>
+                    <p className="mt-1 pl-5 font-mono text-[12px] text-muted">Przenoszenie…</p>
                   </div>
-                  <p className="mt-1 pl-6 font-mono text-xs text-muted">Przenoszenie…</p>
-                </div>
-              )}
-            </DragOverlay>
-          </DndContext>
+                )}
+              </DragOverlay>
+            </DndContext>
+          </div>
         ) : (
-          <PlanTable days={draft.visibleDays} exercises={library.exercises} {...boardCallbacks} />
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <PlanTable days={draft.visibleDays} exercises={library.exercises} {...boardCallbacks} />
+          </div>
         )}
 
         <ExerciseDrawer

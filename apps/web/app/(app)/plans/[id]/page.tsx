@@ -1,225 +1,84 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { api, Plan, PlanDay, PlanItem, rirFromRpe } from "@/lib/api";
-import { ExerciseThumb } from "@/components/ExerciseThumb";
-import { formatMeasureCore, MEASURE_LABELS } from "@/lib/measure";
-import { buildGroupLabels } from "@/lib/supersets";
+import { api, Plan, PlanItem } from "@/lib/api";
 import PlanBuilder from "@/components/plan-builder/PlanBuilder";
+import { PlanBoard } from "@/components/plan-view/PlanBoard";
+import { PlanItemPanel } from "@/components/plan-view/PlanItemPanel";
 import { PlanDetailSkeleton } from "@/components/skeletons";
-import { Badge, Button, Card, Dialog, ErrorBanner, formatRest, PageHeader, Pill } from "@/components/ui";
-
-function repsText(item: PlanItem): string {
-  return formatMeasureCore(item, undefined);
-}
-
-function intensityText(item: PlanItem): string | null {
-  if (item.targetRir != null) return `RIR ${item.targetRir}`;
-  if (item.targetRpe != null) return `RPE ${item.targetRpe} (≈ RIR ${rirFromRpe(item.targetRpe)})`;
-  return null;
-}
-
-function prescribedSetMeta(s: PlanItem["prescribedSets"][number]) {
-  const reps =
-    s.durationSeconds != null
-      ? `${s.durationSeconds}s`
-      : s.repsMax
-        ? `${s.reps}–${s.repsMax}`
-        : s.reps != null
-          ? `${s.reps}`
-          : "—";
-  const load =
-    s.computedLoadKg != null
-      ? `${s.computedLoadKg} kg`
-      : s.loadPercent != null
-        ? `${s.loadPercent}%${s.percentOf === "1rm" ? " 1RM" : s.percentOf === "top" ? " od topu" : ""}`
-        : "—";
-  return { reps, load };
-}
-
-function PrescribedSets({ item }: { item: PlanItem }) {
-  if (item.prescribedSets.length === 0) return null;
-  return (
-    <>
-      {/* Mobile: karty zamiast szerokiej tabeli */}
-      <ul className="mt-2 space-y-2 sm:hidden">
-        {item.prescribedSets.map((s) => {
-          const { reps, load } = prescribedSetMeta(s);
-          return (
-            <li key={s.id} className="rounded-md border border-border bg-surface-sunken p-3 text-xs">
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="font-mono tabular-nums text-muted">Seria {s.order}</span>
-                {s.role ? <span className="text-muted-strong">{s.role}</span> : null}
-              </div>
-              <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
-                <span>
-                  <span className="text-muted">Powt. </span>
-                  <span className="font-mono font-semibold tabular-nums text-foreground">{reps}</span>
-                </span>
-                <span>
-                  <span className="text-muted">Obc. </span>
-                  <span className="font-mono font-semibold tabular-nums text-foreground">{load}</span>
-                </span>
-                {s.targetRir != null ? (
-                  <span>
-                    <span className="text-muted">RIR </span>
-                    <span className="font-mono tabular-nums text-foreground">{s.targetRir}</span>
-                  </span>
-                ) : null}
-              </div>
-              {s.note ? <p className="mt-1 text-muted-strong">{s.note}</p> : null}
-            </li>
-          );
-        })}
-      </ul>
-      <div className="mt-2 hidden overflow-x-auto rounded-lg border border-border sm:block">
-        <table className="w-full text-left text-xs">
-          <thead className="bg-surface text-xs uppercase tracking-caps text-muted">
-            <tr>
-              <th className="px-3 py-1.5">#</th>
-              <th className="px-3 py-1.5">Rola</th>
-              <th className="px-3 py-1.5">Powt./czas</th>
-              <th className="px-3 py-1.5">Obciążenie</th>
-              <th className="px-3 py-1.5">RIR</th>
-              <th className="px-3 py-1.5">Notatka</th>
-            </tr>
-          </thead>
-          <tbody>
-            {item.prescribedSets.map((s) => {
-              const { reps, load } = prescribedSetMeta(s);
-              return (
-                <tr key={s.id} className="border-t border-border">
-                  <td className="px-3 py-1.5 font-mono tabular-nums text-muted">{s.order}</td>
-                  <td className="px-3 py-1.5 text-muted-strong">{s.role ?? "—"}</td>
-                  <td className="px-3 py-1.5 font-mono text-sm font-semibold tabular-nums">{reps}</td>
-                  <td className="px-3 py-1.5 font-mono text-sm font-semibold tabular-nums text-foreground">
-                    {load}
-                    {s.computedLoadKg != null && s.loadPercent != null && (
-                      <span className="ml-1 text-xs font-normal text-muted">({s.loadPercent}%)</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-1.5 font-mono tabular-nums text-muted-strong">{s.targetRir ?? "—"}</td>
-                  <td className="px-3 py-1.5 text-muted-strong">{s.note ?? ""}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </>
-  );
-}
-
-function ItemView({
-  item,
-  label,
-}: {
-  item: PlanItem;
-  label: string | null;
-}) {
-  return (
-    <div
-      className={`rounded-[10px] border bg-surface p-3 ${
-        item.supersetGroup != null ? "border-accent/50 border-l-[3px] bg-accent-dim/40" : "border-border"
-      }`}
-    >
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="h-10 w-10 shrink-0">
-          <ExerciseThumb
-            variant="square"
-            youtubeId={item.demoYoutubeId}
-            category={item.category}
-            alt={item.exerciseName}
-          />
-        </div>
-        <span className="min-w-0 break-words font-medium">{item.exerciseName}</span>
-        {item.isWarmup && <Badge tone="neutral">rozgrzewka</Badge>}
-        {label && <Badge tone="accent">{label}</Badge>}
-        <span className="shrink-0 text-xs text-muted">{MEASURE_LABELS[item.measureType]}</span>
-      </div>
-
-      <div className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1 font-mono tabular-nums">
-        <span className="text-sm font-semibold text-foreground">
-          {item.sets} <span className="text-muted">×</span> {repsText(item)}
-        </span>
-        {item.loadKg != null && (
-          <span className="text-sm font-semibold text-foreground">{item.loadKg} kg</span>
-        )}
-        {intensityText(item) && <span className="text-sm font-semibold text-foreground">{intensityText(item)}</span>}
-      </div>
-
-      <p className="mt-1 font-mono text-xs tabular-nums text-muted">
-        {item.tempo ? `tempo ${item.tempo} · ` : ""}
-        {`przerwa ${formatRest(item.restBetweenSetsSeconds)}`}
-        {item.setScheme ? ` · ${item.setScheme}` : ""}
-      </p>
-      {item.notes && <p className="mt-1 text-xs text-muted">Notatka: {item.notes}</p>}
-      <PrescribedSets item={item} />
-    </div>
-  );
-}
-
-function DayView({ day }: { day: PlanDay }) {
-  const labels = buildGroupLabels(day.items.map((i) => i.supersetGroup));
-  const hasWarmup = day.items.some((i) => i.isWarmup);
-  const firstMainIdx = day.items.findIndex((i) => !i.isWarmup);
-  return (
-    <div className="rounded-lg border border-border bg-surface-sunken/60 p-4">
-      <div className="mb-2 flex flex-wrap items-center gap-2">
-        <span className="break-words font-semibold">{day.label}</span>
-        {day.notes && <span className="break-words text-xs text-muted">— {day.notes}</span>}
-      </div>
-      <div className="grid gap-2">
-        {day.items.map((item, idx) => {
-          const showWarmupCaption = hasWarmup && item.isWarmup && (idx === 0 || !day.items[idx - 1]?.isWarmup);
-          const showMainCaption = hasWarmup && idx === firstMainIdx;
-          return (
-            <div key={item.id} className="grid gap-2">
-              {showWarmupCaption ? (
-                <div className="mt-1 flex items-center gap-2">
-                  <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-faint">
-                    Rozgrzewka
-                  </span>
-                  <span className="h-px flex-1 bg-border" />
-                </div>
-              ) : null}
-              {showMainCaption ? (
-                <div className="mt-1 flex items-center gap-2">
-                  <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-faint">
-                    Część główna
-                  </span>
-                  <span className="h-px flex-1 bg-border" />
-                </div>
-              ) : null}
-              <ItemView item={item} label={labels[idx]} />
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+import {
+  Avatar,
+  Badge,
+  Button,
+  Dialog,
+  EmptyState,
+  ErrorBanner,
+  OverflowMenu,
+  Toolbar,
+} from "@/components/ui";
+import { polishDayCount, polishExerciseCount } from "@/lib/plural";
 
 export default function PlanDetailsPage() {
   const params = useParams<{ id: string }>();
   const planId = Number(params.id);
+  const panelId = useId();
 
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [clientNames, setClientNames] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [activeWeek, setActiveWeek] = useState<number | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
   useEffect(() => {
-    api.plans
-      .get(planId)
-      .then((p) => {
+    let cancelled = false;
+    Promise.all([api.plans.get(planId), api.assignments.list()])
+      .then(([p, assignments]) => {
+        if (cancelled) return;
         setPlan(p);
-        setActiveWeek((prev) => prev ?? [...new Set(p.days.map((d) => d.weekNumber))].sort((a, b) => a - b)[0] ?? 1);
+        setActiveWeek(
+          (prev) =>
+            prev ??
+            [...new Set(p.days.map((d) => d.weekNumber))].sort((a, b) => a - b)[0] ??
+            1,
+        );
+        setClientNames(
+          assignments
+            .filter((a) => a.planId === planId && a.status === "active")
+            .map((a) => a.clientName),
+        );
       })
-      .catch((e: Error) => setError(e.message));
+      .catch((e: Error) => {
+        if (!cancelled) setError(e.message);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [planId, editing]);
+
+  const weeks = useMemo(
+    () => (plan ? [...new Set(plan.days.map((d) => d.weekNumber))].sort((a, b) => a - b) : []),
+    [plan],
+  );
+  const currentWeek = activeWeek ?? weeks[0] ?? 1;
+
+  const weekDays = useMemo(() => {
+    if (!plan) return [];
+    return plan.days
+      .filter((d) => d.weekNumber === currentWeek)
+      .sort((a, b) => a.order - b.order);
+  }, [plan, currentWeek]);
+
+  const selectedItem: PlanItem | null = useMemo(() => {
+    if (selectedItemId == null || !plan) return null;
+    for (const day of plan.days) {
+      const found = day.items.find((i) => i.id === selectedItemId);
+      if (found) return found;
+    }
+    return null;
+  }, [plan, selectedItemId]);
 
   if (!plan) {
     return (
@@ -232,16 +91,8 @@ export default function PlanDetailsPage() {
 
   if (editing) {
     return (
-      <div>
-        <PageHeader
-          title={`Edycja: ${plan.name}`}
-          action={
-            <Button variant="ghost" onClick={() => setCancelOpen(true)}>
-              Anuluj edycję
-            </Button>
-          }
-        />
-        <PlanBuilder plan={plan} />
+      <div className="flex min-h-0 flex-1 flex-col">
+        <PlanBuilder plan={plan} onExit={() => setCancelOpen(true)} />
         <Dialog
           open={cancelOpen}
           title="Opuścić edycję?"
@@ -259,56 +110,131 @@ export default function PlanDetailsPage() {
     );
   }
 
-  const weeks = [...new Set(plan.days.map((d) => d.weekNumber))].sort((a, b) => a - b);
-  const currentWeek = activeWeek ?? weeks[0] ?? 1;
-  const currentIndex = Math.max(weeks.indexOf(currentWeek), 0);
+  const weekMeta = `${polishDayCount(plan.daysCount)} · ${polishExerciseCount(plan.exerciseCount)}`;
+  const visibleClients = clientNames.slice(0, 4);
+  const extraClients = clientNames.length - visibleClients.length;
 
   return (
-    <div>
-      <PageHeader
-        title={plan.name}
-        subtitle={plan.description ?? undefined}
-        action={<Button onClick={() => setEditing(true)}>Edytuj plan</Button>}
-      />
-      <ErrorBanner message={error} />
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="shrink-0">
+        <Toolbar
+          left={
+            <>
+              <h1
+                title={plan.name}
+                className="min-w-0 truncate text-base font-semibold tracking-tight text-foreground"
+              >
+                {plan.name}
+              </h1>
+              {plan.isTemplate ? <Badge tone="accent">Wielokrotnego użytku</Badge> : null}
+              {clientNames.length > 0 ? (
+                <div className="flex shrink-0 -space-x-1.5" title={clientNames.join(", ")}>
+                  {visibleClients.map((name) => (
+                    <span key={name} className="rounded-full ring-2 ring-background">
+                      <Avatar name={name} size="sm" />
+                    </span>
+                  ))}
+                  {extraClients > 0 ? (
+                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-surface-raised font-mono text-[10px] font-semibold text-muted ring-2 ring-background">
+                      +{extraClients}
+                    </span>
+                  ) : null}
+                </div>
+              ) : plan.assignedCount > 0 ? (
+                <Badge tone="positive">{plan.assignedCount}</Badge>
+              ) : null}
+            </>
+          }
+          right={
+            <>
+              <OverflowMenu label="Szczegóły planu" align="right">
+                <div className="max-w-xs space-y-1 px-3 py-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-faint">
+                    Zasady / opis
+                  </p>
+                  <p className="text-sm leading-snug text-foreground-secondary">
+                    {plan.description?.trim() || "Brak opisu planu."}
+                  </p>
+                </div>
+              </OverflowMenu>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setSelectedItemId(null);
+                  setEditing(true);
+                }}
+              >
+                Edytuj plan
+              </Button>
+            </>
+          }
+        />
+        <ErrorBanner message={error} />
 
-      <div className="mb-4 flex items-center gap-2">
-        <Badge tone={plan.isTemplate ? "accent" : "neutral"}>
-          {plan.isTemplate ? "Wielokrotnego użytku" : "plan klienta"}
-        </Badge>
-        <Badge tone="neutral">
-          <span className="font-mono tabular-nums">
-            {plan.weeksCount} tyg. · {plan.daysCount} dni · {plan.exerciseCount} ćwiczeń
-          </span>
-        </Badge>
-        {plan.assignedCount > 0 && (
-          <Badge tone="positive">{plan.assignedCount} aktywne przypisania</Badge>
-        )}
+        <div className="flex min-h-9 items-center gap-2 border-b border-border py-1.5">
+          {weeks.length > 1 ? (
+            <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto overscroll-x-contain">
+              {weeks.map((week) => (
+                <button
+                  key={week}
+                  type="button"
+                  onClick={() => {
+                    setSelectedItemId(null);
+                    setActiveWeek(week);
+                  }}
+                  aria-label={`Tydzień ${week}`}
+                  aria-current={week === currentWeek ? "true" : undefined}
+                  className={`min-w-8 shrink-0 rounded-full px-2.5 py-1.5 font-mono text-sm tabular-nums transition-colors ${
+                    week === currentWeek
+                      ? "border border-border-strong bg-surface-active font-semibold text-foreground"
+                      : "border border-border bg-surface text-foreground-secondary hover:border-border-strong"
+                  }`}
+                >
+                  {week}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="flex-1" />
+          )}
+          <span className="shrink-0 font-mono text-[11px] tabular-nums text-muted-faint">{weekMeta}</span>
+        </div>
       </div>
 
-      {weeks.length > 1 && (
-        <Card className="mb-4">
-          <div className="mb-3 text-xs text-muted">
-            Tydzień {currentIndex + 1} z {weeks.length}
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {weeks.map((week) => (
-              <Pill key={week} active={week === currentWeek} onClick={() => setActiveWeek(week)}>
-                Tydzień {week}
-              </Pill>
-            ))}
-          </div>
-        </Card>
+      {weekDays.length === 0 ? (
+        <EmptyState
+          title="Brak dni w tym tygodniu"
+          action={
+            <Button
+              size="sm"
+              onClick={() => {
+                setSelectedItemId(null);
+                setEditing(true);
+              }}
+            >
+              Edytuj plan
+            </Button>
+          }
+        >
+          Dodaj dzień w edycji planu — pojawi się tu jako kolumna boardu.
+        </EmptyState>
+      ) : (
+        <div className="min-h-0 flex-1">
+          <PlanBoard
+            days={weekDays}
+            selectedItemId={selectedItemId}
+            panelId={panelId}
+            onSelectItem={(id) => setSelectedItemId((prev) => (prev === id ? null : id))}
+          />
+        </div>
       )}
 
-      <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(18rem,1fr))]">
-        {plan.days
-          .filter((d) => d.weekNumber === currentWeek)
-          .sort((a, b) => a.order - b.order)
-          .map((day) => (
-            <DayView key={day.id} day={day} />
-          ))}
-      </div>
+      <PlanItemPanel
+        item={selectedItem}
+        open={selectedItemId != null && selectedItem != null}
+        panelId={panelId}
+        onClose={() => setSelectedItemId(null)}
+      />
     </div>
   );
 }

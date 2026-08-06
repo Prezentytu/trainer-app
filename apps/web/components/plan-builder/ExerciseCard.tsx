@@ -3,11 +3,9 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Exercise } from "@/lib/api";
-import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { IconButton } from "@/components/ui";
-import { demoMedia } from "@/lib/youtube";
 import { ExerciseEditor } from "./ExerciseEditor";
-import { summaryText } from "./summaryText";
+import { schemeParts } from "./summaryText";
 import { BuilderItem, BuilderSet } from "./types";
 
 export function ExerciseCard({
@@ -49,7 +47,9 @@ export function ExerciseCard({
   onApplyPreset: (presetId: string) => void;
   onClearSets: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.key });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.key,
+  });
 
   if (expanded) {
     return (
@@ -71,26 +71,26 @@ export function ExerciseCard({
     );
   }
 
-  const summary = summaryText(item, exercise);
-  const parts = summary.split(" · ");
-  const restPart = parts.length > 1 ? parts[parts.length - 1] : null;
-  const mainSummary =
-    restPart && /^\d/.test(restPart.replace("~", "")) && (restPart.includes("s") || restPart.includes("min"))
-      ? parts.slice(0, -1).join(" · ")
-      : summary;
-  const restLabel =
-    restPart && (restPart.includes("s") || restPart.includes("min")) && mainSummary !== summary ? restPart : null;
+  const { primary, meta } = schemeParts(item, exercise);
 
   return (
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`group rounded-[10px] border p-3 transition-colors ${
-        nested ? "border-border bg-surface" : "border-border bg-surface"
-      } ${selected ? "border-accent-strong bg-surface-hover" : ""} ${isDragging ? "opacity-40" : ""}`}
+      className={[
+        "group min-w-0 transition-[background-color,border-color,opacity] duration-[var(--dur-fast)]",
+        nested
+          ? selected
+            ? "bg-surface-active"
+            : "bg-transparent hover:bg-surface-hover"
+          : selected
+            ? "rounded-[10px] border border-border-strong bg-surface-active"
+            : "rounded-[10px] border border-border bg-surface hover:border-border-strong hover:bg-surface-hover",
+        isDragging ? "opacity-40" : "",
+      ].join(" ")}
     >
-      <div className="flex items-start gap-2">
-        {onToggleSelect && (
+      <div className="flex min-h-[var(--tap-min)] items-start gap-1.5 px-3 py-2.5">
+        {onToggleSelect ? (
           <button
             type="button"
             onClick={(e) => {
@@ -98,9 +98,9 @@ export function ExerciseCard({
               onToggleSelect();
             }}
             aria-label={selected ? "Odznacz" : "Zaznacz"}
-            className={`mt-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-md border text-[10px] transition-opacity ${
+            className={`mt-1 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-md border text-[10px] transition-opacity ${
               selected
-                ? "border-accent bg-accent text-accent-foreground opacity-100"
+                ? "border-invert-bg bg-invert-bg text-invert-fg opacity-100"
                 : showCheckbox
                   ? "border-border-strong bg-surface-sunken opacity-100"
                   : "border-border-strong bg-surface-sunken opacity-0 group-hover:opacity-100"
@@ -108,37 +108,26 @@ export function ExerciseCard({
           >
             {selected ? "✓" : ""}
           </button>
-        )}
+        ) : null}
         <button
           type="button"
           {...attributes}
           {...listeners}
           aria-label="Przeciągnij"
-          className="mt-0.5 shrink-0 cursor-grab touch-none text-muted-faint opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing"
+          className="mt-1 shrink-0 cursor-grab touch-none text-muted-faint opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing"
         >
           ⠿
         </button>
-        {badge ? (
-          <span className="mt-0.5 inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded font-mono text-xs font-semibold tabular-nums text-accent-strong">
-            {badge}
-          </span>
-        ) : null}
         <button type="button" onClick={onToggleExpand} className="min-w-0 flex-1 text-left">
-          <div className="flex items-center gap-2">
-            <div className="h-10 w-10 shrink-0">
-              <ExerciseThumb
-                variant="square"
-                youtubeId={demoMedia(exercise).youtubeId}
-                category={exercise?.category}
-                alt={item.exerciseName}
-              />
-            </div>
-            <span className="min-w-0 break-words text-sm font-medium text-foreground">{item.exerciseName}</span>
-            {item.isWarmup ? (
-              <span className="shrink-0 rounded-full bg-surface-active px-2 py-0.5 text-xs text-muted">
-                rozgrzewka
+          <div className="flex min-w-0 items-baseline gap-x-2">
+            {badge ? (
+              <span className="shrink-0 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-faint">
+                {badge}
               </span>
             ) : null}
+            <span className="min-w-0 break-words text-[15px] font-medium text-foreground">
+              {item.exerciseName}
+            </span>
             {item.notes ? (
               <span
                 title={item.notes}
@@ -147,9 +136,9 @@ export function ExerciseCard({
               />
             ) : null}
           </div>
-          <p className={`mt-1 font-mono text-xs tabular-nums text-muted ${badge ? "pl-0" : ""}`}>
-            {mainSummary}
-            {restLabel ? <span className="text-muted-faint"> · {restLabel}</span> : null}
+          <p className="mt-1 min-w-0 break-words font-mono text-[12px] tabular-nums">
+            <span className="font-semibold text-foreground-secondary">{primary}</span>
+            {meta ? <span className="text-muted-faint"> · {meta}</span> : null}
           </p>
         </button>
         <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">

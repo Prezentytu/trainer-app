@@ -238,18 +238,39 @@ export function SessionLoggerSkeleton() {
 
 export function PlanDetailSkeleton() {
   return (
-    <div aria-busy aria-label="Wczytuję plan" className="skeleton-defer space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-2">
-          <Skeleton className="h-7 w-56" />
-          <Skeleton className="h-4 w-40" />
+    <div aria-busy aria-label="Wczytuję plan" className="skeleton-defer flex min-h-0 flex-1 flex-col">
+      <div className="flex min-h-11 shrink-0 items-center justify-between gap-3 border-b border-border py-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <Skeleton className="h-5 w-48 max-w-[50%]" />
+          <Skeleton className="h-5 w-28 rounded-full" />
         </div>
-        <Skeleton className="h-10 w-32 rounded-md" />
+        <div className="flex shrink-0 items-center gap-2">
+          <Skeleton className="h-8 w-8 rounded-full" />
+          <Skeleton className="h-8 w-24 rounded-md" />
+        </div>
       </div>
-      <Skeleton className="h-10 w-full max-w-md rounded-md" />
-      <div className="space-y-3">
+      <div className="flex min-h-9 shrink-0 items-center justify-between gap-2 border-b border-border py-1.5">
+        <div className="flex gap-1">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-8 w-8 shrink-0 rounded-full" />
+          ))}
+        </div>
+        <Skeleton className="h-3 w-28" />
+      </div>
+      <div className="mt-3 flex min-h-0 flex-1 flex-col gap-3 md:flex-row md:overflow-hidden">
         {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} className="h-40 w-full rounded-xl" />
+          <div
+            key={i}
+            className="w-full shrink-0 space-y-2 rounded-[var(--r-card)] border border-border bg-surface p-3 md:w-[300px]"
+          >
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-3 w-40" />
+            <div className="space-y-2 pt-2">
+              {Array.from({ length: 3 }).map((_, j) => (
+                <Skeleton key={j} className="h-14 w-full rounded-[10px]" />
+              ))}
+            </div>
+          </div>
         ))}
       </div>
     </div>

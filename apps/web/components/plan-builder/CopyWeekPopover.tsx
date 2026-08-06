@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Button, Field, Switch, inputClass } from "@/components/ui";
+import { Icon } from "@/components/Icon";
+import { Button, Field, IconButton, Switch, inputClass } from "@/components/ui";
 
 export type CopyWeekProgression = {
   mode: "none" | "kg" | "percent" | "reps";
@@ -51,15 +52,17 @@ export function CopyWeekPopover({
 
   return (
     <div className="relative" ref={ref}>
-      <button
-        type="button"
+      <IconButton
+        title="Kopiuj tydzień"
+        size="sm"
+        variant="outline"
+        active={open}
         onClick={() => setOpen((v) => !v)}
-        className="rounded-full border border-border px-3.5 py-1.5 text-sm font-medium text-muted transition-colors hover:border-border-strong hover:text-foreground-secondary"
       >
-        Kopiuj tydzień
-      </button>
+        <Icon name="copy" size={16} decorative />
+      </IconButton>
       {open && (
-        <div className="absolute left-0 top-full z-30 mt-2 w-80 rounded-xl border border-border bg-surface p-4 shadow-raised">
+        <div className="absolute left-0 top-full z-30 mt-2 w-80 rounded-[var(--r-card)] border border-border-strong bg-surface p-4">
           <p className="font-display text-sm font-semibold text-foreground">
             Kopiuj Tydzień {activeWeek} →
           </p>

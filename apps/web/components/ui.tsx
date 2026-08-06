@@ -30,6 +30,125 @@ export function PageHeader({ title, subtitle, action }: { title: string; subtitl
   );
 }
 
+/** Kompaktowy pasek chrome (tożsamość + akcje) — bez PageHeader na ekranach boardu. */
+export function Toolbar({
+  left,
+  right,
+  className = "",
+}: {
+  left?: ReactNode;
+  right?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`flex min-h-11 shrink-0 items-center justify-between gap-3 border-b border-border py-2 ${className}`}
+    >
+      <div className="flex min-w-0 flex-1 items-center gap-2">{left}</div>
+      {right ? <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">{right}</div> : null}
+    </div>
+  );
+}
+
+export function OverflowMenu({
+  children,
+  label = "Więcej",
+  align = "right",
+  onOpenChange,
+}: {
+  children: ReactNode | ((api: { close: () => void }) => ReactNode);
+  label?: string;
+  align?: "left" | "right";
+  onOpenChange?: (open: boolean) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const setMenuOpen = useCallback(
+    (next: boolean) => {
+      setOpen(next);
+      onOpenChange?.(next);
+    },
+    [onOpenChange],
+  );
+  const close = useCallback(() => setMenuOpen(false), [setMenuOpen]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) close();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open, close]);
+
+  return (
+    <div className="relative" ref={ref}>
+      <IconButton title={label} onClick={() => setMenuOpen(!open)} active={open}>
+        <span className="font-mono text-base leading-none tracking-widest" aria-hidden>
+          ···
+        </span>
+      </IconButton>
+      {open ? (
+        <div
+          role="menu"
+          className={`absolute top-full z-40 mt-1.5 min-w-[15rem] max-w-[min(20rem,calc(100vw-2rem))] rounded-[var(--r-card)] border border-border-strong bg-surface p-1 ${
+            align === "right" ? "right-0" : "left-0"
+          }`}
+        >
+          {typeof children === "function" ? children({ close }) : children}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export function OverflowMenuItem({
+  children,
+  onClick,
+  href,
+  danger,
+  disabled,
+}: {
+  children: ReactNode;
+  onClick?: () => void;
+  href?: string;
+  danger?: boolean;
+  disabled?: boolean;
+}) {
+  const className = `flex w-full items-center rounded-[var(--r-field)] px-3 py-2 text-left text-sm transition-colors ${FOCUS} ${
+    danger
+      ? "text-danger hover:bg-danger-bg"
+      : "text-foreground-secondary hover:bg-surface-raised hover:text-foreground"
+  } ${disabled ? "pointer-events-none opacity-45" : ""}`;
+
+  if (href) {
+    return (
+      <a role="menuitem" href={href} className={className} onClick={onClick}>
+        {children}
+      </a>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      disabled={disabled}
+      onClick={onClick}
+      className={className}
+    >
+      {children}
+    </button>
+  );
+}
+
 /** Placeholder ładowania — kształt 1:1 z docelowym layoutem. Opóźnienie widoczności: klasa `skeleton-defer` na rootcie skeletonu. */
 export function Skeleton({ className = "" }: { className?: string }) {
   return (

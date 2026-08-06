@@ -55,8 +55,9 @@ export function DayBoard({
   onClearSets: (dayKey: string, itemKey: string) => void;
 }) {
   return (
-    <div className="relative -mx-1">
-      <div className="flex flex-col gap-4 px-1 pb-2 md:flex-row md:overflow-x-auto">
+    // Trello model: board = wysokość viewportu; poziomo kolumny; pionowo wewnątrz dnia.
+    <div className="flex h-full min-h-0 w-full flex-col">
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-y-contain md:flex-row md:items-stretch md:gap-3 md:overflow-x-auto md:overflow-y-hidden md:overscroll-x-contain md:snap-x md:snap-mandatory md:pb-1">
         {days.map((day, idx) => (
           <DayColumn
             key={day.key}
@@ -87,15 +88,11 @@ export function DayBoard({
         <button
           type="button"
           onClick={onAddDay}
-          className="flex h-auto min-h-40 w-[120px] shrink-0 items-center justify-center rounded-2xl border border-dashed border-border-strong text-sm font-medium text-muted-faint transition-colors hover:border-border hover:bg-surface-hover hover:text-foreground-secondary"
+          className="flex min-h-28 w-full shrink-0 items-center justify-center rounded-[var(--r-card)] border border-dashed border-border-strong text-sm font-medium text-muted-faint transition-colors hover:border-border hover:bg-surface-hover hover:text-foreground-secondary md:min-h-0 md:w-[120px] md:snap-start"
         >
           + Dzień
         </button>
       </div>
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-y-0 right-0 w-14 bg-gradient-to-l from-background to-transparent"
-      />
     </div>
   );
 }

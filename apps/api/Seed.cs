@@ -52,9 +52,15 @@ public static class Seed
             ?? throw new InvalidOperationException($"Seed: brak ćwiczenia „{name}\".");
 
         var squat = Require("Przysiad ze sztangą");
+        var deadlift = Require("Martwy ciąg");
         var bench = Require("Wyciskanie na ławce płaskiej");
         var row = Require("Wiosłowanie sztangą");
+        var lunges = Require("Wykroki z hantlami");
+        var pullup = Require("Podciąganie na drążku");
         var plank = Require("Plank");
+        var wallSit = Require("Wall sit");
+        var pushups = Require("Pompki");
+        var hipThrust = Require("Hip thrust");
 
         var client = new Client
         {
@@ -90,29 +96,127 @@ public static class Seed
         };
         db.Plans.Add(template);
 
+        // Showcase board: 5 dni × 5 ćwiczeń w jednym tygodniu (kanban od razu pełny).
         var poliquin = new Plan
         {
             TrainerId = trainerId,
             Name = "Siła — metoda 6-4-2-5-3-1 (przykład)",
-            Description = "Rampa do topu, potem serie anaboliczne liczone jako % od najcięższej serii.",
+            Description = "Tydzień siłowy: rampa do topu na głównych, objętość na akcesoriach. Serie anaboliczne jako % od najcięższej serii.",
             IsTemplate = true,
             Days =
             [
                 new PlanDay
                 {
-                    WeekNumber = 3, Order = 1, Label = "Poniedziałek",
+                    WeekNumber = 1, Order = 1, Label = "Poniedziałek",
+                    Notes = "Nogi — siła. Pełna rozgrzewka stawów bioder.",
                     Items =
                     [
                         new PlanItem
                         {
-                            ExerciseId = squat.Id, Order = 1, SetScheme = "Rampa 6-4-2-5-3-1",
+                            ExerciseId = squat.Id, Order = 1, Sets = 4, LoadKg = 60,
+                            SetScheme = "Rampa 6-4-2-5-3-1", RestBetweenSetsSeconds = 150,
                             PrescribedSets =
                             [
-                                new PlanSet { Order = 1, Role = "ramp", Reps = 2, LoadKg = 50, TargetRir = 0, Note = "ustal 2RM" },
+                                new PlanSet { Order = 1, Role = "ramp", Reps = 2, LoadKg = 100, TargetRir = 0, Note = "ustal 2RM" },
                                 new PlanSet { Order = 2, Role = "backoff", Reps = 5, RepsMax = 10, LoadPercent = 80, PercentOf = "top", TargetRir = 2, Note = "seria anaboliczna" },
                                 new PlanSet { Order = 3, Role = "backoff", Reps = 10, RepsMax = 15, LoadPercent = 60, PercentOf = "top", TargetRir = 3 },
                             ],
                         },
+                        new PlanItem { ExerciseId = deadlift.Id, Order = 2, Sets = 3, Reps = 5, LoadKg = 100, TargetRir = 2, RestBetweenSetsSeconds = 180, Tempo = "31X1" },
+                        new PlanItem { ExerciseId = hipThrust.Id, Order = 3, Sets = 3, Reps = 8, RepsMax = 10, LoadKg = 80, TargetRir = 2, RestBetweenSetsSeconds = 90 },
+                        new PlanItem { ExerciseId = lunges.Id, Order = 4, Sets = 3, Reps = 10, LoadKg = 16, TargetRir = 2, RestBetweenSetsSeconds = 75, Notes = "Na nogę." },
+                        new PlanItem { ExerciseId = wallSit.Id, Order = 5, Sets = 3, RepDurationSeconds = 40, TargetRir = 1, RestBetweenSetsSeconds = 60 },
+                    ],
+                },
+                new PlanDay
+                {
+                    WeekNumber = 1, Order = 2, Label = "Wtorek",
+                    Notes = "Push — klatka i triceps.",
+                    Items =
+                    [
+                        new PlanItem
+                        {
+                            ExerciseId = bench.Id, Order = 1, Sets = 4, LoadKg = 70,
+                            SetScheme = "Rampa 6-4-2-5-3-1", RestBetweenSetsSeconds = 150,
+                            PrescribedSets =
+                            [
+                                new PlanSet { Order = 1, Role = "ramp", Reps = 2, LoadKg = 80, TargetRir = 0, Note = "ustal 2RM" },
+                                new PlanSet { Order = 2, Role = "backoff", Reps = 5, RepsMax = 10, LoadPercent = 80, PercentOf = "top", TargetRir = 2 },
+                                new PlanSet { Order = 3, Role = "backoff", Reps = 10, RepsMax = 15, LoadPercent = 60, PercentOf = "top", TargetRir = 3 },
+                            ],
+                        },
+                        new PlanItem { ExerciseId = pushups.Id, Order = 2, Sets = 3, Reps = 12, RepsMax = 15, TargetRir = 2, RestBetweenSetsSeconds = 60 },
+                        new PlanItem
+                        {
+                            ExerciseId = plank.Id, Order = 3, Sets = 3, RepDurationSeconds = 45, TargetRir = 1,
+                            RestBetweenSetsSeconds = 45, SupersetGroup = 1,
+                        },
+                        new PlanItem
+                        {
+                            ExerciseId = wallSit.Id, Order = 4, Sets = 3, RepDurationSeconds = 30, TargetRir = 1,
+                            RestBetweenSetsSeconds = 45, SupersetGroup = 1, Notes = "Superseria z plankiem.",
+                        },
+                        new PlanItem { ExerciseId = hipThrust.Id, Order = 5, Sets = 3, Reps = 12, LoadKg = 50, TargetRir = 3, RestBetweenSetsSeconds = 75 },
+                    ],
+                },
+                new PlanDay
+                {
+                    WeekNumber = 1, Order = 3, Label = "Środa",
+                    Notes = "Pull — plecy i biceps.",
+                    Items =
+                    [
+                        new PlanItem
+                        {
+                            ExerciseId = deadlift.Id, Order = 1, Sets = 3, LoadKg = 110,
+                            SetScheme = "Rampa do topu", RestBetweenSetsSeconds = 180,
+                            PrescribedSets =
+                            [
+                                new PlanSet { Order = 1, Role = "ramp", Reps = 5, LoadKg = 90, TargetRir = 2 },
+                                new PlanSet { Order = 2, Role = "ramp", Reps = 3, LoadKg = 105, TargetRir = 1 },
+                                new PlanSet { Order = 3, Role = "top", Reps = 1, RepsMax = 2, LoadKg = 120, TargetRir = 0, Note = "ciężka pojedyncza" },
+                            ],
+                        },
+                        new PlanItem { ExerciseId = pullup.Id, Order = 2, Sets = 4, Reps = 5, RepsMax = 8, TargetRir = 1, RestBetweenSetsSeconds = 120 },
+                        new PlanItem { ExerciseId = row.Id, Order = 3, Sets = 4, Reps = 8, LoadKg = 55, TargetRir = 2, RestBetweenSetsSeconds = 90, Tempo = "2011" },
+                        new PlanItem { ExerciseId = lunges.Id, Order = 4, Sets = 3, Reps = 8, LoadKg = 14, TargetRir = 2, RestBetweenSetsSeconds = 75 },
+                        new PlanItem { ExerciseId = plank.Id, Order = 5, Sets = 3, RepDurationSeconds = 50, TargetRir = 1, RestBetweenSetsSeconds = 45 },
+                    ],
+                },
+                new PlanDay
+                {
+                    WeekNumber = 1, Order = 4, Label = "Czwartek",
+                    Notes = "Nogi — objętość i jednostronne.",
+                    Items =
+                    [
+                        new PlanItem { ExerciseId = squat.Id, Order = 1, Sets = 4, Reps = 8, RepsMax = 10, LoadKg = 70, TargetRir = 2, RestBetweenSetsSeconds = 120 },
+                        new PlanItem { ExerciseId = lunges.Id, Order = 2, Sets = 3, Reps = 12, LoadKg = 12, TargetRir = 2, RestBetweenSetsSeconds = 75 },
+                        new PlanItem { ExerciseId = hipThrust.Id, Order = 3, Sets = 4, Reps = 10, LoadKg = 70, TargetRir = 2, RestBetweenSetsSeconds = 90 },
+                        new PlanItem { ExerciseId = wallSit.Id, Order = 4, Sets = 3, RepDurationSeconds = 45, TargetRir = 1, RestBetweenSetsSeconds = 60 },
+                        new PlanItem { ExerciseId = plank.Id, Order = 5, Sets = 3, RepDurationSeconds = 40, TargetRir = 1, RestBetweenSetsSeconds = 45, Notes = "Side plank 20s/strona opcjonalnie." },
+                    ],
+                },
+                new PlanDay
+                {
+                    WeekNumber = 1, Order = 5, Label = "Piątek",
+                    Notes = "Upper — mieszanka siły i objętości.",
+                    Items =
+                    [
+                        new PlanItem
+                        {
+                            ExerciseId = bench.Id, Order = 1, Sets = 4, LoadKg = 60,
+                            RestBetweenSetsSeconds = 120,
+                            PrescribedSets =
+                            [
+                                new PlanSet { Order = 1, Role = "warmup", Reps = 8, LoadKg = 40, TargetRir = 4 },
+                                new PlanSet { Order = 2, Role = "top", Reps = 5, LoadKg = 70, TargetRir = 1 },
+                                new PlanSet { Order = 3, Role = "backoff", Reps = 8, LoadPercent = 85, PercentOf = "top", TargetRir = 2 },
+                                new PlanSet { Order = 4, Role = "backoff", Reps = 10, LoadPercent = 75, PercentOf = "top", TargetRir = 3 },
+                            ],
+                        },
+                        new PlanItem { ExerciseId = row.Id, Order = 2, Sets = 4, Reps = 8, RepsMax = 10, LoadKg = 50, TargetRir = 2, RestBetweenSetsSeconds = 90, SupersetGroup = 1 },
+                        new PlanItem { ExerciseId = pushups.Id, Order = 3, Sets = 3, Reps = 10, TargetRir = 2, RestBetweenSetsSeconds = 60, SupersetGroup = 1 },
+                        new PlanItem { ExerciseId = pullup.Id, Order = 4, Sets = 3, Reps = 6, TargetRir = 1, RestBetweenSetsSeconds = 120 },
+                        new PlanItem { ExerciseId = plank.Id, Order = 5, Sets = 3, RepDurationSeconds = 60, TargetRir = 1, RestBetweenSetsSeconds = 45 },
                     ],
                 },
             ],

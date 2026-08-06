@@ -15,6 +15,48 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Gęsta tabela nie mieszka w wąskiej kolumnie boardu
+
+**Kontekst**: Widok `/plans/[id]` pokazywał 6-kolumnową tabelę serii wewnątrz karty dnia (~300px). Tabela rozpychała kolumnę; `min-w-0` tylko ukryło objaw.
+**Problem**: Progressive disclosure odwrócone — szczegóły (serie) zajmowały większość pikseli, a skanowanie „co jest w którym dniu” było niemożliwe.
+**Zasada**: W boardzie/kanbanie karta pokazuje jedną linię schematu (`schemeLine`). Pełne serie, tempo, %1RM, RIR i notatki idą do panelu (Sheet / prawy panel) po kliknięciu. `min-w-0` to plaster na overflow, nie diagnoza.
+**Dotyczy**: `apps/web/app/(app)/plans/[id]/page.tsx`, `apps/web/components/plan-view/*`, przyszłe widoki boardowe.
+
+## Karta ćwiczenia: role + powtórzenia, nie nazwa metody
+
+**Kontekst**: Po boardzie na kafelku było `4 serii · Rampa 6-4-2-5-3-1 · 60 kg` — trener nie skanuje nazwy presetu.
+**Problem**: `setScheme` to etykieta metodyki; na karcie liczą się zmienne treningowe (jak Hevy/FitPros: sets × reps @ load).
+**Zasada**: `schemeLine` buduj z `prescribedSets` (`rampa 2 · bo 5–10 · bo 10–15 · 50 kg`). Nazwę schematu trzymaj w panelu (badge), nie na karcie.
+**Dotyczy**: `apps/web/components/plan-view/summary.ts`.
+
+## Board edycji: scroll tylko na kolumnach; chrome mono (bez emoji)
+
+**Kontekst**: Tablica w edycji planu — 7 dni rozpychało całą stronę (header jechał w bok); lupa była emoji 🔍 (kolorowa).
+**Problem**: Scroll poziomy musi być lokalny w boardzie (`min-w-0` + `overflow-x-auto` + `shrink-0` na kolumnach). Emoji/hue w chrome łamie mono/Styrka.
+**Zasada**: Nagłówek planu i taby tygodni nie scrollują w poziomie. Kolumny dni: stała szerokość + snap. Ikony tylko Phosphor `Icon` (`currentColor`). Jedna ścieżka dodawania: QuickComposer + lupa → drawer (bez drugiego „+ Dodaj ćwiczenie").
+**Dotyczy**: `DayBoard`, `DayColumn`, `QuickComposer`, `PlanBoard`.
+
+## Board = model Trello (nie scroll strony w dwie osie)
+
+**Kontekst**: Równe kolumny + page scroll + horizontal board = nested scroll confusion; composer i wyniki wyszukiwania uciekały za fold.
+**Problem**: FitPros/Trello/Jira nie scrollują całej strony w pionie przy boardzie.
+**Zasada**: Chrome (header/taby) `shrink-0`; board `flex-1 min-h-0` wypełnia viewport (`md:h-dvh` w AppShell dla `/plans/*`); w kolumnie lista kart `overflow-y-auto`, composer `shrink-0` na dole. Poziomo tylko tor kolumn.
+**Dotyczy**: `AppShell`, `PlanBuilder`, `DayBoard`/`DayColumn`, `PlanBoard`/`PlanDayColumn`, `/plans/[id]`.
+
+## Chrome planu = 2 pasy, zero powtórzeń
+
+**Kontekst**: Edycja/podgląd planu miały 4 pasy (~200 px): PageHeader „Edycja: X”, eyebrow, badge, „tydzień 1 z 1”, osobny wiersz Lista/Tablica/Arkusz, label „TYDZIEŃ”.
+**Problem**: Ta sama informacja 2–3×; board tracił viewport.
+**Zasada**: Pas 1 = `Toolbar` (tytuł + badge tylko gdy szablon + status · prawa: `OverflowMenu` + CTA). Pas 2 = pigułki tygodni (same cyfry) + segmented/meta. Rzadkie akcje (ustawienia, przypisz, anuluj, opis) tylko w `···`. Nie dubluj `PageHeader` nad `PlanToolbar`.
+**Dotyczy**: `ui.tsx` (`Toolbar`, `OverflowMenu`), `PlanToolbar`, `WeekTabs`, `/plans/[id]`.
+
+## Karta boardu: jedna mocna informacja + wyciszona meta; superseria = klamra
+
+**Kontekst**: Druga korekta boardu planu — wyliczanka `rampa 2 · bo 5-10 · bo 10-15 · 100 kg` jednym tonem była nieczytelna, a A1/A2 na osobnych kartach nie wyglądało na połączenie.
+**Problem**: Brak hierarchii (Value > Label) i brak wizualnego grupowania — skróty typu „bo" wymagały dekodowania.
+**Zasada**: Karta = cel ćwiczenia jednym zwrotem (`rampa do 2 @ 100 kg`, `top 5 @ 70 kg`, `4 × 8–10 @ 70 kg`) w mocnym tonie + meta (`3 serie · 2min`) wyciszona. Rozpis serii tylko w panelu. Superserie renderuj jako jedną klamrę (wspólna ramka + nagłówek „Superseria A", karty wewnątrz przez `divide-y`), nie osobne karty z kreską.
+**Dotyczy**: `apps/web/components/plan-view/{summary.ts,PlanItemCard.tsx,PlanDayColumn.tsx}`.
+
 ## Masowa podmiana klas nie może zgniatać wcięć całego pliku
 
 **Kontekst**: Migracja Acid → mono — skrypt Python robił `re.sub(r'  +', ' ', text)` na całych plikach TS/TSX.

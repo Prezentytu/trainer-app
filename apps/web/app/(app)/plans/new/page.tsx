@@ -68,25 +68,29 @@ export default function NewPlanPage() {
 
   if (boot.status === "import") {
     return (
-      <PlanBuilder
-        initialName={boot.handoff.name}
-        initialDescription={boot.handoff.description}
-        initialIsTemplate={boot.handoff.isTemplate}
-        initialDays={boot.handoff.days}
-        stepLabel="Import AI · sprawdź i zapisz plan"
-      />
+      <div className="flex min-h-0 flex-1 flex-col">
+        <PlanBuilder
+          initialName={boot.handoff.name}
+          initialDescription={boot.handoff.description}
+          initialIsTemplate={boot.handoff.isTemplate}
+          initialDays={boot.handoff.days}
+          stepLabel="Import AI · sprawdź i zapisz plan"
+        />
+      </div>
     );
   }
 
   if (started) {
     return (
-      <PlanBuilder
-        initialName={name}
-        initialIsTemplate={isTemplate}
-        initialDayCount={preset.daysPerWeek}
-        initialWeekCount={preset.weeks}
-        stepLabel="Krok 2 z 3 · zbuduj plan ćwiczeniami"
-      />
+      <div className="flex min-h-0 flex-1 flex-col">
+        <PlanBuilder
+          initialName={name}
+          initialIsTemplate={isTemplate}
+          initialDayCount={preset.daysPerWeek}
+          initialWeekCount={preset.weeks}
+          stepLabel="Krok 2 z 3 · zbuduj plan ćwiczeniami"
+        />
+      </div>
     );
   }
 

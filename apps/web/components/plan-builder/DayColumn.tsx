@@ -12,6 +12,7 @@ import { buildItemBlocks } from "./itemBlocks";
 import { QuickComposer } from "./QuickComposer";
 import { SelectionBar } from "./SelectionBar";
 import { SupersetGroup } from "./SupersetGroup";
+import { dayStatsLine } from "./summaryText";
 import { BuilderDay, BuilderItem, BuilderSet } from "./types";
 import type { DropTarget } from "./useBuilderDnd";
 
@@ -96,6 +97,7 @@ export function DayColumn({
   const showCheckbox = selectedKeys.length > 0;
   const blocks = buildItemBlocks(day.items);
   const dropHere = dropTarget?.dayKey === day.key ? dropTarget.index : null;
+  const stats = dayStatsLine(day, exercises);
 
   const renderCard = (idx: number, badge: string | null, nested: boolean) => {
     const item = day.items[idx];
@@ -103,7 +105,11 @@ export function DayColumn({
     const beforeDrop = dropHere === idx;
     return (
       <div key={item.key}>
-        {beforeDrop ? <div className="mb-2"><DropIndicator /></div> : null}
+        {beforeDrop ? (
+          <div className={nested ? "px-2 py-1" : "mb-2"}>
+            <DropIndicator />
+          </div>
+        ) : null}
         <ExerciseCard
           item={item}
           weekNumber={day.weekNumber}
@@ -131,12 +137,12 @@ export function DayColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`flex w-full shrink-0 flex-col rounded-2xl border bg-surface p-0 shadow-card md:w-[300px] ${
-        isOver ? "border-accent" : "border-border"
+      className={`flex max-h-[70dvh] w-full shrink-0 flex-col rounded-[var(--r-card)] border bg-surface p-0 md:h-full md:max-h-none md:w-[300px] md:min-h-0 md:snap-start ${
+        isOver ? "border-border-strong" : "border-border"
       }`}
     >
-      {/* DayHeader */}
-      <div className="border-b border-border px-3.5 pb-3 pt-3.5">
+      {/* DayHeader — pinned; karty scrollują poniżej */}
+      <div className="shrink-0 border-b border-border px-3.5 pb-3 pt-3.5">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             <div className="flex items-baseline gap-2">
@@ -154,12 +160,13 @@ export function DayColumn({
                 <button
                   type="button"
                   onClick={() => setEditingLabel(true)}
-                  className="min-w-0 break-words text-left text-sm font-semibold text-foreground hover:text-accent-strong"
+                  className="min-w-0 break-words text-left text-sm font-semibold text-foreground hover:text-foreground-secondary"
                 >
                   {day.label}
                 </button>
               )}
             </div>
+            <p className="mt-1 font-mono text-[11px] tabular-nums text-muted">{stats}</p>
             {editingNotes ? (
               <input
                 autoFocus
@@ -174,7 +181,7 @@ export function DayColumn({
               <button
                 type="button"
                 onClick={() => setEditingNotes(true)}
-                className="mt-1 block break-words text-left text-xs text-muted hover:text-foreground-secondary"
+                className="mt-1.5 block break-words text-left text-xs text-muted hover:text-foreground-secondary"
               >
                 {day.notes}
               </button>
@@ -232,7 +239,7 @@ export function DayColumn({
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col gap-2 p-3">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pt-2">
         <SelectionBar
           count={selectedKeys.length}
           onLink={() => {
@@ -243,9 +250,11 @@ export function DayColumn({
         />
 
         {day.items.length === 0 ? (
-          <div className="flex flex-1 flex-col">
+          <div className="py-2">
             {dropHere === 0 ? (
-              <div className="mb-2 w-full"><DropIndicator /></div>
+              <div className="mb-2 w-full">
+                <DropIndicator />
+              </div>
             ) : null}
             <EmptyState
               title="Pusty dzień"
@@ -260,7 +269,7 @@ export function DayColumn({
           </div>
         ) : (
           <SortableContext items={day.items.map((i) => i.key)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-2">
+            <div className="space-y-2 pb-2">
               {blocks.map((block) => {
                 if (block.kind === "single") {
                   return <div key={day.items[block.index].key}>{renderCard(block.index, null, false)}</div>;
@@ -283,17 +292,16 @@ export function DayColumn({
             </div>
           </SortableContext>
         )}
+      </div>
 
-        <div className="mt-auto space-y-2 pt-2">
-          <QuickComposer exercises={exercises} day={day} onAdd={onAddItem} onToggleLink={onToggleLink} />
-          <button
-            type="button"
-            onClick={onOpenDrawer}
-            className="w-full rounded-[10px] border border-dashed border-border-strong py-3 text-sm font-medium text-muted transition-colors hover:border-border hover:text-foreground-secondary"
-          >
-            + Dodaj ćwiczenie
-          </button>
-        </div>
+      <div className="shrink-0 border-t border-border p-3">
+        <QuickComposer
+          exercises={exercises}
+          day={day}
+          onAdd={onAddItem}
+          onToggleLink={onToggleLink}
+          onBrowse={onOpenDrawer}
+        />
       </div>
     </div>
   );

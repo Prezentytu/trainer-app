@@ -36,9 +36,11 @@ export type IconName =
   | "pulse"
   | "ruler"
   | "dots-three"
+  | "copy-simple"
   | "circle"
   | "user"
   // English aliases
+  | "copy"
   | "dumbbell"
   | "workout"
   | "progress"
@@ -75,6 +77,7 @@ const ALIASES: Partial<Record<IconName, string>> = {
   download: "download-simple",
   warning: "warning-circle",
   more: "dots-three",
+  copy: "copy-simple",
   timer: "clock-countdown",
   list: "list",
   menu: "list",

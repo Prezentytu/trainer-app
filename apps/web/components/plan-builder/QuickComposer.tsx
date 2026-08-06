@@ -1,6 +1,7 @@
 "use client";
 
-import { KeyboardEvent, useMemo, useRef, useState } from "react";
+import { KeyboardEvent, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Exercise } from "@/lib/api";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import {
@@ -10,11 +11,11 @@ import {
 import { formatMeasureCore, measureOverridesFromParsed } from "@/lib/measure";
 import { matchExercises, parseQuickEntry, rampOverridesFromParsed } from "@/lib/quickEntry";
 import { demoMedia } from "@/lib/youtube";
+import { Icon } from "@/components/Icon";
 import { Badge, IconButton, inputClass } from "@/components/ui";
 import { ComposerHelp, markComposerHelpSeen, useComposerHelpOpen } from "./ComposerHelp";
 import { CreateExerciseRow } from "./CreateExerciseRow";
 import { useExerciseLibraryActions } from "./ExerciseLibraryContext";
-import { ExercisePicker } from "./ExercisePicker";
 import { BuilderDay, BuilderItem } from "./types";
 
 function previewSummary(exercise: Exercise, overrides: Partial<BuilderItem>): string {
@@ -69,22 +70,32 @@ export function QuickComposer({
   day,
   onAdd,
   onToggleLink,
+  onBrowse,
 }: {
   exercises: Exercise[];
   day: BuilderDay;
   onAdd: (exerciseId: number, overrides: Partial<BuilderItem>) => void;
   onToggleLink: (itemKey: string) => void;
+  /** Otwiera pełną bibliotekę (drawer) — zamiast osobnego „+ Dodaj ćwiczenie". */
+  onBrowse?: () => void;
 }) {
   const { createExercise, requestNewExercise } = useExerciseLibraryActions();
   const { open: helpOpen, onOpenChange: setHelpOpen } = useComposerHelpOpen();
   const [value, setValue] = useState("");
   const [highlighted, setHighlighted] = useState(0);
-  const [browsing, setBrowsing] = useState(false);
   const [focused, setFocused] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const lastGroupRef = useRef<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const anchorRef = useRef<HTMLDivElement>(null);
+  const [menuBox, setMenuBox] = useState<{
+    left: number;
+    width: number;
+    top: number | null;
+    bottom: number | null;
+    maxHeight: number;
+  } | null>(null);
 
   const parsed = useMemo(() => parseQuickEntry(value), [value]);
   const matches = useMemo(() => matchExercises(parsed.query, exercises), [parsed.query, exercises]);
@@ -95,6 +106,36 @@ export function QuickComposer({
   const activeIndex = optionCount === 0 ? 0 : Math.min(highlighted, optionCount - 1);
   const createActive = showCreate && activeIndex === createIndex;
   const active = !createActive ? (matches[activeIndex] ?? null) : null;
+  const menuOpen = value.trim().length > 0 && optionCount > 0;
+
+  // Portal + fixed: lista nie ucieka za ekran i nie jest przycinana przez overflow-x boardu.
+  useLayoutEffect(() => {
+    if (!menuOpen) return;
+    const update = () => {
+      const el = anchorRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const gap = 6;
+      const spaceAbove = rect.top - gap - 8;
+      const spaceBelow = window.innerHeight - rect.bottom - gap - 8;
+      const openUp = spaceAbove >= 160 || spaceAbove >= spaceBelow;
+      const maxHeight = Math.min(256, Math.max(120, openUp ? spaceAbove : spaceBelow));
+      setMenuBox({
+        left: rect.left,
+        width: Math.max(rect.width, 240),
+        maxHeight,
+        top: openUp ? null : rect.bottom + gap,
+        bottom: openUp ? window.innerHeight - rect.top + gap : null,
+      });
+    };
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [menuOpen, value, optionCount]);
 
   const draftInput = useMemo(
     () => exerciseInputFromQuickEntry(query, parsed),
@@ -215,41 +256,78 @@ export function QuickComposer({
     }
   };
 
-  if (browsing) {
-    return (
-      <div className="space-y-2">
-        <ExercisePicker
-          exercises={exercises}
-          onAdd={(exerciseId) => {
-            onAdd(exerciseId, {});
-            setBrowsing(false);
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => setBrowsing(false)}
-          className="text-xs text-muted-strong hover:text-foreground-secondary"
-        >
-          ← wróć do szybkiego wpisywania
-        </button>
-      </div>
-    );
-  }
+  const menuList = menuOpen && menuBox ? (
+    <div
+      role="listbox"
+      className="fixed z-[60] rounded-[10px] border border-border-strong bg-surface"
+      style={{
+        left: menuBox.left,
+        width: menuBox.width,
+        top: menuBox.top ?? undefined,
+        bottom: menuBox.bottom ?? undefined,
+        maxHeight: menuBox.maxHeight,
+      }}
+    >
+      <ul className="max-h-[inherit] overflow-y-auto py-1">
+        {matches.map((exercise, idx) => (
+          <li key={exercise.id}>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => placeExercise(exercise)}
+              onMouseEnter={() => setHighlighted(idx)}
+              className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm ${
+                idx === activeIndex ? "bg-surface-hover text-foreground" : "text-foreground-secondary"
+              }`}
+            >
+              <div className="flex min-w-0 items-center gap-2">
+                <div className="h-8 w-8 shrink-0">
+                  <ExerciseThumb
+                    variant="square"
+                    youtubeId={demoMedia(exercise).youtubeId}
+                    category={exercise.category}
+                    alt={exercise.name}
+                  />
+                </div>
+                <span className="min-w-0 break-words">{exercise.name}</span>
+              </div>
+              <span className="shrink-0 font-mono text-[11px] tabular-nums text-muted">
+                {previewSummary(exercise, measureOverridesFromParsed(parsed, exercise.type))}
+              </span>
+            </button>
+          </li>
+        ))}
+        {showCreate ? (
+          <li onMouseEnter={() => setHighlighted(createIndex)} className="px-1">
+            <CreateExerciseRow
+              name={query}
+              previewLabel={previewLabel}
+              active={createActive}
+              creating={creating}
+              error={createError}
+              onCreate={() => void createAndPlace()}
+              onDetails={openDetails}
+            />
+          </li>
+        ) : null}
+      </ul>
+    </div>
+  ) : null;
 
   return (
-    <div className="relative">
-      <div className="flex items-center gap-1.5">
-        {parsed.supersetPrefix && (
-          <Badge tone="accent">
+    <div ref={anchorRef} className="relative">
+      <div className="flex items-center gap-1">
+        {parsed.supersetPrefix ? (
+          <Badge tone="neutral">
             {parsed.supersetPrefix.group}
             {parsed.supersetPrefix.letter}
           </Badge>
-        )}
-        <div className="relative flex-1">
+        ) : null}
+        <div className="relative min-w-0 flex-1">
           <input
             ref={inputRef}
-            className={`${inputClass} w-full pr-16`}
-            placeholder='np. „przysiad 3x8” lub „deska 3x30s”'
+            className={`${inputClass} w-full pr-14`}
+            placeholder='np. „przysiad 3x8”'
             value={value}
             disabled={creating}
             onChange={(e) => {
@@ -261,65 +339,22 @@ export function QuickComposer({
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
           />
-          {focused && value.trim() && (
-            <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted">
-              ↵ dodaj
+          {focused && value.trim() ? (
+            <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 font-mono text-[11px] text-muted-faint">
+              ↵
             </span>
-          )}
+          ) : null}
         </div>
         <ComposerHelp open={helpOpen} onOpenChange={setHelpOpen} />
-        <IconButton title="Przeglądaj listę ćwiczeń" onClick={() => setBrowsing(true)}>
-          🔍
-        </IconButton>
+        {onBrowse ? (
+          <IconButton title="Przeglądaj bibliotekę" onClick={onBrowse} size="sm">
+            <Icon name="search" size={16} decorative />
+          </IconButton>
+        ) : null}
       </div>
-
-      {value.trim() && optionCount > 0 && (
-        <div className="absolute z-10 mt-1 w-full rounded-lg border border-border bg-surface shadow-xl">
-          <ul className="max-h-64 overflow-y-auto py-1">
-            {matches.map((exercise, idx) => (
-              <li key={exercise.id}>
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => placeExercise(exercise)}
-                  onMouseEnter={() => setHighlighted(idx)}
-                  className={`flex w-full items-center justify-between gap-3 px-3 py-1.5 text-left text-sm ${
-                    idx === activeIndex ? "bg-surface-hover text-foreground" : "text-foreground-secondary"
-                  }`}
-                >
-                  <div className="flex min-w-0 items-center gap-2">
-                    <div className="h-8 w-8 shrink-0">
-                      <ExerciseThumb
-                        variant="square"
-                        youtubeId={demoMedia(exercise).youtubeId}
-                        category={exercise.category}
-                        alt={exercise.name}
-                      />
-                    </div>
-                    <span className="min-w-0 break-words">{exercise.name}</span>
-                  </div>
-                  <span className="shrink-0 text-xs text-muted">
-                    {previewSummary(exercise, measureOverridesFromParsed(parsed, exercise.type))}
-                  </span>
-                </button>
-              </li>
-            ))}
-            {showCreate && (
-              <li onMouseEnter={() => setHighlighted(createIndex)} className="px-1">
-                <CreateExerciseRow
-                  name={query}
-                  previewLabel={previewLabel}
-                  active={createActive}
-                  creating={creating}
-                  error={createError}
-                  onCreate={() => void createAndPlace()}
-                  onDetails={openDetails}
-                />
-              </li>
-            )}
-          </ul>
-        </div>
-      )}
+      {typeof document !== "undefined" && menuList
+        ? createPortal(menuList, document.body)
+        : null}
     </div>
   );
 }

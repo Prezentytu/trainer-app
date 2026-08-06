@@ -414,9 +414,19 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       ) : null}
 
-      <main className="w-full flex-1 bg-background p-4 pb-28 md:p-8 md:pb-8">
+      <main
+        className={`w-full min-w-0 flex-1 bg-background p-4 pb-28 md:p-6 ${
+          isPlanEditor
+            ? "md:flex md:h-dvh md:flex-col md:overflow-hidden md:pb-4"
+            : "md:p-8 md:pb-8"
+        }`}
+      >
         <div
-          className={`mx-auto ${isPlanEditor ? "max-w-[120rem]" : "max-w-[1080px] 2xl:max-w-[100rem]"}`}
+          className={`mx-auto w-full min-w-0 ${
+            isPlanEditor
+              ? "flex min-h-0 flex-1 flex-col max-w-[120rem]"
+              : "max-w-[1080px] 2xl:max-w-[100rem]"
+          }`}
         >
           {children}
         </div>

@@ -1,5 +1,8 @@
 "use client";
 
+import { ReactNode } from "react";
+import { Icon } from "@/components/Icon";
+import { IconButton } from "@/components/ui";
 import { CopyWeekOpts, CopyWeekPopover } from "./CopyWeekPopover";
 
 export function WeekTabs({
@@ -9,6 +12,7 @@ export function WeekTabs({
   onAddWeek,
   onCopyWeek,
   metaLabel,
+  right,
 }: {
   weeks: number[];
   activeWeek: number;
@@ -16,46 +20,50 @@ export function WeekTabs({
   onAddWeek: () => void;
   onCopyWeek: (week: number, opts?: CopyWeekOpts) => void;
   metaLabel?: string;
+  right?: ReactNode;
 }) {
   const nextWeek = (weeks.length ? Math.max(...weeks) : 0) + 1;
 
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-2 border-b border-border pb-3">
-      <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-faint">Tydzień</span>
-      <div className="flex flex-wrap items-center gap-1.5">
-        {weeks.map((week) => (
-          <button
-            key={week}
-            type="button"
-            onClick={() => onSelect(week)}
-            className={`min-w-9 rounded-full px-3 py-2 font-mono text-sm tabular-nums transition-colors ${
-              week === activeWeek
-                ? "border border-border-strong bg-surface-active font-semibold text-foreground"
-                : "border border-border bg-surface text-foreground-secondary hover:border-border-strong"
-            }`}
-          >
-            {week}
-          </button>
-        ))}
+    <div className="flex min-h-9 shrink-0 items-center gap-2 border-b border-border py-1.5">
+      <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto overscroll-x-contain">
+        <div className="flex shrink-0 items-center gap-1">
+          {weeks.map((week) => (
+            <button
+              key={week}
+              type="button"
+              onClick={() => onSelect(week)}
+              aria-label={`Tydzień ${week}`}
+              aria-current={week === activeWeek ? "true" : undefined}
+              className={`min-w-8 rounded-full px-2.5 py-1.5 font-mono text-sm tabular-nums transition-colors ${
+                week === activeWeek
+                  ? "border border-border-strong bg-surface-active font-semibold text-foreground"
+                  : "border border-border bg-surface text-foreground-secondary hover:border-border-strong"
+              }`}
+            >
+              {week}
+            </button>
+          ))}
+        </div>
+        <IconButton title="Dodaj tydzień" size="sm" variant="outline" onClick={onAddWeek}>
+          <Icon name="plus" size={16} decorative />
+        </IconButton>
+        {weeks.length > 0 ? (
+          <CopyWeekPopover
+            activeWeek={activeWeek}
+            nextWeek={nextWeek}
+            onCopy={(opts) => onCopyWeek(activeWeek, opts)}
+          />
+        ) : null}
       </div>
-      <span className="mx-1 hidden h-5 w-px bg-border sm:block" />
-      <button
-        type="button"
-        onClick={onAddWeek}
-        className="rounded-full border border-border-strong px-3.5 py-1.5 text-sm font-medium text-foreground-secondary transition-colors hover:bg-surface-hover"
-      >
-        + Tydzień
-      </button>
-      {weeks.length > 0 && (
-        <CopyWeekPopover
-          activeWeek={activeWeek}
-          nextWeek={nextWeek}
-          onCopy={(opts) => onCopyWeek(activeWeek, opts)}
-        />
-      )}
-      {metaLabel ? (
-        <span className="ml-auto font-mono text-xs tabular-nums text-muted-faint">{metaLabel}</span>
-      ) : null}
+      <div className="flex shrink-0 items-center gap-2">
+        {right}
+        {metaLabel ? (
+          <span className="hidden font-mono text-[11px] tabular-nums text-muted-faint sm:inline">
+            {metaLabel}
+          </span>
+        ) : null}
+      </div>
     </div>
   );
 }

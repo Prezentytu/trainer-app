@@ -54,17 +54,17 @@ export function ComposerHelp({
         title="Ściągałka klawiszy i formatów"
         aria-expanded={open}
         aria-label="Pokaż ściągawkę"
-        className={`inline-flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+        className={`inline-flex h-8 w-8 items-center justify-center rounded-[var(--r-field)] font-mono text-[12px] font-medium transition-colors focus-visible:outline-none focus-visible:[box-shadow:var(--focus-ring)] ${
           open
-            ? "border-accent-border bg-accent-dim text-accent-strong"
-            : "border-border text-muted hover:border-border-strong hover:text-foreground-secondary"
+            ? "bg-surface-active text-foreground"
+            : "text-muted hover:bg-surface-hover hover:text-foreground"
         }`}
       >
         ?
       </button>
       {open && (
-        <div className="absolute bottom-full right-0 z-40 mb-2 w-[min(100vw-2rem,22rem)] rounded-xl border border-border-strong bg-surface p-4 shadow-raised">
-          <p className="font-display text-sm font-semibold text-foreground">Ściągałka</p>
+        <div className="absolute bottom-full right-0 z-40 mb-2 w-[min(100vw-2rem,22rem)] rounded-[var(--r-card)] border border-border-strong bg-surface p-4">
+          <p className="t-heading text-[15px]">Ściągałka</p>
           <div className="mt-3 space-y-3 text-xs leading-relaxed text-muted">
             <section>
               <p className="mb-1 font-semibold uppercase tracking-[0.08em] text-muted-faint">Klawisze</p>
