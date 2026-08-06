@@ -34,8 +34,8 @@ export function WeightTrendSparkline({
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min || 1;
-  const padL = 36;
-  const padR = 8;
+  const padL = 8;
+  const padR = 38;
   const padY = 10;
   const w = 240;
   const innerH = height - padY * 2;
@@ -50,8 +50,10 @@ export function WeightTrendSparkline({
   const line = coords.map((c) => `${c.x},${c.y}`).join(" ");
   const last = coords[coords.length - 1];
   const first = coords[0];
-  const area = `${padL},${padY + innerH} ${line} ${padL + innerW},${padY + innerH}`;
   const delta = last.value - first.value;
+  const glyph = delta > 0 ? "▲" : delta < 0 ? "▼" : "–";
+  // Spadek wagi często = gain (cut) — tu pokazujemy kierunek; walencja zostaje znakowi.
+  const deltaTone = delta > 0 ? "text-gain" : delta < 0 ? "text-loss" : "text-fg-faint";
   const deltaLabel =
     delta === 0
       ? `bez zmian od ${formatDayShort(first.date)}`
@@ -62,63 +64,60 @@ export function WeightTrendSparkline({
     <div className="min-w-0">
       <svg
         viewBox={`0 0 ${w} ${height}`}
-        className="h-16 w-full text-foreground-secondary"
+        className="h-16 w-full"
         role="img"
         aria-label={`Trend od ${formatValue(first.value, unit)} do ${formatValue(last.value, unit)}`}
         preserveAspectRatio="none"
       >
-        <defs>
-          <linearGradient id="weightTrendFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="currentColor" stopOpacity="0.22" />
-            <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
-          </linearGradient>
-        </defs>
         {yTicks.map((tick) => {
           const y = padY + innerH - ((tick - min) / range) * innerH;
           return (
-            <g key={tick}>
-              <line
-                x1={padL}
-                x2={padL + innerW}
-                y1={y}
-                y2={y}
-                stroke="currentColor"
-                strokeOpacity="0.12"
-                strokeWidth="1"
-                vectorEffect="non-scaling-stroke"
-              />
-              <text
-                x={padL - 4}
-                y={y + 3}
-                textAnchor="end"
-                className="fill-muted"
-                style={{ fontSize: 9, fontFamily: "var(--font-mono)" }}
-              >
-                {Number.isInteger(tick) ? tick : tick.toFixed(1)}
-              </text>
-            </g>
+            <text
+              key={tick}
+              x={w - padR + 8}
+              y={y + 3}
+              fill="var(--fg-ghost)"
+              fontSize="10"
+              fontFamily="var(--font-geist-mono), monospace"
+            >
+              {Number.isInteger(tick) ? tick : tick.toFixed(1).replace(".", ",")}
+            </text>
           );
         })}
-        <polygon points={area} fill="url(#weightTrendFill)" />
         <polyline
           points={line}
           fill="none"
-          stroke="currentColor"
+          stroke="var(--fg)"
           strokeWidth="2"
           strokeLinejoin="round"
           strokeLinecap="round"
           vectorEffect="non-scaling-stroke"
         />
-        <circle cx={last.x} cy={last.y} r="3.5" fill="currentColor" />
+        {coords.map((c) => (
+          <circle
+            key={c.date}
+            cx={c.x}
+            cy={c.y}
+            r="2.5"
+            fill="var(--fg)"
+            stroke="var(--bg)"
+            strokeWidth="1.5"
+          />
+        ))}
       </svg>
       <div className="mt-1 flex items-baseline justify-between gap-2">
-        <span className="font-mono text-xs tabular-nums text-muted">{formatDayShort(first.date)}</span>
+        <span className="font-mono text-xs tabular-nums text-fg-faint">{formatDayShort(first.date)}</span>
         <span className="font-mono text-sm font-semibold tabular-nums text-foreground">
           {formatValue(last.value, unit)}
         </span>
-        <span className="font-mono text-xs tabular-nums text-muted">{formatDayShort(last.date)}</span>
+        <span className="font-mono text-xs tabular-nums text-fg-faint">{formatDayShort(last.date)}</span>
       </div>
-      <p className="mt-1 font-mono text-xs tabular-nums text-muted">{deltaLabel}</p>
+      <p className={`mt-1 flex items-center gap-1 font-mono text-xs tabular-nums ${deltaTone}`}>
+        <span className="text-[10px] leading-none" aria-hidden>
+          {glyph}
+        </span>
+        {deltaLabel}
+      </p>
     </div>
   );
 }

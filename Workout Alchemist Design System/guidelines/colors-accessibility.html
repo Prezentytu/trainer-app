@@ -1,0 +1,17 @@
+<!-- @dsCard group="Colors" viewport="700x230" name="Accessibility rules" subtitle="Contrast floors, focus ring, non-colour signals, prefers-contrast" -->
+<!DOCTYPE html><html lang="pl"><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css"><style>body{margin:0;padding:18px;background:var(--bg);color:var(--fg)}.g{display:grid;grid-template-columns:1fr 1fr;gap:14px}.k{border:1px solid var(--line);border-radius:var(--r-card);padding:14px}.k p{margin:6px 0 0;font-size:13px;color:var(--fg-muted)}.r{display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap}</style></head><body>
+<div class="g">
+<div class="k"><span class="t-label">Progi kontrastu</span>
+<p>Tekst ≥ 4.5:1. Duży tekst i grafika UI ≥ 3:1. Krawędzie i hairline'y ≥ 3:1 — dlatego --line to #33373B, nie #242424.</p></div>
+<div class="k"><span class="t-label">Focus</span>
+<p>Dwuwarstwowy pierścień: 2px w kolorze tła, 4px w --fg. Widoczny na karcie, na tle i na odwróconym wypełnieniu.</p>
+<div class="r"><span class="s-btn s-btn--outline s-btn--sm" style="box-shadow:var(--focus-ring)">Anuluj</span><span class="s-btn s-btn--solid s-btn--sm" style="box-shadow:var(--focus-ring)">Zapisz</span></div></div>
+<div class="k"><span class="t-label">Nie tylko kolor</span>
+<p>Stan nigdy nie zależy od barwy: linki mają podkreślenie, switch ma ptaszek w gałce, aktywny element ma wypełnienie, a nie odcień.</p>
+<div class="r"><a href="#">link z podkreśleniem</a>
+<span class="s-switch"><span class="s-switch__track is-on"><span class="s-switch__knob"></span></span></span>
+<span class="s-switch"><span class="s-switch__track"><span class="s-switch__knob"></span></span></span></div></div>
+<div class="k"><span class="t-label">Cele dotykowe i rozmiary</span>
+<p>Minimum 44px na każdy element interaktywny, 48px dla przycisków. Żaden tekst poniżej 12px, żadna waga poniżej 400.</p>
+<div class="r"><span class="s-btn s-btn--outline s-btn--sm">36 sm</span><span class="s-btn s-btn--outline">48 md</span></div></div>
+</div></body></html>

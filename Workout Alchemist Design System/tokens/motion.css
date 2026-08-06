@@ -1,0 +1,22 @@
+/* No shadows. No gradients. No glows. Depth is a hairline or a grey step.
+   Motion is opacity and small translations only. */
+
+:root {
+  --dur: 150ms; /* @kind other */
+  --dur-slow: 260ms; /* @kind other */
+  --ease: cubic-bezier(0.2, 0, 0.2, 1); /* @kind other */
+
+  --press: scale(0.97); /* @kind other */
+
+  /* Two-tone focus ring: an --fg halo with a --bg gap, so it stays visible on
+     dark cards, on light cards and on top of an inverted fill alike. */
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--fg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .fade-up { animation: fade-up var(--dur-slow) var(--ease) both; }
+}

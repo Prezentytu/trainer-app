@@ -1,25 +1,46 @@
-<!-- @dsCard group="Components" viewport="700x280" subtitle="Card, Badge, Tag, StatBlock" name="Display" -->
-<!DOCTYPE html><html><head><link rel="stylesheet" href="../../styles.css">
+<!-- @dsCard group="Components" viewport="700x320" name="Display" subtitle="Card, StatTile, SectionLabel, ListRow, Divider, Wordmark" -->
+<!DOCTYPE html><html lang="pl" data-theme="dark"><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
-<script src="../../_ds_bundle.js"></script></head><body style="padding:20px">
-<div id="root"></div>
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;padding:20px;background:var(--bg)}.row{display:flex;flex-wrap:wrap;align-items:center;gap:10px}.stack{display:flex;flex-direction:column;gap:16px}</style>
+</head><body><div id="root"></div>
 <script type="text/babel">
-const { Card, Badge, Tag, StatBlock } = window.WorkoutAlchemistDesignSystem_5f0610;
-function Demo(){
-  return <div style={{display:"flex",flexDirection:"column",gap:16}}>
-    <div style={{display:"flex",gap:14}}>
-      <Card eyebrow="Next session" title="Pull day · Thursday" meta="6 exercises · ~55 min" interactive style={{flex:1}}/>
-      <Card selected title="Push / pull / legs" meta="Selected formula" style={{flex:1}}/>
-      <Card style={{flex:1}}><StatBlock label="Top set" value="62.5" unit="kg" delta="+2.5 vs last week"/></Card>
+const NS = window.WorkoutAlchemistDesignSystem_381a04;
+const { Card, StatTile, Marker, SectionLabel, Divider, ListRow, Button, Icon, Wordmark } = NS;
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+    <div className="stack">
+      <Card>
+        <SectionLabel action={<Button variant="plain" size="sm">Edit</Button>}>Body stats</SectionLabel>
+        <div style={{display:"flex",justifyContent:"space-between",gap:12,marginTop:6}}>
+          <StatTile value="85,5" unit="kg" label="Waga" delta="-1,2 kg" deltaTone="gain" />
+          <StatTile value="190" unit="cm" label="Wzrost" />
+          <StatTile value="23,7" label="BMI" delta="-0,3" deltaTone="gain" />
+        </div>
+      </Card>
+      <Card flat>
+        <div style={{display:"flex",justifyContent:"space-between",gap:12}}>
+          <StatTile value="80" unit="kg" label="Rekord" size="lg" tone="pr" delta="+2,5 kg" />
+          <StatTile value="5" label="Sesje" size="lg" />
+          <StatTile value="1 280" unit="kg" label="Objętość" size="lg" delta="-4%" />
+        </div>
+      </Card>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+        <Marker tone="pr">PR</Marker><Marker tone="gain">+8%</Marker><Marker tone="loss">-12%</Marker><Marker tone="flat">bez zmian</Marker>
+      </div>
+      <Wordmark />
     </div>
-    <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
-      <Badge tone="pr">PR</Badge><Badge tone="positive">Done</Badge><Badge tone="danger">Missed</Badge><Badge>Week 3</Badge>
-      <Tag>Hypertrophy</Tag><Tag>Barbell</Tag><Tag onRemove={()=>{}}>Upper body</Tag>
-      <StatBlock label="Volume" value="12 480" unit="kg" delta="+12% vs June" style={{marginLeft:14}}/>
+    <div>
+      <SectionLabel>Ostatnie treningi</SectionLabel>
+      <ListRow title="Push Day A" sub="25 mar · 12 serii · 4 820 kg"
+        right={<span style={{display:"flex",alignItems:"center",gap:10}}><Marker tone="pr">PR</Marker><Icon name="caret-right" size={15} /></span>} onClick={()=>{}} />
+      <ListRow title="Pull Day A" sub="23 mar · 15 serii · 3 960 kg" right={<Icon name="caret-right" size={15} />} onClick={()=>{}} />
+      <ListRow title="Legs" sub="21 mar · 12 serii · 5 100 kg" right={<Icon name="caret-right" size={15} />} onClick={()=>{}} />
+      <Divider margin={16} />
+      <ListRow title="Goal weight" sub="83 kg" right={<Icon name="caret-right" size={15} />} onClick={()=>{}} />
     </div>
-  </div>;
-}
-ReactDOM.createRoot(document.getElementById("root")).render(<Demo/>);
+  </div>);
 </script></body></html>

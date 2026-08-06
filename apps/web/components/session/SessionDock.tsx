@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { ChevronRight, Timer } from "lucide-react";
+import { Icon } from "@/components/Icon";
 import { useKeyboardInset } from "@/components/session/useKeyboardInset";
 import { SinceLastSetClock } from "@/components/session/SinceLastSetClock";
 import type { RestTimerState } from "@/components/session/useRestTimer";
@@ -50,7 +50,7 @@ function DockBtn({
       onClick={onClick}
       title={title}
       aria-label={title}
-      className={`inline-flex h-10 min-w-10 items-center justify-center rounded-[8px] px-2 text-[13px] font-semibold focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.96] ${
+      className={`inline-flex h-10 min-w-10 items-center justify-center rounded-[8px] px-2 text-[13px] font-semibold focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] active:scale-[0.96] ${
         primary
           ? "bg-accent text-accent-foreground"
           : "border border-border-strong bg-surface text-foreground-secondary hover:border-accent-border hover:text-foreground"
@@ -107,11 +107,11 @@ export function SessionDock({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                className="flex min-w-0 flex-1 items-center gap-2.5 text-left focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+                className="flex min-w-0 flex-1 items-center gap-2.5 text-left focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
                 onClick={onExpandRest}
                 aria-label="Powiększ timer przerwy"
               >
-                <Timer className="h-5 w-5 shrink-0 text-muted" strokeWidth={1.75} aria-hidden />
+                <Icon name="timer" size={20} className="shrink-0 text-muted" decorative />
                 <div className="min-w-0">
                   <p className="font-mono text-[26px] font-semibold leading-none tabular-nums text-foreground">
                     {mmss(rest.leftSeconds)}
@@ -133,7 +133,7 @@ export function SessionDock({
             </div>
             <div className="mt-2 h-1 overflow-hidden rounded-full bg-surface-active">
               <div
-                className="h-full rounded-full bg-accent transition-[width] duration-1000 ease-linear"
+                className="h-full rounded-full bg-invert-bg transition-[width] duration-1000 ease-linear"
                 style={{ width: `${Math.round(progress * 100)}%` }}
               />
             </div>
@@ -146,14 +146,14 @@ export function SessionDock({
             role="status"
             aria-label="Czas od ostatniej serii"
           >
-            <Timer className="h-4 w-4 shrink-0 text-muted" strokeWidth={1.75} aria-hidden />
+            <Icon name="timer" size={16} className="shrink-0 text-muted" decorative />
             <SinceLastSetClock
               sinceAt={sinceLastSetAt}
               className="font-mono text-[20px] font-semibold leading-none tabular-nums text-foreground"
             />
             {nextLabel ? (
               <p className="ml-auto flex min-w-0 max-w-[55%] items-center gap-0.5 text-[12px] text-muted">
-                <ChevronRight className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden />
+                <Icon name="forward" size={14} className="shrink-0" decorative />
                 <span className="truncate">{nextLabel}</span>
               </p>
             ) : null}

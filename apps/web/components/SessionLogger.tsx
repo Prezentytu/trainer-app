@@ -39,7 +39,7 @@ import { useRestTimer } from "@/components/session/useRestTimer";
 import { useWakeLock } from "@/components/session/useWakeLock";
 import { PlateCalculator } from "@/components/session/PlateCalculator";
 import { formatKg } from "@/lib/plates";
-import { Check, MoreHorizontal, Plus } from "lucide-react";
+import { Icon } from "@/components/Icon";
 
 /** SERIA | POPRZ | KG | POWT | ✓ | ⋯ — czytelna siatka (Styrka+, zachowana kolumna prev). */
 const SET_GRID =
@@ -48,7 +48,7 @@ const SET_GRID =
 const REST_OPTIONS_SEC = [60, 90, 120, 180] as const;
 
 const iconBtn =
-  "inline-flex min-h-11 items-center gap-1.5 text-[15px] font-medium text-muted hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]";
+  "inline-flex min-h-11 items-center gap-1.5 text-[15px] font-medium text-muted hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]";
 
 export type SessionLoggerMode = "client" | "behalf" | "completedEdit";
 
@@ -1136,7 +1136,7 @@ export function SessionLogger({
           <ScorePicker label="Energia" value={energyScore} onChange={setEnergyScore} />
         </div>
 
-        <div className="rounded-2xl border border-border bg-surface px-4 py-1 shadow-card">
+        <div className="rounded-2xl border border-border bg-surface px-4 py-1">
           {summary.exercises.map((ex) => {
             const done = ex.sets.filter((s) => s.completed).length;
             const isTime = ex.exerciseType === "time";
@@ -1160,7 +1160,7 @@ export function SessionLogger({
                 {hasPr ? <Badge tone="pr">PR</Badge> : null}
                 <div
                   className={`shrink-0 font-mono text-[13px] tabular-nums ${
-                    done < ex.sets.length || below ? "text-muted" : "text-positive"
+                    done < ex.sets.length || below ? "text-muted" : "text-gain"
                   }`}
                 >
                   {done}/{ex.sets.length}
@@ -1348,7 +1348,7 @@ export function SessionLogger({
         </div>
         <div className="mt-3 h-1 overflow-hidden rounded-full bg-surface-active">
           <div
-            className="h-full rounded-full bg-accent transition-[width] duration-[var(--dur-med)] ease-[var(--ease-out)]"
+            className="h-full rounded-full bg-invert-bg transition-[width] duration-[var(--dur-med)] ease-[var(--ease-out)]"
             style={{ width: `${progressPct}%` }}
           />
         </div>
@@ -1482,7 +1482,7 @@ export function SessionLogger({
                     setMenuExIdx(menuOpen ? null : exIdx);
                   }}
                 >
-                  <MoreHorizontal className="h-5 w-5" strokeWidth={1.75} />
+                  <Icon name="more" size={20} decorative />
                 </IconButton>
                 {menuOpen ? (
                   <div className="absolute right-0 top-full z-10 mt-1 min-w-[11rem] origin-top-right rounded-[10px] border border-border bg-surface-raised py-1 shadow-[var(--shadow-raised)]">
@@ -1721,7 +1721,7 @@ export function SessionLogger({
                 onClick={() => addSet(exIdx)}
                 aria-label="Dodaj serię"
               >
-                <Plus className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                <Icon name="plus" size={16} decorative />
                 Dodaj serię
               </button>
               {noteOpen ? null : (
@@ -1862,7 +1862,7 @@ const SetRow = memo(function SetRow({
         {prev ? (
           <button
             type="button"
-            className={`min-h-12 min-w-0 truncate text-left font-mono text-sm tabular-nums hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
+            className={`min-h-12 min-w-0 truncate text-left font-mono text-sm tabular-nums hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${
               completed ? "text-muted-faint" : "text-muted"
             }`}
             onClick={onCopyPrev}
@@ -1926,20 +1926,20 @@ const SetRow = memo(function SetRow({
       <button
         type="button"
         onClick={onToggle}
-        className={`flex min-h-12 min-w-11 items-center justify-center rounded-lg transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.94] ${checkColor}`}
+        className={`flex min-h-12 min-w-11 items-center justify-center rounded-lg transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] active:scale-[0.94] ${checkColor}`}
         aria-label={completed ? "Cofnij zaliczenie" : "Zalicz serię"}
       >
-        <Check className="h-6 w-6" strokeWidth={completed ? 2.5 : 1.75} aria-hidden />
+        <Icon name="check" size={24} decorative />
       </button>
 
       <button
         type="button"
         onClick={onRowMenu}
-        className="flex min-h-12 min-w-8 items-center justify-center text-muted hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+        className="flex min-h-12 min-w-8 items-center justify-center text-muted hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
         aria-label="Więcej opcji serii"
         title="Więcej"
       >
-        <MoreHorizontal className="h-4 w-4" strokeWidth={1.75} />
+        <Icon name="more" size={16} decorative />
       </button>
     </div>
   );
@@ -1957,7 +1957,7 @@ function StatCard({
 }) {
   return (
     <div
-      className={`rounded-2xl border bg-surface px-4 py-4 shadow-card ${
+      className={`rounded-2xl border bg-surface px-4 py-4 ${
         highlight ? "border-pr" : "border-border"
       }`}
     >

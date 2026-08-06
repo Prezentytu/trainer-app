@@ -6,6 +6,9 @@ const subscribeNoop = () => () => {};
 const snapshotClient = () => true;
 const snapshotServer = () => false;
 
+const FOCUS = "focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]";
+const PRESS = "active:scale-[0.97]";
+
 /** true dopiero po hydracji — getServerSnapshot=false (SSR i pierwszy pass klienta = to samo). */
 export function useIsClient(): boolean {
   return useSyncExternalStore(subscribeNoop, snapshotClient, snapshotServer);
@@ -19,8 +22,8 @@ export function PageHeader({ title, subtitle, action }: { title: string; subtitl
       }`}
     >
       <div className="min-w-0">
-        <h1 className="break-words font-display text-xl font-bold sm:text-2xl">{title}</h1>
-        {subtitle ? <p className="mt-1 max-w-[70ch] break-words text-sm leading-[var(--leading-body)] text-muted-strong">{subtitle}</p> : null}
+        <h1 className="t-title break-words">{title}</h1>
+        {subtitle ? <p className="t-small mt-1 max-w-[70ch] break-words">{subtitle}</p> : null}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}
     </div>
@@ -58,6 +61,7 @@ export function Card({
   interactive,
   selected,
   pending,
+  flat,
   onClick,
 }: {
   children?: ReactNode;
@@ -67,7 +71,7 @@ export function Card({
   eyebrowMark?: boolean;
   title?: string;
   meta?: string;
-  /** Kafelek ikony po lewej nagłówka — bez limonki (budżet accent). */
+  /** Kafelek ikony po lewej nagłówka. */
   icon?: ReactNode;
   iconTone?: CardIconTone;
   /** Akcja / meta po prawej stronie nagłówka. */
@@ -76,23 +80,26 @@ export function Card({
   selected?: boolean;
   /** Dashed border — stan pending / next. */
   pending?: boolean;
+  /** Bez fill — mocniejsza krawędź. */
+  flat?: boolean;
   onClick?: () => void;
 }) {
   const classNames = [
-    "rounded-xl border bg-surface p-5 text-left shadow-card transition-[background-color,border-color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] sm:p-6",
+    "rounded-[var(--r-card)] border p-3.5 text-left transition-[background-color,border-color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] sm:p-4",
+    flat ? "border-border-strong bg-transparent" : "border-border bg-surface",
     selected
-      ? "border-accent"
+      ? "border-foreground bg-surface-raised"
       : pending
         ? "border-dashed border-border-strong"
-        : "border-border",
+        : "",
     interactive || onClick
-      ? "hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.99]"
+      ? `hover:bg-surface-raised hover:border-border-strong ${FOCUS} ${PRESS}`
       : "",
     className,
   ].join(" ");
   const hasHeader = Boolean(eyebrow || title || meta || icon || headerAction);
   const header = hasHeader ? (
-    <div className="mb-4 flex items-start gap-3">
+    <div className="mb-3 flex items-start gap-3">
       {icon ? (
         <span
           aria-hidden
@@ -105,8 +112,8 @@ export function Card({
         {eyebrow ? (
           <div className="eyebrow mb-1">{eyebrowMark ? `/// ${eyebrow}` : eyebrow}</div>
         ) : null}
-        {title ? <div className="break-words font-display text-lg font-bold text-foreground">{title}</div> : null}
-        {meta ? <div className="mt-0.5 break-words text-sm leading-[var(--leading-label)] text-muted">{meta}</div> : null}
+        {title ? <div className="t-heading break-words">{title}</div> : null}
+        {meta ? <div className="t-small mt-0.5 break-words text-fg-faint">{meta}</div> : null}
       </div>
       {headerAction ? <div className="shrink-0">{headerAction}</div> : null}
     </div>
@@ -161,15 +168,15 @@ export function Button({
 }) {
   void _glow;
   const styles: Record<ButtonVariant, string> = {
-    primary: "bg-accent font-display font-bold text-accent-foreground hover:bg-accent-strong",
-    secondary: "border border-border-strong bg-surface text-foreground-secondary hover:bg-surface-hover",
-    ghost: "bg-transparent text-foreground-secondary hover:bg-surface-hover",
-    danger: "bg-danger-bg text-danger hover:bg-danger-border",
+    primary: "bg-invert-bg text-invert-fg hover:bg-fg-muted",
+    secondary: "border border-border-strong bg-surface text-foreground hover:bg-surface-raised hover:border-fg-ghost",
+    ghost: "bg-transparent text-foreground underline decoration-transparent underline-offset-[3px] hover:decoration-foreground",
+    danger: "bg-transparent text-danger hover:bg-danger-bg",
   };
   const sizes: Record<ButtonSize, string> = {
-    sm: "h-8 px-3 text-xs",
-    md: "h-10 px-4 text-sm",
-    lg: "h-12 px-5 text-sm",
+    sm: "h-[var(--h-control-sm)] px-3 text-[13px]",
+    md: "h-[var(--h-control)] px-4 text-sm font-semibold",
+    lg: "h-[46px] px-[22px] text-[15px] font-semibold",
   };
   const busy = !!loading;
   return (
@@ -180,7 +187,9 @@ export function Button({
       aria-busy={busy || undefined}
       title={title}
       className={[
-        "inline-flex items-center justify-center gap-2 rounded-[10px] transition-[background-color,transform,color] duration-[var(--dur-fast)] ease-[var(--ease-out)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
+        "inline-flex items-center justify-center gap-2 rounded-[var(--r-pill)] transition-[background-color,transform,color,border-color] duration-[var(--dur-fast)] ease-[var(--ease-out)] disabled:pointer-events-none disabled:opacity-45",
+        FOCUS,
+        PRESS,
         styles[variant],
         sizes[size],
         full ? "w-full" : "",
@@ -213,7 +222,7 @@ export function Field({
 }) {
   return (
     <label className="flex flex-col gap-1.5 text-sm" title={title}>
-      <span className="flex flex-wrap items-baseline gap-1.5 font-mono text-xs font-medium uppercase tracking-caps text-muted-strong">
+      <span className="t-label flex flex-wrap items-baseline gap-1.5">
         {label}
         {hint ? <span className="text-xs font-normal normal-case tracking-normal text-muted">{hint}</span> : null}
       </span>
@@ -223,22 +232,22 @@ export function Field({
 }
 
 export const inputClass =
-  "h-10 w-full rounded-[10px] border border-border-strong bg-surface-sunken px-3 text-base text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:text-muted-faint focus:border-accent-strong focus:shadow-[var(--glow-accent)] sm:text-sm";
+  "h-[var(--h-field)] w-full rounded-[var(--r-field)] border border-border-strong bg-field px-2.5 text-sm font-medium text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:font-normal placeholder:text-fg-ghost focus:border-foreground focus:shadow-[var(--focus-ring)] sm:text-sm";
 
 /** Input liczbowy — mono + tabular, bez „drgania” layoutu przy zmianie cyfr. 16px na mobile (iOS nie zoomuje). */
 export const inputNumericClass =
-  "h-10 w-full rounded-[10px] border border-border-strong bg-surface-raised px-3 font-mono text-base tabular-nums text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:text-muted-faint focus:border-accent-strong focus:shadow-[var(--glow-accent)] sm:text-sm";
+  "h-[var(--h-field)] w-full rounded-[var(--r-field)] border border-border-strong bg-field px-2.5 text-center font-mono text-base font-bold tabular-nums text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:font-normal placeholder:text-fg-ghost focus:border-foreground focus:shadow-[var(--focus-ring)] sm:text-sm";
 
-/** Textarea — bez sztywnego h-10 (inputClass zmiażdżyłby treść do jednej linii). */
+/** Textarea — bez sztywnego h-field (inputClass zmiażdżyłby treść do jednej linii). */
 export const textareaClass =
-  "min-h-20 w-full rounded-[10px] border border-border-strong bg-surface-sunken px-3 py-2 text-base text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:text-muted-faint focus:border-accent-strong focus:shadow-[var(--glow-accent)] sm:text-sm";
+  "min-h-20 w-full rounded-[var(--r-field)] border border-border-strong bg-field px-2.5 py-2 text-sm font-medium text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:font-normal placeholder:text-fg-ghost focus:border-foreground focus:shadow-[var(--focus-ring)] sm:text-sm";
 
 export function ErrorBanner({ message }: { message: string | null }) {
   if (!message) return null;
   return (
     <div
       role="alert"
-      className="mb-4 rounded-md border border-danger-border bg-danger-bg/60 px-4 py-2 text-sm leading-[var(--leading-body)] text-danger"
+      className="mb-4 rounded-[var(--r-field)] border border-danger-border bg-danger-bg px-4 py-2 text-sm leading-[var(--leading-body)] text-danger"
     >
       {message}
     </div>
@@ -255,11 +264,9 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-dashed border-border-strong px-6 py-10 text-center">
-      {title ? (
-        <div className="font-display text-base font-bold text-foreground">{title}</div>
-      ) : null}
-      <div className={`mx-auto max-w-[40ch] text-sm leading-[var(--leading-body)] text-muted ${title ? "mt-2" : ""}`}>
+    <div className="rounded-[var(--r-card)] border border-border px-6 py-10 text-center">
+      {title ? <div className="t-heading">{title}</div> : null}
+      <div className={`t-small mx-auto max-w-[40ch] ${title ? "mt-2" : ""}`}>
         {children}
       </div>
       {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
@@ -267,25 +274,121 @@ export function EmptyState({
   );
 }
 
-export type BadgeTone = "neutral" | "yellow" | "green" | "red" | "pr" | "accent" | "positive" | "danger";
+export type BadgeTone =
+  | "neutral"
+  | "yellow"
+  | "green"
+  | "red"
+  | "pr"
+  | "accent"
+  | "positive"
+  | "danger"
+  | "gain"
+  | "loss";
 
 export function Badge({ children, tone = "neutral" }: { children: ReactNode; tone?: BadgeTone }) {
   const styles: Record<BadgeTone, string> = {
-    neutral: "bg-surface-active text-foreground-secondary",
-    yellow: "border border-accent-border bg-accent-dim text-foreground-secondary",
-    accent: "border border-accent-border bg-accent-dim text-foreground-secondary",
-    green: "border border-border bg-positive-dim text-positive",
-    positive: "border border-border bg-positive-dim text-positive",
-    red: "border border-danger-border bg-danger-bg text-danger",
-    danger: "border border-danger-border bg-danger-bg text-danger",
-    pr: "border border-pr-border bg-pr-dim text-pr",
+    neutral: "bg-surface-raised text-fg-faint",
+    yellow: "bg-surface-raised text-foreground",
+    accent: "bg-invert-bg text-invert-fg",
+    green: "bg-gain-quiet text-gain",
+    positive: "bg-gain-quiet text-gain",
+    gain: "bg-gain-quiet text-gain",
+    red: "bg-danger-bg text-danger",
+    danger: "bg-danger-bg text-danger",
+    loss: "bg-loss-quiet text-loss",
+    pr: "bg-pr-dim text-pr",
   };
   return (
     <span
-      className={`inline-flex items-center rounded-[var(--radius-pill)] px-2.5 py-0.5 font-mono text-xs font-medium ${styles[tone]}`}
+      className={`inline-flex h-5 items-center gap-1 rounded-[var(--r-pill)] px-1.5 font-mono text-[11px] font-semibold tabular-nums ${styles[tone]}`}
     >
       {children}
     </span>
+  );
+}
+
+const MARKER_GLYPH: Record<"pr" | "gain" | "loss" | "flat", string> = {
+  pr: "★",
+  gain: "▲",
+  loss: "▼",
+  flat: "–",
+};
+
+function signGlyph(text: ReactNode): string | null {
+  const s = String(text ?? "").trim();
+  if (s.startsWith("+")) return "▲";
+  if (s.startsWith("-") || s.startsWith("−")) return "▼";
+  return null;
+}
+
+/** Data marker — PR / gain / loss z glifem (nie tylko kolorem). */
+export function Marker({
+  tone = "flat",
+  children,
+  glyph = true,
+}: {
+  tone?: "pr" | "gain" | "loss" | "flat";
+  children: ReactNode;
+  glyph?: boolean;
+}) {
+  const mark = signGlyph(children) || MARKER_GLYPH[tone];
+  const styles = {
+    pr: "bg-pr-dim text-pr",
+    gain: "bg-gain-quiet text-gain",
+    loss: "bg-loss-quiet text-loss",
+    flat: "bg-surface-raised text-fg-faint",
+  }[tone];
+  return (
+    <span
+      className={`inline-flex h-5 items-center gap-1 rounded-[var(--r-pill)] px-1.5 font-mono text-[11px] font-semibold tabular-nums ${styles}`}
+    >
+      {glyph && mark ? (
+        <span className="text-[10px] leading-none" aria-hidden>
+          {mark}
+        </span>
+      ) : null}
+      {children}
+    </span>
+  );
+}
+
+/** Hairline list row — title, mono sub, optional right. */
+export function ListRow({
+  title,
+  sub,
+  right,
+  leading,
+  onClick,
+  className = "",
+}: {
+  title: ReactNode;
+  sub?: ReactNode;
+  right?: ReactNode;
+  leading?: ReactNode;
+  onClick?: () => void;
+  className?: string;
+}) {
+  const Tag = onClick ? "button" : "div";
+  return (
+    <Tag
+      type={onClick ? "button" : undefined}
+      onClick={onClick}
+      className={[
+        "flex w-full min-h-[var(--tap-min)] items-center gap-3 border-b border-border px-2 py-2.5 text-left last:border-b-0",
+        onClick
+          ? `cursor-pointer rounded-[var(--r-field)] hover:bg-surface ${FOCUS}`
+          : "cursor-default",
+        className,
+      ].join(" ")}
+    >
+      {leading ? <span className="inline-flex shrink-0">{leading}</span> : null}
+      <span className="min-w-0 flex-1">
+        <span className="block text-[15px] font-medium text-foreground">{title}</span>
+        {sub ? <span className="mt-0.5 block font-mono text-[11px] text-fg-faint">{sub}</span> : null}
+      </span>
+      {right ? <span className="shrink-0">{right}</span> : null}
+    </Tag>
   );
 }
 
@@ -293,7 +396,7 @@ export function Pill({
   children,
   active,
   onClick,
-  /** Cichy stan aktywny (tint + border) — używany gdy limonkowy fill konkuruje z CTA strony. */
+  /** Cichy stan aktywny — w mono = invert jak active. */
   quiet,
 }: {
   children: ReactNode;
@@ -301,18 +404,16 @@ export function Pill({
   onClick?: () => void;
   quiet?: boolean;
 }) {
-  const activeClass = quiet
-    ? "border-accent-border bg-accent-dim text-foreground"
-    : "border-transparent bg-accent text-accent-foreground";
+  void quiet;
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={active ?? false}
-      className={`shrink-0 rounded-[var(--radius-pill)] border px-3.5 py-1.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
+      className={`inline-flex h-[var(--h-pill)] shrink-0 items-center rounded-[var(--r-pill)] border px-2.5 font-mono text-[11px] font-medium uppercase tracking-[var(--track-label)] transition-colors duration-[var(--dur-fast)] ${FOCUS} ${
         active
-          ? activeClass
-          : "border-transparent bg-surface-hover text-foreground-secondary hover:bg-surface-active"
+          ? "border-invert-bg bg-invert-bg text-invert-fg"
+          : "border-border-strong bg-surface text-fg-faint hover:border-fg-ghost hover:bg-surface-raised hover:text-foreground"
       }`}
     >
       {children}
@@ -339,16 +440,16 @@ export function IconButton({
 }) {
   const styles = {
     ghost: active
-      ? "bg-accent-dim text-accent"
-      : "bg-transparent text-foreground-secondary hover:bg-surface-hover hover:text-accent-strong",
-    outline: "border border-border-strong bg-surface text-foreground-secondary hover:bg-surface-hover",
-    danger: "bg-surface-hover text-muted-strong hover:bg-danger-bg hover:text-danger",
+      ? "bg-surface-raised text-foreground"
+      : "bg-transparent text-fg-muted hover:bg-surface-raised hover:text-foreground",
+    outline: "border border-border-strong bg-surface text-fg-muted hover:bg-surface-raised",
+    danger: "bg-transparent text-fg-muted hover:bg-danger-bg hover:text-danger",
   }[variant];
   const dims = {
-    xs: "h-8 w-8 text-xs sm:h-6 sm:w-6",
-    sm: "h-10 w-10 text-sm sm:h-8 sm:w-8",
-    md: "h-10 w-10 text-sm",
-    lg: "h-12 w-12 text-base",
+    xs: "h-[var(--h-control-sm)] w-[var(--h-control-sm)] text-xs",
+    sm: "h-[var(--h-control)] w-[var(--h-control)] text-sm",
+    md: "h-[var(--h-control)] w-[var(--h-control)] text-sm",
+    lg: "h-[46px] w-[46px] text-base",
   }[size];
   return (
     <button
@@ -357,7 +458,7 @@ export function IconButton({
       title={title}
       aria-label={title}
       disabled={disabled}
-      className={`inline-flex ${dims} shrink-0 items-center justify-center rounded-md transition-[background-color,transform,color] duration-[var(--dur-fast)] ease-[var(--ease-out)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.98] disabled:opacity-50 ${styles}`}
+      className={`inline-flex ${dims} shrink-0 items-center justify-center rounded-[var(--r-pill)] transition-[background-color,transform,color] duration-[var(--dur-fast)] ease-[var(--ease-out)] disabled:opacity-45 ${FOCUS} ${PRESS} ${styles}`}
     >
       {children}
     </button>
@@ -376,7 +477,7 @@ export function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md"
   const dims = { sm: "h-6 w-6 text-xs", md: "h-8 w-8 text-xs", lg: "h-10 w-10 text-sm" }[size];
   return (
     <span
-      className={`inline-flex ${dims} shrink-0 items-center justify-center rounded-full bg-surface-hover font-semibold text-foreground-secondary`}
+      className={`inline-flex ${dims} shrink-0 items-center justify-center rounded-full bg-surface-raised font-semibold text-fg-muted`}
     >
       {initials}
     </span>
@@ -403,25 +504,29 @@ export function StatBlock({
   reserveDelta?: boolean;
 }) {
   const showDelta = Boolean(delta) || reserveDelta;
+  const deltaTone =
+    delta?.trim().startsWith("+") ? "text-gain" : delta?.trim().startsWith("-") || delta?.trim().startsWith("−") ? "text-loss" : "text-fg-faint";
+  const glyph = signGlyph(delta);
   return (
-    <div className="min-w-0">
-      <div className="font-mono text-xs font-medium uppercase tracking-caps text-muted">{label}</div>
-      <div className="mt-1 flex items-baseline gap-1.5">
+    <div className="flex min-w-0 flex-col gap-1">
+      <div className="flex items-baseline gap-1">
         <span
-          className={`font-mono font-semibold tabular-nums ${valueClassName ?? "text-foreground"} ${
-            size === "lg" ? "text-4xl" : "text-2xl"
+          className={`t-num ${valueClassName ?? "text-foreground"} ${
+            size === "lg" ? "text-[34px] leading-none" : "text-[25px] leading-none"
           }`}
         >
           {value}
         </span>
-        {unit ? <span className="font-mono text-sm text-muted">{unit}</span> : null}
+        {unit ? <span className="font-mono text-xs font-medium text-fg-faint">{unit}</span> : null}
       </div>
+      <div className="t-label">{label}</div>
       {showDelta ? (
-        <div
-          className={`mt-1 min-h-[1rem] font-mono text-xs ${
-            delta?.trim().startsWith("+") ? "text-positive" : "text-muted"
-          }`}
-        >
+        <div className={`mt-0.5 flex min-h-[1rem] items-center gap-1 font-mono text-[11px] font-medium tabular-nums ${deltaTone}`}>
+          {delta && glyph ? (
+            <span className="text-[10px] leading-none" aria-hidden>
+              {glyph}
+            </span>
+          ) : null}
           {delta ?? "\u00a0"}
         </div>
       ) : null}
@@ -431,14 +536,14 @@ export function StatBlock({
 
 export function Tag({ children, onRemove }: { children: ReactNode; onRemove?: () => void }) {
   return (
-    <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-border-strong bg-surface-sunken px-2.5 text-xs text-foreground-secondary">
+    <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-border-strong bg-surface px-2.5 text-xs text-fg-muted">
       {children}
       {onRemove ? (
         <button
           type="button"
           onClick={onRemove}
           aria-label="Usuń"
-          className="text-muted-faint hover:text-foreground-secondary"
+          className="text-fg-ghost hover:text-foreground"
         >
           ×
         </button>
@@ -481,14 +586,14 @@ export function Tabs({
             role="tab"
             aria-selected={active}
             onClick={() => onChange(v)}
-            className={`-mb-px inline-flex items-center gap-2 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
+            className={`-mb-px inline-flex items-center gap-2 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] ${FOCUS} ${
               active
-                ? "border-accent text-accent"
-                : "border-transparent text-muted-strong hover:text-foreground-secondary"
+                ? "border-foreground text-foreground"
+                : "border-transparent text-fg-faint hover:text-fg-muted"
             }`}
           >
             {tabLabel(item)}
-            {count != null ? <span className="font-mono text-xs tabular-nums text-muted">{count}</span> : null}
+            {count != null ? <span className="font-mono text-xs tabular-nums text-fg-ghost">{count}</span> : null}
           </button>
         );
       })}
@@ -509,8 +614,8 @@ export function SegmentedControl({
 }) {
   return (
     <div
-      className={`inline-flex rounded-md border border-border bg-surface-sunken p-0.5 ${
-        full ? "h-full min-h-10 w-full" : ""
+      className={`inline-flex gap-0.5 rounded-[var(--r-field)] border border-border-strong bg-surface p-0.5 ${
+        full ? "h-full min-h-[34px] w-full" : ""
       }`}
       role="group"
     >
@@ -522,17 +627,19 @@ export function SegmentedControl({
             key={v}
             type="button"
             onClick={() => onChange(v)}
-            className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-medium transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
-              full ? "h-full flex-1" : "py-1.5"
+            className={`inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2.5 font-mono text-[12px] font-medium uppercase tracking-[var(--track-label)] transition-colors duration-[var(--dur-fast)] sm:px-3 ${FOCUS} ${
+              full ? "h-full min-w-0 flex-1" : "h-[30px]"
             } ${
               active
-                ? "bg-surface-active text-foreground shadow-[var(--shadow-segment-active)]"
-                : "text-muted-strong hover:text-foreground-secondary"
+                ? "bg-invert-bg font-bold text-invert-fg"
+                : "text-fg-faint hover:bg-surface-raised hover:text-foreground"
             }`}
           >
-            {tabLabel(item)}
+            <span className="truncate">{tabLabel(item)}</span>
             {tabCount(item) != null ? (
-              <span className="font-mono text-xs tabular-nums text-muted">{tabCount(item)}</span>
+              <span className="shrink-0 font-mono text-[12px] tabular-nums opacity-70">
+                {tabCount(item)}
+              </span>
             ) : null}
           </button>
         );
@@ -556,7 +663,7 @@ export function Switch({
   return (
     <label
       htmlFor={id}
-      className={`inline-flex cursor-pointer items-center gap-3 ${disabled ? "opacity-50" : ""}`}
+      className={`inline-flex cursor-pointer items-center gap-3 ${disabled ? "opacity-45" : ""}`}
     >
       <button
         id={id}
@@ -565,17 +672,24 @@ export function Switch({
         aria-checked={!!checked}
         disabled={disabled}
         onClick={() => onChange?.(!checked)}
-        className={`relative h-6 w-10 shrink-0 rounded-full transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
-          checked ? "bg-accent" : "bg-surface-active"
+        className={`relative h-6 w-10 shrink-0 rounded-[var(--r-pill)] border transition-colors duration-[var(--dur-fast)] ${FOCUS} ${
+          checked ? "border-invert-bg bg-invert-bg" : "border-border-strong bg-surface-raised"
         }`}
       >
         <span
-          className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full transition-transform duration-[var(--dur-fast)] ease-[var(--ease-out)] ${
-            checked ? "translate-x-4 bg-accent-foreground" : "translate-x-0 bg-foreground-secondary"
+          className={`absolute top-0.5 left-0.5 flex h-[18px] w-[18px] items-center justify-center rounded-full transition-transform duration-[var(--dur-fast)] ease-[var(--ease-out)] ${
+            checked ? "translate-x-4 bg-invert-fg" : "translate-x-0 bg-fg-muted"
           }`}
-        />
+        >
+          {checked ? (
+            <span
+              aria-hidden
+              className="mb-px block h-[6px] w-[8px] -rotate-45 border-b-2 border-l-2 border-invert-bg"
+            />
+          ) : null}
+        </span>
       </button>
-      {label ? <span className="text-sm text-foreground-secondary">{label}</span> : null}
+      {label ? <span className="t-body text-[15px]">{label}</span> : null}
     </label>
   );
 }
@@ -592,8 +706,8 @@ export function Dialog({
   children,
   /** `null` ukrywa stopkę z Anuluj/Potwierdź (np. podgląd wideo z własnymi akcjami). */
   footer,
-  /** Nadpisanie klas panelu (domyślnie max-w-lg). */
-  className = "max-w-lg",
+  /** Nadpisanie klas panelu (domyślnie max-w-sm). */
+  className = "max-w-sm",
   /** Blokuje przycisk potwierdzenia + pokazuje spinner (Anuluj zostaje aktywny). */
   busy,
 }: {
@@ -662,7 +776,7 @@ export function Dialog({
       <button
         type="button"
         aria-label="Zamknij"
-        className="absolute inset-0 bg-[var(--overlay-scrim)]"
+        className="absolute inset-0 bg-[var(--scrim)]"
         onClick={onCancel}
       />
       <div
@@ -670,15 +784,15 @@ export function Dialog({
         role="dialog"
         aria-modal
         aria-labelledby={titleId}
-        className={`relative w-full rounded-3xl border border-border bg-surface-sunken p-6 shadow-modal ${className}`}
+        className={`relative w-full rounded-[var(--r-sheet)] border border-border-strong bg-surface p-[18px] ${className}`}
       >
-        <h2 id={titleId} className="font-display text-xl font-bold text-foreground">
+        <h2 id={titleId} className="t-heading">
           {title}
         </h2>
-        {description ? <p className="mt-2 max-w-[70ch] text-sm leading-[var(--leading-body)] text-muted-strong">{description}</p> : null}
+        {description ? <p className="t-small mt-2 max-w-[70ch]">{description}</p> : null}
         {children ? <div className="mt-4">{children}</div> : null}
         {showDefaultFooter ? (
-          <div className="mt-6 flex justify-end gap-2">
+          <div className="mt-5 flex justify-end gap-2">
             <Button variant="ghost" onClick={onCancel}>
               {cancelLabel}
             </Button>
@@ -692,8 +806,63 @@ export function Dialog({
             </Button>
           </div>
         ) : footer ? (
-          <div className="mt-6">{footer}</div>
+          <div className="mt-5">{footer}</div>
         ) : null}
+      </div>
+    </div>
+  );
+}
+
+/** Bottom sheet (default) lub wyśrodkowany panel. */
+export function Sheet({
+  open,
+  onClose,
+  title,
+  center,
+  children,
+  footer,
+}: {
+  open?: boolean;
+  onClose?: () => void;
+  title?: string;
+  center?: boolean;
+  children?: ReactNode;
+  footer?: ReactNode;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose?.();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  if (!open) return null;
+  return (
+    <div
+      className={`fixed inset-0 z-50 flex justify-center ${
+        center ? "items-center p-4" : "items-end"
+      }`}
+    >
+      <button
+        type="button"
+        aria-label="Zamknij"
+        className="absolute inset-0 bg-[var(--scrim)]"
+        onClick={onClose}
+      />
+      <div
+        role="dialog"
+        aria-modal
+        className={`relative w-full border border-border-strong bg-surface p-[18px] ${
+          center
+            ? "max-w-sm rounded-[var(--r-sheet)]"
+            : "max-w-[430px] rounded-t-[var(--r-sheet)] border-b-0"
+        }`}
+      >
+        {title ? <p className="t-heading mb-3">{title}</p> : null}
+        {children}
+        {footer ? <div className="mt-5 flex gap-2">{footer}</div> : null}
       </div>
     </div>
   );
@@ -703,7 +872,7 @@ export function ProgressRing({
   value = 0,
   size = 64,
   stroke = 5,
-  color = "var(--accent)",
+  color = "currentColor",
   label,
   sub,
 }: {
@@ -719,7 +888,10 @@ export function ProgressRing({
   const clamped = Math.max(0, Math.min(1, value));
   const offset = c * (1 - clamped);
   return (
-    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+    <div
+      className="relative inline-flex items-center justify-center text-foreground"
+      style={{ width: size, height: size }}
+    >
       <svg width={size} height={size} className="-rotate-90">
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--surface-active)" strokeWidth={stroke} />
         <circle
@@ -736,8 +908,8 @@ export function ProgressRing({
       </svg>
       {(label || sub) && (
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          {label ? <span className="font-mono text-sm font-semibold tabular-nums text-foreground">{label}</span> : null}
-          {sub ? <span className="font-mono text-xs font-medium uppercase tracking-caps text-muted">{sub}</span> : null}
+          {label ? <span className="t-num text-sm">{label}</span> : null}
+          {sub ? <span className="t-label">{sub}</span> : null}
         </div>
       )}
     </div>
@@ -767,9 +939,9 @@ export function useUndoToast() {
     <div
       role="status"
       aria-live="polite"
-      className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-50 flex items-center gap-3 rounded-md border border-border-strong bg-surface px-4 py-3 text-sm shadow-raised sm:bottom-4"
+      className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-50 flex items-center gap-3 rounded-[var(--r-field)] border border-border-strong bg-surface px-4 py-3 text-sm sm:bottom-4"
     >
-      <span className="text-foreground-secondary">{toast.message}</span>
+      <span className="text-fg-muted">{toast.message}</span>
       {toast.onUndo && (
         <button
           type="button"
@@ -777,7 +949,7 @@ export function useUndoToast() {
             toast.onUndo?.();
             dismiss();
           }}
-          className="font-semibold text-accent hover:text-accent-strong focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+          className={`font-medium text-foreground underline underline-offset-[3px] decoration-fg-ghost hover:decoration-foreground ${FOCUS}`}
         >
           Cofnij
         </button>

@@ -1,0 +1,26 @@
+<!-- @dsCard group="Colors" viewport="700x220" name="Akcenty na danych" subtitle="Złoto = rekord · zieleń = progres · czerwień = regres. Tylko na liczbach, zawsze z glifem." -->
+<!DOCTYPE html><html lang="pl"><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>body{margin:0;padding:18px;background:var(--bg);color:var(--fg)}.sw{display:flex;border:1px solid var(--line);border-radius:var(--r-card);overflow:hidden}.sw>div{flex:1;height:70px;display:flex;flex-direction:column;justify-content:flex-end;padding:9px;font-family:var(--font-mono);font-size:10px;font-weight:500;letter-spacing:.05em}.r{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px}.s{display:flex;gap:28px;margin-top:16px}</style>
+</head><body>
+<div class="sw">
+<div style="background:var(--pr-quiet);color:var(--pr)">--pr #E0B13F<br>10.2:1</div>
+<div style="background:var(--gain-quiet);color:var(--gain)">--gain #57BF82<br>9.4:1</div>
+<div style="background:var(--loss-quiet);color:var(--loss)">--loss #EF7A70<br>7.0:1</div>
+<div style="background:var(--danger-quiet);color:var(--danger)">--danger #FF6B6B<br>destrukcja, nie dane</div>
+</div>
+<div class="r">
+<span class="s-marker s-marker--pr"><span class="s-marker__glyph">★</span>PR</span>
+<span class="s-marker s-marker--pr"><span class="s-marker__glyph">★</span>132,5 kg</span>
+<span class="s-marker s-marker--gain"><span class="s-marker__glyph">▲</span>+8%</span>
+<span class="s-marker s-marker--gain"><span class="s-marker__glyph">▲</span>+2,5 kg</span>
+<span class="s-marker s-marker--loss"><span class="s-marker__glyph">▼</span>-12%</span>
+<span class="s-marker s-marker--flat"><span class="s-marker__glyph">–</span>bez zmian</span>
+</div>
+<div class="s">
+<div class="s-stat"><span class="s-stat__value">4 820<span class="s-stat__unit">kg</span></span><span class="t-label">Objętość</span><span class="s-stat__delta s-stat__delta--gain"><span class="s-marker__glyph">▲</span>+8%</span></div>
+<div class="s-stat"><span class="s-stat__value s-stat__value--pr">132<span class="s-stat__unit">kg</span></span><span class="t-label">Rekord — przysiad</span><span class="s-stat__delta s-stat__delta--gain"><span class="s-marker__glyph">▲</span>+5 kg</span></div>
+<div class="s-stat"><span class="s-stat__value">85,5<span class="s-stat__unit">kg</span></span><span class="t-label">Waga · redukcja</span><span class="s-stat__delta s-stat__delta--gain"><span class="s-marker__glyph">▼</span>-1,2 kg</span></div>
+<div class="s-stat"><span class="s-stat__value">3 960<span class="s-stat__unit">kg</span></span><span class="t-label">Objętość</span><span class="s-stat__delta s-stat__delta--loss"><span class="s-marker__glyph">▼</span>-12%</span></div>
+</div>
+<p class="t-small" style="margin:16px 0 0">Trzy barwy istnieją wyłącznie na danych — nigdy na przycisku, nawigacji, ikonie w chromie ani na powierzchni. Każdy znacznik niesie glif (★ ▲ ▼ –) i znak, więc znaczenie działa bez koloru. Strzałka i barwa to dwa niezależne kanały: glif idzie za znakiem liczby (−1,2 kg to zawsze ▼), a <span style="font-family:var(--font-mono)">deltaTone</span> ustawia wyłącznie kolor. Dlatego spadek wagi przy redukcji to zielone ▼ — progres bez sprzeczności ze znakiem obok.</p>
+</body></html>

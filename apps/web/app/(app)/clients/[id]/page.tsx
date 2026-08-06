@@ -3,15 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import {
-  Activity,
-  AlertTriangle,
-  CalendarCheck,
-  Dumbbell,
-  Ruler,
-  Trophy,
-  Weight,
-} from "lucide-react";
+import { Icon } from "@/components/Icon";
 import {
   api,
   ClientDetails,
@@ -568,7 +560,7 @@ export default function ClientDetailsPage() {
                   </p>
                   {nextDayLabel ? (
                     <p className="mt-2 flex items-start gap-1.5 text-sm text-muted">
-                      <Dumbbell aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted" strokeWidth={1.75} />
+                      <Icon name="dumbbell" size={14} className="mt-0.5 shrink-0 text-muted" decorative />
                       <span>
                         Następny: <span className="font-medium text-foreground">{nextDayLabel}</span>
                       </span>
@@ -599,7 +591,7 @@ export default function ClientDetailsPage() {
         <Card className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-1">
           <div className="flex items-start gap-3">
             <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-hover text-foreground-secondary">
-              <CalendarCheck aria-hidden className="h-4 w-4" strokeWidth={1.75} />
+              <Icon name="calendar-blank" size={16} decorative />
             </span>
             <StatBlock
               label="Ostatni trening"
@@ -616,7 +608,7 @@ export default function ClientDetailsPage() {
           </div>
           <div className="flex items-start gap-3">
             <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-hover text-foreground-secondary">
-              <Activity aria-hidden className="h-4 w-4" strokeWidth={1.75} />
+              <Icon name="activity" size={16} decorative />
             </span>
             <StatBlock label="Treningi (30 dni)" value={sessions30} />
           </div>
@@ -626,7 +618,7 @@ export default function ClientDetailsPage() {
                 prs30 > 0 ? "bg-pr-dim text-pr" : "bg-surface-hover text-foreground-secondary"
               }`}
             >
-              <Trophy aria-hidden className="h-4 w-4" strokeWidth={1.75} />
+              <Icon name="trophy" size={16} decorative />
             </span>
             <StatBlock label="Nowe PR (30 dni)" value={prs30} valueClassName={prs30 > 0 ? "text-pr" : undefined} />
           </div>
@@ -778,7 +770,7 @@ export default function ClientDetailsPage() {
                     <Card className="flex flex-wrap items-center justify-between gap-3 transition-colors hover:border-border-strong">
                       <div className="flex min-w-0 items-start gap-3">
                         <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-hover text-foreground-secondary">
-                          <Dumbbell aria-hidden className="h-4 w-4" strokeWidth={1.75} />
+                          <Icon name="dumbbell" size={16} decorative />
                         </span>
                         <div className="min-w-0">
                           <p className="break-words text-base font-medium">
@@ -809,7 +801,7 @@ export default function ClientDetailsPage() {
             {stagnation && stagnation.items.length > 0 ? (
               <section>
                 <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-semibold">
-                  <AlertTriangle aria-hidden className="h-4 w-4 text-danger" strokeWidth={1.75} />
+                  <Icon name="warning" size={16} className="text-danger" decorative />
                   Zastój
                 </h2>
                 <div className="grid gap-2">
@@ -827,7 +819,7 @@ export default function ClientDetailsPage() {
 
             <section>
               <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-semibold">
-                <Activity aria-hidden className="h-4 w-4 text-foreground-secondary" strokeWidth={1.75} />
+                <Icon name="activity" size={16} className="text-foreground-secondary" decorative />
                 Trendy
               </h2>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -857,7 +849,7 @@ export default function ClientDetailsPage() {
 
             <section>
               <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-semibold">
-                <Dumbbell aria-hidden className="h-4 w-4 text-foreground-secondary" strokeWidth={1.75} />
+                <Icon name="dumbbell" size={16} className="text-foreground-secondary" decorative />
                 Objętość mięśniowa
               </h2>
               <Card eyebrow="4 tyg." title="Serie robocze">
@@ -871,7 +863,7 @@ export default function ClientDetailsPage() {
 
             <section>
               <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-semibold">
-                <Trophy aria-hidden className="h-4 w-4 text-pr" strokeWidth={1.75} />
+                <Icon name="trophy" size={16} className="text-pr" decorative />
                 Rekordy
               </h2>
               {records.length === 0 ? (
@@ -884,7 +876,7 @@ export default function ClientDetailsPage() {
                     return (
                       <div
                         key={r.exerciseId}
-                        className="overflow-hidden rounded-xl border border-border bg-surface shadow-card"
+                        className="overflow-hidden rounded-xl border border-border bg-surface"
                       >
                         <button
                           type="button"
@@ -936,7 +928,7 @@ export default function ClientDetailsPage() {
             <section>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <h2 className="flex items-center gap-2 font-display text-lg font-semibold">
-                  <Weight aria-hidden className="h-4 w-4 text-foreground-secondary" strokeWidth={1.75} />
+                  <Icon name="barbell" size={16} className="text-foreground-secondary" decorative />
                   Maxy (1RM)
                 </h2>
                 {!showMaxForm ? (
@@ -1017,7 +1009,7 @@ export default function ClientDetailsPage() {
             <section>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <h2 className="flex items-center gap-2 font-display text-lg font-semibold">
-                  <Ruler aria-hidden className="h-4 w-4 text-foreground-secondary" strokeWidth={1.75} />
+                  <Icon name="ruler" size={16} className="text-foreground-secondary" decorative />
                   Pomiary
                 </h2>
                 {!showMeasureForm ? (

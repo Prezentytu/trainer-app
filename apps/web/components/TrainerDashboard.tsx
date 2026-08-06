@@ -3,16 +3,6 @@
 import { type ReactNode, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import {
-  AlertTriangle,
-  CalendarCheck,
-  CheckCircle2,
-  Circle,
-  ClipboardX,
-  History,
-  Trophy,
-  Users,
-} from "lucide-react";
-import {
   api,
   AttentionItem,
   ClientActivityItem,
@@ -29,6 +19,7 @@ import {
   ProgressRing,
   StatBlock,
 } from "@/components/ui";
+import { Icon } from "@/components/Icon";
 import { DashboardSkeleton } from "@/components/skeletons";
 
 type RowStatus = {
@@ -247,7 +238,7 @@ export function TrainerDashboard() {
           eyebrow="Wymagają uwagi"
           eyebrowMark
           pending
-          icon={<AlertTriangle className="h-4 w-4" strokeWidth={1.75} />}
+          icon={<Icon name="warning" size={16} decorative />}
           iconTone="danger"
           headerAction={
             <span className="font-mono text-xs tabular-nums text-muted">
@@ -303,11 +294,11 @@ export function TrainerDashboard() {
           eyebrow="Ten tydzień"
           eyebrowMark
           title="Klienci w tym tygodniu"
-          icon={<Users className="h-4 w-4" strokeWidth={1.75} />}
+          icon={<Icon name="clients" size={16} decorative />}
           headerAction={
             needsAttention.length === 0 ? (
-              <span className="inline-flex items-center gap-1.5 text-sm text-positive">
-                <CheckCircle2 aria-hidden className="h-4 w-4" strokeWidth={1.75} />
+              <span className="inline-flex items-center gap-1.5 text-sm text-gain">
+                <Icon name="check-circle" size={16} decorative />
                 Wszyscy trenują zgodnie z planem
               </span>
             ) : (
@@ -341,7 +332,7 @@ export function TrainerDashboard() {
                 >
                   <Link
                     href={`/clients/${client.clientId}`}
-                    className="flex min-w-0 items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+                    className="flex min-w-0 items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
                   >
                     <StatusIcon status={status} />
                     <Avatar name={client.clientName} size="sm" />
@@ -391,7 +382,7 @@ export function TrainerDashboard() {
           eyebrow="Historia"
           eyebrowMark
           title="Ostatnie sesje"
-          icon={<History className="h-4 w-4" strokeWidth={1.75} />}
+          icon={<Icon name="history" size={16} decorative />}
         >
           {recentSessions.length === 0 ? (
             <EmptyState
@@ -410,7 +401,7 @@ export function TrainerDashboard() {
                 <li key={s.id} className="flex items-center justify-between gap-3 py-2.5">
                   <Link
                     href={`/clients/${s.clientId}/sessions/${s.id}`}
-                    className="flex min-w-0 items-center gap-2.5 text-sm hover:text-accent focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+                    className="flex min-w-0 items-center gap-2.5 text-sm hover:text-accent focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
                   >
                     <Avatar name={s.clientName} size="sm" />
                     <span className="min-w-0">
@@ -433,7 +424,7 @@ export function TrainerDashboard() {
           eyebrow="Rekordy"
           eyebrowMark
           title="Nowe rekordy"
-          icon={<Trophy className="h-4 w-4" strokeWidth={1.75} />}
+          icon={<Icon name="trophy" size={16} decorative />}
           iconTone="pr"
         >
           {recentPrs.length === 0 ? (
@@ -456,7 +447,7 @@ export function TrainerDashboard() {
                 >
                   <Link
                     href={`/clients/${r.clientId}`}
-                    className="flex min-w-0 items-center gap-2.5 text-sm hover:text-accent focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+                    className="flex min-w-0 items-center gap-2.5 text-sm hover:text-accent focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
                   >
                     <Avatar name={r.clientName} size="sm" />
                     <span className="min-w-0">
@@ -489,9 +480,9 @@ function OnboardingStep({ done, children }: { done: boolean; children: ReactNode
   return (
     <li className={`flex items-start gap-3 ${done ? "text-muted" : ""}`}>
       {done ? (
-        <CheckCircle2 aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-positive" strokeWidth={1.75} />
+        <Icon name="check-circle" size={16} className="mt-0.5 shrink-0 text-gain" decorative />
       ) : (
-        <Circle aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-muted-faint" strokeWidth={1.75} />
+        <Icon name="circle" size={16} className="mt-0.5 shrink-0 text-muted-faint" decorative />
       )}
       <span className={done ? "line-through decoration-border-strong" : undefined}>{children}</span>
     </li>
@@ -516,7 +507,7 @@ function StatCard({
   return (
     <Link
       href={href}
-      className="block h-full rounded-xl focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+      className="block h-full rounded-xl focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
     >
       <Card className="relative h-full transition-colors hover:border-border-strong">
         {icon ? <span className="absolute top-5 right-5 sm:top-6 sm:right-6">{icon}</span> : null}
@@ -535,12 +526,12 @@ function StatCard({
 
 function StatusIcon({ status }: { status: RowStatus }) {
   if (status.kind === "no_plan") {
-    return <ClipboardX aria-hidden className="h-4 w-4 shrink-0 text-muted-strong" strokeWidth={1.75} />;
+    return <Icon name="clipboard-text" size={16} className="shrink-0 text-muted-strong" decorative />;
   }
   if (status.kind === "attention") {
-    return <AlertTriangle aria-hidden className="h-4 w-4 shrink-0 text-danger" strokeWidth={1.75} />;
+    return <Icon name="warning" size={16} className="shrink-0 text-danger" decorative />;
   }
-  return <CheckCircle2 aria-hidden className="h-4 w-4 shrink-0 text-positive" strokeWidth={1.75} />;
+  return <Icon name="check-circle" size={16} className="shrink-0 text-gain" decorative />;
 }
 
 function resolveStatus(client: ClientActivityItem, att?: AttentionItem): RowStatus {

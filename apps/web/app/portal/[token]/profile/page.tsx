@@ -127,7 +127,7 @@ export default function PortalProfilePage() {
           </p>
           <div className="mt-4 h-1 overflow-hidden rounded-full bg-surface-active">
             <div
-              className="h-full rounded-full bg-accent transition-[width] duration-[var(--dur-med)] ease-[var(--ease-out)]"
+              className="h-full rounded-full bg-invert-bg transition-[width] duration-[var(--dur-med)] ease-[var(--ease-out)]"
               style={{ width: `${Math.min(100, today.percent)}%` }}
             />
           </div>

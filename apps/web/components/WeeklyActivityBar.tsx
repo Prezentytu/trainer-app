@@ -82,7 +82,7 @@ export function WeeklyActivityBar({
                     w.count === 0
                       ? "h-1 bg-surface-active"
                       : w.isCurrent
-                        ? "bg-accent"
+                        ? "bg-invert-bg"
                         : "bg-surface-active"
                   }`}
                   style={w.count > 0 ? { height: `${heightPct}%` } : undefined}

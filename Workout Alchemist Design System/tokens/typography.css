@@ -1,21 +1,91 @@
-:root{
---font-display:"Bricolage Grotesque",system-ui,sans-serif;
---font-body:"Instrument Sans",system-ui,sans-serif;
---font-mono:"IBM Plex Mono",ui-monospace,monospace;
-/* Scale */
---text-xs:12px;--text-sm:13px;--text-base:15px;--text-md:17px;--text-lg:20px;--text-xl:24px;--text-2xl:30px;--text-3xl:38px;--text-4xl:52px;
---leading-tight:1.1;--leading-snug:1.3;--leading-normal:1.5;
---tracking-caps:0.08em;
-/* Semantic */
---type-display:700 var(--text-4xl)/var(--leading-tight) var(--font-display);
---type-h1:700 var(--text-3xl)/var(--leading-tight) var(--font-display);
---type-h2:700 var(--text-2xl)/var(--leading-tight) var(--font-display);
---type-h3:600 var(--text-lg)/var(--leading-snug) var(--font-display);
---type-body:400 var(--text-base)/var(--leading-normal) var(--font-body);
---type-body-strong:600 var(--text-base)/var(--leading-normal) var(--font-body);
---type-caption:400 var(--text-sm)/var(--leading-snug) var(--font-body);
---type-label:600 var(--text-xs)/1.2 var(--font-body);
---type-stat:600 var(--text-2xl)/1 var(--font-mono);
---type-stat-lg:600 var(--text-4xl)/1 var(--font-mono);
---type-mono-sm:500 var(--text-sm)/1.4 var(--font-mono);
+/* Type scale. Two rules the previous version broke:
+   nothing sits below 12px, and nothing structural uses a weight under 400.
+   Hierarchy comes from weight and size; contrast stays at AA regardless. */
+
+:root {
+  --w-regular: 400; /* @kind font */
+  --w-medium: 500; /* @kind font */
+  --w-semibold: 600; /* @kind font */
+
+  --track-label: 0.1em;
+  --track-display: -0.02em;
+  --track-num: 0; /* @kind other */
+
+  --lh-display: 1.08; /* @kind font */
+  --lh-title: 1.22; /* @kind font */
+  --lh-body: 1.55; /* @kind font */
+  --lh-tight: 1; /* @kind font */
+
+  --size-display: 40px;
+  --size-title: 25px;
+  --size-heading: 18px;
+  --size-body: 15px;
+  --size-small: 13px;
+  --size-label: 12px;   /* was 10px — 10px caps at 7:1 is still hard to read */
+  --size-stat: 25px;
+  --size-stat-lg: 34px;
+}
+
+/* Statement type. Semibold, not hairline — it has to survive a bright room. */
+.t-display {
+  font-family: var(--font-ui);
+  font-weight: var(--w-semibold);
+  font-size: var(--size-display);
+  line-height: var(--lh-display);
+  letter-spacing: var(--track-display);
+  color: var(--fg);
+}
+
+.t-title {
+  font-family: var(--font-ui);
+  font-weight: var(--w-semibold);
+  font-size: var(--size-title);
+  line-height: var(--lh-title);
+  letter-spacing: var(--track-display);
+  color: var(--fg);
+}
+
+.t-heading {
+  font-family: var(--font-ui);
+  font-weight: var(--w-medium);
+  font-size: var(--size-heading);
+  line-height: var(--lh-title);
+  color: var(--fg);
+}
+
+.t-body {
+  font-family: var(--font-ui);
+  font-weight: var(--w-regular);
+  font-size: var(--size-body);
+  line-height: var(--lh-body);
+  color: var(--fg);
+}
+
+/* Secondary copy — --fg-muted, which is a real 12.6:1, not a whisper. */
+.t-small {
+  font-family: var(--font-ui);
+  font-weight: var(--w-regular);
+  font-size: var(--size-small);
+  line-height: var(--lh-body);
+  color: var(--fg-muted);
+}
+
+/* The system's only label style: mono, uppercase, 12px, medium weight. */
+.t-label {
+  font-family: var(--font-mono);
+  font-weight: var(--w-medium);
+  font-size: var(--size-label);
+  line-height: 1.35;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--fg-faint);
+}
+
+/* Any number worth reading. */
+.t-num {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--track-num);
+  color: var(--fg);
 }

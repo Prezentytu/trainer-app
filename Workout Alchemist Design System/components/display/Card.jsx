@@ -1,12 +1,18 @@
-import React, { useState } from "react";
-export function Card({ title, eyebrow, meta, interactive, selected, children, style, ...rest }) {
-  const [hov, setHov] = useState(false);
+import React from "react";
+
+/** Grey block, 14px radius, no border, no shadow. `flat` swaps fill for a hairline. */
+export function Card({ children, flat, onClick, pad = 16, className = "", style }) {
+  const cls = ["s-card", flat ? "s-card--flat" : "", onClick ? "s-card--tap" : "", className].filter(Boolean).join(" ");
+  const s = { padding: pad, ...style };
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={cls} style={s}>
+        {children}
+      </button>
+    );
+  }
   return (
-    <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ background: hov && interactive ? "var(--surface-hover)" : "var(--surface-card)", border: `1px solid ${selected ? "var(--accent)" : interactive && hov ? "var(--border-strong)" : "var(--border-subtle)"}`, borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-card)", padding: "var(--space-5)", cursor: interactive ? "pointer" : "default", transition: "background var(--dur-fast) var(--ease-out), border var(--dur-fast) var(--ease-out)", ...style }} {...rest}>
-      {eyebrow && <div style={{ font: "var(--type-label)", color: "var(--text-muted)", letterSpacing: "var(--tracking-caps)", textTransform: "uppercase", marginBottom: 6 }}>{eyebrow}</div>}
-      {title && <div style={{ font: "var(--type-h3)", color: "var(--text-primary)" }}>{title}</div>}
-      {meta && <div style={{ font: "var(--type-caption)", color: "var(--text-muted)", marginTop: 4 }}>{meta}</div>}
+    <div className={cls} style={s}>
       {children}
     </div>
   );

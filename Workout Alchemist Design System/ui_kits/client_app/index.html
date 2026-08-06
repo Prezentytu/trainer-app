@@ -1,49 +1,55 @@
-<!-- @dsCard group="Client App" viewport="390x760" subtitle="Mobile tracker — today, live logging, progress" name="Client App" -->
-<!-- @startingPoint section="Client App" subtitle="Mobile shell: today → live workout → progress" viewport="390x760" -->
-<!DOCTYPE html><html><head><meta charset="utf-8"><title>Workout Alchemist — Client App</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- @dsCard group="App klienta" viewport="900x860" name="App klienta" subtitle="Treningi → logowanie serii → progres → ustawienia; przełącznik jasny/ciemny" -->
+<!DOCTYPE html><html lang="pl" data-theme="dark"><head><meta charset="utf-8"><title>App klienta — Workout Alchemist</title>
 <link rel="stylesheet" href="../../styles.css">
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
 <script src="../../_ds_bundle.js"></script>
 <script src="data.js"></script>
-<style>body{display:flex;justify-content:center}#phone{width:390px;min-height:100vh;background:var(--bg-app);border-left:1px solid var(--border-subtle);border-right:1px solid var(--border-subtle);display:flex;flex-direction:column}</style>
-</head><body>
-<div id="phone"><div id="root" style="flex:1;display:flex;flex-direction:column"></div></div>
-<script type="text/babel" src="TodayScreen.jsx"></script>
+<style>html,body{height:100%;margin:0}body{display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}
+.phone{width:390px;height:800px;position:relative;overflow:hidden;border-radius:34px;background:var(--bg);border:1px solid var(--line)}
+.scroll{position:absolute;inset:0;overflow-y:auto}
+.navwrap{position:absolute;left:0;right:0;bottom:20px;display:flex;justify-content:center;pointer-events:none}
+.navwrap>*{pointer-events:auto}
+.themebtn{position:fixed;top:16px;right:16px;z-index:99}
+</style>
+</head><body><div id="root"></div>
+<script type="text/babel" src="WorkoutsScreen.jsx"></script>
 <script type="text/babel" src="WorkoutScreen.jsx"></script>
 <script type="text/babel" src="ProgressScreen.jsx"></script>
-<script type="text/babel" data-presets="react">
-function TabBar({ tab, onTab }) {
-  const { Icon } = window.WorkoutAlchemistDesignSystem_5f0610;
-  const items = [["today", "calendar-days", "Today"], ["progress", "trending-up", "Progress"], ["profile", "user", "Profile"]];
-  return (
-    <nav style={{ display: "flex", borderTop: "1px solid var(--border-subtle)", background: "rgba(11,12,10,0.8)", backdropFilter: "blur(12px)", position: "sticky", bottom: 0, zIndex: 20 }}>
-      {items.map(([id, ic, label]) => (
-        <button key={id} onClick={() => onTab(id)} style={{ all: "unset", cursor: "pointer", flex: 1, minHeight: 54, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, color: tab === id ? "var(--accent)" : "var(--text-faint)", font: "var(--type-label)", fontSize: 10, letterSpacing: "0.04em", textTransform: "uppercase" }}>
-          <Icon name={ic} size={22} strokeWidth={tab === id ? 2 : 1.75} />{label}
-        </button>
-      ))}
-    </nav>
-  );
+<script type="text/babel" src="SettingsScreen.jsx"></script>
+<script type="text/babel">
+const { BottomNav, Icon, Button, IconButton } = window.WorkoutAlchemistDesignSystem_381a04;
+function App(){
+  const [tab,setTab]=React.useState("workouts");
+  const [logging,setLogging]=React.useState(false);
+  const [theme,setTheme]=React.useState("dark");
+  React.useEffect(()=>{document.documentElement.setAttribute("data-theme",theme)},[theme]);
+  return (<>
+    <div className="themebtn">
+      <Button variant="outline" size="sm" onClick={()=>setTheme(t=>t==="dark"?"light":"dark")}>
+        {theme==="dark" ? "Jasny" : "Ciemny"}
+      </Button>
+    </div>
+    <div className="phone">
+      {logging ? (
+        <WorkoutScreen onCancel={()=>setLogging(false)} onFinish={()=>{setLogging(false);setTab("progress")}} />
+      ) : (<>
+        <div className="scroll">
+          {tab==="workouts" ? <WorkoutsScreen onOpen={()=>setLogging(true)} onNew={()=>setLogging(true)} />
+           : tab==="progress" ? <ProgressScreen/>
+           : <SettingsScreen theme={theme} onTheme={setTheme} />}
+        </div>
+        <div className="navwrap">
+          <BottomNav value={tab} onChange={setTab} items={[
+            {value:"workouts",label:"Treningi",icon:<Icon name="barbell" />},
+            {value:"progress",label:"Progres",icon:<Icon name="trend-up" />},
+            {value:"settings",label:"Ustawienia",icon:<Icon name="gear" />}]} />
+        </div>
+      </>)}
+    </div>
+  </>);
 }
-function App() {
-  const [tab, setTab] = React.useState("today");
-  const [live, setLive] = React.useState(false);
-  if (live) return <window.WAWorkoutScreen onFinish={() => setLive(false)} />;
-  return (
-    <React.Fragment>
-      <div style={{ flex: 1 }}>
-        {tab === "today" && <window.WATodayScreen onStart={() => setLive(true)} />}
-        {tab === "progress" && <window.WAProgressScreen />}
-        {tab === "profile" && <div style={{ padding: "40px 20px", textAlign: "center", font: "var(--type-caption)", color: "var(--text-faint)" }}>Profile — intentionally out of scope for this kit.</div>}
-      </div>
-      <TabBar tab={tab} onTab={setTab} />
-    </React.Fragment>
-  );
-}
-const t = setInterval(() => { if (window.WorkoutAlchemistDesignSystem_5f0610 && window.WATodayScreen && window.WAWorkoutScreen && window.WAProgressScreen) { clearInterval(t); ReactDOM.createRoot(document.getElementById("root")).render(<App />); } }, 30);
-</script>
-</body></html>
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script></body></html>

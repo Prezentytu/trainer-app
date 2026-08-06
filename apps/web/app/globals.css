@@ -1,21 +1,256 @@
 @import "tailwindcss";
 
 /*
- * Workout Alchemist — Acid Design System (trójwarstwowa architektura tokenów).
+ * Workout Alchemist — mono v2 (epic minimalism).
  *
- * HIERARCHY FIRST: legibility from structure (elevation + text ramp), not brightness.
- * Lime budget ≤3%: CTA fill, focus ring, active-nav tint+bar, progress fill, links.
- * Every screen must stay readable with accent removed.
- *
- * Warstwa 1 (prymitywy): --ink-*, --bone-*, --lime-*, --gold-*, --clay-*.
- * Warstwa 2 (semantyka): --background, --surface, --accent, --pr…
- * Warstwa 3 (@theme inline): klasy Tailwind.
- * Gold (--pr) wyłącznie PR. Zobacz skill `design-system`.
+ * Chrome: near-black / white / greys. Emphasis = invert fill, never a hue.
+ * Data accents only: --pr / --gain / --loss (+ --danger for destructive).
+ * Landing keeps Acid under `.theme-acid`.
  */
 
 :root {
-  /* —— Warstwa 1: near-neutral charcoal (whisper of green only) —— */
-  /* Elevation ladder: sunken → app → raised → card → hover → active */
+  /* —— Mono ramp (Workout Alchemist Design System) —— */
+  --ink-900: #0b0c0d;
+  --ink-850: #121415;
+  --ink-800: #17191b;
+  --ink-700: #212427;
+  --ink-600: #2b2f33;
+  --ink-500: #33373b;
+  --ink-400: #454b51;
+  --ink-300: #6e767e;
+  --ink-200: #9aa1a8;
+  --ink-100: #c9ced4;
+  --ink-000: #ffffff;
+
+  --bg: var(--ink-900);
+  --surface-sunken: var(--ink-850);
+  --surface: var(--ink-800);
+  --surface-raised: var(--ink-700);
+  --surface-hover: var(--ink-700);
+  --surface-active: var(--ink-600);
+  --field: var(--ink-700);
+  --line: var(--ink-500);
+  --line-faint: var(--ink-600);
+
+  --fg: var(--ink-000);
+  --fg-muted: var(--ink-100);
+  --fg-faint: var(--ink-200);
+  --fg-ghost: var(--ink-300);
+
+  --invert-bg: var(--ink-000);
+  --invert-fg: var(--ink-900);
+
+  --scrim: rgba(4, 5, 6, 0.78);
+  --danger: #ff6b6b;
+  --danger-quiet: #2a1618;
+
+  --pr: #e0b13f;
+  --pr-quiet: #2a2213;
+  --gain: #57bf82;
+  --gain-quiet: #14261c;
+  --loss: #ef7a70;
+  --loss-quiet: #2a1a19;
+
+  /* —— Legacy semantic aliases (Tailwind / istniejące klasy) —— */
+  --background: var(--bg);
+  --border: var(--line-faint);
+  --border-strong: var(--line);
+
+  --foreground: var(--fg);
+  --foreground-secondary: var(--fg-muted);
+  --muted-strong: var(--fg-muted);
+  --muted: var(--fg-faint);
+  --muted-faint: var(--fg-ghost);
+
+  --accent: var(--invert-bg);
+  --accent-strong: var(--fg-muted);
+  --accent-text: var(--fg);
+  --accent-foreground: var(--ink-900);
+  --accent-dim: var(--surface-raised);
+  --accent-border: var(--line);
+
+  --pr-dim: var(--pr-quiet);
+  --pr-border: #4d3c17;
+  --text-on-gold: var(--ink-900);
+
+  --positive: var(--gain);
+  --positive-dim: var(--gain-quiet);
+
+  --danger-bg: var(--danger-quiet);
+  --danger-border: var(--danger);
+  --danger-hover: var(--danger);
+
+  --success: var(--gain);
+  --success-bg: var(--gain-quiet);
+
+  --shadow-card: none;
+  --shadow-raised: none;
+  --shadow-modal: none;
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--fg);
+  --glow-accent: var(--focus-ring);
+  --glow-cta: none;
+  --glow-pr: none;
+  --shadow-segment-active: none;
+  --overlay-scrim: var(--scrim);
+  --texture-scan: none;
+  --press: scale(0.97);
+
+  --ease-out: cubic-bezier(0.2, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease: var(--ease-out);
+  --dur-fast: 150ms;
+  --dur-med: 220ms;
+  --dur-slow: 260ms;
+  --dur: var(--dur-fast);
+
+  --tracking-caps: 0.1em;
+  --tracking-eyebrow: 0.1em;
+  --tracking-display: -0.02em;
+  --tracking-display-soft: -0.02em;
+  --tracking-display-editorial: -0.02em;
+  --tracking-display-landing: -0.03em;
+  --tracking-display-landing-xl: -0.04em;
+  --leading-display: 1.08;
+  --leading-display-soft: 1.22;
+  --leading-display-editorial: 1.08;
+  --leading-display-landing: 1.06;
+  --leading-display-landing-xl: 1;
+  --leading-body: 1.55;
+  --leading-label: 1.35;
+  --ease-editorial: cubic-bezier(0.77, 0, 0.175, 1);
+
+  --w-regular: 400;
+  --w-medium: 500;
+  --w-semibold: 600;
+  --track-label: 0.1em;
+  --track-display: -0.02em;
+  --track-num: 0;
+  --lh-display: 1.08;
+  --lh-title: 1.22;
+  --lh-body: 1.55;
+  --lh-tight: 1;
+  --size-display: 40px;
+  --size-title: 25px;
+  --size-heading: 18px;
+  --size-body: 15px;
+  --size-small: 13px;
+  --size-label: 12px;
+  --size-stat: 25px;
+  --size-stat-lg: 34px;
+
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-10: 40px;
+  --s-12: 48px;
+  --s-16: 64px;
+  --r-field: 8px;
+  --r-card: 12px;
+  --r-sheet: 18px;
+  --r-pill: 999px;
+  --h-field: 34px;
+  --h-control: 38px;
+  --h-control-sm: 30px;
+  --h-pill: 28px;
+  --tap-min: 44px;
+  --gutter: 20px;
+  --hair: 1px;
+
+  --radius-well: var(--r-field);
+  --radius-pill: var(--r-pill);
+}
+
+[data-theme="light"] {
+  --bg: #ffffff;
+  --surface-sunken: #f7f8f9;
+  --surface: #f2f4f6;
+  --surface-raised: #e7eaed;
+  --surface-hover: #e7eaed;
+  --surface-active: #d7dbe0;
+  --field: #edeff2;
+  --line: #adb4bb;
+  --line-faint: #d7dbe0;
+
+  --fg: #0b0c0d;
+  --fg-muted: #40464c;
+  --fg-faint: #5b6268;
+  --fg-ghost: #7d858c;
+
+  --invert-bg: #0b0c0d;
+  --invert-fg: #ffffff;
+
+  --scrim: rgba(11, 12, 13, 0.45);
+  --danger: #c0271f;
+  --danger-quiet: #fdf0ef;
+
+  --pr: #8a6200;
+  --pr-quiet: #fdf5e2;
+  --gain: #1b7a45;
+  --gain-quiet: #eaf6ee;
+  --loss: #bd2a22;
+  --loss-quiet: #fdefee;
+
+  --background: var(--bg);
+  --border: var(--line-faint);
+  --border-strong: var(--line);
+  --foreground: var(--fg);
+  --foreground-secondary: var(--fg-muted);
+  --muted-strong: var(--fg-muted);
+  --muted: var(--fg-faint);
+  --muted-faint: var(--fg-ghost);
+  --accent: var(--invert-bg);
+  --accent-strong: var(--fg-muted);
+  --accent-text: var(--fg);
+  --accent-foreground: var(--invert-fg);
+  --accent-dim: var(--surface-raised);
+  --accent-border: var(--line);
+  --pr-dim: var(--pr-quiet);
+  --positive: var(--gain);
+  --positive-dim: var(--gain-quiet);
+  --danger-bg: var(--danger-quiet);
+  --danger-border: var(--danger);
+  --danger-hover: var(--danger);
+  --success: var(--gain);
+  --success-bg: var(--gain-quiet);
+  --overlay-scrim: var(--scrim);
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--fg);
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --line: var(--ink-300);
+    --line-faint: var(--ink-400);
+    --fg-muted: var(--ink-000);
+    --fg-faint: var(--ink-100);
+    --fg-ghost: var(--ink-200);
+    --border: var(--line-faint);
+    --border-strong: var(--line);
+    --foreground-secondary: var(--fg-muted);
+    --muted-strong: var(--fg-muted);
+    --muted: var(--fg-faint);
+    --muted-faint: var(--fg-ghost);
+  }
+  [data-theme="light"] {
+    --line: #5b6268;
+    --line-faint: #adb4bb;
+    --fg-muted: #0b0c0d;
+    --fg-faint: #2c3237;
+    --fg-ghost: #5b6268;
+    --border: var(--line-faint);
+    --border-strong: var(--line);
+    --foreground-secondary: var(--fg-muted);
+    --muted-strong: var(--fg-muted);
+    --muted: var(--fg-faint);
+    --muted-faint: var(--fg-ghost);
+  }
+}
+
+/* Landing-guard — pełne stare tokeny Acid (lime chrome) */
+.theme-acid {
   --ink-980: #080908;
   --ink-950: #0c0d0c;
   --ink-900: #121312;
@@ -49,22 +284,29 @@
   --clay-600: #b85436;
   --clay-900: #331810;
 
-  /* —— Warstwa 2: semantyka —— */
   --surface-sunken: var(--ink-980);
   --background: var(--ink-950);
+  --bg: var(--ink-950);
   --surface-raised: var(--ink-900);
   --surface: var(--ink-850);
   --surface-hover: var(--ink-800);
   --surface-active: var(--ink-700);
+  --field: var(--ink-900);
 
   --border: #2a2c2a;
   --border-strong: #3a3c3a;
+  --line: var(--border-strong);
+  --line-faint: var(--border);
 
   --foreground: var(--bone-100);
+  --fg: var(--bone-100);
   --foreground-secondary: var(--bone-300);
+  --fg-muted: var(--bone-300);
   --muted-strong: var(--bone-300);
   --muted: var(--bone-500);
+  --fg-faint: var(--bone-500);
   --muted-faint: var(--bone-700);
+  --fg-ghost: var(--bone-700);
 
   --accent: var(--lime-500);
   --accent-strong: var(--lime-400);
@@ -72,57 +314,44 @@
   --accent-foreground: #0c0d0c;
   --accent-dim: var(--lime-900);
   --accent-border: var(--lime-800);
+  --invert-bg: var(--lime-500);
+  --invert-fg: #0c0d0c;
 
   --pr: var(--gold-400);
   --pr-dim: var(--gold-900);
+  --pr-quiet: var(--gold-900);
   --pr-border: var(--gold-border);
   --text-on-gold: #1a1406;
 
-  /* Positive = quiet on-track (not a second lime scream) */
   --positive: var(--bone-300);
   --positive-dim: var(--ink-800);
+  --gain: var(--bone-300);
+  --gain-quiet: var(--ink-800);
+  --loss: var(--clay-500);
+  --loss-quiet: var(--clay-900);
 
   --danger: var(--clay-500);
   --danger-bg: var(--clay-900);
+  --danger-quiet: var(--clay-900);
   --danger-border: var(--clay-600);
   --danger-hover: var(--clay-400);
 
   --success: var(--positive);
   --success-bg: var(--positive);
 
-  /* Depth from value + border — no blooms, no scanlines */
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.45);
   --shadow-raised: 0 8px 24px rgba(0, 0, 0, 0.55);
   --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.7);
   --glow-accent: 0 0 0 3px rgba(198, 241, 53, 0.28);
-  --glow-cta: none;
-  --glow-pr: none;
-  --shadow-segment-active: none;
+  --focus-ring: 0 0 0 3px rgba(198, 241, 53, 0.28);
   --overlay-scrim: rgba(8, 9, 8, 0.78);
-  --texture-scan: none;
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in: cubic-bezier(0.4, 0, 1, 1);
-  --dur-fast: 120ms;
-  --dur-med: 220ms;
-  --dur-slow: 360ms;
+  --scrim: rgba(8, 9, 8, 0.78);
 
   --tracking-caps: 0.14em;
   --tracking-eyebrow: 0.2em;
   --tracking-display: -0.035em;
-  --tracking-display-soft: -0.02em;
-  --tracking-display-editorial: -0.04em;
-  --tracking-display-landing: -0.03em;
-  --tracking-display-landing-xl: -0.04em;
   --leading-display: 0.96;
-  --leading-display-soft: 1.06;
-  --leading-display-editorial: 0.88;
-  --leading-display-landing: 1.06;
-  --leading-display-landing-xl: 1;
   --leading-body: 1.5;
-  --leading-label: 1.4;
-  --ease-editorial: cubic-bezier(0.77, 0, 0.175, 1);
-  --radius-well: 6px;
-  --radius-pill: 9999px;
 }
 
 .sr-only {
@@ -137,27 +366,37 @@
   border-width: 0;
 }
 
-/* —— Warstwa 3: Tailwind —— */
 @theme inline {
-  --font-sans: var(--font-space-grotesk);
-  --font-display: var(--font-archivo);
-  --font-mono: var(--font-ibm-plex-mono);
+  --font-sans: var(--font-instrument-sans);
+  --font-display: var(--font-instrument-sans);
+  --font-mono: var(--font-geist-mono);
 
   --color-background: var(--background);
+  --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface-raised: var(--surface-raised);
   --color-surface-sunken: var(--surface-sunken);
   --color-surface-hover: var(--surface-hover);
   --color-surface-active: var(--surface-active);
+  --color-field: var(--field);
 
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
+  --color-line: var(--line);
+  --color-line-faint: var(--line-faint);
 
   --color-foreground: var(--foreground);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-faint: var(--fg-faint);
+  --color-fg-ghost: var(--fg-ghost);
   --color-foreground-secondary: var(--foreground-secondary);
   --color-muted-strong: var(--muted-strong);
   --color-muted: var(--muted);
   --color-muted-faint: var(--muted-faint);
+
+  --color-invert-bg: var(--invert-bg);
+  --color-invert-fg: var(--invert-fg);
 
   --color-accent: var(--accent);
   --color-accent-strong: var(--accent-strong);
@@ -173,6 +412,10 @@
 
   --color-positive: var(--positive);
   --color-positive-dim: var(--positive-dim);
+  --color-gain: var(--gain);
+  --color-gain-quiet: var(--gain-quiet);
+  --color-loss: var(--loss);
+  --color-loss-quiet: var(--loss-quiet);
 
   --color-danger: var(--danger);
   --color-danger-bg: var(--danger-bg);
@@ -187,23 +430,31 @@
   --shadow-modal: var(--shadow-modal);
 
   --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 18px;
 }
 
 html {
   -webkit-text-size-adjust: 100%;
   touch-action: manipulation;
   overscroll-behavior-y: none;
+  color-scheme: dark;
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-space-grotesk), system-ui, sans-serif;
+  font-family: var(--font-instrument-sans), system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
   line-height: var(--leading-body);
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
 .font-display {
@@ -215,48 +466,44 @@ body {
   letter-spacing: var(--tracking-caps);
 }
 
-/* Acid utilities — brutalizm bez ad-hoc klas w komponentach */
 .display-caps {
-  font-family: var(--font-archivo), system-ui, sans-serif;
-  font-weight: 900;
-  letter-spacing: var(--tracking-display);
+  font-family: var(--font-instrument-sans), system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   line-height: var(--leading-display);
   text-transform: uppercase;
 }
 
-/* Landing / auth — spokojny display w sentence case (Apple-like) */
 .display-soft {
-  font-family: var(--font-archivo), system-ui, sans-serif;
-  font-weight: 700;
+  font-family: var(--font-instrument-sans), system-ui, sans-serif;
+  font-weight: 600;
   letter-spacing: var(--tracking-display-soft);
   line-height: var(--leading-display-soft);
 }
 
-/* Landing editorial — typografia plakatowa (Superdesign high-contrast); auth */
 .display-editorial {
-  font-family: var(--font-archivo), system-ui, sans-serif;
-  font-weight: 800;
+  font-family: var(--font-instrument-sans), system-ui, sans-serif;
+  font-weight: 600;
   letter-spacing: var(--tracking-display-editorial);
   line-height: var(--leading-display-editorial);
 }
 
-/* Landing / auth display — Archivo 700 sentence case (Feji/Apple), zero szeryfów */
 .display-landing {
-  font-family: var(--font-archivo), system-ui, sans-serif;
+  font-family: var(--font-instrument-sans), system-ui, sans-serif;
   font-weight: 700;
   letter-spacing: var(--tracking-display-landing);
   line-height: var(--leading-display-landing);
 }
 
 .display-landing-xl {
-  font-family: var(--font-archivo), system-ui, sans-serif;
+  font-family: var(--font-instrument-sans), system-ui, sans-serif;
   font-weight: 700;
   letter-spacing: var(--tracking-display-landing-xl);
   line-height: var(--leading-display-landing-xl);
 }
 
 .eyebrow {
-  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-size: 12px;
   font-weight: 500;
   letter-spacing: var(--tracking-eyebrow);
@@ -264,7 +511,67 @@ body {
   color: var(--muted);
 }
 
-/* Retired — kept as no-op so existing classNames don't break */
+/* Type scale — mono DS */
+.t-display {
+  font-family: var(--font-instrument-sans), system-ui, sans-serif;
+  font-weight: var(--w-semibold);
+  font-size: var(--size-display);
+  line-height: var(--lh-display);
+  letter-spacing: var(--track-display);
+  color: var(--fg);
+}
+
+.t-title {
+  font-family: var(--font-instrument-sans), system-ui, sans-serif;
+  font-weight: var(--w-semibold);
+  font-size: var(--size-title);
+  line-height: var(--lh-title);
+  letter-spacing: var(--track-display);
+  color: var(--fg);
+}
+
+.t-heading {
+  font-family: var(--font-instrument-sans), system-ui, sans-serif;
+  font-weight: var(--w-medium);
+  font-size: var(--size-heading);
+  line-height: var(--lh-title);
+  color: var(--fg);
+}
+
+.t-body {
+  font-family: var(--font-instrument-sans), system-ui, sans-serif;
+  font-weight: var(--w-regular);
+  font-size: var(--size-body);
+  line-height: var(--lh-body);
+  color: var(--fg);
+}
+
+.t-small {
+  font-family: var(--font-instrument-sans), system-ui, sans-serif;
+  font-weight: var(--w-regular);
+  font-size: var(--size-small);
+  line-height: var(--lh-body);
+  color: var(--fg-muted);
+}
+
+.t-label {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-weight: var(--w-medium);
+  font-size: var(--size-label);
+  line-height: 1.35;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--fg-faint);
+}
+
+.t-num {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--track-num);
+  color: var(--fg);
+}
+
 .texture-scan {
   position: relative;
 }
@@ -279,10 +586,6 @@ body {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  /*
-   * Opóźnij widoczność skeletonu ~200 ms bez rozgałęziania DOM (SSR = client).
-   * useState+setTimeout na „pusto vs skeleton” psuje hydrację przy re-SSR Next/Clerk.
-   */
   @keyframes skeleton-defer-in {
     to {
       opacity: 1;
@@ -381,38 +684,16 @@ body {
   }
 }
 
-/* Floating chrome — blur + semi-transparent; solid fallback for reduced transparency */
+/* Session chrome — solid, no blur */
 .session-chrome {
-  background: color-mix(in srgb, var(--background) 85%, transparent);
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  background: var(--background);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .session-chrome-edge::after {
-  content: "";
-  pointer-events: none;
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -12px;
-  height: 12px;
-  background: linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--background) 55%, transparent),
-    transparent
-  );
-}
-
-@media (prefers-reduced-transparency: reduce) {
-  .session-chrome {
-    background: var(--background);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-
-  .session-chrome-edge::after {
-    display: none;
-  }
+  content: none;
+  display: none;
 }
 
 input,
@@ -421,7 +702,18 @@ textarea {
   color-scheme: dark;
 }
 
+html[data-theme="light"] input,
+html[data-theme="light"] select,
+html[data-theme="light"] textarea {
+  color-scheme: light;
+}
+
 ::selection {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.theme-acid ::selection {
   background: var(--accent-dim);
   color: var(--positive);
 }
@@ -435,13 +727,11 @@ textarea {
     var(--background);
 }
 
-/* Landing — scroll reveal (IO dodaje .landing-inview); near-mono */
 .landing-scroll {
   opacity: 1;
   transform: none;
 }
 
-/* Line-mask — tekst wyłania się zza niewidzialnej linii */
 .landing-mask {
   display: block;
   overflow: hidden;
@@ -451,7 +741,6 @@ textarea {
   display: block;
 }
 
-/* Nav / product link — underline scaleX z lewej */
 .landing-link-underline {
   position: relative;
   display: inline-flex;
@@ -475,7 +764,6 @@ textarea {
   transform: scaleX(1);
 }
 
-/* Pill CTA na landingu (nadpisuje radius Button) */
 .landing-cta-pill {
   border-radius: var(--radius-pill) !important;
   height: 3.25rem !important;
@@ -485,12 +773,11 @@ textarea {
   transition: transform var(--dur-med) var(--ease-out) !important;
 }
 
-/* Scroll CTA — gap rozsuwa się przy hover (Feji) */
 .landing-scroll-cta {
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
-  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-size: 11px;
   font-weight: 500;
   letter-spacing: var(--tracking-eyebrow);
@@ -509,10 +796,10 @@ textarea {
 
 .landing-scroll-cta:focus-visible {
   outline: none;
-  box-shadow: var(--glow-accent);
+  box-shadow: var(--focus-ring);
 }
 
-/* Nav — przezroczysty na górze, blur po scrollu */
+/* Nav — solid po scrollu, bez blur */
 .landing-nav {
   position: fixed;
   top: 0;
@@ -524,18 +811,16 @@ textarea {
   border-bottom: 1px solid transparent;
   transition:
     background 0.4s var(--ease-out),
-    border-color 0.4s var(--ease-out),
-    backdrop-filter 0.4s var(--ease-out);
+    border-color 0.4s var(--ease-out);
 }
 
 .landing-nav-scrolled {
-  background: color-mix(in srgb, var(--background) 85%, transparent);
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  background: var(--background);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   border-bottom-color: var(--border);
 }
 
-/* Grain overlay — faktura papierowa (Softly → Acid) */
 .landing-grain {
   position: fixed;
   inset: 0;
@@ -548,7 +833,6 @@ textarea {
   background-size: 180px 180px;
 }
 
-/* Hero winieta — głębia za H1 (Feji) */
 .landing-hero-vignette {
   position: relative;
 }
@@ -562,7 +846,6 @@ textarea {
   background: radial-gradient(at 30% 45%, rgba(8, 9, 8, 0.72) 0%, transparent 62%);
 }
 
-/* Spotlight za myszą — tylko pointer: fine */
 .landing-spotlight {
   position: relative;
   overflow: hidden;
@@ -588,13 +871,11 @@ textarea {
   }
 }
 
-/* Edge fade na poziomych scrollerach */
 .landing-edge-mask {
   -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 4% 96%, transparent 100%);
   mask-image: linear-gradient(90deg, transparent 0%, #000 4% 96%, transparent 100%);
 }
 
-/* Phone device frame — bez notcha (screenshot ma status bar) */
 .landing-phone-frame {
   position: relative;
   background: var(--surface-sunken);
@@ -613,7 +894,6 @@ textarea {
   pointer-events: none;
 }
 
-/* Scenario cards */
 .landing-scenario-card {
   transition: color var(--dur-med) var(--ease-out);
 }
@@ -626,7 +906,6 @@ textarea {
   color: var(--foreground);
 }
 
-/* FAQ accordion — grid 0fr → 1fr */
 .landing-faq-content {
   display: grid;
   grid-template-rows: 0fr;
@@ -654,7 +933,6 @@ textarea {
   transform: rotate(45deg);
 }
 
-/* Marquee separator */
 .landing-marquee {
   overflow: hidden;
   border-top: 1px solid var(--border);
@@ -669,7 +947,7 @@ textarea {
 }
 
 .landing-marquee-item {
-  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-size: 11px;
   font-weight: 500;
   letter-spacing: var(--tracking-caps);
@@ -705,12 +983,6 @@ textarea {
 @media (prefers-reduced-transparency: reduce) {
   .landing-grain {
     display: none;
-  }
-
-  .landing-nav-scrolled {
-    background: var(--background);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
   }
 }
 

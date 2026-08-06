@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download } from "lucide-react";
+import { Icon } from "@/components/Icon";
 import { api, NavCounts } from "@/lib/api";
 import { Button, Card, ErrorBanner, PageHeader } from "@/components/ui";
 
@@ -70,7 +70,7 @@ export default function SettingsPage() {
 
       <Card
         className="max-w-2xl"
-        icon={<Download className="h-4 w-4" strokeWidth={1.75} />}
+        icon={<Icon name="download" size={16} decorative />}
         title="Pobierz swoje dane"
         meta="Wszystko, co zapisałeś w aplikacji, możesz w każdej chwili pobrać na swój komputer."
       >

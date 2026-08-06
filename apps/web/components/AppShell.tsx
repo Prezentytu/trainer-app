@@ -4,30 +4,22 @@ import { ReactNode, useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useClerk, useUser } from "@clerk/nextjs";
-import {
-  ChevronUp,
-  ClipboardList,
-  Dumbbell,
-  Home,
-  LogOut,
-  Menu,
-  Settings,
-  Users,
-  X,
-} from "lucide-react";
 import { api, clerkEnabled } from "@/lib/api";
 import { Avatar, useIsClient } from "@/components/ui";
+import { Icon, type IconName } from "@/components/Icon";
 import { Wordmark } from "@/components/Wordmark";
 
-const NAV = [
-  { href: "/", label: "Panel", icon: Home, countKey: null },
-  { href: "/clients", label: "Klienci", icon: Users, countKey: "clients" as const },
-  { href: "/exercises", label: "Ćwiczenia", icon: Dumbbell, countKey: null },
-  { href: "/plans", label: "Plany", icon: ClipboardList, countKey: "plans" as const },
-  { href: "/settings", label: "Ustawienia", icon: Settings, countKey: null },
+const NAV: { href: string; label: string; icon: IconName; countKey: "clients" | "plans" | null }[] = [
+  { href: "/", label: "Panel", icon: "home", countKey: null },
+  { href: "/clients", label: "Klienci", icon: "clients", countKey: "clients" },
+  { href: "/exercises", label: "Ćwiczenia", icon: "dumbbell", countKey: null },
+  { href: "/plans", label: "Plany", icon: "plans", countKey: "plans" },
+  { href: "/settings", label: "Ustawienia", icon: "settings", countKey: null },
 ];
 
-function NavLinks({
+const FOCUS = "focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]";
+
+function SideNavLinks({
   onNavigate,
   counts,
   compact,
@@ -38,11 +30,10 @@ function NavLinks({
 }) {
   const pathname = usePathname();
   return (
-    <nav className={`flex flex-col gap-1 ${compact ? "w-full" : ""}`}>
+    <nav className="flex flex-col gap-0.5" aria-label="Główna nawigacja">
       {NAV.map((item) => {
         const active = item.href === "/" ? pathname === "/" : pathname?.startsWith(item.href);
         const count = item.countKey ? counts[item.countKey] : null;
-        const Icon = item.icon;
         return (
           <Link
             key={item.href}
@@ -50,33 +41,28 @@ function NavLinks({
             onClick={onNavigate}
             title={compact ? item.label : undefined}
             aria-current={active ? "page" : undefined}
-            className={`relative flex w-full items-center rounded-[10px] py-2.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
+            aria-label={compact ? item.label : undefined}
+            className={`flex min-h-[44px] items-center rounded-[var(--r-pill)] text-[15px] font-medium transition-colors duration-[var(--dur-fast)] ${FOCUS} ${
               active
-                ? "bg-accent-dim text-foreground"
-                : "text-muted hover:bg-surface-hover hover:text-foreground"
+                ? "bg-invert-bg text-invert-fg"
+                : "text-fg-faint hover:bg-surface-raised hover:text-foreground"
             } ${compact ? "justify-center px-0" : "gap-3 px-3"}`}
           >
-            {active ? (
-              <span
-                aria-hidden
-                className={`absolute top-1.5 bottom-1.5 w-0.5 rounded-full bg-accent ${
-                  compact ? "left-1" : "left-0"
-                }`}
-              />
-            ) : null}
-            <Icon aria-hidden className="h-5 w-5 shrink-0" strokeWidth={1.75} />
-            {!compact && (
+            <Icon name={item.icon} size={20} decorative />
+            {!compact ? (
               <>
-                <span className="min-w-0 flex-1 truncate font-mono text-xs font-medium uppercase tracking-caps">
-                  {item.label}
-                </span>
+                <span className="min-w-0 flex-1 truncate">{item.label}</span>
                 {count != null ? (
-                  <span className="shrink-0 rounded-full bg-surface-active px-2 py-0.5 font-mono text-xs font-semibold tabular-nums text-foreground-secondary">
+                  <span
+                    className={`shrink-0 font-mono text-[12px] tabular-nums ${
+                      active ? "opacity-70" : "text-fg-ghost"
+                    }`}
+                  >
                     {count}
                   </span>
                 ) : null}
               </>
-            )}
+            ) : null}
           </Link>
         );
       })}
@@ -90,12 +76,14 @@ function AccountMenu({
   onSignOut,
   onOpenProfile,
   anchorId,
+  align = "up",
 }: {
   open: boolean;
   onClose: () => void;
   onSignOut?: () => void;
   onOpenProfile?: () => void;
   anchorId: string;
+  align?: "up" | "down";
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -125,7 +113,9 @@ function AccountMenu({
     <div
       ref={ref}
       role="menu"
-      className="absolute bottom-full left-0 z-50 mb-2 w-full min-w-[12rem] overflow-hidden rounded-[10px] border border-border bg-surface shadow-modal"
+      className={`absolute left-0 z-50 w-full min-w-[12rem] overflow-hidden rounded-[var(--r-card)] border border-border-strong bg-surface ${
+        align === "up" ? "bottom-full mb-2" : "top-full mt-2"
+      }`}
     >
       {onOpenProfile ? (
         <button
@@ -135,9 +125,9 @@ function AccountMenu({
             onOpenProfile();
             onClose();
           }}
-          className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm text-foreground-secondary transition-colors hover:bg-surface-hover hover:text-foreground focus-visible:outline-none focus-visible:bg-surface-hover"
+          className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-[15px] text-fg-muted transition-colors hover:bg-surface-raised hover:text-foreground"
         >
-          <Settings aria-hidden className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+          <Icon name="settings" size={16} decorative />
           Konto
         </button>
       ) : null}
@@ -149,9 +139,9 @@ function AccountMenu({
             onSignOut();
             onClose();
           }}
-          className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm text-foreground-secondary transition-colors hover:bg-surface-hover hover:text-foreground focus-visible:outline-none focus-visible:bg-surface-hover"
+          className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-[15px] text-fg-muted transition-colors hover:bg-surface-raised hover:text-foreground"
         >
-          <LogOut aria-hidden className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+          <Icon name="sign-out" size={16} decorative />
           Wyloguj się
         </button>
       ) : null}
@@ -191,7 +181,7 @@ function AccountTile({
           aria-haspopup={interactive ? "menu" : undefined}
           aria-expanded={interactive ? menuOpen : undefined}
           aria-label={interactive ? `Konto: ${name}` : name}
-          className="mx-auto flex h-10 w-10 items-center justify-center rounded-[10px] transition-colors duration-[var(--dur-fast)] hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] disabled:pointer-events-none"
+          className={`mx-auto flex h-10 w-10 items-center justify-center rounded-[var(--r-pill)] transition-colors duration-[var(--dur-fast)] hover:bg-surface-raised ${FOCUS} disabled:pointer-events-none`}
         >
           <Avatar name={name} size="sm" />
         </button>
@@ -211,14 +201,17 @@ function AccountTile({
   const body = (
     <>
       <Avatar name={name} size="md" />
-      <span className="min-w-0 flex-1 truncate text-left text-sm font-medium text-foreground">{name}</span>
+      <span className="min-w-0 flex-1 truncate text-left text-[15px] font-medium text-foreground">
+        {name}
+      </span>
       {interactive ? (
-        <ChevronUp
-          aria-hidden
-          className={`h-4 w-4 shrink-0 text-muted transition-transform duration-[var(--dur-fast)] ${
-            menuOpen ? "" : "rotate-180"
+        <Icon
+          name="caret-left"
+          size={14}
+          className={`shrink-0 text-muted transition-transform duration-[var(--dur-fast)] ${
+            menuOpen ? "rotate-90" : "-rotate-90"
           }`}
-          strokeWidth={1.75}
+          decorative
         />
       ) : null}
     </>
@@ -233,12 +226,14 @@ function AccountTile({
           onClick={onActivate}
           aria-haspopup="menu"
           aria-expanded={menuOpen}
-          className="flex w-full min-w-0 items-center gap-3 rounded-[10px] px-3 py-2.5 transition-colors duration-[var(--dur-fast)] hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+          className={`flex w-full min-w-0 items-center gap-3 rounded-[var(--r-pill)] px-3 py-2.5 transition-colors duration-[var(--dur-fast)] hover:bg-surface-raised ${FOCUS}`}
         >
           {body}
         </button>
       ) : (
-        <div className="flex w-full min-w-0 items-center gap-3 rounded-[10px] px-3 py-2.5">{body}</div>
+        <div className="flex w-full min-w-0 items-center gap-3 rounded-[var(--r-pill)] px-3 py-2.5">
+          {body}
+        </div>
       )}
       {interactive ? (
         <AccountMenu
@@ -265,13 +260,11 @@ function LocalTrainerFooter({ compact, name }: { compact?: boolean; name: string
   );
 }
 
-/** Stopka z sesją Clerk — pełnoszerokościowy kafelek z imieniem i nazwiskiem + menu wylogowania. */
 function ClerkTrainerFooter({ compact, fallbackName }: { compact?: boolean; fallbackName: string }) {
   const isClient = useIsClient();
   const { user } = useUser();
   const { signOut, openUserProfile } = useClerk();
   const [menuOpen, setMenuOpen] = useState(false);
-  // SSR + hydracja: ten sam fallbackName; imię z Clerka dopiero po mount (bez mismatch).
   const fromClerk = [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim();
   const displayName = !isClient
     ? fallbackName
@@ -296,44 +289,42 @@ function ClerkTrainerFooter({ compact, fallbackName }: { compact?: boolean; fall
 }
 
 function TrainerFooter({ compact, name }: { compact?: boolean; name: string }) {
-  if (!clerkEnabled) {
-    return <LocalTrainerFooter compact={compact} name={name} />;
-  }
+  if (!clerkEnabled) return <LocalTrainerFooter compact={compact} name={name} />;
   return <ClerkTrainerFooter compact={compact} fallbackName={name} />;
 }
 
-function BottomNav() {
+function FloatingBottomNav() {
   const pathname = usePathname();
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] md:hidden">
-      {NAV.map((item) => {
-        const active = item.href === "/" ? pathname === "/" : pathname?.startsWith(item.href);
-        const Icon = item.icon;
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            aria-current={active ? "page" : undefined}
-            className={`flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 py-1.5 font-mono text-[10px] uppercase tracking-caps transition-colors focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] ${
-              active ? "font-semibold text-foreground" : "text-muted"
-            }`}
-          >
-            <span
-              className={`flex h-7 w-10 items-center justify-center rounded-lg ${
-                active ? "bg-accent-dim" : ""
+    <div
+      className="pointer-events-none fixed inset-x-0 z-40 flex justify-center px-4 md:hidden"
+      style={{ bottom: "max(1.25rem, env(safe-area-inset-bottom))" }}
+    >
+      <nav
+        aria-label="Główna nawigacja"
+        className="pointer-events-auto inline-flex gap-0.5 rounded-[var(--r-pill)] border border-border-strong bg-surface-raised p-1"
+      >
+        {NAV.map((item) => {
+          const active = item.href === "/" ? pathname === "/" : pathname?.startsWith(item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={active ? "page" : undefined}
+              aria-label={item.label}
+              title={item.label}
+              className={`flex min-h-[44px] min-w-[48px] items-center justify-center rounded-[var(--r-pill)] px-2 transition-colors duration-[var(--dur-fast)] ${FOCUS} ${
+                active
+                  ? "bg-invert-bg text-invert-fg"
+                  : "text-fg-faint hover:bg-surface hover:text-foreground"
               }`}
             >
-              <Icon
-                aria-hidden
-                className={`h-5 w-5 ${active ? "text-foreground" : "text-muted"}`}
-                strokeWidth={1.75}
-              />
-            </span>
-            {item.label}
-          </Link>
-        );
-      })}
-    </nav>
+              <Icon name={item.icon} size={20} decorative />
+            </Link>
+          );
+        })}
+      </nav>
+    </div>
   );
 }
 
@@ -346,9 +337,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   });
   const [trainerName, setTrainerName] = useState("Trener");
   const pathname = usePathname();
-  // Kreator/podgląd planu (/plans/new, /plans/[id]) potrzebuje szerokiej siatki na dni tygodnia —
-  // lista planów (/plans) zostaje przy wąskim, czytelnym kontenerze jak reszta stron. Te same
-  // trasy dostają "tryb skupienia": sidebar zwija się do wąskiego railu z ikonami.
+  // Kreator planu: wąski rail z ikonami, pełny sidebar po hover.
   const isPlanEditor = /^\/plans\/.+/.test(pathname ?? "");
   const showRail = isPlanEditor && !railExpanded;
 
@@ -356,77 +345,84 @@ export function AppShell({ children }: { children: ReactNode }) {
     api
       .counts()
       .then((c) => setCounts({ clients: c.clients, plans: c.plans }))
-      .catch(() => {
-        // Liczniki nawigacji to tylko usprawnienie orientacji — brak backendu nie może wywrócić layoutu.
-      });
+      .catch(() => {});
     api
       .me()
       .then((me) => {
         const n = me.name?.trim();
         if (n) setTrainerName(n);
       })
-      .catch(() => {
-        // Imię z /api/me jest opcjonalne — zostaje fallback „Trener”.
-      });
+      .catch(() => {});
   }, []);
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-surface/80 p-4 backdrop-blur md:hidden">
+      {/* Mobile top bar */}
+      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-background px-4 py-3 md:hidden">
         <Wordmark />
         <button
           type="button"
           onClick={() => setDrawerOpen(true)}
           aria-label="Otwórz menu"
-          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-surface-hover text-foreground-secondary hover:bg-surface-active focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+          className={`inline-flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[var(--r-pill)] text-fg-muted hover:bg-surface-raised hover:text-foreground ${FOCUS}`}
         >
-          <Menu className="h-5 w-5" strokeWidth={1.75} />
+          <Icon name="menu" size={20} decorative />
         </button>
       </header>
 
+      {/* Desktop left sidebar */}
       <aside
         onMouseEnter={() => showRail && setRailExpanded(true)}
         onMouseLeave={() => isPlanEditor && setRailExpanded(false)}
-        className={`hidden shrink-0 flex-col gap-6 border-r border-border bg-surface transition-[width] duration-150 md:sticky md:top-0 md:flex md:h-screen md:overflow-hidden ${
-          showRail ? "md:w-14 md:items-stretch md:px-1.5 md:py-3" : "md:w-56 md:overflow-y-auto md:p-3"
+        className={`hidden shrink-0 flex-col border-r border-border bg-surface transition-[width] duration-150 md:sticky md:top-0 md:flex md:h-screen ${
+          showRail
+            ? "md:w-14 md:items-stretch md:overflow-hidden md:px-1.5 md:py-3"
+            : "md:w-56 md:overflow-y-auto md:p-3"
         }`}
       >
-        <Wordmark compact={showRail} className={showRail ? "justify-center" : "px-3"} />
-        <NavLinks counts={counts} compact={showRail} />
+        <div className={`mb-6 ${showRail ? "flex justify-center" : "px-3 pt-1"}`}>
+          <Wordmark compact={showRail} />
+        </div>
+        <SideNavLinks counts={counts} compact={showRail} />
         <TrainerFooter compact={showRail} name={trainerName} />
       </aside>
 
-      {drawerOpen && (
+      {/* Mobile drawer */}
+      {drawerOpen ? (
         <div className="fixed inset-0 z-50 md:hidden">
           <button
             type="button"
             aria-label="Zamknij menu"
             onClick={() => setDrawerOpen(false)}
-            className="absolute inset-0 bg-[var(--overlay-scrim)]"
+            className="absolute inset-0 bg-[var(--scrim)]"
           />
-          <aside className="relative flex h-full w-64 max-w-[80vw] flex-col gap-6 border-r border-border bg-surface p-3 shadow-modal">
+          <aside className="relative flex h-full w-64 max-w-[80vw] flex-col gap-6 border-r border-border bg-surface p-3">
             <div className="flex items-center justify-between px-1">
               <Wordmark />
               <button
                 type="button"
                 onClick={() => setDrawerOpen(false)}
                 aria-label="Zamknij menu"
-                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-surface-hover text-foreground-secondary hover:bg-surface-active focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+                className={`inline-flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[var(--r-pill)] text-fg-muted hover:bg-surface-raised ${FOCUS}`}
               >
-                <X className="h-5 w-5" strokeWidth={1.75} />
+                <Icon name="close" size={20} decorative />
               </button>
             </div>
-            <NavLinks counts={counts} onNavigate={() => setDrawerOpen(false)} />
+            <SideNavLinks counts={counts} onNavigate={() => setDrawerOpen(false)} />
             <TrainerFooter name={trainerName} />
           </aside>
         </div>
-      )}
+      ) : null}
 
-      <main className="w-full flex-1 bg-background p-4 pb-20 md:p-8 md:pb-8">
-        <div className={`mx-auto ${isPlanEditor ? "max-w-[120rem]" : "max-w-7xl 2xl:max-w-[100rem]"}`}>{children}</div>
+      <main className="w-full flex-1 bg-background p-4 pb-28 md:p-8 md:pb-8">
+        <div
+          className={`mx-auto ${isPlanEditor ? "max-w-[120rem]" : "max-w-[1080px] 2xl:max-w-[100rem]"}`}
+        >
+          {children}
+        </div>
       </main>
 
-      <BottomNav />
+      <FloatingBottomNav />
     </div>
   );
 }

@@ -1,6 +1,8 @@
-Surface card — 16px radius, 1px border, faint inner highlight.
+The only container. `--surface` fill, 14px radius, 16px padding, no border and no shadow.
 
 ```jsx
-<Card eyebrow="Next session" title="Pull day · Thursday" meta="6 exercises · ~55 min" interactive/>
-<Card selected title="Push / pull / legs"/>
+<Card><SectionLabel action={<Button variant="plain" size="sm">Edit</Button>}>Body stats</SectionLabel>…</Card>
+<Card flat onClick={open}>…</Card>
 ```
+
+Nest nothing inside a card except type, stats, pills and hairlines. Two stacked cards need 12px between them.

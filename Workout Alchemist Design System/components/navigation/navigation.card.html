@@ -1,21 +1,33 @@
-<!-- @dsCard group="Components" viewport="700x190" subtitle="Tabs, SegmentedControl" name="Navigation" -->
-<!DOCTYPE html><html><head><link rel="stylesheet" href="../../styles.css">
+<!-- @dsCard group="Components" viewport="700x220" name="Navigation" subtitle="TopBar, SegmentedControl, BottomNav" -->
+<!DOCTYPE html><html lang="pl" data-theme="dark"><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
-<script src="../../_ds_bundle.js"></script></head><body style="padding:20px">
-<div id="root"></div>
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;padding:20px;background:var(--bg)}.row{display:flex;flex-wrap:wrap;align-items:center;gap:10px}.stack{display:flex;flex-direction:column;gap:16px}</style>
+</head><body><div id="root"></div>
 <script type="text/babel">
-const { Tabs, SegmentedControl } = window.WorkoutAlchemistDesignSystem_5f0610;
+const NS = window.WorkoutAlchemistDesignSystem_381a04;
+const { TopBar, SegmentedControl, BottomNav, Button, Icon } = NS;
 function Demo(){
-  const [t,setT]=React.useState("active"); const [v,setV]=React.useState("Week");
-  return <div style={{display:"flex",flexDirection:"column",gap:20,maxWidth:520}}>
-    <Tabs items={[{value:"active",label:"Active",count:12},{value:"formulas",label:"Formulas",count:5},{value:"archived",label:"Archived"}]} value={t} onChange={setT}/>
-    <div style={{display:"flex",gap:16}}>
-      <SegmentedControl items={["Week","Month","Year"]} value={v} onChange={setV}/>
-      <SegmentedControl items={["kg","lb"]} value="kg" onChange={()=>{}}/>
+  const [unit,setUnit]=React.useState("Metric");
+  const [sex,setSex]=React.useState("Male");
+  const [tab,setTab]=React.useState("progress");
+  return (<div className="stack">
+    <div style={{background:"var(--surface)",borderRadius:"var(--r-card)"}}>
+      <TopBar left={<Button variant="plain" size="sm">Anuluj</Button>} title="Trening"
+        right={<><Button variant="plain" size="sm">Zapisz</Button><Button caps size="sm">Finish</Button></>} />
     </div>
-  </div>;
+    <div className="row" style={{gap:16}}>
+      <div style={{width:230}}><SegmentedControl value={unit} onChange={setUnit} items={["Metric","Imperial"]} /></div>
+      <div style={{width:280}}><SegmentedControl value={sex} onChange={setSex} items={["Male","Female","Other"]} /></div>
+    </div>
+    <BottomNav value={tab} onChange={setTab} items={[
+      {value:"workouts",label:"Workouts",icon:<Icon name="barbell" />},
+      {value:"progress",label:"Progress",icon:<Icon name="trend-up" />},
+      {value:"settings",label:"Settings",icon:<Icon name="gear" />}]} />
+  </div>);
 }
 ReactDOM.createRoot(document.getElementById("root")).render(<Demo/>);
 </script></body></html>

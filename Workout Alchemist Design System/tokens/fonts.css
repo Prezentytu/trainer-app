@@ -1,2 +1,19 @@
-/* Google Fonts substitution — no proprietary font files were provided. Flagged in readme.md. */
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+/* Two typefaces — dobrane pod czytelność, ale z własnym charakterem.
+
+   Instrument Sans — wąski grotesk o wysokim x-height i otwartych aperturach.
+   Ma wyraźniejszy rys niż neutralny Public Sans (skośne końcówki, węższe
+   proporcje), a przy tym trzyma się w 13px. Zajmuje mniej miejsca w wierszu,
+   co pasuje do gęstych ekranów z danymi.
+
+   Geist Mono — mono o geometrycznej, technicznej konstrukcji: jednoznaczne
+   0/O i 1/l, cyfry o dużej wysokości, bez maszynopisowych ozdobników.
+   Chłodniejszy i bardziej „przyrządowy" niż JetBrains Mono.
+
+   SUBSTITUTION FLAG: nie dostałem plików fontów. Oba są na Google Fonts i
+   wymienne — podmień @import na @font-face i nic więcej się nie zmienia. */
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap");
+
+:root {
+  --font-ui: "Instrument Sans", system-ui, -apple-system, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", monospace;
+}

@@ -1,0 +1,151 @@
+/* Component classes. Kontrolki są niskie z założenia — pole ma 34px, przycisk
+   38px. Obszary trafienia trzymają wiersze i komórki siatki (min-height 44px).
+
+   Original note: Flat fills and hairlines, no shadows — but every surface
+   is a visible step above the one behind it, and every edge is a real 3:1
+   line. All values are tokens, so both themes and prefers-contrast work. */
+
+/* ---------- Button ---------- */
+.s-btn{display:inline-flex;flex-shrink:0;align-items:center;justify-content:center;gap:7px;height:var(--h-control);padding:0 16px;border:none;border-radius:var(--r-pill);font-family:var(--font-ui);font-size:14px;font-weight:600;white-space:nowrap;cursor:pointer;transition:background-color var(--dur) var(--ease),color var(--dur) var(--ease),transform var(--dur) var(--ease),border-color var(--dur) var(--ease)}
+.s-btn:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.s-btn:active:not(:disabled){transform:var(--press)}
+.s-btn:disabled{opacity:.45;pointer-events:none}
+.s-btn--solid{background:var(--invert-bg);color:var(--invert-fg)}
+.s-btn--solid:hover{background:var(--fg-muted)}
+.s-btn--outline{background:var(--surface);color:var(--fg);border:var(--hair) solid var(--line)}
+.s-btn--outline:hover{background:var(--surface-raised);border-color:var(--fg-ghost)}
+.s-btn--plain{background:transparent;color:var(--fg);padding:0 8px;font-weight:500;text-decoration:underline;text-decoration-color:transparent;text-underline-offset:3px}
+.s-btn--plain:hover{text-decoration-color:var(--fg)}
+.s-btn--danger{background:var(--danger-quiet);color:var(--danger);padding:0 12px}
+.s-btn--danger:hover{background:var(--danger);color:var(--invert-fg)}
+.s-btn--sm{height:var(--h-control-sm);padding:0 12px;font-size:13px}
+.s-btn--lg{height:46px;padding:0 22px;font-size:15px}
+.s-btn--full{width:100%}
+.s-btn--caps{font-family:var(--font-mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:var(--track-label)}
+
+/* ---------- IconButton ---------- */
+.s-iconbtn{display:inline-flex;align-items:center;justify-content:center;width:var(--h-control);height:var(--h-control);border:none;border-radius:var(--r-pill);background:transparent;color:var(--fg-muted);cursor:pointer;transition:color var(--dur) var(--ease),background-color var(--dur) var(--ease)}
+.s-iconbtn:hover{background:var(--surface-raised);color:var(--fg)}
+.s-iconbtn:active{transform:var(--press)}
+.s-iconbtn:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.s-iconbtn--filled{background:var(--surface-raised);color:var(--fg)}
+.s-iconbtn--sm{width:var(--h-control-sm);height:var(--h-control-sm)}
+
+/* ---------- Pill (filter chip) ---------- */
+.s-pill{display:inline-flex;align-items:center;height:var(--h-pill);padding:0 11px;border:var(--hair) solid var(--line);border-radius:var(--r-pill);background:var(--surface);font-family:var(--font-mono);font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:var(--track-label);color:var(--fg-muted);white-space:nowrap;cursor:pointer;transition:background-color var(--dur) var(--ease),color var(--dur) var(--ease),border-color var(--dur) var(--ease)}
+.s-pill:hover{background:var(--surface-raised);color:var(--fg);border-color:var(--fg-ghost)}
+.s-pill:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.s-pill.is-active{background:var(--invert-bg);border-color:var(--invert-bg);color:var(--invert-fg)}
+.s-pill--text{font-family:var(--font-ui);font-size:12px;font-weight:500;text-transform:none;letter-spacing:0}
+.s-pillrow{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px}
+.s-pillrow::-webkit-scrollbar{display:none}
+
+/* ---------- Card ---------- */
+.s-card{border:var(--hair) solid var(--line-faint);border-radius:var(--r-card);background:var(--surface);padding:14px}
+.s-card--flat{background:transparent;border-color:var(--line)}
+.s-card--tap{cursor:pointer;transition:background-color var(--dur) var(--ease),border-color var(--dur) var(--ease),transform var(--dur) var(--ease);text-align:left;width:100%;font:inherit;color:inherit}
+.s-card--tap:hover{background:var(--surface-raised);border-color:var(--line)}
+.s-card--tap:active{transform:var(--press)}
+.s-card--tap:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+
+/* ---------- SectionLabel / Divider ---------- */
+.s-sectionlabel{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:8px}
+.s-divider{height:var(--hair);background:var(--line);border:none;margin:0}
+
+/* ---------- Semantic data accents ----------
+   Only three things may be coloured: a personal record (gold), an improving
+   number (green), a declining one (red). Every marker pairs its hue with a
+   glyph or a sign, so it reads without colour. */
+.s-marker{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border-radius:var(--r-pill);font-family:var(--font-mono);font-size:11px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:0.02em;white-space:nowrap}
+.s-marker--pr{background:var(--pr-quiet);color:var(--pr)}
+.s-marker--gain{background:var(--gain-quiet);color:var(--gain)}
+.s-marker--loss{background:var(--loss-quiet);color:var(--loss)}
+.s-marker--flat{background:var(--surface-raised);color:var(--fg-faint)}
+.s-marker__glyph{font-size:10px;line-height:1}
+
+/* ---------- StatTile ---------- */
+.s-stat{display:flex;flex-direction:column;gap:5px;min-width:0}
+.s-stat--center{align-items:center;text-align:center}
+.s-stat__value{font-family:var(--font-mono);font-weight:700;font-size:var(--size-stat);line-height:var(--lh-tight);letter-spacing:var(--track-num);font-variant-numeric:tabular-nums;color:var(--fg);display:flex;align-items:baseline;gap:4px}
+.s-stat__value--lg{font-size:var(--size-stat-lg)}
+.s-stat__unit{font-family:var(--font-mono);font-weight:500;font-size:12px;color:var(--fg-faint)}
+.s-stat__value--pr{color:var(--pr)}
+.s-stat__delta{display:inline-flex;align-items:center;gap:4px;font-family:var(--font-mono);font-size:11px;font-weight:500;font-variant-numeric:tabular-nums;color:var(--fg-faint)}
+.s-stat__delta--gain{color:var(--gain)}
+.s-stat__delta--loss{color:var(--loss)}
+
+/* ---------- ListRow ---------- */
+.s-row{display:flex;align-items:center;gap:12px;width:100%;min-height:var(--tap-min);padding:10px 8px;border:none;border-bottom:var(--hair) solid var(--line-faint);border-radius:var(--r-field);background:transparent;font:inherit;color:inherit;text-align:left;cursor:pointer;transition:background-color var(--dur) var(--ease)}
+.s-row:last-child{border-bottom:none}
+.s-row:hover{background:var(--surface)}
+.s-row:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.s-row--static{cursor:default}
+.s-row--static:hover{background:transparent}
+.s-row__main{min-width:0;flex:1}
+.s-row__title{font-family:var(--font-ui);font-size:15px;font-weight:500;color:var(--fg)}
+.s-row__sub{font-family:var(--font-mono);font-size:11px;font-weight:400;color:var(--fg-faint);margin-top:3px}
+
+/* ---------- Input / Field ---------- */
+.s-input{width:100%;height:var(--h-field);border:var(--hair) solid var(--line);border-radius:var(--r-field);background:var(--field);padding:0 10px;font-family:var(--font-ui);font-size:14px;font-weight:500;color:var(--fg);outline:none;transition:border-color var(--dur) var(--ease),box-shadow var(--dur) var(--ease)}
+.s-input::placeholder{color:var(--fg-ghost);font-weight:400}
+.s-input:focus{border-color:var(--fg);box-shadow:var(--focus-ring)}
+.s-input--num{font-family:var(--font-mono);font-weight:700;font-variant-numeric:tabular-nums;text-align:center;letter-spacing:var(--track-num)}
+.s-field{display:flex;flex-direction:column;gap:5px}
+.s-field__row{display:flex;align-items:center;gap:8px}
+
+/* ---------- Switch ---------- */
+.s-switch{display:inline-flex;align-items:center;gap:12px;cursor:pointer}
+.s-switch__track{position:relative;width:40px;height:24px;flex-shrink:0;border:var(--hair) solid var(--line);border-radius:var(--r-pill);background:var(--surface-raised);cursor:pointer;transition:background-color var(--dur) var(--ease),border-color var(--dur) var(--ease)}
+.s-switch__track.is-on{background:var(--invert-bg);border-color:var(--invert-bg)}
+.s-switch__track:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.s-switch__knob{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:var(--r-pill);background:var(--fg-muted);transition:transform var(--dur) var(--ease),background-color var(--dur) var(--ease)}
+.s-switch__track.is-on .s-switch__knob{transform:translateX(16px);background:var(--invert-fg)}
+/* Shape, not just colour, distinguishes on from off. */
+.s-switch__track.is-on .s-switch__knob::after{content:"";position:absolute;inset:4px 4px 5px 4px;border-left:2px solid var(--invert-bg);border-bottom:2px solid var(--invert-bg);transform:rotate(-45deg) translateY(-1px)}
+
+/* ---------- SegmentedControl ---------- */
+.s-seg{display:inline-flex;width:100%;gap:2px;border:var(--hair) solid var(--line);border-radius:var(--r-field);background:var(--surface);padding:2px}
+.s-seg__btn{flex:1;height:30px;border:none;border-radius:6px;background:transparent;font-family:var(--font-mono);font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:var(--track-label);color:var(--fg-muted);cursor:pointer;transition:background-color var(--dur) var(--ease),color var(--dur) var(--ease)}
+.s-seg__btn:hover{background:var(--surface-raised);color:var(--fg)}
+.s-seg__btn:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.s-seg__btn.is-active{background:var(--invert-bg);color:var(--invert-fg);font-weight:700}
+
+/* ---------- TopBar ---------- */
+.s-topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;height:52px;padding:0 var(--gutter);border-bottom:var(--hair) solid var(--line-faint)}
+.s-topbar__title{font-family:var(--font-ui);font-size:14px;font-weight:600;color:var(--fg)}
+
+/* ---------- BottomNav (floating pill) ---------- */
+.s-bottomnav{display:inline-flex;gap:3px;border:var(--hair) solid var(--line);border-radius:var(--r-pill);background:var(--surface);padding:5px}
+.s-bottomnav__btn{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:62px;min-height:42px;justify-content:center;border:none;border-radius:var(--r-pill);background:transparent;color:var(--fg-muted);cursor:pointer;transition:background-color var(--dur) var(--ease),color var(--dur) var(--ease)}
+.s-bottomnav__btn:hover{background:var(--surface-raised);color:var(--fg)}
+.s-bottomnav__btn:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.s-bottomnav__btn.is-active{background:var(--invert-bg);color:var(--invert-fg)}
+.s-bottomnav__label{font-family:var(--font-ui);font-size:10px;font-weight:600;letter-spacing:0.01em}
+
+/* ---------- SetRow (workout logging) ---------- */
+.s-setgrid{display:grid;grid-template-columns:20px 1fr 1fr 30px;gap:8px;align-items:center;min-height:var(--tap-min)}
+.s-setgrid--head{padding-bottom:6px;min-height:0}
+.s-setrow__n{font-family:var(--font-mono);font-size:12px;font-weight:500;color:var(--fg-faint);font-variant-numeric:tabular-nums}
+.s-setrow__cell{display:flex;align-items:center;gap:6px}
+.s-setrow__suffix{font-family:var(--font-mono);font-size:12px;color:var(--fg-faint);flex-shrink:0}
+.s-setrow__del{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:none;border-radius:var(--r-pill);background:transparent;color:var(--fg-muted);cursor:pointer;transition:color var(--dur) var(--ease),background-color var(--dur) var(--ease)}
+.s-setrow__del:hover{background:var(--danger-quiet);color:var(--danger)}
+.s-setrow__del:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.s-addset{display:block;width:100%;border:var(--hair) dashed var(--line);border-radius:var(--r-field);background:transparent;padding:8px 0;font-family:var(--font-ui);font-size:13px;font-weight:500;color:var(--fg-muted);cursor:pointer;transition:color var(--dur) var(--ease),border-color var(--dur) var(--ease),background-color var(--dur) var(--ease)}
+.s-addset:hover{background:var(--surface);border-color:var(--fg-ghost);color:var(--fg)}
+.s-addset:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+
+/* ---------- ExerciseBlock ---------- */
+.s-exercise{padding:16px 0;border-bottom:var(--hair) solid var(--line-faint)}
+.s-exercise__head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:10px}
+.s-exercise__name{font-family:var(--font-ui);font-size:15px;font-weight:600;color:var(--fg)}
+
+/* ---------- Sheet / Dialog ---------- */
+.s-sheet{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.s-sheet__scrim{position:absolute;inset:0;border:none;background:var(--scrim);cursor:pointer}
+.s-sheet__panel{position:relative;width:100%;max-width:var(--screen-max);border:var(--hair) solid var(--line);border-radius:var(--r-sheet) var(--r-sheet) 0 0;background:var(--surface);padding:18px}
+.s-sheet--center{align-items:center}
+.s-sheet--center .s-sheet__panel{border-radius:var(--r-sheet);max-width:340px}
+
+/* ---------- Wordmark ---------- */
+.s-wordmark{font-family:var(--font-ui);font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:0.14em;color:var(--fg);text-decoration:none}

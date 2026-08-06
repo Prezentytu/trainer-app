@@ -20,7 +20,7 @@ export function AuthScreen({
   switchCta,
 }: AuthScreenProps) {
   return (
-    <div className="landing-atmosphere flex min-h-screen">
+    <div className="flex min-h-screen">
       <aside className="relative hidden w-[44%] flex-col justify-between overflow-hidden border-r border-border p-10 lg:flex xl:w-[48%] xl:p-14">
         <div className="relative">
           <Wordmark />
@@ -55,7 +55,7 @@ export function AuthScreen({
 
           <p className="mt-8 text-center text-sm text-muted">
             {switchLabel}{" "}
-            <Link href={switchHref} className="font-medium text-accent-text hover:text-accent-strong">
+            <Link href={switchHref} className="font-medium text-foreground underline">
               {switchCta}
             </Link>
           </p>

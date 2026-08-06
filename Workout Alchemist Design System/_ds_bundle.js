@@ -1,2605 +1,2038 @@
-/* @ds-bundle: {"format":4,"namespace":"WorkoutAlchemistDesignSystem_5f0610","components":[{"name":"Badge","sourcePath":"components/display/Badge.jsx"},{"name":"Card","sourcePath":"components/display/Card.jsx"},{"name":"Icon","sourcePath":"components/display/Icon.jsx"},{"name":"StatBlock","sourcePath":"components/display/StatBlock.jsx"},{"name":"Tag","sourcePath":"components/display/Tag.jsx"},{"name":"Dialog","sourcePath":"components/feedback/Dialog.jsx"},{"name":"ProgressRing","sourcePath":"components/feedback/ProgressRing.jsx"},{"name":"Toast","sourcePath":"components/feedback/Toast.jsx"},{"name":"Tooltip","sourcePath":"components/feedback/Tooltip.jsx"},{"name":"Button","sourcePath":"components/forms/Button.jsx"},{"name":"Checkbox","sourcePath":"components/forms/Checkbox.jsx"},{"name":"IconButton","sourcePath":"components/forms/IconButton.jsx"},{"name":"Input","sourcePath":"components/forms/Input.jsx"},{"name":"Radio","sourcePath":"components/forms/Radio.jsx"},{"name":"Select","sourcePath":"components/forms/Select.jsx"},{"name":"Switch","sourcePath":"components/forms/Switch.jsx"},{"name":"SegmentedControl","sourcePath":"components/navigation/SegmentedControl.jsx"},{"name":"Tabs","sourcePath":"components/navigation/Tabs.jsx"}],"sourceHashes":{"components/display/Badge.jsx":"ff95d02a4721","components/display/Card.jsx":"82f8c75da80c","components/display/Icon.jsx":"fcd358d12a34","components/display/StatBlock.jsx":"22cb767a8c4b","components/display/Tag.jsx":"3d6c8143e17e","components/feedback/Dialog.jsx":"b6ae127bbe9f","components/feedback/ProgressRing.jsx":"7f191b16716a","components/feedback/Toast.jsx":"2e3835cddfea","components/feedback/Tooltip.jsx":"23410445c927","components/forms/Button.jsx":"2ac577d7ccae","components/forms/Checkbox.jsx":"d4db34e2d41f","components/forms/IconButton.jsx":"1f188425f514","components/forms/Input.jsx":"52ef3a793bbf","components/forms/Radio.jsx":"23d025a7b9c1","components/forms/Select.jsx":"09c34051fc23","components/forms/Switch.jsx":"9ab322110cb0","components/navigation/SegmentedControl.jsx":"3870b7f1e453","components/navigation/Tabs.jsx":"19acd6101355","ui_kits/client_app/ProgressScreen.jsx":"a45f24954aca","ui_kits/client_app/TodayScreen.jsx":"3972220551db","ui_kits/client_app/WorkoutScreen.jsx":"48d438c535bb","ui_kits/client_app/data.js":"971348c19243","ui_kits/trainer_studio/ClientDetailScreen.jsx":"53d6f27f08a6","ui_kits/trainer_studio/ClientsScreen.jsx":"1e97449434cc","ui_kits/trainer_studio/PlanBuilderScreen.jsx":"546f8fd25658","ui_kits/trainer_studio/Shell.jsx":"d30f834742dc","ui_kits/trainer_studio/data.js":"3964e7ae105d"},"inlinedExternals":[],"unexposedExports":[]} */
+/* @ds-bundle: {"format":4,"namespace":"WorkoutAlchemistDesignSystem_381a04","components":[{"name":"LineChart","sourcePath":"components/charts/LineChart.jsx"},{"name":"Button","sourcePath":"components/core/Button.jsx"},{"name":"Field","sourcePath":"components/core/Field.jsx"},{"name":"Icon","sourcePath":"components/core/Icon.jsx"},{"name":"IconButton","sourcePath":"components/core/IconButton.jsx"},{"name":"Input","sourcePath":"components/core/Input.jsx"},{"name":"Pill","sourcePath":"components/core/Pill.jsx"},{"name":"PillRow","sourcePath":"components/core/Pill.jsx"},{"name":"Switch","sourcePath":"components/core/Switch.jsx"},{"name":"Card","sourcePath":"components/display/Card.jsx"},{"name":"ListRow","sourcePath":"components/display/ListRow.jsx"},{"name":"SectionLabel","sourcePath":"components/display/SectionLabel.jsx"},{"name":"Divider","sourcePath":"components/display/SectionLabel.jsx"},{"name":"StatTile","sourcePath":"components/display/StatTile.jsx"},{"name":"Marker","sourcePath":"components/display/StatTile.jsx"},{"name":"Wordmark","sourcePath":"components/display/Wordmark.jsx"},{"name":"Sheet","sourcePath":"components/feedback/Sheet.jsx"},{"name":"BottomNav","sourcePath":"components/navigation/BottomNav.jsx"},{"name":"SegmentedControl","sourcePath":"components/navigation/SegmentedControl.jsx"},{"name":"TopBar","sourcePath":"components/navigation/TopBar.jsx"},{"name":"ExerciseBlock","sourcePath":"components/session/ExerciseBlock.jsx"},{"name":"SetRowHeader","sourcePath":"components/session/SetRow.jsx"},{"name":"SetRow","sourcePath":"components/session/SetRow.jsx"}],"sourceHashes":{"components/charts/LineChart.jsx":"04d20ed00d02","components/core/Button.jsx":"ede808950667","components/core/Field.jsx":"310468d787c9","components/core/Icon.jsx":"eb70156f1710","components/core/IconButton.jsx":"d726cc5c2524","components/core/Input.jsx":"e0f64f6a5837","components/core/Pill.jsx":"8f476ed0e39d","components/core/Switch.jsx":"62597be6908c","components/display/Card.jsx":"f87a4a1c2361","components/display/ListRow.jsx":"0bfe05fcf9aa","components/display/SectionLabel.jsx":"01a26e141cf4","components/display/StatTile.jsx":"5d5ac5a0fedf","components/display/Wordmark.jsx":"d6bee2ca049d","components/feedback/Sheet.jsx":"745920548a59","components/navigation/BottomNav.jsx":"01d294be9200","components/navigation/SegmentedControl.jsx":"118e8bed550d","components/navigation/TopBar.jsx":"f03661585695","components/session/ExerciseBlock.jsx":"5701c7353dda","components/session/SetRow.jsx":"31c24b0274b8","ui_kits/client_app/ProgressScreen.jsx":"d2645ed93d5d","ui_kits/client_app/SettingsScreen.jsx":"68729b7e7667","ui_kits/client_app/WorkoutScreen.jsx":"45c089586c6a","ui_kits/client_app/WorkoutsScreen.jsx":"2c8910617197","ui_kits/client_app/data.js":"dbd0bc8c4eaf","ui_kits/trainer_panel/ClientScreen.jsx":"5c3d29c71a88","ui_kits/trainer_panel/ClientsScreen.jsx":"ad663d6088dd","ui_kits/trainer_panel/data.js":"a0188b7ecaab"},"inlinedExternals":[],"unexposedExports":[]} */
 
 (() => {
 
-const __ds_ns = (window.WorkoutAlchemistDesignSystem_5f0610 = window.WorkoutAlchemistDesignSystem_5f0610 || {});
+const __ds_ns = (window.WorkoutAlchemistDesignSystem_381a04 = window.WorkoutAlchemistDesignSystem_381a04 || {});
 
 const __ds_scope = {};
 
 (__ds_ns.__errors = __ds_ns.__errors || []);
 
-// components/display/Badge.jsx
+// components/charts/LineChart.jsx
 try { (() => {
-const T = {
-  pr: ["var(--pr-dim)", "var(--gold-300)"],
-  gold: ["var(--pr-dim)", "var(--gold-300)"],
-  accent: ["var(--accent-dim)", "var(--teal-300)"],
-  positive: ["var(--positive-dim)", "var(--teal-300)"],
-  danger: ["var(--danger-dim)", "var(--clay-400)"],
-  neutral: ["var(--ink-700)", "var(--bone-300)"]
-};
-function Badge({
-  tone = "neutral",
-  icon,
-  children,
-  style
+/**
+ * Single white polyline on a bare plot. Right-hand value axis and a sparse
+ * date axis in mono; no grid, no fill, no second series.
+ */
+function LineChart({
+  points,
+  labels,
+  height = 180,
+  showAxis = true,
+  dots = true
 }) {
-  const [bg, fg] = T[tone] || T.neutral;
-  return /*#__PURE__*/React.createElement("span", {
+  const w = 300;
+  const h = height;
+  const padR = showAxis ? 38 : 0;
+  const padB = showAxis ? 24 : 0;
+  const min = Math.min(...points);
+  const max = Math.max(...points);
+  const span = max - min || 1;
+  const lo = min - span * 0.25;
+  const hi = max + span * 0.25;
+  const x = i => (points.length === 1 ? 0 : i / (points.length - 1) * (w - padR - 6)) + 3;
+  const y = v => h - padB - (v - lo) / (hi - lo) * (h - padB - 8);
+  const d = points.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(p).toFixed(1)}`).join(" ");
+  const ticks = 4;
+  return /*#__PURE__*/React.createElement("svg", {
+    viewBox: `0 0 ${w} ${h}`,
+    width: "100%",
+    height: h,
     style: {
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 5,
-      height: 22,
-      padding: "0 9px",
-      borderRadius: "var(--radius-pill)",
-      background: bg,
-      color: fg,
-      font: "var(--type-label)",
-      letterSpacing: "0.04em",
-      textTransform: "uppercase",
-      ...style
-    }
-  }, icon, children);
+      display: "block",
+      overflow: "visible"
+    },
+    role: "img"
+  }, showAxis ? Array.from({
+    length: ticks + 1
+  }, (_, i) => {
+    const v = lo + (hi - lo) / ticks * i;
+    return /*#__PURE__*/React.createElement("text", {
+      key: i,
+      x: w - padR + 8,
+      y: y(v) + 3,
+      fill: "var(--fg-faint)",
+      fontSize: "10",
+      fontFamily: "var(--font-mono)"
+    }, Math.round(v));
+  }) : null, /*#__PURE__*/React.createElement("path", {
+    d: d,
+    fill: "none",
+    stroke: "var(--fg)",
+    strokeWidth: "2",
+    strokeLinejoin: "round",
+    strokeLinecap: "round"
+  }), dots ? points.map((p, i) => /*#__PURE__*/React.createElement("circle", {
+    key: i,
+    cx: x(i),
+    cy: y(p),
+    r: "3",
+    fill: "var(--fg)",
+    stroke: "var(--bg)",
+    strokeWidth: "1.5"
+  })) : null, showAxis && labels ? labels.map((l, i) => /*#__PURE__*/React.createElement("text", {
+    key: i,
+    x: i / (labels.length - 1) * (w - padR - 6) + 3,
+    y: h - 6,
+    fill: "var(--fg-faint)",
+    fontSize: "10",
+    fontFamily: "var(--font-mono)",
+    textAnchor: i === 0 ? "start" : i === labels.length - 1 ? "end" : "middle"
+  }, l)) : null);
 }
-Object.assign(__ds_scope, { Badge });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/Badge.jsx", error: String((e && e.message) || e) }); }
+Object.assign(__ds_scope, { LineChart });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/charts/LineChart.jsx", error: String((e && e.message) || e) }); }
+
+// components/core/Button.jsx
+try { (() => {
+/**
+ * The only prominent affordance in the system: a white fill on black (inverted
+ * in light theme). Outline and plain carry everything else.
+ */
+function Button({
+  children,
+  onClick,
+  variant = "solid",
+  size = "md",
+  caps,
+  full,
+  disabled,
+  type = "button",
+  className = ""
+}) {
+  return /*#__PURE__*/React.createElement("button", {
+    type: type,
+    onClick: onClick,
+    disabled: disabled,
+    className: ["s-btn", `s-btn--${variant}`, size !== "md" ? `s-btn--${size}` : "", caps ? "s-btn--caps" : "", full ? "s-btn--full" : "", className].filter(Boolean).join(" ")
+  }, children);
+}
+Object.assign(__ds_scope, { Button });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/core/Button.jsx", error: String((e && e.message) || e) }); }
+
+// components/core/Field.jsx
+try { (() => {
+/** Mono caps label above a control. The only label treatment in the system. */
+function Field({
+  label,
+  children
+}) {
+  return /*#__PURE__*/React.createElement("label", {
+    className: "s-field"
+  }, label ? /*#__PURE__*/React.createElement("span", {
+    className: "t-label"
+  }, label) : null, children);
+}
+Object.assign(__ds_scope, { Field });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/core/Field.jsx", error: String((e && e.message) || e) }); }
+
+// components/core/Icon.jsx
+try { (() => {
+const ALIASES = {
+  dumbbell: "barbell",
+  workout: "person-simple-run",
+  progress: "trend-up",
+  settings: "gear",
+  back: "caret-left",
+  forward: "caret-right",
+  delete: "trash",
+  search: "magnifying-glass",
+  edit: "pencil-simple"
+};
+
+/**
+ * Phosphor glyph. Loaded as a web font, so an icon is just text: it inherits
+ * currentColor, scales with font-size and needs no per-icon JS.
+ * Requires one stylesheet on the page:
+ *   <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+ * (add the /light/ and /bold/ sheets only if you use those weights).
+ */
+function Icon({
+  name,
+  size = 18,
+  weight = "regular",
+  color = "currentColor",
+  className = ""
+}) {
+  const glyph = ALIASES[name] || name;
+  const prefix = weight === "regular" ? "ph" : `ph-${weight}`;
+  return /*#__PURE__*/React.createElement("i", {
+    "aria-hidden": true,
+    className: [prefix, `ph-${glyph}`, className].filter(Boolean).join(" "),
+    style: {
+      fontSize: size,
+      lineHeight: 1,
+      color,
+      display: "inline-flex",
+      flexShrink: 0
+    }
+  });
+}
+Object.assign(__ds_scope, { Icon });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/core/Icon.jsx", error: String((e && e.message) || e) }); }
+
+// components/core/IconButton.jsx
+try { (() => {
+/** Circular tap target for a single glyph. Ghost by default. */
+function IconButton({
+  children,
+  onClick,
+  title,
+  filled,
+  size = "md",
+  className = ""
+}) {
+  return /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: onClick,
+    title: title,
+    "aria-label": title,
+    className: ["s-iconbtn", filled ? "s-iconbtn--filled" : "", size === "sm" ? "s-iconbtn--sm" : "", className].filter(Boolean).join(" ")
+  }, children);
+}
+Object.assign(__ds_scope, { IconButton });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/core/IconButton.jsx", error: String((e && e.message) || e) }); }
+
+// components/core/Input.jsx
+try { (() => {
+/** Borderless field on a grey well. `num` for mono, centred, tabular figures. */
+function Input({
+  value,
+  onChange,
+  placeholder,
+  num,
+  suffix,
+  ariaLabel,
+  inputMode,
+  disabled,
+  className = ""
+}) {
+  const input = /*#__PURE__*/React.createElement("input", {
+    value: value ?? "",
+    onChange: onChange ? e => onChange(e.target.value) : undefined,
+    placeholder: placeholder,
+    "aria-label": ariaLabel,
+    disabled: disabled,
+    inputMode: inputMode ?? (num ? "decimal" : undefined),
+    className: ["s-input", num ? "s-input--num" : "", className].filter(Boolean).join(" ")
+  });
+  if (!suffix) return input;
+  return /*#__PURE__*/React.createElement("span", {
+    className: "s-field__row"
+  }, input, /*#__PURE__*/React.createElement("span", {
+    className: "s-setrow__suffix"
+  }, suffix));
+}
+Object.assign(__ds_scope, { Input });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/core/Input.jsx", error: String((e && e.message) || e) }); }
+
+// components/core/Pill.jsx
+try { (() => {
+/** Filter chip. Active = solid inverted fill. Mono caps by default. */
+function Pill({
+  children,
+  active,
+  onClick,
+  text
+}) {
+  return /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: onClick,
+    "aria-pressed": active ?? false,
+    className: ["s-pill", text ? "s-pill--text" : "", active ? "is-active" : ""].filter(Boolean).join(" ")
+  }, children);
+}
+
+/** Horizontal scroller for a run of Pills. */
+function PillRow({
+  children
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "s-pillrow"
+  }, children);
+}
+Object.assign(__ds_scope, { Pill, PillRow });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/core/Pill.jsx", error: String((e && e.message) || e) }); }
+
+// components/core/Switch.jsx
+try { (() => {
+/** Binary setting. Track inverts when on. */
+function Switch({
+  label,
+  checked,
+  onChange
+}) {
+  return /*#__PURE__*/React.createElement("label", {
+    className: "s-switch"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    role: "switch",
+    "aria-checked": !!checked,
+    "aria-label": label,
+    onClick: () => onChange && onChange(!checked),
+    className: ["s-switch__track", checked ? "is-on" : ""].filter(Boolean).join(" ")
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "s-switch__knob"
+  })), label ? /*#__PURE__*/React.createElement("span", {
+    className: "t-body"
+  }, label) : null);
+}
+Object.assign(__ds_scope, { Switch });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/core/Switch.jsx", error: String((e && e.message) || e) }); }
 
 // components/display/Card.jsx
 try { (() => {
-function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
-const {
-  useState
-} = React;
+/** Grey block, 14px radius, no border, no shadow. `flat` swaps fill for a hairline. */
 function Card({
-  title,
-  eyebrow,
-  meta,
-  interactive,
-  selected,
   children,
-  style,
-  ...rest
+  flat,
+  onClick,
+  pad = 16,
+  className = "",
+  style
 }) {
-  const [hov, setHov] = useState(false);
-  return /*#__PURE__*/React.createElement("div", _extends({
-    onMouseEnter: () => setHov(true),
-    onMouseLeave: () => setHov(false),
-    style: {
-      background: hov && interactive ? "var(--surface-hover)" : "var(--surface-card)",
-      border: `1px solid ${selected ? "var(--accent)" : interactive && hov ? "var(--border-strong)" : "var(--border-subtle)"}`,
-      borderRadius: "var(--radius-lg)",
-      boxShadow: "var(--shadow-card)",
-      padding: "var(--space-5)",
-      cursor: interactive ? "pointer" : "default",
-      transition: "background var(--dur-fast) var(--ease-out), border var(--dur-fast) var(--ease-out)",
-      ...style
-    }
-  }, rest), eyebrow && /*#__PURE__*/React.createElement("div", {
-    style: {
-      font: "var(--type-label)",
-      color: "var(--text-muted)",
-      letterSpacing: "var(--tracking-caps)",
-      textTransform: "uppercase",
-      marginBottom: 6
-    }
-  }, eyebrow), title && /*#__PURE__*/React.createElement("div", {
-    style: {
-      font: "var(--type-h3)",
-      color: "var(--text-primary)"
-    }
-  }, title), meta && /*#__PURE__*/React.createElement("div", {
-    style: {
-      font: "var(--type-caption)",
-      color: "var(--text-muted)",
-      marginTop: 4
-    }
-  }, meta), children);
+  const cls = ["s-card", flat ? "s-card--flat" : "", onClick ? "s-card--tap" : "", className].filter(Boolean).join(" ");
+  const s = {
+    padding: pad,
+    ...style
+  };
+  if (onClick) {
+    return /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      onClick: onClick,
+      className: cls,
+      style: s
+    }, children);
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: cls,
+    style: s
+  }, children);
 }
 Object.assign(__ds_scope, { Card });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/Card.jsx", error: String((e && e.message) || e) }); }
 
-// components/display/Icon.jsx
+// components/display/ListRow.jsx
 try { (() => {
-function Icon({
-  name,
-  size = 20,
-  strokeWidth = 1.75,
-  style
+/** Hairline-separated list row: title, mono sub-line, optional right side. */
+function ListRow({
+  title,
+  sub,
+  right,
+  onClick,
+  leading
 }) {
-  const lib = typeof window !== "undefined" && window.lucide && window.lucide.icons;
-  const pascal = String(name).split("-").map(s => s.charAt(0).toUpperCase() + s.slice(1)).join("");
-  const node = lib && (lib[pascal] || lib[name]);
-  if (!node) return /*#__PURE__*/React.createElement("svg", {
-    width: size,
-    height: size,
-    style: style
-  });
-  return /*#__PURE__*/React.createElement("svg", {
-    width: size,
-    height: size,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: strokeWidth,
-    strokeLinecap: "round",
-    strokeLinejoin: "round",
+  const Tag = onClick ? "button" : "div";
+  return /*#__PURE__*/React.createElement(Tag, {
+    type: onClick ? "button" : undefined,
+    onClick: onClick,
+    className: ["s-row", onClick ? "" : "s-row--static"].filter(Boolean).join(" ")
+  }, leading ? /*#__PURE__*/React.createElement("span", {
     style: {
-      flex: "none",
-      ...style
+      flexShrink: 0,
+      display: "inline-flex"
     }
-  }, node.map(([tag, attrs], i) => React.createElement(tag, {
-    key: i,
-    ...attrs
-  })));
+  }, leading) : null, /*#__PURE__*/React.createElement("span", {
+    className: "s-row__main"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "s-row__title",
+    style: {
+      display: "block"
+    }
+  }, title), sub ? /*#__PURE__*/React.createElement("span", {
+    className: "s-row__sub",
+    style: {
+      display: "block"
+    }
+  }, sub) : null), right ? /*#__PURE__*/React.createElement("span", {
+    style: {
+      flexShrink: 0
+    }
+  }, right) : null);
 }
-Object.assign(__ds_scope, { Icon });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/Icon.jsx", error: String((e && e.message) || e) }); }
+Object.assign(__ds_scope, { ListRow });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/ListRow.jsx", error: String((e && e.message) || e) }); }
 
-// components/display/StatBlock.jsx
+// components/display/SectionLabel.jsx
 try { (() => {
-function StatBlock({
-  label,
+/** Mono caps section heading with an optional right-hand action. */
+function SectionLabel({
+  children,
+  action
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "s-sectionlabel"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "t-label"
+  }, children), action ? /*#__PURE__*/React.createElement("span", null, action) : null);
+}
+
+/** 1px hairline. The system's only separator. */
+function Divider({
+  margin = 0
+}) {
+  return /*#__PURE__*/React.createElement("hr", {
+    className: "s-divider",
+    style: {
+      marginTop: margin,
+      marginBottom: margin
+    }
+  });
+}
+Object.assign(__ds_scope, { SectionLabel, Divider });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/SectionLabel.jsx", error: String((e && e.message) || e) }); }
+
+// components/display/StatTile.jsx
+try { (() => {
+const UP = "▲";
+const DOWN = "▼";
+const FLAT = "–";
+const STAR = "★";
+
+/** Direction comes from the number's own sign — never from its valence. */
+function signGlyph(text) {
+  const s = String(text ?? "").trim();
+  if (s.startsWith("+")) return UP;
+  if (s.startsWith("-") || s.startsWith("−")) return DOWN;
+  return null;
+}
+
+/** Valence (is this good or bad?) comes from the tone, and only colours. */
+function toneGlyph(tone) {
+  if (tone === "pr") return STAR;
+  if (tone === "gain") return UP;
+  if (tone === "loss") return DOWN;
+  return FLAT;
+}
+
+/**
+ * Number first, label under it. The optional `delta` line carries the only
+ * colour the system allows on data.
+ *
+ * Two independent channels, deliberately not merged: the glyph states the
+ * DIRECTION of the change and is read off the number's sign, while the colour
+ * states its VALENCE and comes from `deltaTone`. That is what lets "-1,2 kg"
+ * render as a green ▼ during a cut — falling weight is progress — instead of
+ * an up arrow that contradicts the minus beside it.
+ */
+function StatTile({
   value,
   unit,
-  delta,
-  size = "md",
-  style
-}) {
-  const up = typeof delta === "string" && delta.trim().startsWith("+");
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 6,
-      ...style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      font: "var(--type-label)",
-      color: "var(--text-muted)",
-      letterSpacing: "var(--tracking-caps)",
-      textTransform: "uppercase"
-    }
-  }, label), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      alignItems: "baseline",
-      gap: 6
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      font: size === "lg" ? "var(--type-stat-lg)" : "var(--type-stat)",
-      color: "var(--text-primary)"
-    }
-  }, value), unit && /*#__PURE__*/React.createElement("span", {
-    style: {
-      font: "var(--type-mono-sm)",
-      color: "var(--text-muted)"
-    }
-  }, unit)), delta && /*#__PURE__*/React.createElement("div", {
-    style: {
-      font: "var(--type-mono-sm)",
-      color: up ? "var(--positive)" : "var(--text-muted)"
-    }
-  }, delta));
-}
-Object.assign(__ds_scope, { StatBlock });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/StatBlock.jsx", error: String((e && e.message) || e) }); }
-
-// components/display/Tag.jsx
-try { (() => {
-function Tag({
-  onRemove,
-  children,
-  style
-}) {
-  return /*#__PURE__*/React.createElement("span", {
-    style: {
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 6,
-      height: 28,
-      padding: "0 10px",
-      borderRadius: "var(--radius-pill)",
-      background: "var(--bg-raised)",
-      border: "1px solid var(--border-strong)",
-      color: "var(--text-secondary)",
-      font: "var(--type-caption)",
-      ...style
-    }
-  }, children, onRemove && /*#__PURE__*/React.createElement("button", {
-    onClick: onRemove,
-    "aria-label": "Remove",
-    style: {
-      all: "unset",
-      cursor: "pointer",
-      color: "var(--text-faint)",
-      lineHeight: 1,
-      padding: 2
-    }
-  }, "\xD7"));
-}
-Object.assign(__ds_scope, { Tag });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/Tag.jsx", error: String((e && e.message) || e) }); }
-
-// components/feedback/ProgressRing.jsx
-try { (() => {
-function ProgressRing({
-  value = 0,
-  size = 64,
-  stroke = 5,
-  color = "var(--accent)",
   label,
+  size = "md",
+  center,
   sub,
-  style
+  tone,
+  delta,
+  deltaTone
 }) {
-  const r = (size - stroke) / 2,
-    c = 2 * Math.PI * r,
-    v = Math.max(0, Math.min(1, value));
+  const sign = signGlyph(delta);
+  const valence = deltaTone || (sign === UP ? "gain" : sign === DOWN ? "loss" : "flat");
+  const glyph = sign || toneGlyph(valence);
   return /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      width: size,
-      height: size,
-      ...style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: size,
-    height: size,
-    style: {
-      transform: "rotate(-90deg)"
-    }
-  }, /*#__PURE__*/React.createElement("circle", {
-    cx: size / 2,
-    cy: size / 2,
-    r: r,
-    fill: "none",
-    stroke: "var(--ink-700)",
-    strokeWidth: stroke
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: size / 2,
-    cy: size / 2,
-    r: r,
-    fill: "none",
-    stroke: color,
-    strokeWidth: stroke,
-    strokeLinecap: "round",
-    strokeDasharray: c,
-    strokeDashoffset: c * (1 - v),
-    style: {
-      transition: "stroke-dashoffset var(--dur-med) var(--ease-out)"
-    }
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      inset: 0,
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center"
-    }
-  }, label && /*#__PURE__*/React.createElement("span", {
-    style: {
-      font: "var(--type-stat)",
-      fontSize: size / 4.2,
-      color: "var(--text-primary)"
-    }
-  }, label), sub && /*#__PURE__*/React.createElement("span", {
-    style: {
-      font: "var(--type-label)",
-      fontSize: Math.max(9, size / 7.5),
-      color: "var(--text-muted)",
-      textTransform: "uppercase",
-      letterSpacing: "0.05em"
-    }
-  }, sub)));
+    className: ["s-stat", center ? "s-stat--center" : ""].filter(Boolean).join(" ")
+  }, /*#__PURE__*/React.createElement("span", {
+    className: ["s-stat__value", size === "lg" ? "s-stat__value--lg" : "", tone === "pr" ? "s-stat__value--pr" : ""].filter(Boolean).join(" ")
+  }, value, unit ? /*#__PURE__*/React.createElement("span", {
+    className: "s-stat__unit"
+  }, unit) : null), label ? /*#__PURE__*/React.createElement("span", {
+    className: "t-label"
+  }, label) : null, delta ? /*#__PURE__*/React.createElement("span", {
+    className: ["s-stat__delta", valence !== "flat" ? `s-stat__delta--${valence}` : ""].filter(Boolean).join(" ")
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "s-marker__glyph",
+    "aria-hidden": true
+  }, glyph), delta) : null, sub ? /*#__PURE__*/React.createElement("span", {
+    className: "t-small"
+  }, sub) : null);
 }
-Object.assign(__ds_scope, { ProgressRing });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/feedback/ProgressRing.jsx", error: String((e && e.message) || e) }); }
 
-// components/feedback/Toast.jsx
-try { (() => {
-const T = {
-  neutral: "var(--bone-300)",
-  positive: "var(--teal-300)",
-  danger: "var(--clay-400)",
-  pr: "var(--pr)",
-  gold: "var(--pr)"
-};
-function Toast({
-  tone = "neutral",
-  icon,
-  action,
-  onAction,
+/**
+ * Standalone data marker for list rows and headers: a PR badge, or a signed
+ * change. Same split as StatTile — a signed value gets a direction arrow, an
+ * unsigned label ("PR", "uwaga") falls back to the tone's own glyph.
+ */
+function Marker({
+  tone = "flat",
   children,
-  style
+  glyph = true
 }) {
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 10,
-      padding: "12px 16px",
-      background: "var(--ink-800)",
-      border: "1px solid var(--border-strong)",
-      borderRadius: "var(--radius-md)",
-      boxShadow: "var(--shadow-raised)",
-      font: "var(--type-body)",
-      color: "var(--text-primary)",
-      ...style
-    }
-  }, icon && /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: T[tone],
-      display: "flex"
-    }
-  }, icon), /*#__PURE__*/React.createElement("span", null, children), action && /*#__PURE__*/React.createElement("button", {
-    onClick: onAction,
-    style: {
-      all: "unset",
-      cursor: "pointer",
-      font: "var(--type-body-strong)",
-      fontSize: "var(--text-sm)",
-      color: "var(--teal-300)",
-      marginLeft: 6
-    }
-  }, action));
-}
-Object.assign(__ds_scope, { Toast });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/feedback/Toast.jsx", error: String((e && e.message) || e) }); }
-
-// components/feedback/Tooltip.jsx
-try { (() => {
-const {
-  useState
-} = React;
-function Tooltip({
-  label,
-  side = "top",
-  children
-}) {
-  const [on, setOn] = useState(false);
-  const pos = side === "bottom" ? {
-    top: "calc(100% + 8px)"
-  } : {
-    bottom: "calc(100% + 8px)"
-  };
+  const mark = signGlyph(children) || toneGlyph(tone);
   return /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      display: "inline-flex"
-    },
-    onMouseEnter: () => setOn(true),
-    onMouseLeave: () => setOn(false),
-    onFocus: () => setOn(true),
-    onBlur: () => setOn(false)
-  }, children, on && /*#__PURE__*/React.createElement("span", {
-    role: "tooltip",
-    style: {
-      position: "absolute",
-      left: "50%",
-      transform: "translateX(-50%)",
-      ...pos,
-      whiteSpace: "nowrap",
-      background: "var(--ink-700)",
-      border: "1px solid var(--border-strong)",
-      color: "var(--text-primary)",
-      font: "var(--type-caption)",
-      padding: "5px 9px",
-      borderRadius: "var(--radius-sm)",
-      boxShadow: "var(--shadow-raised)",
-      zIndex: 50,
-      pointerEvents: "none"
-    }
-  }, label));
+    className: `s-marker s-marker--${tone}`
+  }, glyph && mark ? /*#__PURE__*/React.createElement("span", {
+    className: "s-marker__glyph",
+    "aria-hidden": true
+  }, mark) : null, children);
 }
-Object.assign(__ds_scope, { Tooltip });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/feedback/Tooltip.jsx", error: String((e && e.message) || e) }); }
+Object.assign(__ds_scope, { StatTile, Marker });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/StatTile.jsx", error: String((e && e.message) || e) }); }
 
-// components/forms/Button.jsx
+// components/display/Wordmark.jsx
 try { (() => {
-function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
-const {
-  useState
-} = React;
-const SIZES = {
-  sm: ["--control-h-sm", "0 14px", "var(--text-sm)"],
-  md: ["--control-h-md", "0 20px", "var(--text-base)"],
-  lg: ["--control-h-lg", "0 26px", "var(--text-md)"]
-};
-const V = {
-  primary: {
-    bg: "var(--accent)",
-    hov: "var(--accent-hover)",
-    act: "var(--accent-press)",
-    fg: "var(--text-on-accent)",
-    bd: "none"
-  },
-  secondary: {
-    bg: "var(--surface-card)",
-    hov: "var(--surface-hover)",
-    act: "var(--surface-active)",
-    fg: "var(--text-primary)",
-    bd: "1px solid var(--border-strong)"
-  },
-  ghost: {
-    bg: "transparent",
-    hov: "var(--surface-hover)",
-    act: "var(--surface-active)",
-    fg: "var(--text-secondary)",
-    bd: "none"
-  },
-  danger: {
-    bg: "var(--clay-400)",
-    hov: "var(--clay-400)",
-    act: "var(--clay-500)",
-    fg: "var(--ink-950)",
-    bd: "none"
-  }
-};
-function Button({
-  variant = "primary",
-  size = "md",
-  icon,
-  disabled,
-  full,
-  children,
-  style,
-  ...rest
+/**
+ * The brand is type only: the product name in Jost 500, uppercase, 0.24em
+ * tracked. No mark exists — never draw one.
+ */
+function Wordmark({
+  children = "Workout Alchemist",
+  size = 13,
+  className = ""
 }) {
-  const [hov, setHov] = useState(false);
-  const [act, setAct] = useState(false);
-  const v = V[variant] || V.primary;
-  const [h, pad, fs] = SIZES[size] || SIZES.md;
-  return /*#__PURE__*/React.createElement("button", _extends({
-    disabled: disabled,
-    onMouseEnter: () => setHov(true),
-    onMouseLeave: () => {
-      setHov(false);
-      setAct(false);
-    },
-    onMouseDown: () => setAct(true),
-    onMouseUp: () => setAct(false),
+  return /*#__PURE__*/React.createElement("span", {
+    className: ["s-wordmark", className].filter(Boolean).join(" "),
     style: {
-      height: `var(${h})`,
-      padding: pad,
-      borderRadius: "var(--radius-md)",
-      border: v.bd,
-      cursor: disabled ? "default" : "pointer",
-      background: disabled ? v.bg : act ? v.act : hov ? v.hov : v.bg,
-      color: v.fg,
-      font: `600 ${fs}/1 var(--font-body)`,
-      display: full ? "flex" : "inline-flex",
-      width: full ? "100%" : undefined,
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 8,
-      opacity: disabled ? 0.4 : 1,
-      transform: act ? "scale(0.98)" : "none",
-      transition: "background var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out)",
-      ...style
+      fontSize: size
     }
-  }, rest), icon, children);
+  }, children);
 }
-Object.assign(__ds_scope, { Button });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/forms/Button.jsx", error: String((e && e.message) || e) }); }
+Object.assign(__ds_scope, { Wordmark });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/Wordmark.jsx", error: String((e && e.message) || e) }); }
 
-// components/feedback/Dialog.jsx
+// components/feedback/Sheet.jsx
 try { (() => {
-function Dialog({
-  open = true,
+/** Bottom sheet (default) or centred dialog. Scrim, no shadow, 20px radius. */
+function Sheet({
+  open,
+  onClose,
   title,
-  description,
-  confirmLabel = "Confirm",
-  cancelLabel = "Cancel",
-  danger,
-  onConfirm,
-  onCancel,
+  center,
   children,
-  style
+  footer
 }) {
+  React.useEffect(() => {
+    if (!open) return;
+    const onKey = e => e.key === "Escape" && onClose && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
   if (!open) return null;
   return /*#__PURE__*/React.createElement("div", {
-    onClick: onCancel,
-    style: {
-      position: "fixed",
-      inset: 0,
-      background: "var(--overlay-scrim)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 100
-    }
-  }, /*#__PURE__*/React.createElement("div", {
+    className: ["s-sheet", center ? "s-sheet--center" : ""].filter(Boolean).join(" ")
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    "aria-label": "Zamknij",
+    className: "s-sheet__scrim",
+    onClick: onClose
+  }), /*#__PURE__*/React.createElement("div", {
     role: "dialog",
     "aria-modal": "true",
-    onClick: e => e.stopPropagation(),
+    className: "s-sheet__panel"
+  }, title ? /*#__PURE__*/React.createElement("p", {
+    className: "t-heading",
     style: {
-      width: 400,
-      maxWidth: "calc(100vw - 40px)",
-      background: "var(--bg-raised)",
-      border: "1px solid var(--border-strong)",
-      borderRadius: "var(--radius-xl)",
-      boxShadow: "var(--shadow-modal)",
-      padding: "var(--space-6)",
-      ...style
+      margin: "0 0 12px"
     }
-  }, /*#__PURE__*/React.createElement("div", {
+  }, title) : null, children, footer ? /*#__PURE__*/React.createElement("div", {
     style: {
-      font: "var(--type-h3)",
-      color: "var(--text-primary)"
-    }
-  }, title), description && /*#__PURE__*/React.createElement("div", {
-    style: {
-      font: "var(--type-body)",
-      color: "var(--text-secondary)",
-      marginTop: 8
-    }
-  }, description), children, /*#__PURE__*/React.createElement("div", {
-    style: {
+      marginTop: 20,
       display: "flex",
-      justifyContent: "flex-end",
-      gap: 10,
-      marginTop: 24
+      gap: 8
     }
-  }, /*#__PURE__*/React.createElement(__ds_scope.Button, {
-    variant: "ghost",
-    onClick: onCancel
-  }, cancelLabel), /*#__PURE__*/React.createElement(__ds_scope.Button, {
-    variant: danger ? "danger" : "primary",
-    onClick: onConfirm
-  }, confirmLabel))));
+  }, footer) : null));
 }
-Object.assign(__ds_scope, { Dialog });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/feedback/Dialog.jsx", error: String((e && e.message) || e) }); }
+Object.assign(__ds_scope, { Sheet });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/feedback/Sheet.jsx", error: String((e && e.message) || e) }); }
 
-// components/forms/Checkbox.jsx
+// components/navigation/BottomNav.jsx
 try { (() => {
-function Checkbox({
-  label,
-  checked,
-  onChange,
-  disabled,
-  style
-}) {
-  return /*#__PURE__*/React.createElement("label", {
-    style: {
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 10,
-      cursor: disabled ? "default" : "pointer",
-      opacity: disabled ? 0.4 : 1,
-      font: "var(--type-body)",
-      color: "var(--text-primary)",
-      ...style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      width: 20,
-      height: 20,
-      flex: "none"
-    }
-  }, /*#__PURE__*/React.createElement("input", {
-    type: "checkbox",
-    checked: checked,
-    disabled: disabled,
-    onChange: e => onChange && onChange(e.target.checked),
-    style: {
-      position: "absolute",
-      inset: 0,
-      opacity: 0,
-      cursor: "inherit",
-      margin: 0
-    }
-  }), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      inset: 0,
-      borderRadius: "var(--radius-sm)",
-      background: checked ? "var(--accent)" : "var(--bg-raised)",
-      border: checked ? "1px solid var(--accent)" : "1px solid var(--border-strong)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      transition: "background var(--dur-fast) var(--ease-out)"
-    }
-  }, checked && /*#__PURE__*/React.createElement("svg", {
-    width: "12",
-    height: "12",
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "var(--text-on-accent)",
-    strokeWidth: "3.5",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M20 6 9 17l-5-5"
-  })))), label);
-}
-Object.assign(__ds_scope, { Checkbox });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/forms/Checkbox.jsx", error: String((e && e.message) || e) }); }
-
-// components/forms/IconButton.jsx
-try { (() => {
-function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
-const {
-  useState
-} = React;
-function IconButton({
-  label,
-  size = "md",
-  variant = "ghost",
-  active,
-  disabled,
-  children,
-  style,
-  ...rest
-}) {
-  const [hov, setHov] = useState(false);
-  const d = size === "sm" ? 32 : size === "lg" ? 48 : 40;
-  const bg = active ? "var(--accent-dim)" : hov && !disabled ? "var(--surface-hover)" : variant === "outline" ? "var(--surface-card)" : "transparent";
-  return /*#__PURE__*/React.createElement("button", _extends({
-    "aria-label": label,
-    title: label,
-    disabled: disabled,
-    onMouseEnter: () => setHov(true),
-    onMouseLeave: () => setHov(false),
-    style: {
-      width: d,
-      height: d,
-      borderRadius: "var(--radius-md)",
-      border: variant === "outline" ? "1px solid var(--border-strong)" : "none",
-      background: bg,
-      color: active ? "var(--accent)" : "var(--text-secondary)",
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      cursor: disabled ? "default" : "pointer",
-      opacity: disabled ? 0.4 : 1,
-      transition: "background var(--dur-fast) var(--ease-out)",
-      ...style
-    }
-  }, rest), children);
-}
-Object.assign(__ds_scope, { IconButton });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/forms/IconButton.jsx", error: String((e && e.message) || e) }); }
-
-// components/forms/Input.jsx
-try { (() => {
-function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
-const {
-  useState
-} = React;
-function Input({
-  label,
-  hint,
-  error,
-  prefix,
-  suffix,
-  mono,
-  size = "md",
-  style,
-  ...rest
-}) {
-  const [foc, setFoc] = useState(false);
-  const h = size === "sm" ? "var(--control-h-sm)" : "var(--control-h-md)";
-  return /*#__PURE__*/React.createElement("label", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 6,
-      font: "var(--type-label)",
-      color: "var(--text-muted)",
-      letterSpacing: "var(--tracking-caps)",
-      textTransform: "uppercase",
-      ...style
-    }
-  }, label, /*#__PURE__*/React.createElement("span", {
-    style: {
-      display: "flex",
-      alignItems: "center",
-      gap: 8,
-      height: h,
-      padding: "0 12px",
-      borderRadius: "var(--radius-md)",
-      background: "var(--bg-raised)",
-      border: `1px solid ${error ? "var(--danger)" : foc ? "var(--border-focus)" : "var(--border-strong)"}`,
-      boxShadow: foc ? "var(--glow-accent)" : "none",
-      transition: "box-shadow var(--dur-fast) var(--ease-out)"
-    }
-  }, prefix && /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: "var(--text-faint)",
-      font: "var(--type-caption)",
-      textTransform: "none",
-      letterSpacing: 0
-    }
-  }, prefix), /*#__PURE__*/React.createElement("input", _extends({
-    onFocus: () => setFoc(true),
-    onBlur: () => setFoc(false),
-    style: {
-      flex: 1,
-      minWidth: 0,
-      background: "none",
-      border: "none",
-      outline: "none",
-      color: "var(--text-primary)",
-      font: mono ? "var(--type-mono-sm)" : "var(--type-body)",
-      letterSpacing: 0,
-      textTransform: "none"
-    }
-  }, rest)), suffix && /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: "var(--text-faint)",
-      font: "var(--type-caption)",
-      textTransform: "none",
-      letterSpacing: 0
-    }
-  }, suffix)), (error || hint) && /*#__PURE__*/React.createElement("span", {
-    style: {
-      font: "var(--type-caption)",
-      color: error ? "var(--danger)" : "var(--text-faint)",
-      textTransform: "none",
-      letterSpacing: 0
-    }
-  }, error || hint));
-}
-Object.assign(__ds_scope, { Input });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/forms/Input.jsx", error: String((e && e.message) || e) }); }
-
-// components/forms/Radio.jsx
-try { (() => {
-function Radio({
-  label,
-  checked,
-  onChange,
-  name,
+/**
+ * Floating pill nav — three or four destinations, centred over the screen.
+ * Active tab is a lighter fill, never a colour.
+ */
+function BottomNav({
+  items,
   value,
-  disabled,
-  style
+  onChange
 }) {
-  return /*#__PURE__*/React.createElement("label", {
-    style: {
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 10,
-      cursor: disabled ? "default" : "pointer",
-      opacity: disabled ? 0.4 : 1,
-      font: "var(--type-body)",
-      color: "var(--text-primary)",
-      ...style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      width: 20,
-      height: 20,
-      flex: "none"
-    }
-  }, /*#__PURE__*/React.createElement("input", {
-    type: "radio",
-    name: name,
-    value: value,
-    checked: checked,
-    disabled: disabled,
-    onChange: () => onChange && onChange(value),
-    style: {
-      position: "absolute",
-      inset: 0,
-      opacity: 0,
-      cursor: "inherit",
-      margin: 0
-    }
-  }), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      inset: 0,
-      borderRadius: "50%",
-      background: "var(--bg-raised)",
-      border: checked ? "6px solid var(--accent)" : "1px solid var(--border-strong)",
-      boxSizing: "border-box",
-      transition: "border var(--dur-fast) var(--ease-out)"
-    }
-  })), label);
-}
-Object.assign(__ds_scope, { Radio });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/forms/Radio.jsx", error: String((e && e.message) || e) }); }
-
-// components/forms/Select.jsx
-try { (() => {
-function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
-const {
-  useState
-} = React;
-function Select({
-  label,
-  options = [],
-  size = "md",
-  style,
-  ...rest
-}) {
-  const [foc, setFoc] = useState(false);
-  const h = size === "sm" ? "var(--control-h-sm)" : "var(--control-h-md)";
-  return /*#__PURE__*/React.createElement("label", {
+  return /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
-      flexDirection: "column",
-      gap: 6,
-      font: "var(--type-label)",
-      color: "var(--text-muted)",
-      letterSpacing: "var(--tracking-caps)",
-      textTransform: "uppercase",
-      ...style
+      justifyContent: "center"
     }
-  }, label, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      display: "flex"
-    }
-  }, /*#__PURE__*/React.createElement("select", _extends({
-    onFocus: () => setFoc(true),
-    onBlur: () => setFoc(false),
-    style: {
-      appearance: "none",
-      width: "100%",
-      height: h,
-      padding: "0 36px 0 12px",
-      borderRadius: "var(--radius-md)",
-      background: "var(--bg-raised)",
-      border: `1px solid ${foc ? "var(--border-focus)" : "var(--border-strong)"}`,
-      boxShadow: foc ? "var(--glow-accent)" : "none",
-      color: "var(--text-primary)",
-      font: "var(--type-body)",
-      letterSpacing: 0,
-      textTransform: "none",
-      cursor: "pointer"
-    }
-  }, rest), options.map(o => {
-    const v = typeof o === "string" ? {
-      value: o,
-      label: o
-    } : o;
-    return /*#__PURE__*/React.createElement("option", {
-      key: v.value,
-      value: v.value
-    }, v.label);
-  })), /*#__PURE__*/React.createElement("svg", {
-    style: {
-      position: "absolute",
-      right: 12,
-      top: "50%",
-      marginTop: -8,
-      pointerEvents: "none",
-      color: "var(--text-muted)"
-    },
-    width: "16",
-    height: "16",
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: "1.75",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "m6 9 6 6 6-6"
-  }))));
+  }, /*#__PURE__*/React.createElement("nav", {
+    className: "s-bottomnav"
+  }, items.map(item => {
+    const active = item.value === value;
+    return /*#__PURE__*/React.createElement("button", {
+      key: item.value,
+      type: "button",
+      onClick: () => onChange && onChange(item.value),
+      "aria-current": active ? "page" : undefined,
+      className: ["s-bottomnav__btn", active ? "is-active" : ""].filter(Boolean).join(" ")
+    }, item.icon, /*#__PURE__*/React.createElement("span", {
+      className: "s-bottomnav__label"
+    }, item.label));
+  })));
 }
-Object.assign(__ds_scope, { Select });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/forms/Select.jsx", error: String((e && e.message) || e) }); }
-
-// components/forms/Switch.jsx
-try { (() => {
-function Switch({
-  label,
-  checked,
-  onChange,
-  disabled,
-  style
-}) {
-  return /*#__PURE__*/React.createElement("label", {
-    style: {
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 10,
-      cursor: disabled ? "default" : "pointer",
-      opacity: disabled ? 0.4 : 1,
-      font: "var(--type-body)",
-      color: "var(--text-primary)",
-      ...style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      width: 40,
-      height: 24,
-      flex: "none"
-    }
-  }, /*#__PURE__*/React.createElement("input", {
-    type: "checkbox",
-    role: "switch",
-    checked: checked,
-    disabled: disabled,
-    onChange: e => onChange && onChange(e.target.checked),
-    style: {
-      position: "absolute",
-      inset: 0,
-      opacity: 0,
-      cursor: "inherit",
-      margin: 0
-    }
-  }), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      inset: 0,
-      borderRadius: "var(--radius-pill)",
-      background: checked ? "var(--accent)" : "var(--ink-700)",
-      border: "1px solid " + (checked ? "var(--accent)" : "var(--border-strong)"),
-      transition: "background var(--dur-med) var(--ease-out)"
-    }
-  }), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      top: 3,
-      left: checked ? 19 : 3,
-      width: 18,
-      height: 18,
-      borderRadius: "50%",
-      background: checked ? "var(--ink-950)" : "var(--bone-300)",
-      transition: "left var(--dur-med) var(--ease-out)"
-    }
-  })), label);
-}
-Object.assign(__ds_scope, { Switch });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/forms/Switch.jsx", error: String((e && e.message) || e) }); }
+Object.assign(__ds_scope, { BottomNav });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/navigation/BottomNav.jsx", error: String((e && e.message) || e) }); }
 
 // components/navigation/SegmentedControl.jsx
 try { (() => {
+/** Two or three equal views. Active segment is a solid inverted fill. */
 function SegmentedControl({
-  items = [],
+  items,
   value,
-  onChange,
-  full,
-  style
+  onChange
 }) {
   return /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: full ? "flex" : "inline-flex",
-      background: "var(--bg-raised)",
-      border: "1px solid var(--border-subtle)",
-      borderRadius: "var(--radius-md)",
-      padding: 3,
-      gap: 2,
-      ...style
-    }
-  }, items.map(it => {
-    const t = typeof it === "string" ? {
-      value: it,
-      label: it
-    } : it;
-    const on = t.value === value;
+    className: "s-seg",
+    role: "group"
+  }, items.map(item => {
+    const v = typeof item === "string" ? item : item.value;
+    const label = typeof item === "string" ? item : item.label;
     return /*#__PURE__*/React.createElement("button", {
-      key: t.value,
-      onClick: () => onChange && onChange(t.value),
-      style: {
-        all: "unset",
-        cursor: "pointer",
-        flex: full ? 1 : "none",
-        textAlign: "center",
-        padding: "7px 14px",
-        borderRadius: "calc(var(--radius-md) - 3px)",
-        font: "var(--type-body-strong)",
-        fontSize: "var(--text-sm)",
-        color: on ? "var(--text-primary)" : "var(--text-muted)",
-        background: on ? "var(--surface-active)" : "transparent",
-        boxShadow: on ? "inset 0 1px 0 rgba(243,241,236,0.05)" : "none",
-        transition: "background var(--dur-fast) var(--ease-out)"
-      }
-    }, t.label);
+      key: v,
+      type: "button",
+      onClick: () => onChange && onChange(v),
+      className: ["s-seg__btn", v === value ? "is-active" : ""].filter(Boolean).join(" ")
+    }, label);
   }));
 }
 Object.assign(__ds_scope, { SegmentedControl });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/navigation/SegmentedControl.jsx", error: String((e && e.message) || e) }); }
 
-// components/navigation/Tabs.jsx
+// components/navigation/TopBar.jsx
 try { (() => {
-function Tabs({
-  items = [],
-  value,
-  onChange,
-  style
+/** 56px screen bar: left action, centre title, right action. No borders. */
+function TopBar({
+  left,
+  title,
+  right
 }) {
   return /*#__PURE__*/React.createElement("div", {
-    role: "tablist",
+    className: "s-topbar"
+  }, /*#__PURE__*/React.createElement("span", {
     style: {
+      flex: 1,
       display: "flex",
-      gap: 4,
-      borderBottom: "1px solid var(--border-subtle)",
-      ...style
+      justifyContent: "flex-start",
+      minWidth: 0
     }
-  }, items.map(it => {
-    const t = typeof it === "string" ? {
-      value: it,
-      label: it
-    } : it;
-    const on = t.value === value;
-    return /*#__PURE__*/React.createElement("button", {
-      key: t.value,
-      role: "tab",
-      "aria-selected": on,
-      onClick: () => onChange && onChange(t.value),
-      style: {
-        all: "unset",
-        cursor: "pointer",
-        padding: "10px 14px",
-        font: "var(--type-body-strong)",
-        fontSize: "var(--text-sm)",
-        color: on ? "var(--text-primary)" : "var(--text-muted)",
-        borderBottom: on ? "2px solid var(--accent)" : "2px solid transparent",
-        marginBottom: -1,
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        transition: "color var(--dur-fast) var(--ease-out)"
-      }
-    }, t.label, t.count != null && /*#__PURE__*/React.createElement("span", {
-      style: {
-        font: "var(--type-mono-sm)",
-        color: "var(--text-faint)"
-      }
-    }, t.count));
-  }));
+  }, left), title ? /*#__PURE__*/React.createElement("span", {
+    className: "s-topbar__title"
+  }, title) : null, /*#__PURE__*/React.createElement("span", {
+    style: {
+      flex: 1,
+      display: "flex",
+      justifyContent: "flex-end",
+      gap: 8,
+      minWidth: 0
+    }
+  }, right));
 }
-Object.assign(__ds_scope, { Tabs });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/navigation/Tabs.jsx", error: String((e && e.message) || e) }); }
+Object.assign(__ds_scope, { TopBar });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/navigation/TopBar.jsx", error: String((e && e.message) || e) }); }
+
+// components/session/ExerciseBlock.jsx
+try { (() => {
+/**
+ * One exercise inside a workout: mono caps name, delete affordance, a stack of
+ * SetRows, then "+ Add set". Separated from the next block by a hairline.
+ */
+function ExerciseBlock({
+  name,
+  action,
+  children,
+  onAddSet,
+  addLabel = "+ Dodaj serię"
+}) {
+  return /*#__PURE__*/React.createElement("section", {
+    className: "s-exercise"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "s-exercise__head"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "s-exercise__name"
+  }, name), action), children, onAddSet ? /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "s-addset",
+    onClick: onAddSet
+  }, addLabel) : null);
+}
+Object.assign(__ds_scope, { ExerciseBlock });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/session/ExerciseBlock.jsx", error: String((e && e.message) || e) }); }
+
+// components/session/SetRow.jsx
+try { (() => {
+/** Column headings for a stack of SetRows. */
+function SetRowHeader({
+  left = "Ciężar (kg)",
+  right = "Powt."
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "s-setgrid s-setgrid--head"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "t-label"
+  }, "Set"), /*#__PURE__*/React.createElement("span", {
+    className: "t-label"
+  }, left), /*#__PURE__*/React.createElement("span", {
+    className: "t-label"
+  }, right), /*#__PURE__*/React.createElement("span", null));
+}
+
+/**
+ * One logged set: number, weight, reps, delete. Four columns, no card, no
+ * borders — the grid is the structure.
+ */
+function SetRow({
+  index,
+  weight,
+  reps,
+  weightSuffix = "kg",
+  repsSuffix = "reps",
+  onWeight,
+  onReps,
+  onDelete
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "s-setgrid",
+    style: {
+      paddingTop: 4,
+      paddingBottom: 4
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "s-setrow__n"
+  }, index), /*#__PURE__*/React.createElement("span", {
+    className: "s-setrow__cell"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Input, {
+    num: true,
+    value: weight,
+    onChange: onWeight,
+    ariaLabel: "ci\u0119\u017Car"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "s-setrow__suffix"
+  }, weightSuffix)), /*#__PURE__*/React.createElement("span", {
+    className: "s-setrow__cell"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Input, {
+    num: true,
+    value: reps,
+    onChange: onReps,
+    ariaLabel: "powt\xF3rzenia"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "s-setrow__suffix"
+  }, repsSuffix)), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "s-setrow__del",
+    onClick: onDelete,
+    "aria-label": "Usu\u0144 seri\u0119"
+  }, /*#__PURE__*/React.createElement("svg", {
+    width: "16",
+    height: "16",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "1.5",
+    "aria-hidden": true
+  }, /*#__PURE__*/React.createElement("circle", {
+    cx: "12",
+    cy: "12",
+    r: "9"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M15 9l-6 6M9 9l6 6"
+  }))));
+}
+Object.assign(__ds_scope, { SetRowHeader, SetRow });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/session/SetRow.jsx", error: String((e && e.message) || e) }); }
 
 // ui_kits/client_app/ProgressScreen.jsx
 try { (() => {
+const {
+  Card,
+  SectionLabel,
+  StatTile,
+  Marker,
+  Pill,
+  PillRow,
+  Button,
+  LineChart
+} = window.WorkoutAlchemistDesignSystem_381a04;
 function ProgressScreen() {
-  const {
-    Card,
-    StatBlock,
-    Badge,
-    Icon,
-    SegmentedControl
-  } = window.WorkoutAlchemistDesignSystem_5f0610;
-  const [range, setRange] = React.useState("Month");
-  const bars = [42, 55, 48, 61, 58, 70, 66, 74];
+  const a = window.APP;
+  const [group, setGroup] = React.useState("Klatka");
+  const list = a.exercisesByGroup[group];
+  const [exercise, setExercise] = React.useState(list[0]);
+  const s = a.series[exercise] || a.series["Bench Press"];
+  const pickGroup = g => {
+    setGroup(g);
+    setExercise(a.exercisesByGroup[g][0]);
+  };
   return /*#__PURE__*/React.createElement("div", {
     style: {
-      padding: "16px 20px 24px"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      alignItems: "center",
-      marginBottom: 18
+      padding: "28px var(--gutter) 140px"
     }
   }, /*#__PURE__*/React.createElement("h1", {
+    className: "t-title",
     style: {
-      font: "var(--type-h2)",
-      margin: 0,
-      flex: 1
+      margin: 0
     }
-  }, "Progress"), /*#__PURE__*/React.createElement(SegmentedControl, {
-    items: ["Week", "Month", "Year"],
-    value: range,
-    onChange: setRange
-  })), /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Bench press \xB7 top set",
-    title: ""
-  }, /*#__PURE__*/React.createElement("div", {
+  }, "Progres"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 20
+    }
+  }, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionLabel, {
+    action: /*#__PURE__*/React.createElement(Button, {
+      variant: "plain",
+      size: "sm"
+    }, "Edytuj")
+  }, "Cia\u0142o"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
-      alignItems: "baseline",
-      gap: 8
+      justifyContent: "space-between",
+      gap: 12,
+      marginTop: 6
+    }
+  }, /*#__PURE__*/React.createElement(StatTile, {
+    value: a.body.weight,
+    unit: "kg",
+    label: "Waga",
+    delta: "-1,2 kg",
+    deltaTone: "gain"
+  }), /*#__PURE__*/React.createElement(StatTile, {
+    value: a.body.height,
+    unit: "cm",
+    label: "Wzrost"
+  }), /*#__PURE__*/React.createElement(StatTile, {
+    value: a.body.bmi,
+    label: "BMI",
+    delta: "-0,3",
+    deltaTone: "gain"
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 6,
+      marginTop: 16,
+      flexWrap: "wrap"
     }
   }, /*#__PURE__*/React.createElement("span", {
+    className: "s-pill",
     style: {
-      font: "var(--type-stat-lg)",
-      color: "var(--pr)"
+      pointerEvents: "none"
     }
-  }, "62.5"), /*#__PURE__*/React.createElement("span", {
+  }, a.body.sex), /*#__PURE__*/React.createElement("span", {
+    className: "s-pill",
     style: {
-      font: "var(--type-mono-sm)",
-      color: "var(--text-muted)"
+      pointerEvents: "none"
     }
-  }, "kg"), /*#__PURE__*/React.createElement("span", {
+  }, a.body.units), /*#__PURE__*/React.createElement("span", {
+    className: "s-pill",
     style: {
-      font: "var(--type-mono-sm)",
-      color: "var(--positive)",
-      marginLeft: "auto"
+      pointerEvents: "none"
     }
-  }, "+12% this ", range.toLowerCase())), /*#__PURE__*/React.createElement("div", {
+  }, "Cel: ", a.body.goal)))), /*#__PURE__*/React.createElement("div", {
     style: {
-      display: "flex",
-      alignItems: "flex-end",
-      gap: 6,
-      height: 72,
-      marginTop: 16
-    }
-  }, bars.map((h, i) => /*#__PURE__*/React.createElement("div", {
-    key: i,
-    style: {
-      flex: 1,
-      height: h + "%",
-      borderRadius: "4px 4px 0 0",
-      background: i === bars.length - 1 ? "var(--pr)" : "var(--ink-700)"
-    }
-  })))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 12,
-      marginTop: 12
-    }
-  }, /*#__PURE__*/React.createElement(Card, {
-    style: {
-      flex: 1,
-      padding: 16
-    }
-  }, /*#__PURE__*/React.createElement(StatBlock, {
-    label: "Volume",
-    value: "48.2k",
-    unit: "kg",
-    delta: "+8%"
-  })), /*#__PURE__*/React.createElement(Card, {
-    style: {
-      flex: 1,
-      padding: 16
-    }
-  }, /*#__PURE__*/React.createElement(StatBlock, {
-    label: "Sessions",
-    value: "14",
-    delta: "+2"
-  })), /*#__PURE__*/React.createElement(Card, {
-    style: {
-      flex: 1,
-      padding: 16
-    }
-  }, /*#__PURE__*/React.createElement(StatBlock, {
-    label: "PRs",
-    value: "3"
-  }))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      font: "var(--type-label)",
-      color: "var(--text-muted)",
-      letterSpacing: "var(--tracking-caps)",
-      textTransform: "uppercase",
-      margin: "20px 0 10px"
-    }
-  }, "History"), /*#__PURE__*/React.createElement("div", {
-    style: {
+      marginTop: 24,
       display: "flex",
       flexDirection: "column",
       gap: 8
     }
-  }, window.WAAppData.history.map((h, i) => /*#__PURE__*/React.createElement("div", {
-    key: i,
+  }, /*#__PURE__*/React.createElement(PillRow, null, a.groups.map(g => /*#__PURE__*/React.createElement(Pill, {
+    key: g,
+    active: g === group,
+    onClick: () => pickGroup(g)
+  }, g))), /*#__PURE__*/React.createElement(PillRow, null, list.map(e => /*#__PURE__*/React.createElement(Pill, {
+    key: e,
+    text: true,
+    active: e === exercise,
+    onClick: () => setExercise(e)
+  }, e)))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       alignItems: "center",
+      justifyContent: "space-between",
       gap: 12,
-      padding: "12px 14px",
-      background: "var(--surface-card)",
-      border: "1px solid var(--border-subtle)",
-      borderRadius: "var(--radius-md)"
+      marginTop: 22
     }
   }, /*#__PURE__*/React.createElement("span", {
+    className: "t-label"
+  }, "1RM \xB7 6 tygodni"), /*#__PURE__*/React.createElement(Marker, {
+    tone: s.points[s.points.length - 1] >= s.points[0] ? "gain" : "loss"
+  }, s.points[s.points.length - 1] >= s.points[0] ? "+" : "", Math.round((s.points[s.points.length - 1] - s.points[0]) / s.points[0] * 100), "%")), /*#__PURE__*/React.createElement("div", {
     style: {
-      font: "var(--type-label)",
-      color: "var(--text-faint)",
-      width: 30
+      marginTop: 10
     }
-  }, h.d), /*#__PURE__*/React.createElement("span", {
+  }, /*#__PURE__*/React.createElement(LineChart, {
+    points: s.points,
+    labels: s.labels,
+    height: 190
+  })), /*#__PURE__*/React.createElement("div", {
     style: {
-      font: "var(--type-body-strong)",
-      fontSize: "var(--text-sm)",
-      flex: 1
+      display: "flex",
+      justifyContent: "space-between",
+      gap: 12,
+      marginTop: 28
     }
-  }, h.t), /*#__PURE__*/React.createElement("span", {
-    style: {
-      font: "var(--type-mono-sm)",
-      fontSize: "var(--text-xs)",
-      color: "var(--text-muted)"
-    }
-  }, h.m), h.pr && /*#__PURE__*/React.createElement(Badge, {
-    tone: "pr"
-  }, "PR"), /*#__PURE__*/React.createElement(Icon, {
-    name: "chevron-right",
-    size: 14,
-    style: {
-      color: "var(--text-faint)"
-    }
-  })))));
+  }, /*#__PURE__*/React.createElement(StatTile, {
+    value: s.best,
+    unit: "kg",
+    label: "Rekord",
+    tone: "pr",
+    center: true
+  }), /*#__PURE__*/React.createElement(StatTile, {
+    value: s.sessions,
+    label: "Sesje",
+    center: true
+  }), /*#__PURE__*/React.createElement(StatTile, {
+    value: s.volume,
+    unit: "kg",
+    label: "Najlepsza obj\u0119to\u015B\u0107",
+    center: true,
+    delta: "+8%"
+  })));
 }
-window.WAProgressScreen = ProgressScreen;
+Object.assign(window, {
+  ProgressScreen
+});
 })(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/client_app/ProgressScreen.jsx", error: String((e && e.message) || e) }); }
 
-// ui_kits/client_app/TodayScreen.jsx
+// ui_kits/client_app/SettingsScreen.jsx
 try { (() => {
-function TodayScreen({
-  onStart
+const {
+  Card,
+  SectionLabel,
+  Field,
+  Input,
+  SegmentedControl,
+  Switch,
+  ListRow,
+  Icon,
+  Wordmark,
+  Divider
+} = window.WorkoutAlchemistDesignSystem_381a04;
+function SettingsScreen({
+  theme,
+  onTheme
 }) {
-  const {
-    Button,
-    Badge,
-    Card,
-    Icon,
-    ProgressRing
-  } = window.WorkoutAlchemistDesignSystem_5f0610;
-  const w = window.WAAppData.workout;
+  const a = window.APP;
+  const [sex, setSex] = React.useState("Mężczyzna");
+  const [units, setUnits] = React.useState("Metryczny");
+  const [rest, setRest] = React.useState(true);
   return /*#__PURE__*/React.createElement("div", {
     style: {
-      padding: "16px 20px 24px"
+      padding: "28px var(--gutter) 140px"
     }
-  }, /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("h1", {
+    className: "t-title",
     style: {
-      display: "flex",
-      alignItems: "center",
-      gap: 12,
-      marginBottom: 22
+      margin: 0
     }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, "Ustawienia"), /*#__PURE__*/React.createElement("div", {
     style: {
-      font: "var(--type-label)",
-      color: "var(--text-muted)",
-      letterSpacing: "var(--tracking-caps)",
-      textTransform: "uppercase"
+      marginTop: 20
     }
-  }, "Thursday \xB7 Week ", w.week), /*#__PURE__*/React.createElement("h1", {
+  }, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionLabel, null, "Profil"), /*#__PURE__*/React.createElement("div", {
     style: {
-      font: "var(--type-h2)",
-      margin: "4px 0 0"
+      marginTop: 4
     }
-  }, "Today")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginLeft: "auto"
-    }
-  }, /*#__PURE__*/React.createElement(ProgressRing, {
-    value: 2 / 3,
-    label: "2/3",
-    sub: "week",
-    size: 56,
-    stroke: 4
-  }))), /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Day " + w.dayNum + " · from Coach Kasia",
-    title: w.label,
-    meta: w.ex.length + " exercises · ~" + w.mins + " min"
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 0,
-      margin: "14px 0 18px"
-    }
-  }, w.ex.map((x, i) => /*#__PURE__*/React.createElement("div", {
-    key: x.name,
-    style: {
-      display: "flex",
-      alignItems: "center",
-      gap: 12,
-      padding: "11px 0",
-      borderBottom: i < w.ex.length - 1 ? "1px solid var(--border-subtle)" : "none"
-    }
-  }, /*#__PURE__*/React.createElement(Icon, {
-    name: "dumbbell",
-    size: 18,
-    style: {
-      color: "var(--text-faint)"
-    }
-  }), /*#__PURE__*/React.createElement("span", {
-    style: {
-      font: "var(--type-body-strong)",
-      fontSize: "var(--text-sm)",
-      flex: 1
-    }
-  }, x.name), /*#__PURE__*/React.createElement("span", {
-    style: {
-      font: "var(--type-mono-sm)",
-      fontSize: "var(--text-xs)",
-      color: "var(--text-muted)"
-    }
-  }, x.target)))), /*#__PURE__*/React.createElement(Button, {
-    full: true,
-    size: "lg",
-    icon: /*#__PURE__*/React.createElement(Icon, {
-      name: "play",
-      size: 20
-    }),
-    onClick: onStart
-  }, "Start workout")), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(SegmentedControl, {
+    value: sex,
+    onChange: setSex,
+    items: ["Mężczyzna", "Kobieta", "Inne"]
+  })), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 12,
       marginTop: 14
     }
-  }, /*#__PURE__*/React.createElement(Card, {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
-      flex: 1,
-      padding: 16
-    },
-    eyebrow: "Streak",
-    title: "9 sessions",
-    meta: "Keep the chain going"
-  }), /*#__PURE__*/React.createElement(Card, {
-    style: {
-      flex: 1,
-      padding: 16
-    },
-    eyebrow: "Last gold",
-    title: "62.5 kg bench"
-  }, /*#__PURE__*/React.createElement(Badge, {
-    tone: "pr",
-    style: {
-      marginTop: 8
+      flex: 1
     }
-  }, "PR"))));
+  }, /*#__PURE__*/React.createElement(Field, {
+    label: "Waga"
+  }, /*#__PURE__*/React.createElement(Input, {
+    num: true,
+    value: a.body.weight,
+    suffix: "kg"
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, /*#__PURE__*/React.createElement(Field, {
+    label: "Wzrost"
+  }, /*#__PURE__*/React.createElement(Input, {
+    num: true,
+    value: a.body.height,
+    suffix: "cm"
+  })))), /*#__PURE__*/React.createElement("p", {
+    className: "t-small",
+    style: {
+      margin: "12px 0 0"
+    }
+  }, "Waga i wzrost trafiaj\u0105 te\u017C do zak\u0142adki Progres."))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 24
+    }
+  }, /*#__PURE__*/React.createElement(SectionLabel, null, "Trening"), /*#__PURE__*/React.createElement(ListRow, {
+    title: "Waga docelowa",
+    sub: a.body.goal,
+    right: /*#__PURE__*/React.createElement(Icon, {
+      name: "caret-right",
+      size: 15,
+      color: "var(--fg-faint)"
+    }),
+    onClick: () => {}
+  }), /*#__PURE__*/React.createElement(ListRow, {
+    title: "Domy\u015Blna przerwa",
+    sub: "90 s",
+    right: /*#__PURE__*/React.createElement(Icon, {
+      name: "caret-right",
+      size: 15,
+      color: "var(--fg-faint)"
+    }),
+    onClick: () => {}
+  }), /*#__PURE__*/React.createElement(ListRow, {
+    title: "Jednostki",
+    right: /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 200
+      }
+    }, /*#__PURE__*/React.createElement(SegmentedControl, {
+      value: units,
+      onChange: setUnits,
+      items: ["Metryczny", "Imperialny"]
+    }))
+  }), /*#__PURE__*/React.createElement(ListRow, {
+    title: "Auto-start przerwy",
+    right: /*#__PURE__*/React.createElement(Switch, {
+      checked: rest,
+      onChange: setRest
+    })
+  }), /*#__PURE__*/React.createElement(ListRow, {
+    title: "Ciemny motyw",
+    right: /*#__PURE__*/React.createElement(Switch, {
+      checked: theme === "dark",
+      onChange: v => onTheme(v ? "dark" : "light")
+    })
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 24
+    }
+  }, /*#__PURE__*/React.createElement(SectionLabel, null, "Dane"), /*#__PURE__*/React.createElement(ListRow, {
+    title: "Eksportuj CSV",
+    right: /*#__PURE__*/React.createElement(Icon, {
+      name: "caret-right",
+      size: 15,
+      color: "var(--fg-faint)"
+    }),
+    onClick: () => {}
+  }), /*#__PURE__*/React.createElement(ListRow, {
+    title: "Usu\u0144 wszystkie dane",
+    right: /*#__PURE__*/React.createElement(Icon, {
+      name: "caret-right",
+      size: 15,
+      color: "var(--fg-faint)"
+    }),
+    onClick: () => {}
+  })), /*#__PURE__*/React.createElement(Divider, {
+    margin: 28
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between"
+    }
+  }, /*#__PURE__*/React.createElement(Wordmark, {
+    size: 11
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "t-label"
+  }, "v1.0.0")));
 }
-window.WATodayScreen = TodayScreen;
-})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/client_app/TodayScreen.jsx", error: String((e && e.message) || e) }); }
+Object.assign(window, {
+  SettingsScreen
+});
+})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/client_app/SettingsScreen.jsx", error: String((e && e.message) || e) }); }
 
 // ui_kits/client_app/WorkoutScreen.jsx
 try { (() => {
+const {
+  TopBar,
+  Button,
+  IconButton,
+  Icon,
+  ExerciseBlock,
+  SetRow,
+  SetRowHeader,
+  Sheet,
+  Input,
+  ListRow
+} = window.WorkoutAlchemistDesignSystem_381a04;
 function WorkoutScreen({
+  onCancel,
   onFinish
 }) {
-  const {
-    Button,
-    Icon,
-    ProgressRing,
-    Badge
-  } = window.WorkoutAlchemistDesignSystem_5f0610;
-  const w = window.WAAppData.workout;
-  const [exi, setExi] = React.useState(0);
-  const [done, setDone] = React.useState(w.ex.map(x => x.sets.map(() => false)));
-  const [rest, setRest] = React.useState(0);
-  React.useEffect(() => {
-    if (rest <= 0) return;
-    const t = setTimeout(() => setRest(rest - 1), 1000);
-    return () => clearTimeout(t);
-  }, [rest]);
-  const x = w.ex[exi];
-  const total = w.ex.reduce((a, e) => a + e.sets.length, 0);
-  const nDone = done.flat().filter(Boolean).length;
-  const toggle = si => {
-    const was = done[exi][si];
-    setDone(done.map((d, i) => i === exi ? d.map((v, j) => j === si ? !v : v) : d));
-    if (!was) setRest(x.rest);
-  };
-  const fmt = s => String(Math.floor(s / 60)) + ":" + String(s % 60).padStart(2, "0");
+  const src = window.APP.session;
+  const [exercises, setExercises] = React.useState(() => JSON.parse(JSON.stringify(src.exercises)));
+  const [picker, setPicker] = React.useState(false);
+  const [search, setSearch] = React.useState("");
+  const [confirm, setConfirm] = React.useState(false);
+  const patch = (ei, si, key, v) => setExercises(xs => xs.map((e, i) => i === ei ? {
+    ...e,
+    sets: e.sets.map((s, j) => j === si ? {
+      ...s,
+      [key]: v
+    } : s)
+  } : e));
+  const addSet = ei => setExercises(xs => xs.map((e, i) => i === ei ? {
+    ...e,
+    sets: [...e.sets, {
+      w: e.bodyweight ? "BW" : "",
+      r: ""
+    }]
+  } : e));
+  const delSet = (ei, si) => setExercises(xs => xs.map((e, i) => i === ei ? {
+    ...e,
+    sets: e.sets.filter((_, j) => j !== si)
+  } : e));
+  const library = src.library.filter(e => e.name.toLowerCase().includes(search.toLowerCase()));
+  const totalSets = exercises.reduce((n, e) => n + e.sets.length, 0);
   return /*#__PURE__*/React.createElement("div", {
     style: {
+      height: "100%",
       display: "flex",
-      flexDirection: "column",
-      minHeight: "100%"
+      flexDirection: "column"
+    }
+  }, /*#__PURE__*/React.createElement(TopBar, {
+    left: /*#__PURE__*/React.createElement(Button, {
+      variant: "plain",
+      size: "sm",
+      onClick: () => setConfirm(true)
+    }, "Anuluj"),
+    title: "Trening",
+    right: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Button, {
+      variant: "plain",
+      size: "sm"
+    }, "Zapisz"), /*#__PURE__*/React.createElement(Button, {
+      caps: true,
+      size: "sm",
+      onClick: onFinish
+    }, "Finish"))
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      overflowY: "auto",
+      padding: "4px var(--gutter) 40px"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       alignItems: "center",
-      gap: 10,
-      padding: "14px 20px",
-      borderBottom: "1px solid var(--border-subtle)",
-      position: "sticky",
-      top: 0,
-      background: "rgba(11,12,10,0.8)",
-      backdropFilter: "blur(12px)",
-      zIndex: 10
+      justifyContent: "space-between",
+      paddingBottom: 4
     }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: onFinish,
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "t-label"
+  }, src.date), /*#__PURE__*/React.createElement("span", {
+    className: "t-label"
+  }, totalSets, " serii")), exercises.map((ex, ei) => /*#__PURE__*/React.createElement(ExerciseBlock, {
+    key: ei,
+    name: ex.name,
+    action: /*#__PURE__*/React.createElement(IconButton, {
+      title: "Usu\u0144 \u0107wiczenie",
+      size: "sm",
+      onClick: () => setExercises(xs => xs.filter((_, i) => i !== ei))
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: "trash",
+      size: 14
+    })),
+    onAddSet: () => addSet(ei)
+  }, /*#__PURE__*/React.createElement(SetRowHeader, {
+    left: ex.bodyweight ? "Ciężar" : "Ciężar (kg)",
+    right: "Powt."
+  }), ex.sets.map((s, si) => /*#__PURE__*/React.createElement(SetRow, {
+    key: si,
+    index: si + 1,
+    weight: s.w,
+    reps: s.r,
+    weightSuffix: ex.bodyweight ? "BW" : "kg",
+    onWeight: v => patch(ei, si, "w", v),
+    onReps: v => patch(ei, si, "r", v),
+    onDelete: () => delSet(ei, si)
+  })))), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "s-addset",
     style: {
-      all: "unset",
-      cursor: "pointer",
-      color: "var(--text-muted)",
-      display: "flex"
-    }
-  }, /*#__PURE__*/React.createElement(Icon, {
-    name: "chevron-down",
-    size: 22
-  })), /*#__PURE__*/React.createElement("div", {
+      paddingTop: 20
+    },
+    onClick: () => setPicker(true)
+  }, "+ Dodaj \u0107wiczenie")), /*#__PURE__*/React.createElement(Sheet, {
+    open: picker,
+    onClose: () => setPicker(false),
+    title: "Dodaj \u0107wiczenie"
+  }, /*#__PURE__*/React.createElement(Input, {
+    value: search,
+    onChange: setSearch,
+    placeholder: "Szukaj\u2026"
+  }), /*#__PURE__*/React.createElement("div", {
     style: {
-      flex: 1
+      marginTop: 8,
+      maxHeight: 260,
+      overflowY: "auto"
     }
-  }, /*#__PURE__*/React.createElement("div", {
+  }, library.map(e => /*#__PURE__*/React.createElement(ListRow, {
+    key: e.name,
+    title: e.name,
+    sub: e.group,
+    right: /*#__PURE__*/React.createElement(Icon, {
+      name: "plus",
+      size: 15,
+      color: "var(--fg-faint)"
+    }),
+    onClick: () => {
+      setExercises(xs => [...xs, {
+        name: e.name,
+        bodyweight: false,
+        sets: [{
+          w: "",
+          r: ""
+        }]
+      }]);
+      setPicker(false);
+      setSearch("");
+    }
+  })))), /*#__PURE__*/React.createElement(Sheet, {
+    center: true,
+    open: confirm,
+    onClose: () => setConfirm(false),
+    title: "Odrzuci\u0107 trening?",
+    footer: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Button, {
+      variant: "outline",
+      full: true,
+      onClick: () => setConfirm(false)
+    }, "Wr\xF3\u0107"), /*#__PURE__*/React.createElement(Button, {
+      variant: "danger",
+      full: true,
+      onClick: onCancel
+    }, "Odrzu\u0107"))
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "t-small",
     style: {
-      font: "var(--type-body-strong)",
-      fontSize: "var(--text-sm)"
+      margin: 0
     }
-  }, w.label), /*#__PURE__*/React.createElement("div", {
-    style: {
-      font: "var(--type-mono-sm)",
-      fontSize: "var(--text-xs)",
-      color: "var(--text-faint)"
-    }
-  }, nDone, "/", total, " sets")), rest > 0 ? /*#__PURE__*/React.createElement(ProgressRing, {
-    value: rest / x.rest,
-    color: "var(--teal-300)",
-    label: fmt(rest),
-    size: 46,
-    stroke: 4
-  }) : /*#__PURE__*/React.createElement(Badge, {
-    tone: "positive"
-  }, "Live")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: "18px 20px",
-      flex: 1
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      font: "var(--type-label)",
-      color: "var(--text-muted)",
-      letterSpacing: "var(--tracking-caps)",
-      textTransform: "uppercase"
-    }
-  }, "Exercise ", exi + 1, " of ", w.ex.length), /*#__PURE__*/React.createElement("h2", {
-    style: {
-      font: "var(--type-h2)",
-      margin: "4px 0 2px"
-    }
-  }, x.name), /*#__PURE__*/React.createElement("div", {
-    style: {
-      font: "var(--type-mono-sm)",
-      color: "var(--accent)",
-      marginBottom: 16
-    }
-  }, x.target, " \xB7 rest ", fmt(x.rest)), /*#__PURE__*/React.createElement("div", {
+  }, "Serie z tej sesji nie zostan\u0105 zapisane.")));
+}
+Object.assign(window, {
+  WorkoutScreen
+});
+})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/client_app/WorkoutScreen.jsx", error: String((e && e.message) || e) }); }
+
+// ui_kits/client_app/WorkoutsScreen.jsx
+try { (() => {
+const {
+  Card,
+  SectionLabel,
+  ListRow,
+  StatTile,
+  Marker,
+  Button,
+  IconButton,
+  Icon,
+  LineChart
+} = window.WorkoutAlchemistDesignSystem_381a04;
+const WD = ["Pn", "Wt", "Śr", "Cz", "Pt", "Sb", "Nd"];
+const nf = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, "\u2009");
+function MonthGrid() {
+  const a = window.APP;
+  const cells = [];
+  for (let i = 0; i < a.firstWeekday; i++) cells.push(null);
+  for (let d = 1; d <= a.monthDays; d++) cells.push(d);
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
-      flexDirection: "column",
-      gap: 8
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingBottom: 12
     }
-  }, x.sets.map((s, si) => {
-    const on = done[exi][si];
-    return /*#__PURE__*/React.createElement("button", {
-      key: si,
-      onClick: () => toggle(si),
-      style: {
-        all: "unset",
-        cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        gap: 14,
-        minHeight: 44,
-        padding: "10px 14px",
-        borderRadius: "var(--radius-md)",
-        background: on ? "var(--positive-dim)" : "var(--surface-card)",
-        border: "1px solid " + (on ? "var(--teal-700)" : "var(--border-subtle)"),
-        transition: "background var(--dur-fast) var(--ease-out)"
-      }
-    }, /*#__PURE__*/React.createElement("span", {
-      style: {
-        font: "var(--type-label)",
-        color: "var(--text-faint)",
-        letterSpacing: "var(--tracking-caps)",
-        width: 40
-      }
-    }, "SET ", si + 1), /*#__PURE__*/React.createElement("span", {
-      style: {
-        font: "var(--type-stat)",
-        fontSize: 20
-      }
-    }, s.w, /*#__PURE__*/React.createElement("span", {
-      style: {
-        font: "var(--type-mono-sm)",
-        color: "var(--text-muted)"
-      }
-    }, " kg")), /*#__PURE__*/React.createElement("span", {
-      style: {
-        font: "var(--type-stat)",
-        fontSize: 20
-      }
-    }, s.r, /*#__PURE__*/React.createElement("span", {
-      style: {
-        font: "var(--type-mono-sm)",
-        color: "var(--text-muted)"
-      }
-    }, " reps")), /*#__PURE__*/React.createElement("span", {
-      style: {
-        marginLeft: "auto",
-        width: 26,
-        height: 26,
-        borderRadius: "50%",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: on ? "var(--teal-300)" : "var(--ink-700)",
-        color: on ? "var(--ink-950)" : "var(--text-faint)"
-      }
-    }, /*#__PURE__*/React.createElement(Icon, {
-      name: "check",
-      size: 16
-    })));
+  }, /*#__PURE__*/React.createElement(IconButton, {
+    title: "Poprzedni miesi\u0105c",
+    size: "sm"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "caret-left",
+    size: 15
+  })), /*#__PURE__*/React.createElement("span", {
+    className: "t-label"
+  }, a.month), /*#__PURE__*/React.createElement(IconButton, {
+    title: "Nast\u0119pny miesi\u0105c",
+    size: "sm"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "caret-right",
+    size: 15
   }))), /*#__PURE__*/React.createElement("div", {
     style: {
-      display: "flex",
-      gap: 10,
-      padding: "14px 20px 24px",
-      position: "sticky",
-      bottom: 0,
-      background: "rgba(11,12,10,0.8)",
-      backdropFilter: "blur(12px)",
-      borderTop: "1px solid var(--border-subtle)"
+      display: "grid",
+      gridTemplateColumns: "repeat(7,1fr)",
+      gap: 2
     }
-  }, /*#__PURE__*/React.createElement(Button, {
-    variant: "secondary",
-    full: true,
-    disabled: exi === 0,
-    onClick: () => setExi(exi - 1),
-    icon: /*#__PURE__*/React.createElement(Icon, {
-      name: "arrow-left",
-      size: 18
-    })
-  }, "Back"), exi < w.ex.length - 1 ? /*#__PURE__*/React.createElement(Button, {
-    full: true,
-    onClick: () => setExi(exi + 1),
-    icon: /*#__PURE__*/React.createElement(Icon, {
-      name: "arrow-right",
-      size: 18
-    })
-  }, "Next exercise") : /*#__PURE__*/React.createElement(Button, {
-    full: true,
-    onClick: onFinish,
-    icon: /*#__PURE__*/React.createElement(Icon, {
-      name: "check",
-      size: 18
-    })
-  }, "Finish workout")));
+  }, WD.map(w => /*#__PURE__*/React.createElement("span", {
+    key: w,
+    className: "t-label",
+    style: {
+      textAlign: "center",
+      paddingBottom: 6
+    }
+  }, w)), cells.map((d, i) => {
+    if (!d) return /*#__PURE__*/React.createElement("span", {
+      key: `e${i}`
+    });
+    const trained = a.trainedDays.includes(d);
+    const isToday = d === a.today;
+    return /*#__PURE__*/React.createElement("span", {
+      key: d,
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 3,
+        padding: "6px 0"
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "t-num",
+      style: {
+        fontSize: 13,
+        fontWeight: isToday || trained ? 700 : 400,
+        color: isToday || trained ? "var(--fg)" : "var(--fg-faint)"
+      }
+    }, d), /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 5,
+        height: 5,
+        borderRadius: 999,
+        background: trained ? "var(--fg)" : "transparent",
+        border: isToday && !trained ? "1px solid var(--fg-faint)" : "1px solid transparent"
+      }
+    }));
+  })));
 }
-window.WAWorkoutScreen = WorkoutScreen;
-})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/client_app/WorkoutScreen.jsx", error: String((e && e.message) || e) }); }
+function WorkoutsScreen({
+  onOpen,
+  onNew
+}) {
+  const a = window.APP;
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "28px var(--gutter) 140px"
+    }
+  }, /*#__PURE__*/React.createElement("header", null, /*#__PURE__*/React.createElement("h1", {
+    className: "t-title",
+    style: {
+      margin: 0
+    }
+  }, a.greeting), /*#__PURE__*/React.createElement("p", {
+    className: "t-small",
+    style: {
+      margin: "4px 0 0"
+    }
+  }, a.sub)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 24
+    }
+  }, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(MonthGrid, null))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 32
+    }
+  }, /*#__PURE__*/React.createElement(SectionLabel, {
+    action: /*#__PURE__*/React.createElement(Button, {
+      variant: "plain",
+      size: "sm",
+      onClick: onNew
+    }, "Nowy")
+  }, "Ostatnie treningi"), a.workouts.map(w => /*#__PURE__*/React.createElement(ListRow, {
+    key: w.id,
+    title: w.name,
+    sub: `${w.date} · ${w.sets} serii · ${nf(w.volume)} kg`,
+    right: /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 10
+      }
+    }, w.best ? /*#__PURE__*/React.createElement(Marker, {
+      tone: "pr"
+    }, "PR") : null, /*#__PURE__*/React.createElement(Icon, {
+      name: "caret-right",
+      size: 15,
+      color: "var(--fg-faint)"
+    })),
+    onClick: () => onOpen(w)
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 32
+    }
+  }, /*#__PURE__*/React.createElement(Card, {
+    flat: true
+  }, /*#__PURE__*/React.createElement(SectionLabel, null, "Ten tydzie\u0144"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      gap: 12,
+      marginTop: 4
+    }
+  }, /*#__PURE__*/React.createElement(StatTile, {
+    value: "3",
+    label: "Treningi",
+    delta: "+1"
+  }), /*#__PURE__*/React.createElement(StatTile, {
+    value: "39",
+    label: "Serie",
+    delta: "+4"
+  }), /*#__PURE__*/React.createElement(StatTile, {
+    value: "13 880",
+    unit: "kg",
+    label: "Obj\u0119to\u015B\u0107",
+    delta: "+8%"
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 14
+    }
+  }, /*#__PURE__*/React.createElement(LineChart, {
+    points: [3200, 3600, 3480, 4200, 4380, 4510, 4820],
+    height: 56,
+    showAxis: false,
+    dots: false
+  })))));
+}
+Object.assign(window, {
+  WorkoutsScreen
+});
+})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/client_app/WorkoutsScreen.jsx", error: String((e && e.message) || e) }); }
 
 // ui_kits/client_app/data.js
 try { (() => {
-window.WAAppData = {
-  workout: {
-    label: "Push day",
-    week: 3,
-    dayNum: 1,
-    mins: 55,
-    ex: [{
-      name: "Bench press",
-      target: "4 × 6 @ 62.5 kg",
-      rest: 150,
+window.APP = {
+  greeting: "Dobry wieczór",
+  sub: "Gotowy na trening?",
+  month: "Marzec 2026",
+  monthDays: 31,
+  firstWeekday: 0,
+  // Monday
+  today: 25,
+  trainedDays: [2, 3, 6, 11, 14, 17, 18, 22, 24],
+  workouts: [{
+    id: 1,
+    name: "Push Day A",
+    date: "25 mar",
+    sets: 12,
+    volume: 4820,
+    best: true
+  }, {
+    id: 2,
+    name: "Pull Day A",
+    date: "23 mar",
+    sets: 15,
+    volume: 3960
+  }, {
+    id: 3,
+    name: "Legs",
+    date: "21 mar",
+    sets: 12,
+    volume: 5100
+  }, {
+    id: 4,
+    name: "Push Day A",
+    date: "18 mar",
+    sets: 12,
+    volume: 4510
+  }, {
+    id: 5,
+    name: "Pull Day A",
+    date: "16 mar",
+    sets: 14,
+    volume: 3840
+  }],
+  session: {
+    date: "Środa, 25 mar 2026",
+    exercises: [{
+      name: "Lat pulldown",
+      bodyweight: false,
       sets: [{
-        w: "62.5",
-        r: "6"
+        w: "60",
+        r: "7"
       }, {
-        w: "62.5",
-        r: "6"
+        w: "60",
+        r: "7"
       }, {
-        w: "62.5",
-        r: "6"
-      }, {
-        w: "62.5",
-        r: "6"
+        w: "60",
+        r: "5"
       }]
     }, {
-      name: "Overhead press",
-      target: "3 × 8 @ 40 kg",
-      rest: 120,
+      name: "Pull-up",
+      bodyweight: true,
       sets: [{
-        w: "40",
+        w: "BW",
         r: "8"
       }, {
-        w: "40",
-        r: "8"
-      }, {
-        w: "40",
+        w: "BW",
         r: "8"
       }]
     }, {
-      name: "Incline DB press",
-      target: "3 × 10 @ 24 kg",
-      rest: 90,
+      name: "Bicep curl",
+      bodyweight: false,
       sets: [{
-        w: "24",
-        r: "10"
+        w: "22,5",
+        r: "6"
       }, {
-        w: "24",
-        r: "10"
-      }, {
-        w: "24",
-        r: "10"
+        w: "22,5",
+        r: "6"
       }]
+    }],
+    library: [{
+      name: "Bench Press",
+      group: "Klatka"
     }, {
-      name: "Lateral raise",
-      target: "3 × 15 @ 8 kg",
-      rest: 60,
-      sets: [{
-        w: "8",
-        r: "15"
-      }, {
-        w: "8",
-        r: "15"
-      }, {
-        w: "8",
-        r: "15"
-      }]
+      name: "Cable Fly",
+      group: "Klatka"
+    }, {
+      name: "Incline Dumbbell Press",
+      group: "Klatka"
+    }, {
+      name: "Barbell Row",
+      group: "Plecy"
+    }, {
+      name: "Squat",
+      group: "Nogi"
+    }, {
+      name: "Deadlift",
+      group: "Nogi"
     }]
   },
-  history: [{
-    d: "Tue",
-    t: "Pull day",
-    m: "52 min · 8 420 kg",
-    pr: false
-  }, {
-    d: "Mon",
-    t: "Push day",
-    m: "58 min · 7 180 kg · PR",
-    pr: true
-  }, {
-    d: "Sat",
-    t: "Leg day",
-    m: "61 min · 11 240 kg",
-    pr: false
-  }, {
-    d: "Thu",
-    t: "Pull day",
-    m: "49 min · 8 105 kg",
-    pr: false
-  }]
+  body: {
+    weight: "85,5",
+    height: "190",
+    bmi: "23,7",
+    sex: "Mężczyzna",
+    units: "Metryczny",
+    goal: "83 kg"
+  },
+  groups: ["Klatka", "Plecy", "Nogi", "Barki", "Ramiona"],
+  exercisesByGroup: {
+    Klatka: ["Bench Press", "Cable Fly", "Incline Dumbbell Press"],
+    Plecy: ["Lat pulldown", "Barbell Row", "Pull-up"],
+    Nogi: ["Squat", "Deadlift", "Leg Press"],
+    Barki: ["Overhead Press", "Lateral Raise"],
+    Ramiona: ["Bicep Curl", "Triceps Pushdown"]
+  },
+  series: {
+    "Bench Press": {
+      points: [48, 52, 66, 72, 68, 80],
+      labels: ["9. mar", "16. mar", "23. mar"],
+      best: "80",
+      sessions: 5,
+      volume: "1 280"
+    },
+    "Cable Fly": {
+      points: [20, 22, 24, 24, 26, 28],
+      labels: ["9. mar", "16. mar", "23. mar"],
+      best: "28",
+      sessions: 4,
+      volume: "620"
+    },
+    "Incline Dumbbell Press": {
+      points: [30, 32, 32, 35, 37, 40],
+      labels: ["9. mar", "16. mar", "23. mar"],
+      best: "40",
+      sessions: 6,
+      volume: "980"
+    },
+    "Lat pulldown": {
+      points: [50, 52, 55, 58, 60, 60],
+      labels: ["9. mar", "16. mar", "23. mar"],
+      best: "60",
+      sessions: 7,
+      volume: "1 140"
+    },
+    "Barbell Row": {
+      points: [40, 42, 45, 45, 48, 50],
+      labels: ["9. mar", "16. mar", "23. mar"],
+      best: "50",
+      sessions: 5,
+      volume: "900"
+    },
+    "Pull-up": {
+      points: [6, 7, 7, 8, 8, 9],
+      labels: ["9. mar", "16. mar", "23. mar"],
+      best: "9",
+      sessions: 6,
+      volume: "—"
+    },
+    Squat: {
+      points: [80, 85, 90, 95, 100, 105],
+      labels: ["9. mar", "16. mar", "23. mar"],
+      best: "105",
+      sessions: 6,
+      volume: "2 040"
+    },
+    Deadlift: {
+      points: [100, 105, 110, 112, 118, 120],
+      labels: ["9. mar", "16. mar", "23. mar"],
+      best: "120",
+      sessions: 4,
+      volume: "1 860"
+    },
+    "Leg Press": {
+      points: [120, 130, 140, 145, 150, 160],
+      labels: ["9. mar", "16. mar", "23. mar"],
+      best: "160",
+      sessions: 5,
+      volume: "3 200"
+    },
+    "Overhead Press": {
+      points: [30, 32, 35, 35, 37, 40],
+      labels: ["9. mar", "16. mar", "23. mar"],
+      best: "40",
+      sessions: 5,
+      volume: "740"
+    },
+    "Lateral Raise": {
+      points: [8, 9, 10, 10, 12, 12],
+      labels: ["9. mar", "16. mar", "23. mar"],
+      best: "12",
+      sessions: 4,
+      volume: "310"
+    },
+    "Bicep Curl": {
+      points: [16, 18, 20, 20, 22, 22.5],
+      labels: ["9. mar", "16. mar", "23. mar"],
+      best: "22,5",
+      sessions: 6,
+      volume: "480"
+    },
+    "Triceps Pushdown": {
+      points: [25, 27, 30, 30, 32, 35],
+      labels: ["9. mar", "16. mar", "23. mar"],
+      best: "35",
+      sessions: 5,
+      volume: "560"
+    }
+  }
 };
 })(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/client_app/data.js", error: String((e && e.message) || e) }); }
 
-// ui_kits/trainer_studio/ClientDetailScreen.jsx
+// ui_kits/trainer_panel/ClientScreen.jsx
 try { (() => {
-function ClientDetailScreen({
-  client,
-  onBack,
-  onEditPlan
-}) {
-  const {
-    Button,
-    Badge,
-    Card,
-    StatBlock,
-    Icon,
-    ProgressRing
-  } = window.WorkoutAlchemistDesignSystem_5f0610;
-  const plan = window.WAData.plan;
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: "28px 32px",
-      maxWidth: 1080
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: onBack,
-    style: {
-      all: "unset",
-      cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      gap: 6,
-      font: "var(--type-caption)",
-      color: "var(--text-muted)",
-      marginBottom: 16
-    }
-  }, /*#__PURE__*/React.createElement(Icon, {
-    name: "arrow-left",
-    size: 16
-  }), " Clients"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      alignItems: "center",
-      gap: 14,
-      marginBottom: 24
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 48,
-      height: 48,
-      borderRadius: "50%",
-      background: "var(--ink-700)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      font: "var(--type-body-strong)",
-      color: "var(--bone-300)"
-    }
-  }, client.initials), /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: 1
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      alignItems: "center",
-      gap: 10
-    }
-  }, /*#__PURE__*/React.createElement("h1", {
-    style: {
-      font: "var(--type-h2)",
-      margin: 0
-    }
-  }, client.name), /*#__PURE__*/React.createElement(Badge, {
-    tone: client.tone
-  }, client.status)), /*#__PURE__*/React.createElement("div", {
-    style: {
-      font: "var(--type-caption)",
-      color: "var(--text-muted)",
-      marginTop: 2
-    }
-  }, client.plan, " \xB7 week 3 of ", plan.weeks)), /*#__PURE__*/React.createElement(Button, {
-    variant: "secondary",
-    icon: /*#__PURE__*/React.createElement(Icon, {
-      name: "message-circle",
-      size: 18
-    })
-  }, "Message"), /*#__PURE__*/React.createElement(Button, {
-    icon: /*#__PURE__*/React.createElement(Icon, {
-      name: "flask-conical",
-      size: 18
-    }),
-    onClick: onEditPlan
-  }, "Edit plan")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr 1fr 1fr",
-      gap: 14,
-      marginBottom: 14
-    }
-  }, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(StatBlock, {
-    label: "Adherence",
-    value: Math.round(client.adherence * 100) + "%",
-    delta: "+4% vs last month"
-  })), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(StatBlock, {
-    label: "Sessions this week",
-    value: "2/3"
-  })), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(StatBlock, {
-    label: "Bench top set",
-    value: "62.5",
-    unit: "kg",
-    delta: "+2.5 vs last week"
-  })), /*#__PURE__*/React.createElement(Card, {
-    style: {
-      display: "flex",
-      alignItems: "center",
-      gap: 16
-    }
-  }, /*#__PURE__*/React.createElement(ProgressRing, {
-    value: 0.68,
-    label: "68%",
-    sub: "plan",
-    size: 72
-  }), /*#__PURE__*/React.createElement("div", {
-    style: {
-      font: "var(--type-caption)",
-      color: "var(--text-muted)"
-    }
-  }, "Week 3 of 6", /*#__PURE__*/React.createElement("br", null), "on schedule"))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "grid",
-      gridTemplateColumns: "1.4fr 1fr",
-      gap: 14
-    }
-  }, /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Current plan",
-    title: plan.name,
-    meta: plan.days.length + " days / week · " + plan.weeks + " weeks"
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 8,
-      marginTop: 14
-    }
-  }, plan.days.map((d, i) => /*#__PURE__*/React.createElement("div", {
-    key: d.label,
-    style: {
-      display: "flex",
-      alignItems: "center",
-      gap: 12,
-      padding: "10px 12px",
-      background: "var(--bg-raised)",
-      borderRadius: "var(--radius-md)",
-      border: "1px solid var(--border-subtle)"
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      font: "var(--type-label)",
-      color: "var(--text-faint)",
-      letterSpacing: "var(--tracking-caps)",
-      width: 44
-    }
-  }, "DAY ", i + 1), /*#__PURE__*/React.createElement("span", {
-    style: {
-      font: "var(--type-body-strong)",
-      flex: 1
-    }
-  }, d.label), /*#__PURE__*/React.createElement("span", {
-    style: {
-      font: "var(--type-mono-sm)",
-      color: "var(--text-muted)"
-    }
-  }, d.ex.length, " exercises"))))), /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Recent activity",
-    title: "Last 7 days"
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      marginTop: 10
-    }
-  }, [["check", "Completed Pull day", "Yesterday · 52 min", "var(--positive)"], ["flame", "PR — bench press 62.5 kg", "Tuesday", "var(--pr)"], ["check", "Completed Push day", "Tuesday · 58 min", "var(--positive)"], ["x", "Skipped Leg day", "Sunday", "var(--danger)"]].map(([ic, t, m, col], i) => /*#__PURE__*/React.createElement("div", {
-    key: i,
-    style: {
-      display: "flex",
-      gap: 12,
-      alignItems: "flex-start",
-      padding: "10px 0",
-      borderBottom: i < 3 ? "1px solid var(--border-subtle)" : "none"
-    }
-  }, /*#__PURE__*/React.createElement(Icon, {
-    name: ic,
-    size: 18,
-    style: {
-      color: col,
-      marginTop: 2
-    }
-  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      font: "var(--type-body)",
-      fontSize: "var(--text-sm)"
-    }
-  }, t), /*#__PURE__*/React.createElement("div", {
-    style: {
-      font: "var(--type-caption)",
-      fontSize: "var(--text-xs)",
-      color: "var(--text-faint)"
-    }
-  }, m))))))));
-}
-window.WAClientDetailScreen = ClientDetailScreen;
-})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/trainer_studio/ClientDetailScreen.jsx", error: String((e && e.message) || e) }); }
-
-// ui_kits/trainer_studio/ClientsScreen.jsx
-try { (() => {
-function ClientsScreen({
-  onOpen
-}) {
-  const {
-    Button,
-    Input,
-    Tabs,
-    Badge,
-    Icon
-  } = window.WorkoutAlchemistDesignSystem_5f0610;
-  const [tab, setTab] = React.useState("active");
-  const [q, setQ] = React.useState("");
-  const rows = window.WAData.clients.filter(c => c.name.toLowerCase().includes(q.toLowerCase()));
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: "28px 32px",
-      maxWidth: 1080
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      alignItems: "center",
-      gap: 16,
-      marginBottom: 20
-    }
-  }, /*#__PURE__*/React.createElement("h1", {
-    style: {
-      font: "var(--type-h1)",
-      margin: 0,
-      flex: 1
-    }
-  }, "Clients"), /*#__PURE__*/React.createElement(Input, {
-    placeholder: "Search clients",
-    value: q,
-    onChange: e => setQ(e.target.value),
-    style: {
-      width: 220
-    }
-  }), /*#__PURE__*/React.createElement(Button, {
-    icon: /*#__PURE__*/React.createElement(Icon, {
-      name: "plus",
-      size: 18
-    })
-  }, "Invite client")), /*#__PURE__*/React.createElement(Tabs, {
-    items: [{
-      value: "active",
-      label: "Active",
-      count: 5
-    }, {
-      value: "pending",
-      label: "Pending",
-      count: 2
-    }, {
-      value: "archived",
-      label: "Archived"
-    }],
-    value: tab,
-    onChange: setTab,
-    style: {
-      marginBottom: 8
-    }
-  }), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "grid",
-      gridTemplateColumns: "minmax(220px,1.4fr) 1.2fr 100px 1fr 1fr 90px 24px",
-      gap: 16,
-      padding: "10px 16px",
-      font: "var(--type-label)",
-      color: "var(--text-faint)",
-      letterSpacing: "var(--tracking-caps)",
-      textTransform: "uppercase"
-    }
-  }, /*#__PURE__*/React.createElement("span", null, "Client"), /*#__PURE__*/React.createElement("span", null, "Plan"), /*#__PURE__*/React.createElement("span", null, "Adherence"), /*#__PURE__*/React.createElement("span", null, "Last session"), /*#__PURE__*/React.createElement("span", null, "Next up"), /*#__PURE__*/React.createElement("span", null, "Status"), /*#__PURE__*/React.createElement("span", null)), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 8
-    }
-  }, rows.map(c => /*#__PURE__*/React.createElement("div", {
-    key: c.id,
-    onClick: () => onOpen(c),
-    className: "wa-row",
-    style: {
-      display: "grid",
-      gridTemplateColumns: "minmax(220px,1.4fr) 1.2fr 100px 1fr 1fr 90px 24px",
-      gap: 16,
-      alignItems: "center",
-      padding: "12px 16px",
-      background: "var(--surface-card)",
-      border: "1px solid var(--border-subtle)",
-      borderRadius: "var(--radius-lg)",
-      boxShadow: "var(--shadow-card)",
-      cursor: "pointer"
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      display: "flex",
-      alignItems: "center",
-      gap: 12
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      width: 34,
-      height: 34,
-      borderRadius: "50%",
-      background: "var(--ink-700)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      font: "var(--type-label)",
-      color: "var(--bone-300)",
-      flex: "none"
-    }
-  }, c.initials), /*#__PURE__*/React.createElement("span", {
-    style: {
-      font: "var(--type-body-strong)"
-    }
-  }, c.name)), /*#__PURE__*/React.createElement("span", {
-    style: {
-      font: "var(--type-caption)",
-      color: c.plan.startsWith("No") ? "var(--text-faint)" : "var(--text-secondary)"
-    }
-  }, c.plan), /*#__PURE__*/React.createElement("span", {
-    style: {
-      font: "var(--type-mono-sm)",
-      color: c.adherence >= 0.85 ? "var(--positive)" : c.adherence >= 0.6 ? "var(--text-secondary)" : c.adherence > 0 ? "var(--danger)" : "var(--text-faint)"
-    }
-  }, c.adherence ? Math.round(c.adherence * 100) + "%" : "—"), /*#__PURE__*/React.createElement("span", {
-    style: {
-      font: "var(--type-caption)",
-      color: "var(--text-muted)"
-    }
-  }, c.last), /*#__PURE__*/React.createElement("span", {
-    style: {
-      font: "var(--type-caption)",
-      color: c.next === "Overdue" ? "var(--danger)" : "var(--text-secondary)"
-    }
-  }, c.next), /*#__PURE__*/React.createElement(Badge, {
-    tone: c.tone
-  }, c.status), /*#__PURE__*/React.createElement(Icon, {
-    name: "chevron-right",
-    size: 16,
-    style: {
-      color: "var(--text-faint)"
-    }
-  })))));
-}
-window.WAClientsScreen = ClientsScreen;
-})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/trainer_studio/ClientsScreen.jsx", error: String((e && e.message) || e) }); }
-
-// ui_kits/trainer_studio/PlanBuilderScreen.jsx
-try { (() => {
-function PlanBuilderScreen({
-  client,
+const {
+  Card,
+  SectionLabel,
+  ListRow,
+  StatTile,
+  Marker,
+  Button,
+  Icon,
+  LineChart,
+  SegmentedControl,
+  Divider
+} = window.WorkoutAlchemistDesignSystem_381a04;
+const nf = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, "\u2009");
+function ClientScreen({
   onBack
 }) {
-  const {
-    Button,
-    Input,
-    Select,
-    Tag,
-    Icon,
-    Dialog,
-    Toast,
-    IconButton
-  } = window.WorkoutAlchemistDesignSystem_5f0610;
-  const [days, setDays] = React.useState(() => JSON.parse(JSON.stringify(window.WAData.plan.days)));
-  const [sel, setSel] = React.useState(0);
-  const [q, setQ] = React.useState("");
-  const [dlg, setDlg] = React.useState(false);
-  const [toast, setToast] = React.useState(false);
-  const lib = window.WAData.library.filter(e => e.name.toLowerCase().includes(q.toLowerCase()));
-  const add = e => setDays(days.map((d, i) => i === sel ? {
-    ...d,
-    ex: [...d.ex, {
-      name: e.name,
-      sets: "3 × 10",
-      load: "— kg",
-      rest: "90s"
-    }]
-  } : d));
-  const remove = (di, xi) => setDays(days.map((d, i) => i === di ? {
-    ...d,
-    ex: d.ex.filter((_, j) => j !== xi)
-  } : d));
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      height: "100%",
-      minHeight: "100vh"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: 1,
-      padding: "28px 32px",
-      overflow: "auto"
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: onBack,
-    style: {
-      all: "unset",
-      cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      gap: 6,
-      font: "var(--type-caption)",
-      color: "var(--text-muted)",
-      marginBottom: 16
-    }
-  }, /*#__PURE__*/React.createElement(Icon, {
-    name: "arrow-left",
-    size: 16
-  }), " ", client.name), /*#__PURE__*/React.createElement("div", {
+  const c = window.PANEL.client;
+  const [tab, setTab] = React.useState("Historia");
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Button, {
+    variant: "plain",
+    size: "sm",
+    onClick: onBack
+  }, "\u2190 Klienci"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       alignItems: "flex-end",
-      gap: 14,
-      marginBottom: 24
+      justifyContent: "space-between",
+      gap: 24,
+      marginTop: 16
     }
-  }, /*#__PURE__*/React.createElement(Input, {
-    label: "Plan name",
-    defaultValue: window.WAData.plan.name,
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 240
+      minWidth: 0
     }
-  }), /*#__PURE__*/React.createElement(Select, {
-    label: "Weeks",
-    options: ["4", "6", "8", "12"],
-    defaultValue: "6",
+  }, /*#__PURE__*/React.createElement("h1", {
+    className: "t-title",
     style: {
-      width: 90
+      margin: 0
     }
-  }), /*#__PURE__*/React.createElement("div", {
+  }, c.name), /*#__PURE__*/React.createElement("p", {
+    className: "t-small",
     style: {
-      flex: 1
+      margin: "4px 0 0"
     }
-  }), /*#__PURE__*/React.createElement(Button, {
-    variant: "secondary",
-    icon: /*#__PURE__*/React.createElement(Icon, {
-      name: "flask-conical",
-      size: 18
-    })
-  }, "Save as formula"), /*#__PURE__*/React.createElement(Button, {
-    icon: /*#__PURE__*/React.createElement(Icon, {
-      name: "send",
-      size: 18
-    }),
-    onClick: () => setDlg(true)
-  }, "Assign to ", client.name.split(" ")[0])), /*#__PURE__*/React.createElement("div", {
+  }, c.email, " \xB7 ", c.goal)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement(Button, {
+    variant: "outline",
+    size: "sm"
+  }, "Skopiuj link"), /*#__PURE__*/React.createElement(Button, {
+    size: "sm"
+  }, "Otw\xF3rz plan"))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "grid",
-      gridTemplateColumns: "repeat(3, 1fr)",
-      gap: 14,
-      alignItems: "start"
+      gridTemplateColumns: "1.5fr 1fr",
+      gap: 16,
+      marginTop: 28
     }
-  }, days.map((d, di) => /*#__PURE__*/React.createElement("div", {
-    key: d.label,
-    onClick: () => setSel(di),
+  }, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionLabel, {
+    action: /*#__PURE__*/React.createElement("span", {
+      className: "t-label"
+    }, c.week)
+  }, "Aktywny plan"), /*#__PURE__*/React.createElement("p", {
+    className: "t-heading",
     style: {
-      background: "var(--surface-card)",
-      border: "1px solid " + (sel === di ? "var(--accent)" : "var(--border-subtle)"),
-      borderRadius: "var(--radius-lg)",
-      boxShadow: "var(--shadow-card)",
-      padding: 14,
-      cursor: "pointer"
+      margin: "6px 0 0"
     }
-  }, /*#__PURE__*/React.createElement("div", {
+  }, c.plan), /*#__PURE__*/React.createElement("p", {
+    className: "t-small",
+    style: {
+      margin: "4px 0 0"
+    }
+  }, "Nast\u0119pny: ", c.next), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 16
+    }
+  }, /*#__PURE__*/React.createElement(LineChart, {
+    points: c.volume,
+    height: 64,
+    showAxis: false,
+    dots: false
+  })), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
-      alignItems: "baseline",
-      gap: 8,
-      marginBottom: 12,
-      padding: "0 4px"
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 12,
+      marginTop: 8
     }
   }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      font: "var(--type-label)",
-      color: "var(--text-faint)",
-      letterSpacing: "var(--tracking-caps)"
-    }
-  }, "DAY ", di + 1), /*#__PURE__*/React.createElement("span", {
-    style: {
-      font: "var(--type-h3)"
-    }
-  }, d.label), /*#__PURE__*/React.createElement("span", {
-    style: {
-      font: "var(--type-mono-sm)",
-      color: "var(--text-faint)",
-      marginLeft: "auto"
-    }
-  }, d.ex.length)), /*#__PURE__*/React.createElement("div", {
+    className: "t-label"
+  }, "Obj\u0119to\u015B\u0107 \xB7 7 tygodni"), /*#__PURE__*/React.createElement(Marker, {
+    tone: "gain"
+  }, "+12%"))), /*#__PURE__*/React.createElement(Card, {
+    flat: true
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
-      gap: 8
+      gap: 20
     }
-  }, d.ex.map((x, xi) => /*#__PURE__*/React.createElement("div", {
-    key: xi,
-    style: {
-      background: "var(--bg-raised)",
-      border: "1px solid var(--border-subtle)",
-      borderRadius: "var(--radius-md)",
-      padding: "10px 12px"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      alignItems: "center",
-      gap: 8
-    }
-  }, /*#__PURE__*/React.createElement(Icon, {
-    name: "grip-vertical",
-    size: 14,
-    style: {
-      color: "var(--text-faint)"
-    }
-  }), /*#__PURE__*/React.createElement("span", {
-    style: {
-      font: "var(--type-body-strong)",
-      fontSize: "var(--text-sm)",
-      flex: 1
-    }
-  }, x.name), /*#__PURE__*/React.createElement(IconButton, {
-    label: "Remove",
-    size: "sm",
-    onClick: ev => {
-      ev.stopPropagation();
-      remove(di, xi);
-    }
-  }, /*#__PURE__*/React.createElement(Icon, {
-    name: "x",
-    size: 14
-  }))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 12,
-      font: "var(--type-mono-sm)",
-      fontSize: "var(--text-xs)",
-      color: "var(--text-muted)",
-      marginTop: 4,
-      paddingLeft: 22
-    }
-  }, /*#__PURE__*/React.createElement("span", null, x.sets), /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: "var(--accent)"
-    }
-  }, x.load), /*#__PURE__*/React.createElement("span", null, "rest ", x.rest)))), /*#__PURE__*/React.createElement("button", {
-    style: {
-      all: "unset",
-      cursor: "pointer",
-      textAlign: "center",
-      padding: "9px 0",
-      borderRadius: "var(--radius-md)",
-      border: "1px dashed var(--border-strong)",
-      font: "var(--type-caption)",
-      color: "var(--text-muted)"
-    }
-  }, "+ Add from library")))))), /*#__PURE__*/React.createElement("aside", {
-    style: {
-      width: 280,
-      flex: "none",
-      borderLeft: "1px solid var(--border-subtle)",
-      background: "var(--bg-raised)",
-      padding: 20,
-      overflow: "auto"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      font: "var(--type-h3)",
-      marginBottom: 4
-    }
-  }, "Exercise library"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      font: "var(--type-caption)",
-      color: "var(--text-faint)",
-      marginBottom: 12
-    }
-  }, "Adds to ", /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: "var(--accent)"
-    }
-  }, days[sel].label)), /*#__PURE__*/React.createElement(Input, {
-    placeholder: "Search exercises",
-    value: q,
-    onChange: e => setQ(e.target.value),
-    style: {
-      marginBottom: 12
-    }
-  }), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 8
-    }
-  }, lib.map(e => /*#__PURE__*/React.createElement("div", {
-    key: e.name,
-    onClick: () => add(e),
-    style: {
-      display: "flex",
-      alignItems: "center",
-      gap: 10,
-      padding: "10px 12px",
-      background: "var(--surface-card)",
-      border: "1px solid var(--border-subtle)",
-      borderRadius: "var(--radius-md)",
-      cursor: "pointer"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: 1
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      font: "var(--type-body-strong)",
-      fontSize: "var(--text-sm)"
-    }
-  }, e.name), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 6,
-      marginTop: 5
-    }
-  }, e.tags.map(t => /*#__PURE__*/React.createElement(Tag, {
-    key: t,
-    style: {
-      height: 20,
-      fontSize: "var(--text-xs)",
-      padding: "0 8px"
-    }
-  }, t)))), /*#__PURE__*/React.createElement(Icon, {
-    name: "plus",
-    size: 16,
-    style: {
-      color: "var(--text-muted)"
-    }
-  }))))), dlg && /*#__PURE__*/React.createElement(Dialog, {
-    title: "Assign to " + client.name + "?",
-    description: "She gets the plan in her app immediately. The current plan is archived.",
-    confirmLabel: "Assign plan",
-    onConfirm: () => {
-      setDlg(false);
-      setToast(true);
-      setTimeout(() => setToast(false), 3200);
-    },
-    onCancel: () => setDlg(false)
-  }), toast && /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "fixed",
-      bottom: 24,
-      left: "50%",
-      transform: "translateX(-50%)",
-      zIndex: 120
-    }
-  }, /*#__PURE__*/React.createElement(Toast, {
-    tone: "positive",
-    icon: /*#__PURE__*/React.createElement(Icon, {
-      name: "check",
-      size: 18
-    })
-  }, "Plan assigned to ", client.name.split(" ")[0])));
-}
-window.WAPlanBuilderScreen = PlanBuilderScreen;
-})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/trainer_studio/PlanBuilderScreen.jsx", error: String((e && e.message) || e) }); }
-
-// ui_kits/trainer_studio/Shell.jsx
-try { (() => {
-function Shell({
-  nav,
-  onNav,
-  children
-}) {
-  const {
-    Icon
-  } = window.WorkoutAlchemistDesignSystem_5f0610;
-  const items = [["clients", "users", "Clients"], ["plans", "flask-conical", "Formulas"], ["library", "dumbbell", "Library"], ["settings", "settings", "Settings"]];
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      height: "100vh",
-      background: "var(--bg-app)"
-    }
-  }, /*#__PURE__*/React.createElement("aside", {
-    style: {
-      width: 224,
-      flex: "none",
-      borderRight: "1px solid var(--border-subtle)",
-      background: "var(--bg-raised)",
-      display: "flex",
-      flexDirection: "column",
-      padding: "20px 12px"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      font: "700 19px/1.1 var(--font-display)",
-      padding: "0 12px",
-      marginBottom: 28
-    }
-  }, "Workout", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: "var(--accent)"
-    }
-  }, "Alchemist")), /*#__PURE__*/React.createElement("nav", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 2
-    }
-  }, items.map(([id, ic, label]) => /*#__PURE__*/React.createElement("button", {
-    key: id,
-    onClick: () => onNav(id),
-    style: {
-      all: "unset",
-      cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      gap: 10,
-      padding: "9px 12px",
-      borderRadius: "var(--radius-md)",
-      font: "var(--type-body-strong)",
-      fontSize: "var(--text-sm)",
-      color: nav === id ? "var(--accent-hover)" : "var(--text-secondary)",
-      background: nav === id ? "var(--accent-dim)" : "transparent"
-    }
-  }, /*#__PURE__*/React.createElement(Icon, {
-    name: ic
-  }), " ", label))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginTop: "auto",
-      display: "flex",
-      alignItems: "center",
-      gap: 10,
-      padding: "10px 12px",
-      borderTop: "1px solid var(--border-subtle)"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 32,
-      height: 32,
-      borderRadius: "50%",
-      background: "var(--ink-700)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      font: "var(--type-label)",
-      color: "var(--bone-300)"
-    }
-  }, "KD"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      font: "var(--type-body-strong)",
-      fontSize: "var(--text-sm)"
-    }
-  }, "Coach Kasia"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      font: "var(--type-caption)",
-      fontSize: "var(--text-xs)",
-      color: "var(--text-faint)"
-    }
-  }, "12 active clients")))), /*#__PURE__*/React.createElement("main", {
-    style: {
-      flex: 1,
-      overflow: "auto"
-    }
-  }, children));
-}
-window.WAShell = Shell;
-})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/trainer_studio/Shell.jsx", error: String((e && e.message) || e) }); }
-
-// ui_kits/trainer_studio/data.js
-try { (() => {
-window.WAData = {
-  clients: [{
-    id: "maya",
-    name: "Maya Kowalska",
-    initials: "MK",
-    plan: "Push / pull / legs",
-    adherence: 0.92,
-    last: "Yesterday · Pull day",
-    next: "Thu · Push day",
-    tone: "positive",
-    status: "On track"
-  }, {
-    id: "jon",
-    name: "Jon Barrett",
-    initials: "JB",
-    plan: "Upper / lower",
-    adherence: 0.78,
-    last: "3 days ago · Upper",
-    next: "Today · Lower",
-    tone: "neutral",
-    status: "Week 5"
-  }, {
-    id: "sofia",
-    name: "Sofia Reyes",
-    initials: "SR",
-    plan: "Full body ×3",
-    adherence: 0.55,
-    last: "6 days ago · Full body A",
-    next: "Overdue",
-    tone: "danger",
-    status: "Slipping"
-  }, {
-    id: "andre",
-    name: "André Fontaine",
-    initials: "AF",
-    plan: "Push / pull / legs",
-    adherence: 0.88,
-    last: "Today · Legs",
-    next: "Sat · Push day",
+  }, /*#__PURE__*/React.createElement(StatTile, {
+    value: c.stats.sessions30,
+    label: "Treningi (30 dni)",
+    delta: "+2"
+  }), /*#__PURE__*/React.createElement(StatTile, {
+    value: c.stats.best,
+    unit: "kg",
+    label: "Rekord \u2014 przysiad",
     tone: "pr",
-    status: "PR week"
+    delta: "+5 kg"
+  }), /*#__PURE__*/React.createElement(StatTile, {
+    value: c.stats.prs,
+    label: "Nowe rekordy (30 dni)",
+    tone: "pr"
+  })))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 32,
+      maxWidth: 320
+    }
+  }, /*#__PURE__*/React.createElement(SegmentedControl, {
+    value: tab,
+    onChange: setTab,
+    items: ["Historia", "Plan"]
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 20
+    }
+  }, tab === "Historia" ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(SectionLabel, null, "Ostatnie treningi"), c.history.map((h, i) => /*#__PURE__*/React.createElement(ListRow, {
+    key: i,
+    title: h.name,
+    sub: `${h.date} · ${h.sets} serii · ${nf(h.volume)} kg`,
+    right: /*#__PURE__*/React.createElement(Icon, {
+      name: "caret-right",
+      size: 15,
+      color: "var(--fg-faint)"
+    }),
+    onClick: () => {}
+  }))) : /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "grid",
+      gridTemplateColumns: "repeat(3,1fr)",
+      gap: 16
+    }
+  }, c.plan_days.map(d => /*#__PURE__*/React.createElement(Card, {
+    key: d.code
+  }, /*#__PURE__*/React.createElement(SectionLabel, {
+    action: /*#__PURE__*/React.createElement("span", {
+      className: "t-label"
+    }, d.code)
+  }, d.name), d.items.map((it, i) => /*#__PURE__*/React.createElement("p", {
+    key: i,
+    className: "t-small",
+    style: {
+      margin: i ? "8px 0 0" : "4px 0 0",
+      color: "var(--fg-muted)"
+    }
+  }, it)), /*#__PURE__*/React.createElement(Divider, {
+    margin: 14
+  }), /*#__PURE__*/React.createElement(Button, {
+    variant: "plain",
+    size: "sm"
+  }, "+ \u0106wiczenie"))))));
+}
+Object.assign(window, {
+  ClientScreen
+});
+})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/trainer_panel/ClientScreen.jsx", error: String((e && e.message) || e) }); }
+
+// ui_kits/trainer_panel/ClientsScreen.jsx
+try { (() => {
+const {
+  SectionLabel,
+  ListRow,
+  StatTile,
+  Marker,
+  Button,
+  Icon,
+  Input,
+  Card
+} = window.WorkoutAlchemistDesignSystem_381a04;
+function ClientsScreen({
+  onOpen
+}) {
+  const p = window.PANEL;
+  const [q, setQ] = React.useState("");
+  const [filter, setFilter] = React.useState("all");
+  const rows = p.clients.filter(c => c.name.toLowerCase().includes(q.toLowerCase())).filter(c => filter === "all" ? true : c.state === "attention");
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "flex-end",
+      justifyContent: "space-between",
+      gap: 24
+    }
+  }, /*#__PURE__*/React.createElement("h1", {
+    className: "t-title",
+    style: {
+      margin: 0
+    }
+  }, "Klienci"), /*#__PURE__*/React.createElement(Button, {
+    size: "sm"
+  }, "Dodaj klienta")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 24,
+      marginTop: 28
+    }
+  }, /*#__PURE__*/React.createElement(StatTile, {
+    value: p.stats.clients,
+    label: "Klienci",
+    size: "lg"
+  }), /*#__PURE__*/React.createElement(StatTile, {
+    value: p.stats.sessions7,
+    label: "Sesje (7 dni)",
+    size: "lg",
+    delta: "+3"
+  }), /*#__PURE__*/React.createElement(StatTile, {
+    value: p.stats.prs7,
+    label: "Rekordy (7 dni)",
+    size: "lg",
+    tone: "pr"
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
+      marginTop: 36
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 260
+    }
+  }, /*#__PURE__*/React.createElement(Input, {
+    value: q,
+    onChange: setQ,
+    placeholder: "Szukaj klienta\u2026"
+  })), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: ["s-pill", filter === "all" ? "is-active" : ""].join(" "),
+    onClick: () => setFilter("all")
+  }, "Wszyscy"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: ["s-pill", filter === "attention" ? "is-active" : ""].join(" "),
+    onClick: () => setFilter("attention")
+  }, "Wymagaj\u0105 uwagi")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 20
+    }
+  }, /*#__PURE__*/React.createElement(SectionLabel, null, rows.length, " z ", p.clients.length), rows.map(c => /*#__PURE__*/React.createElement(ListRow, {
+    key: c.id,
+    title: c.name,
+    sub: `${c.plan} · ostatni trening ${c.last}`,
+    right: /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 20
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "t-num",
+      style: {
+        fontSize: 13,
+        color: "var(--fg)"
+      }
+    }, c.sessions), c.state === "attention" ? /*#__PURE__*/React.createElement(Marker, {
+      tone: "loss"
+    }, "uwaga") : null, /*#__PURE__*/React.createElement(Icon, {
+      name: "caret-right",
+      size: 15,
+      color: "var(--fg-faint)"
+    })),
+    onClick: () => onOpen(c)
+  }))));
+}
+Object.assign(window, {
+  ClientsScreen
+});
+})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/trainer_panel/ClientsScreen.jsx", error: String((e && e.message) || e) }); }
+
+// ui_kits/trainer_panel/data.js
+try { (() => {
+window.PANEL = {
+  trainer: "Trener lokalny",
+  stats: {
+    clients: 8,
+    sessions7: 21,
+    prs7: 4
+  },
+  clients: [{
+    id: 1,
+    name: "Jan Kowalski",
+    plan: "Push / Pull / Legs",
+    last: "dziś",
+    sessions: "3/3",
+    state: "ok"
   }, {
-    id: "lin",
-    name: "Lin Zhou",
-    initials: "LZ",
-    plan: "No plan assigned",
-    adherence: 0,
-    last: "—",
-    next: "—",
-    tone: "neutral",
-    status: "New"
+    id: 2,
+    name: "Anna Nowak",
+    plan: "Brak planu",
+    last: "5 dni temu",
+    sessions: "0/3",
+    state: "attention"
+  }, {
+    id: 3,
+    name: "Marek Lis",
+    plan: "Full body A",
+    last: "9 dni temu",
+    sessions: "0/2",
+    state: "attention"
+  }, {
+    id: 4,
+    name: "Ewa Zielińska",
+    plan: "Upper / Lower",
+    last: "wczoraj",
+    sessions: "2/2",
+    state: "ok"
+  }, {
+    id: 5,
+    name: "Piotr Wójcik",
+    plan: "Push / Pull / Legs",
+    last: "2 dni temu",
+    sessions: "2/3",
+    state: "ok"
   }],
-  library: [{
-    name: "Bench press",
-    tags: ["Chest", "Barbell"]
-  }, {
-    name: "Overhead press",
-    tags: ["Shoulders", "Barbell"]
-  }, {
-    name: "Incline DB press",
-    tags: ["Chest", "Dumbbell"]
-  }, {
-    name: "Cable fly",
-    tags: ["Chest", "Cable"]
-  }, {
-    name: "Lateral raise",
-    tags: ["Shoulders", "Dumbbell"]
-  }, {
-    name: "Triceps pushdown",
-    tags: ["Triceps", "Cable"]
-  }, {
-    name: "Weighted dip",
-    tags: ["Chest", "Bodyweight"]
-  }],
-  plan: {
-    name: "Push / pull / legs",
-    weeks: 6,
-    days: [{
-      label: "Push day",
-      ex: [{
-        name: "Bench press",
-        sets: "4 × 6",
-        load: "62.5 kg",
-        rest: "150s"
-      }, {
-        name: "Overhead press",
-        sets: "3 × 8",
-        load: "40 kg",
-        rest: "120s"
-      }, {
-        name: "Incline DB press",
-        sets: "3 × 10",
-        load: "24 kg",
-        rest: "90s"
-      }, {
-        name: "Lateral raise",
-        sets: "3 × 15",
-        load: "8 kg",
-        rest: "60s"
-      }]
+  client: {
+    name: "Jan Kowalski",
+    email: "jan.kowalski@example.com",
+    goal: "siła · 3× w tygodniu",
+    plan: "Push / Pull / Legs",
+    week: "Tydzień 2 z 8",
+    next: "Push Day A",
+    volume: [3200, 3600, 3480, 4200, 4380, 4510, 4820],
+    stats: {
+      sessions30: 11,
+      best: "132",
+      prs: 3
+    },
+    history: [{
+      name: "Push Day A",
+      date: "25 mar",
+      sets: 12,
+      volume: 4820
     }, {
-      label: "Pull day",
-      ex: [{
-        name: "Deadlift",
-        sets: "3 × 5",
-        load: "120 kg",
-        rest: "180s"
-      }, {
-        name: "Weighted pull-up",
-        sets: "4 × 6",
-        load: "+10 kg",
-        rest: "150s"
-      }, {
-        name: "Seated row",
-        sets: "3 × 10",
-        load: "55 kg",
-        rest: "90s"
-      }]
+      name: "Pull Day A",
+      date: "23 mar",
+      sets: 15,
+      volume: 3960
     }, {
-      label: "Leg day",
-      ex: [{
-        name: "Back squat",
-        sets: "4 × 6",
-        load: "95 kg",
-        rest: "180s"
-      }, {
-        name: "Romanian deadlift",
-        sets: "3 × 8",
-        load: "80 kg",
-        rest: "120s"
-      }, {
-        name: "Leg press",
-        sets: "3 × 12",
-        load: "160 kg",
-        rest: "90s"
-      }]
+      name: "Legs",
+      date: "21 mar",
+      sets: 12,
+      volume: 5100
+    }, {
+      name: "Push Day A",
+      date: "18 mar",
+      sets: 12,
+      volume: 4510
+    }],
+    plan_days: [{
+      code: "D1",
+      name: "Push Day A",
+      items: ["Bench Press · 3 × 8", "Overhead Press · 3 × 10", "Triceps Pushdown · 3 × 12"]
+    }, {
+      code: "D2",
+      name: "Pull Day A",
+      items: ["Lat pulldown · 3 × 10", "Barbell Row · 3 × 10", "Bicep Curl · 3 × 12"]
+    }, {
+      code: "D3",
+      name: "Legs",
+      items: ["Squat · 4 × 6", "Leg Press · 3 × 12", "Calf Raise · 3 × 15"]
     }]
   }
 };
-})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/trainer_studio/data.js", error: String((e && e.message) || e) }); }
+})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/trainer_panel/data.js", error: String((e && e.message) || e) }); }
 
-__ds_ns.Badge = __ds_scope.Badge;
-
-__ds_ns.Card = __ds_scope.Card;
-
-__ds_ns.Icon = __ds_scope.Icon;
-
-__ds_ns.StatBlock = __ds_scope.StatBlock;
-
-__ds_ns.Tag = __ds_scope.Tag;
-
-__ds_ns.Dialog = __ds_scope.Dialog;
-
-__ds_ns.ProgressRing = __ds_scope.ProgressRing;
-
-__ds_ns.Toast = __ds_scope.Toast;
-
-__ds_ns.Tooltip = __ds_scope.Tooltip;
+__ds_ns.LineChart = __ds_scope.LineChart;
 
 __ds_ns.Button = __ds_scope.Button;
 
-__ds_ns.Checkbox = __ds_scope.Checkbox;
+__ds_ns.Field = __ds_scope.Field;
+
+__ds_ns.Icon = __ds_scope.Icon;
 
 __ds_ns.IconButton = __ds_scope.IconButton;
 
 __ds_ns.Input = __ds_scope.Input;
 
-__ds_ns.Radio = __ds_scope.Radio;
+__ds_ns.Pill = __ds_scope.Pill;
 
-__ds_ns.Select = __ds_scope.Select;
+__ds_ns.PillRow = __ds_scope.PillRow;
 
 __ds_ns.Switch = __ds_scope.Switch;
 
+__ds_ns.Card = __ds_scope.Card;
+
+__ds_ns.ListRow = __ds_scope.ListRow;
+
+__ds_ns.SectionLabel = __ds_scope.SectionLabel;
+
+__ds_ns.Divider = __ds_scope.Divider;
+
+__ds_ns.StatTile = __ds_scope.StatTile;
+
+__ds_ns.Marker = __ds_scope.Marker;
+
+__ds_ns.Wordmark = __ds_scope.Wordmark;
+
+__ds_ns.Sheet = __ds_scope.Sheet;
+
+__ds_ns.BottomNav = __ds_scope.BottomNav;
+
 __ds_ns.SegmentedControl = __ds_scope.SegmentedControl;
 
-__ds_ns.Tabs = __ds_scope.Tabs;
+__ds_ns.TopBar = __ds_scope.TopBar;
+
+__ds_ns.ExerciseBlock = __ds_scope.ExerciseBlock;
+
+__ds_ns.SetRowHeader = __ds_scope.SetRowHeader;
+
+__ds_ns.SetRow = __ds_scope.SetRow;
 
 })();

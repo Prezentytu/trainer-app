@@ -15,6 +15,26 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Masowa podmiana klas nie może zgniatać wcięć całego pliku
+
+**Kontekst**: Migracja Acid → mono — skrypt Python robił `re.sub(r'  +', ' ', text)` na całych plikach TS/TSX.
+**Problem**: Zniszczył indentation w `api.ts`, `ui.tsx` i setkach innych plików; trzeba było `git checkout -- apps/web/` i odtwarzać zmiany.
+**Zasada**: Podmiany klas tylko przez `StrReplace` / celowany regex na tokenach (`shadow-card`, `glow-accent`…). Nigdy globalne collapse whitespace na źródłach. Po blędzie odtwórz z gita i aplikuj punktowo.
+**Dotyczy**: wszelkie migracje design tokenów, skrypty bulk-edit.
+
+## Mono v2: hue tylko na danych, chrome = invert
+
+**Kontekst**: Redesign epic minimalism (2026-08-06).
+**Problem**: Stary Acid wkładał lime w nav/CTA/focus; Lucide + 3 fonty + cienie/blur.
+**Zasada**: Primary = `bg-invert-bg`; data accents `pr`/`gain`/`loss` z glifem; Instrument Sans + Geist Mono; Phosphor przez `Icon`; landing zostaje w `.theme-acid`. Skill `design-system` jest źródłem prawdy.
+**Dotyczy**: `globals.css`, `ui.tsx`, `AppShell`, portal nav, SessionLogger, wykresy.
+
+## Panel trenera: lewy sidebar, nie top nav
+
+**Kontekst**: DS specimen mówił o hairline top nav; użytkownik skorygował — dashboard jak Linear/Stripe ma nawigację z lewej.
+**Zasada**: Desktop = sticky left sidebar (pełny / rail w kreatorze planu). Mobile = floating pill + drawer. Portal klienta może zostać przy floating pill.
+**Dotyczy**: `AppShell.tsx`.
+
 ## Hydration mismatch w dev = najpierw sprawdź service workera
 
 **Kontekst**: Uporczywy „Hydration failed" na `/`. Klient renderował skeleton sprzed kilku commitów (`h-64`), którego nie było już w repo.

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
+import { Instrument_Sans, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkAppProvider } from "@/components/ClerkAppProvider";
 
@@ -12,21 +12,15 @@ if (navigator.serviceWorker) navigator.serviceWorker.getRegistrations().then(fun
 if (typeof caches !== "undefined") caches.keys().then(function (ks) { ks.filter(function (k) { return k.indexOf("wa-portal-") === 0; }).forEach(function (k) { caches.delete(k); }); });
 `;
 
-const fontDisplay = Archivo({
-  variable: "--font-archivo",
-  weight: ["700", "800", "900"],
+const fontSans = Instrument_Sans({
+  variable: "--font-instrument-sans",
+  weight: ["400", "500", "600", "700"],
   subsets: ["latin", "latin-ext"],
 });
 
-const fontBody = Space_Grotesk({
-  variable: "--font-space-grotesk",
-  weight: ["400", "500", "600"],
-  subsets: ["latin", "latin-ext"],
-});
-
-const fontMono = IBM_Plex_Mono({
-  variable: "--font-ibm-plex-mono",
-  weight: ["400", "500", "600"],
+const fontMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  weight: ["400", "500", "600", "700"],
   subsets: ["latin", "latin-ext"],
 });
 
@@ -57,7 +51,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0C0D0C",
+  themeColor: "#0B0C0D",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -73,8 +67,14 @@ export default function RootLayout({
   return (
     <html
       lang="pl"
-      className={`${fontDisplay.variable} ${fontBody.variable} ${fontMono.variable} h-full antialiased`}
+      className={`${fontSans.variable} ${fontMono.variable} h-full antialiased`}
     >
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css"
+        />
+      </head>
       <body className="min-h-screen bg-background font-sans text-foreground">
         {process.env.NODE_ENV === "production" ? null : (
           <script dangerouslySetInnerHTML={{ __html: DEV_SW_CLEANUP }} />

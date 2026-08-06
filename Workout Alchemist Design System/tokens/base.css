@@ -1,4 +1,47 @@
-body{margin:0;background:var(--bg-app);color:var(--text-primary);font:var(--type-body);-webkit-font-smoothing:antialiased}
-a{color:var(--teal-300);text-decoration:none}
-a:hover{color:var(--teal-400);text-decoration:underline}
-::selection{background:var(--teal-900);color:var(--teal-300)}
+html {
+  -webkit-text-size-adjust: 100%;
+  color-scheme: dark;
+}
+
+html[data-theme="light"] { color-scheme: light; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  font-weight: 400;
+  font-size: var(--size-body);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+* { box-sizing: border-box; }
+
+/* Links carry a permanent underline — colour alone never signals a link. */
+a {
+  color: var(--fg);
+  text-decoration: underline;
+  text-decoration-color: var(--fg-ghost);
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--dur) var(--ease);
+}
+
+a:hover { text-decoration-color: var(--fg); }
+
+a:focus-visible {
+  outline: none;
+  border-radius: 3px;
+  box-shadow: var(--focus-ring);
+}
+
+::selection { background: var(--fg); color: var(--bg); }
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}

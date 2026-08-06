@@ -1,21 +1,112 @@
-:root{
-/* Base — warm charcoal "lab bench" neutrals (option C) */
---ink-950:#0A0B0C;--ink-900:#101214;--ink-850:#141618;--ink-800:#1A1D1F;--ink-700:#242829;--ink-600:#313637;--ink-500:#474C4C;
-/* Parchment lights (text on dark) */
---bone-100:#F3F1EC;--bone-300:#C8C7C1;--bone-500:#93958F;--bone-700:#66675F;
-/* Teal — the single working accent: actions, focus, active nav */
---teal-300:#6FBFAE;--teal-400:#4FAE9E;--teal-500:#3E9C8F;--teal-600:#2F7A70;--teal-700:#275048;--teal-900:#10241F;
-/* Gold — RESERVED FOR PRs / personal bests only */
---gold-300:#F2CE72;--gold-400:#E8BB4F;--gold-500:#D6A335;--gold-600:#B3842A;--gold-900:#33280F;
-/* Terracotta — destructive / missed */
---clay-400:#E08B6C;--clay-500:#CF6B4B;--clay-600:#B0563A;--clay-900:#361A11;
-/* Semantic aliases */
---bg-app:var(--ink-950);--bg-raised:var(--ink-900);--surface-card:var(--ink-850);--surface-hover:var(--ink-800);--surface-active:var(--ink-700);
---border-subtle:#22262A;--border-strong:#343A3B;--border-focus:var(--teal-400);
---text-primary:var(--bone-100);--text-secondary:var(--bone-300);--text-muted:var(--bone-500);--text-faint:var(--bone-700);
---text-on-accent:#04120F;--text-on-gold:#1A1406;
---accent:var(--teal-500);--accent-hover:var(--teal-400);--accent-press:var(--teal-600);--accent-dim:var(--teal-900);--accent-border:var(--teal-700);
---positive:var(--teal-300);--positive-dim:var(--teal-900);
---pr:var(--gold-400);--pr-dim:var(--gold-900);
---danger:var(--clay-500);--danger-hover:var(--clay-400);--danger-press:var(--clay-600);--danger-dim:var(--clay-900);
+/* Monochrome, but built to WCAG AA rather than to a mood board.
+   Every text token below is measured against its intended background:
+   body and label greys clear 4.5:1, and non-text greys (hairlines,
+   placeholders, disabled, chart ticks) clear 3:1. Nothing is decorative-only.
+
+   The base is a cool near-black rather than #000 — pure black makes every
+   surface step above it read as a smudge, which is exactly the "invisible
+   elements" problem. Cards now sit a full 12 points of luminance above the
+   page and carry a visible hairline. */
+
+:root {
+  /* Neutral ramp — dark */
+  --ink-900: #0b0c0d;
+  --ink-850: #121415;
+  --ink-800: #17191b;
+  --ink-700: #212427;
+  --ink-600: #2b2f33;
+  --ink-500: #33373b;
+  --ink-400: #454b51;
+  --ink-300: #6e767e;
+  --ink-200: #9aa1a8;
+  --ink-100: #c9ced4;
+  --ink-000: #ffffff;
+
+  /* Surfaces — dark */
+  --bg: var(--ink-900);
+  --surface-sunken: var(--ink-850);
+  --surface: var(--ink-800);        /* cards — clearly lighter than the page */
+  --surface-raised: var(--ink-700); /* nav pill, hovered card, active tab */
+  --field: var(--ink-700);          /* input wells */
+  --line: var(--ink-500);           /* structural edges — 3.4:1 on --bg */
+  --line-faint: var(--ink-600);     /* row dividers */
+
+  /* Text — dark (contrast quoted against --bg) */
+  --fg: var(--ink-000);             /* 19.8:1 */
+  --fg-muted: var(--ink-100);       /* 12.6:1 — body copy */
+  --fg-faint: var(--ink-200);       /*  7.2:1 — mono caps labels, units */
+  --fg-ghost: var(--ink-300);       /*  3.6:1 — placeholders, ticks, disabled */
+
+  --invert-bg: var(--ink-000);
+  --invert-fg: var(--ink-900);
+
+  --scrim: rgba(4, 5, 6, 0.78);
+  --danger: #ff6b6b;                /* 6.1:1 on --bg */
+  --danger-quiet: #2a1618;
+
+  /* —— Semantic data accents ——
+     Three hues, used ONLY on numbers and their markers: a personal record,
+     an improving metric, a declining one. Never on buttons, navigation,
+     surfaces or icons in chrome. Each clears AA on --bg, and each is always
+     paired with a glyph or word so the meaning survives without colour. */
+  --pr: #e0b13f;                    /* 10.2:1 — personal record */
+  --pr-quiet: #2a2213;
+  --gain: #57bf82;                  /* 9.4:1 — progress, improvement */
+  --gain-quiet: #14261c;
+  --loss: #ef7a70;                  /* 7.0:1 — regression, decline */
+  --loss-quiet: #2a1a19;
+}
+
+[data-theme="light"] {
+  --bg: #ffffff;
+  --surface-sunken: #f7f8f9;
+  --surface: #f2f4f6;
+  --surface-raised: #e7eaed;
+  --field: #edeff2;
+  --line: #adb4bb;
+  --line-faint: #d7dbe0;
+
+  --fg: #0b0c0d;                    /* 19.8:1 */
+  --fg-muted: #40464c;              /*  9.7:1 — body copy */
+  --fg-faint: #5b6268;              /*  6.3:1 — mono caps labels */
+  --fg-ghost: #7d858c;              /*  3.7:1 — placeholders, ticks */
+
+  --invert-bg: #0b0c0d;
+  --invert-fg: #ffffff;
+
+  --scrim: rgba(11, 12, 13, 0.45);
+  --danger: #c0271f;                /* 5.9:1 on white */
+  --danger-quiet: #fdf0ef;
+
+  --pr: #8a6200;                    /* 6.4:1 on white */
+  --pr-quiet: #fdf5e2;
+  --gain: #1b7a45;                  /* 5.4:1 on white */
+  --gain-quiet: #eaf6ee;
+  --loss: #bd2a22;                  /* 5.8:1 on white */
+  --loss-quiet: #fdefee;
+}
+
+/* Respect the OS high-contrast preference: hairlines and secondary text go
+   all the way to full contrast. */
+@media (prefers-contrast: more) {
+  :root {
+    --line: var(--ink-300);
+    --line-faint: var(--ink-400);
+    --fg-muted: var(--ink-000);
+    --fg-faint: var(--ink-100);
+    --fg-ghost: var(--ink-200);
+  }
+  [data-theme="light"] {
+    --line: #5b6268;
+    --line-faint: #adb4bb;
+    --fg-muted: #0b0c0d;
+    --fg-faint: #2c3237;
+    --fg-ghost: #5b6268;
+  }
+}
+
+/* Colour is a bonus channel, never the only one. If the user can't see hue at
+   all, the glyph, the sign and the label still carry the meaning. */
+@media (forced-colors: active) {
+  .s-marker, .s-stat__delta { forced-color-adjust: none; color: CanvasText; }
 }

@@ -28,19 +28,19 @@ Next.js 16 (App Router) + React 19 + Tailwind 4. Port 3000. Ciemny motyw, UI po 
 
 ## Always
 
-- Przy tworzeniu/zmianie jakiegokolwiek UI zawsze stosuj skille `design-system` (nasza paleta tokenów — jedyny dozwolony słownik kolorów) i `responsive-ui` (mobile-first; nazwy planów, ćwiczeń i klientów nigdy nie są ucinane; nic nie wychodzi poza kontener).
+- Przy tworzeniu/zmianie jakiegokolwiek UI zawsze stosuj skille `design-system` (mono v2 — jedyny dozwolony słownik kolorów), `responsive-ui`, `fitness-ui-ux`, `senior-ux-cro`, `apple-design`.
 - Strony z danymi to komponenty klienckie: pierwsza linia `"use client"`, dane przez `api.*` w `useEffect` (wzorzec `useCallback` + `load()`).
 - Nowe typy i metody API dodawaj do `lib/api.ts` — typy muszą być lustrzane do backendowych encji/DTO (camelCase).
-- Używaj prymitywów z `components/ui.tsx`: `PageHeader`, `Card`, `Button`, `Field` + `inputClass`, `ErrorBanner`, `EmptyState`, `Badge`, `formatRest`.
+- Używaj prymitywów z `components/ui.tsx`: `PageHeader`, `Card`, `ListRow`, `Button`, `Field` + `inputClass`, `ErrorBanner`, `EmptyState`, `Badge`/`Marker`, `formatRest`. Ikony wyłącznie przez `components/Icon.tsx` (Phosphor).
 - Błędy łap i pokazuj przez `<ErrorBanner message={error} />` (stan `error: string | null`).
-- Nowy dział dopisz do tablicy `NAV` w `components/AppShell.tsx`.
+- Nowy dział dopisz do tablicy `NAV` w `components/AppShell.tsx` (lewy sidebar desktop + floating pill mobile).
 - Import ścieżkowy przez alias `@/` (np. `@/lib/api`, `@/components/ui`).
 - Po zmianach uruchom `npm run lint`, `npm run typecheck` i `npm run build` (z katalogu `apps/web/`).
 
 ## Never
 
 - Nigdy nie używaj surowego `fetch` w stronach/komponentach — tylko `api` z `lib/api.ts`. Jedyny wrapper `fetch` żyje w `request<T>()` w tym pliku.
-- Nigdy nie używaj surowych klas `zinc-*`/`yellow-*`/`red-*`/`emerald-*` w komponentach — wyłącznie tokeny semantyczne (`bg-surface`, `text-accent`, `border-border-strong`…) zdefiniowane w `app/globals.css` (`@theme`). Pełna tabela i zasady: skill `design-system`. Nie duplikuj stylów przycisków/pól — użyj `Button`/`inputClass`.
+- Nigdy nie używaj surowych klas `zinc-*`/`lime-*`/`yellow-*`/`red-*`/`emerald-*` ani Lucide — wyłącznie tokeny z `app/globals.css` i `Icon`. Chrome bez hue (primary = invert). Skill `design-system`.
 - Nigdy nie zakładaj wiedzy o API Next.js z pamięci — sprawdź lokalne docsy (ostrzeżenie na górze).
 
 ## Wzorzec strony listy (na bazie `app/clients/page.tsx`)
@@ -78,6 +78,6 @@ export default function ClientsPage() {
 
 ## Styl / Tailwind
 
-- Motyw Workout Alchemist Acid: tło `bg-background`, tekst `text-foreground`, akcent lime `bg-accent`/`text-accent`, gold (`pr`) tylko dla rekordów. Pełna paleta: skill `design-system` (źródło: `app/globals.css`, warstwy prymitywy → semantyka → `@theme inline`).
-- Statusy przez `Badge` z tonami `neutral | accent | positive | danger | pr` (aliasy `yellow`/`green`/`red` nadal działają).
-- Fonty Acid w `layout.tsx`: Archivo (`font-display` / `.display-caps`), Space Grotesk (`font-sans`), IBM Plex Mono (`font-mono` dla liczb).
+- Motyw **mono v2**: tło `bg-background`, tekst `text-foreground`, primary = invert (`bg-invert-bg` / legacy `bg-accent` → biały fill). Data accents: `pr` / `gain` / `loss`. Skill `design-system`. Landing: `.theme-acid` (stary lime — nie ruszaj przy pracy nad appką).
+- Statusy: `Badge` / `Marker` z tonami `neutral | accent | positive/gain | danger/loss | pr`.
+- Fonty w `layout.tsx`: Instrument Sans (`font-sans` / display), Geist Mono (`font-mono`). Role: `.t-title`, `.t-label`, `.t-num`.

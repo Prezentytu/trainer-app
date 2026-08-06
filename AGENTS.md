@@ -14,7 +14,7 @@ Ten plik jest punktem startowym dla każdego agenta. Zanim zaczniesz kodować, d
 | Testy API | xUnit + `WebApplicationFactory` | — | `tests/api/` |
 
 - Namespace backendu: `TrainerApp.Api`. Lokalnie (SQLite) schemat powstaje przez `EnsureCreated()`; na produkcji (Postgres) przez migracje EF z `apps/api/Migrations/`. Zmiana encji wymaga **obu**: nowej migracji i usunięcia `apps/api/trainer.db`.
-- UI jest w całości po polsku, ciemny motyw Workout Alchemist **Acid**. Kolory wyłącznie przez tokeny semantyczne z `apps/web/app/globals.css` (warstwa semantyczna + `@theme inline`; akcent lime, gold tylko PR) — zobacz skill `design-system`.
+- UI jest w całości po polsku, ciemny motyw Workout Alchemist **mono v2** (invert fill zamiast hue w chrome; gold/green/red tylko na danych). Kolory wyłącznie przez tokeny z `apps/web/app/globals.css` — skill `design-system`. Landing marketingowy tymczasowo pod `.theme-acid`.
 - Monorepo, jeden git w root: deployowalne aplikacje pod `apps/`, testy pod `tests/`.
 
 ## Układ repo
@@ -53,7 +53,7 @@ trainer-app/
 ## Never
 
 - Nigdy nie wywołuj surowego `fetch` w komponentach/stronach — używaj wyłącznie obiektu `api` z `apps/web/lib/api.ts` (jedyny dozwolony `fetch` to centralny wrapper `request<T>()` w tym pliku).
-- Nigdy nie używaj surowych klas `zinc-*`/`yellow-*`/`teal-*`/`red-*`/`emerald-*` ani hexów w komponentach — wyłącznie tokeny semantyczne z `apps/web/app/globals.css` i prymitywy z `apps/web/components/ui.tsx`. Zobacz skill `design-system`.
+- Nigdy nie używaj surowych klas `zinc-*`/`lime-*`/`yellow-*`/`teal-*`/`red-*`/`emerald-*` ani hexów w komponentach — wyłącznie tokeny z `apps/web/app/globals.css`, prymitywy z `ui.tsx` i `Icon` (Phosphor). Zobacz skill `design-system`.
 - Nigdy nie dodawaj endpointów bez prefiksu `/api`.
 - Nigdy nie edytuj ręcznie `apps/api/trainer.db` ani plików w `bin`/`obj`.
 - Nigdy nie commituj sekretów, `.env`, kluczy.

@@ -1,41 +1,69 @@
+const { Card, SectionLabel, StatTile, Marker, Pill, PillRow, Button, LineChart } =
+  window.WorkoutAlchemistDesignSystem_381a04;
+
 function ProgressScreen() {
-  const { Card, StatBlock, Badge, Icon, SegmentedControl } = window.WorkoutAlchemistDesignSystem_5f0610;
-  const [range, setRange] = React.useState("Month");
-  const bars = [42, 55, 48, 61, 58, 70, 66, 74];
+  const a = window.APP;
+  const [group, setGroup] = React.useState("Klatka");
+  const list = a.exercisesByGroup[group];
+  const [exercise, setExercise] = React.useState(list[0]);
+  const s = a.series[exercise] || a.series["Bench Press"];
+
+  const pickGroup = (g) => {
+    setGroup(g);
+    setExercise(a.exercisesByGroup[g][0]);
+  };
+
   return (
-    <div style={{ padding: "16px 20px 24px" }}>
-      <div style={{ display: "flex", alignItems: "center", marginBottom: 18 }}>
-        <h1 style={{ font: "var(--type-h2)", margin: 0, flex: 1 }}>Progress</h1>
-        <SegmentedControl items={["Week", "Month", "Year"]} value={range} onChange={setRange} />
-      </div>
-      <Card eyebrow="Bench press · top set" title="">
-        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-          <span style={{ font: "var(--type-stat-lg)", color: "var(--pr)" }}>62.5</span>
-          <span style={{ font: "var(--type-mono-sm)", color: "var(--text-muted)" }}>kg</span>
-          <span style={{ font: "var(--type-mono-sm)", color: "var(--positive)", marginLeft: "auto" }}>+12% this {range.toLowerCase()}</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 72, marginTop: 16 }}>
-          {bars.map((h, i) => <div key={i} style={{ flex: 1, height: h + "%", borderRadius: "4px 4px 0 0", background: i === bars.length - 1 ? "var(--pr)" : "var(--ink-700)" }}></div>)}
-        </div>
-      </Card>
-      <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
-        <Card style={{ flex: 1, padding: 16 }}><StatBlock label="Volume" value="48.2k" unit="kg" delta="+8%" /></Card>
-        <Card style={{ flex: 1, padding: 16 }}><StatBlock label="Sessions" value="14" delta="+2" /></Card>
-        <Card style={{ flex: 1, padding: 16 }}><StatBlock label="PRs" value="3" /></Card>
-      </div>
-      <div style={{ font: "var(--type-label)", color: "var(--text-muted)", letterSpacing: "var(--tracking-caps)", textTransform: "uppercase", margin: "20px 0 10px" }}>History</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {window.WAAppData.history.map((h, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "var(--surface-card)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-md)" }}>
-            <span style={{ font: "var(--type-label)", color: "var(--text-faint)", width: 30 }}>{h.d}</span>
-            <span style={{ font: "var(--type-body-strong)", fontSize: "var(--text-sm)", flex: 1 }}>{h.t}</span>
-            <span style={{ font: "var(--type-mono-sm)", fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{h.m}</span>
-            {h.pr && <Badge tone="pr">PR</Badge>}
-            <Icon name="chevron-right" size={14} style={{ color: "var(--text-faint)" }} />
+    <div style={{ padding: "28px var(--gutter) 140px" }}>
+      <h1 className="t-title" style={{ margin: 0 }}>Progres</h1>
+
+      <div style={{ marginTop: 20 }}>
+        <Card>
+          <SectionLabel action={<Button variant="plain" size="sm">Edytuj</Button>}>Ciało</SectionLabel>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginTop: 6 }}>
+            <StatTile value={a.body.weight} unit="kg" label="Waga" delta="-1,2 kg" deltaTone="gain" />
+            <StatTile value={a.body.height} unit="cm" label="Wzrost" />
+            <StatTile value={a.body.bmi} label="BMI" delta="-0,3" deltaTone="gain" />
           </div>
-        ))}
+          <div style={{ display: "flex", gap: 6, marginTop: 16, flexWrap: "wrap" }}>
+            <span className="s-pill" style={{ pointerEvents: "none" }}>{a.body.sex}</span>
+            <span className="s-pill" style={{ pointerEvents: "none" }}>{a.body.units}</span>
+            <span className="s-pill" style={{ pointerEvents: "none" }}>Cel: {a.body.goal}</span>
+          </div>
+        </Card>
+      </div>
+
+      <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 8 }}>
+        <PillRow>
+          {a.groups.map((g) => (
+            <Pill key={g} active={g === group} onClick={() => pickGroup(g)}>{g}</Pill>
+          ))}
+        </PillRow>
+        <PillRow>
+          {list.map((e) => (
+            <Pill key={e} text active={e === exercise} onClick={() => setExercise(e)}>{e}</Pill>
+          ))}
+        </PillRow>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 22 }}>
+        <span className="t-label">1RM · 6 tygodni</span>
+        <Marker tone={s.points[s.points.length - 1] >= s.points[0] ? "gain" : "loss"}>
+          {s.points[s.points.length - 1] >= s.points[0] ? "+" : ""}
+          {Math.round(((s.points[s.points.length - 1] - s.points[0]) / s.points[0]) * 100)}%
+        </Marker>
+      </div>
+      <div style={{ marginTop: 10 }}>
+        <LineChart points={s.points} labels={s.labels} height={190} />
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginTop: 28 }}>
+        <StatTile value={s.best} unit="kg" label="Rekord" tone="pr" center />
+        <StatTile value={s.sessions} label="Sesje" center />
+        <StatTile value={s.volume} unit="kg" label="Najlepsza objętość" center delta="+8%" />
       </div>
     </div>
   );
 }
-window.WAProgressScreen = ProgressScreen;
+
+Object.assign(window, { ProgressScreen });

@@ -1,17 +1,56 @@
-window.WAAppData = {
-  workout: {
-    label: "Push day", week: 3, dayNum: 1, mins: 55,
-    ex: [
-      { name: "Bench press", target: "4 × 6 @ 62.5 kg", rest: 150, sets: [{ w: "62.5", r: "6" }, { w: "62.5", r: "6" }, { w: "62.5", r: "6" }, { w: "62.5", r: "6" }] },
-      { name: "Overhead press", target: "3 × 8 @ 40 kg", rest: 120, sets: [{ w: "40", r: "8" }, { w: "40", r: "8" }, { w: "40", r: "8" }] },
-      { name: "Incline DB press", target: "3 × 10 @ 24 kg", rest: 90, sets: [{ w: "24", r: "10" }, { w: "24", r: "10" }, { w: "24", r: "10" }] },
-      { name: "Lateral raise", target: "3 × 15 @ 8 kg", rest: 60, sets: [{ w: "8", r: "15" }, { w: "8", r: "15" }, { w: "8", r: "15" }] }
-    ]
+window.APP = {
+  greeting: "Dobry wieczór",
+  sub: "Gotowy na trening?",
+  month: "Marzec 2026",
+  monthDays: 31,
+  firstWeekday: 0, // Monday
+  today: 25,
+  trainedDays: [2, 3, 6, 11, 14, 17, 18, 22, 24],
+  workouts: [
+    { id: 1, name: "Push Day A", date: "25 mar", sets: 12, volume: 4820, best: true },
+    { id: 2, name: "Pull Day A", date: "23 mar", sets: 15, volume: 3960 },
+    { id: 3, name: "Legs", date: "21 mar", sets: 12, volume: 5100 },
+    { id: 4, name: "Push Day A", date: "18 mar", sets: 12, volume: 4510 },
+    { id: 5, name: "Pull Day A", date: "16 mar", sets: 14, volume: 3840 },
+  ],
+  session: {
+    date: "Środa, 25 mar 2026",
+    exercises: [
+      { name: "Lat pulldown", bodyweight: false, sets: [{ w: "60", r: "7" }, { w: "60", r: "7" }, { w: "60", r: "5" }] },
+      { name: "Pull-up", bodyweight: true, sets: [{ w: "BW", r: "8" }, { w: "BW", r: "8" }] },
+      { name: "Bicep curl", bodyweight: false, sets: [{ w: "22,5", r: "6" }, { w: "22,5", r: "6" }] },
+    ],
+    library: [
+      { name: "Bench Press", group: "Klatka" },
+      { name: "Cable Fly", group: "Klatka" },
+      { name: "Incline Dumbbell Press", group: "Klatka" },
+      { name: "Barbell Row", group: "Plecy" },
+      { name: "Squat", group: "Nogi" },
+      { name: "Deadlift", group: "Nogi" },
+    ],
   },
-  history: [
-    { d: "Tue", t: "Pull day", m: "52 min · 8 420 kg", pr: false },
-    { d: "Mon", t: "Push day", m: "58 min · 7 180 kg · PR", pr: true },
-    { d: "Sat", t: "Leg day", m: "61 min · 11 240 kg", pr: false },
-    { d: "Thu", t: "Pull day", m: "49 min · 8 105 kg", pr: false }
-  ]
+  body: { weight: "85,5", height: "190", bmi: "23,7", sex: "Mężczyzna", units: "Metryczny", goal: "83 kg" },
+  groups: ["Klatka", "Plecy", "Nogi", "Barki", "Ramiona"],
+  exercisesByGroup: {
+    Klatka: ["Bench Press", "Cable Fly", "Incline Dumbbell Press"],
+    Plecy: ["Lat pulldown", "Barbell Row", "Pull-up"],
+    Nogi: ["Squat", "Deadlift", "Leg Press"],
+    Barki: ["Overhead Press", "Lateral Raise"],
+    Ramiona: ["Bicep Curl", "Triceps Pushdown"],
+  },
+  series: {
+    "Bench Press": { points: [48, 52, 66, 72, 68, 80], labels: ["9. mar", "16. mar", "23. mar"], best: "80", sessions: 5, volume: "1 280" },
+    "Cable Fly": { points: [20, 22, 24, 24, 26, 28], labels: ["9. mar", "16. mar", "23. mar"], best: "28", sessions: 4, volume: "620" },
+    "Incline Dumbbell Press": { points: [30, 32, 32, 35, 37, 40], labels: ["9. mar", "16. mar", "23. mar"], best: "40", sessions: 6, volume: "980" },
+    "Lat pulldown": { points: [50, 52, 55, 58, 60, 60], labels: ["9. mar", "16. mar", "23. mar"], best: "60", sessions: 7, volume: "1 140" },
+    "Barbell Row": { points: [40, 42, 45, 45, 48, 50], labels: ["9. mar", "16. mar", "23. mar"], best: "50", sessions: 5, volume: "900" },
+    "Pull-up": { points: [6, 7, 7, 8, 8, 9], labels: ["9. mar", "16. mar", "23. mar"], best: "9", sessions: 6, volume: "—" },
+    Squat: { points: [80, 85, 90, 95, 100, 105], labels: ["9. mar", "16. mar", "23. mar"], best: "105", sessions: 6, volume: "2 040" },
+    Deadlift: { points: [100, 105, 110, 112, 118, 120], labels: ["9. mar", "16. mar", "23. mar"], best: "120", sessions: 4, volume: "1 860" },
+    "Leg Press": { points: [120, 130, 140, 145, 150, 160], labels: ["9. mar", "16. mar", "23. mar"], best: "160", sessions: 5, volume: "3 200" },
+    "Overhead Press": { points: [30, 32, 35, 35, 37, 40], labels: ["9. mar", "16. mar", "23. mar"], best: "40", sessions: 5, volume: "740" },
+    "Lateral Raise": { points: [8, 9, 10, 10, 12, 12], labels: ["9. mar", "16. mar", "23. mar"], best: "12", sessions: 4, volume: "310" },
+    "Bicep Curl": { points: [16, 18, 20, 20, 22, 22.5], labels: ["9. mar", "16. mar", "23. mar"], best: "22,5", sessions: 6, volume: "480" },
+    "Triceps Pushdown": { points: [25, 27, 30, 30, 32, 35], labels: ["9. mar", "16. mar", "23. mar"], best: "35", sessions: 5, volume: "560" },
+  },
 };

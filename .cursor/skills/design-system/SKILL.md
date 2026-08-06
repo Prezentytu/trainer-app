@@ -1,204 +1,86 @@
 ---
 name: design-system
-description: Nasza paleta i system projektowy Trainer App / Workout Alchemist Acid — kolory (apps/web/app/globals.css), typografia, spacing, hierarchia wizualna. Użyj ZAWSZE przy tworzeniu nowego UI, dodawaniu kolorów, review/audycie istniejących komponentów pod kątem zgodności z paletą, albo gdy trzeba wygenerować/poprawić komponent dla światowej klasy UI.
+description: Nasza paleta i system projektowy Trainer App / Workout Alchemist mono v2 — kolory (apps/web/app/globals.css), typografia, spacing, hierarchia wizualna. Użyj ZAWSZE przy tworzeniu nowego UI, dodawaniu kolorów, review/audycie istniejących komponentów pod kątem zgodności z paletą, albo gdy trzeba wygenerować/poprawić komponent dla światowej klasy UI.
 ---
 
-# Nasza paleta (design tokens) — Workout Alchemist Acid
+# Design tokens — Workout Alchemist mono v2
 
-Portal ma jeden, ciemny motyw **Acid**. Kolory żyją w **trzech warstwach**. Hierarchia wynika ze **struktury** (elevation + text ramp), nie z jasności ani glowów.
+Cichy instrument: near-black / white / greys. Emfaza = **invert fill**, nigdy hue w chrome. Kolor tylko na danych: PR / gain / loss.
 
-> Katalog `Workout Alchemist Design System/` w root repo to **legacy teal** — nie jest źródłem prawdy. Prawda: `apps/web/app/globals.css` + ten skill. Spec: `.ai/specs/2026-08-03-acid-design-system.md`.
+> Źródło prawdy: `apps/web/app/globals.css` + ten skill. Spec: `.ai/specs/2026-08-06-mono-epic-minimalism.md`.  
+> Folder `Workout Alchemist Design System/` = referencja specimenów (mono). Landing marketingowy trzyma stary Acid pod klasą `.theme-acid` do osobnego redesignu.
 
-## HIERARCHY — pierwsza zasada
+## Non-negotiables
 
-Każdy ekran musi być czytelny **po całkowitym usunięciu akcentu**. Lime tylko mówi, gdzie kliknąć dalej.
+1. **Brak akcentu w chrome** — buttony, nav, ikony chrome, karty, linie wykresu = mono. Primary = `bg-invert-bg text-invert-fg` (biała pigułka).
+2. **Trzy data accents** — `--pr` (★), `--gain` (▲), `--loss` (▼). Zawsze z glifem/znakiem. Nigdy sam kolor.
+3. **Dwa fonty** — Instrument Sans (słowa), Geist Mono (liczby + labelki caps). Nic poniżej 12px / wagi 400.
+4. **Zero cieni / gradientów / blur** — głębia = szary stopień + hairline 1px. Karty: `--surface` + `--line-faint`.
+5. **Niskie kontrolki** — pole 34px, btn 38px, chip 28px; tap 44px z kontenera (ListRow / siatka).
+6. **Phosphor** (web font regular) przez `components/Icon.tsx` — nie Lucide.
+7. **Listy** = hairline rows na tle, nie stos kart z cieniem.
 
-| Poziom | Co | Token / forma |
+## Tokeny (skrót)
+
+| Token | Dark | Rola |
 |---|---|---|
-| 01 Primary action | 1 na region | lime fill, `text-accent-foreground` |
-| 02 Titles | Archivo | `text-foreground` — **bez koloru** |
-| 03 Body / row labels | bulk UI | `text-foreground-secondary` |
-| 04 Eyebrows / meta / units | mono caps | `text-muted` — **nigdy lime** |
-| 05 List numbers / counters | dekoracja | `text-muted-faint` |
+| `background` / `--bg` | `#0B0C0D` | strona |
+| `surface` | `#17191B` | karty |
+| `surface-raised` / `field` | `#212427` | nav pill, pola |
+| `border` / `--line-faint` | `#2B2F33` | row dividers |
+| `border-strong` / `--line` | `#33373B` | krawędzie (≥3:1) |
+| `foreground` | `#FFF` | tytuły |
+| `foreground-secondary` / muted-strong | `#C9CED4` | body (≥4.5:1) |
+| `muted` | `#9AA1A8` | labelki |
+| `muted-faint` / fg-ghost | `#6E767E` | placeholdery / ticki |
+| `accent` | invert white | primary fill (legacy alias) |
+| `pr` / `gain` / `loss` / `danger` | gold / green / red | tylko dane (+ destrukcja) |
 
-**Lime budget ≤3%.** Dozwolone: fill CTA, focus ring, active-nav tint + 2px bar, progress/completed fill, linki (`text-accent-text`). Zakazane: eyebrows, labels, list numbers, inactive icons, headings, stats, outer glow. Jeśli dwa elementy lime widać naraz — jeden jest zbędny.
+Light: `[data-theme="light"]` przygotowany; przełącznika jeszcze nie ma. `prefers-contrast: more` podnosi secondary.
 
-## Minimalizm — test odejmowania
+## Typografia
 
-Benchmark: Styrka (Feji Studios) — czystość przez odejmowanie, nie przez nowy styl. Spec: `.ai/specs/2026-08-05-styrka-minimalizm-analiza.md`.
-
-**Dotyczy obu stron** — portalu klienta i panelu trenera. Minimalizm nie jest „trybem klienta".
-
-1. **Reguła odejmowania.** Przed dodaniem elementu UI wskaż, co usuwasz albo dlaczego nic nie zabierasz. Ekran musi przejść test: „co można zabrać, żeby nic nie stracić?". Jeśli nie umiesz odpowiedzieć — nie dodawaj.
-2. **Treść = interfejs.** Liczby, nazwy ćwiczeń i tabele niosą ekran. Chrome (ramki, ikony dekoracyjne, tła kart, drugi rząd akcji) tylko gdy porządkuje skanowanie. Jeden ekran = jedno główne zadanie.
-3. **Gęstość ≠ bałagan.** Panel trenera może być gęsty informacyjnie (tabele serii, KPI, lista klientów) — to gęsta **treść** na cichym tle, nie dużo elementów UI. Progressive disclosure dla zaawansowanych; wspólna ścieżka najpierw.
-4. **Acid zostaje.** Nie idziemy w pełny monochrom Styrki. Lime budget ≤3% i gold na PR to nasz wyróżnik. Domyślna odpowiedź na „czego użyć" to **neutral** (`foreground` / `muted` / `surface`), nie akcent.
-
-**Elevation:** `surface-sunken` → `background` → `surface-raised` → `surface` (card) → `surface-hover` → `surface-active`. Max 3 stopnie na ekran. Karta oddziela się wartością + 1px `border`, nie glowem.
-
-**No blooms:** `--glow-cta` i `--texture-scan` = `none`. `--glow-accent` tylko jako focus ring.
-
-## Architektura 3 warstw
-
-1. **Prymitywy** (`:root`): `--ink-*` (near-neutral), `--bone-*`, `--lime-*`, `--gold-*`, `--clay-*`.
-2. **Semantyka**: `--background`, `--surface`, `--accent`, `--accent-text`, `--pr`…
-3. **Tailwind** (`@theme inline`): klasy `bg-surface`, `text-accent`…
-
-## Proporcja brandowa
-
-~**95%** neutrale / ~**3%** lime / ~**2%** gold+clay.
-
-**Gold (`pr`)** wyłącznie PR — cichy tint + `border-pr-border`, nigdy świecąca pigułka.
-
-**Active nav:** quiet `bg-accent-dim` + 2px lime bar + `text-foreground` (nie lime text).
-
-## Tabela tokenów semantycznych
-
-| Token | Motyw Acid | Klasy Tailwind | Rola |
-|---|---|---|---|
-| `surface-sunken` | `#080908` | `bg-surface-sunken` | wells / inputy (najgłębiej) |
-| `background` | `#0C0D0C` | `bg-background` | tło strony |
-| `surface-raised` | `#121312` | `bg-surface-raised` | warstwa między tłem a kartą |
-| `surface` | `#1A1B1A` | `bg-surface` | karty |
-| `surface-hover` | `#222322` | `bg-surface-hover` | hover |
-| `surface-active` | `#2C2E2C` | `bg-surface-active` | active / completed row |
-| `border` | `#2A2C2A` | `border-border` | widoczne obramowanie karty |
-| `border-strong` | `#3A3C3A` | `border-border-strong` | inputy, dashed pending |
-| `foreground` | `#F2F4EC` | `text-foreground` | tytuły, aktywny nav |
-| `foreground-secondary` | `#C8CDC0` | `text-foreground-secondary` | body / row labels |
-| `muted` | `#9AA193` | `text-muted` | eyebrows, meta, units |
-| `muted-faint` | `#6E7566` | `text-muted-faint` | dekoracje / numery list |
-| `accent` | `#C6F135` | `bg-accent` | **tylko fill** CTA / progress |
-| `accent-text` | `#C3E05A` | `text-accent-text` | **jedyny** lime jako atrament (linki) |
-| `accent-foreground` | `#0C0D0C` | `text-accent-foreground` | tekst na lime fill |
-| `accent-dim` | `#161A10` | `bg-accent-dim` | cichy tint active nav |
-| `accent-border` | `#2A3014` | `border-accent-border` | quiet accent border |
-| `pr` | `#E8BB4F` | `text-pr` | **tylko personal bests** |
-| `pr-dim` / `pr-border` | gold quiet | `bg-pr-dim`, `border-pr-border` | PR tint + border |
-| `positive` | bone-300 | `text-positive` | on-track (cichy, nie drugi lime) |
-| `danger` | `#E06A4A` | `text-danger` | destrukcja / missed |
-
-## Efekty i utilities Acid
-
-| Token / klasa | Użycie |
-|---|---|
-| `--glow-accent` | **jedyny** glow — focus-visible ring |
-| `--glow-cta` / `--texture-scan` / `--glow-pr` | `none` (retired) |
-| `--radius-well` `6px` | tabele serii / terminal wells |
-| `.display-caps` | Archivo 900 + UPPERCASE + tracking-display |
-| `.eyebrow` | mono caps + `text-muted` (nigdy lime); opcjonalnie `///` |
-| `.rule-dashed` | separator dashed `--border-strong` |
-
-## Twarda zasada
-
-**Nigdy nie pisz** `bg-zinc-*`, `text-yellow-*`, `bg-teal-*`, `bg-lime-*`, `text-gold-*`, surowych hexów ani prymitywów `--ink-*` / `--lime-*` **w komponentach**. Zawsze token semantyczny. Brakująca rola → dodaj token do `globals.css`, nie omijaj systemu.
-
-Wyjątek: sam `globals.css`, lustra SDK (`clerkAppearance.ts`, OG image, manifesty) i dokumentacja.
-
-## Fonty
-
-| Rola | Font | Klasa |
+| Klasa | Font | Size / weight |
 |---|---|---|
-| Display / wordmark / sesja | Archivo 900 UPPERCASE | `.display-caps` |
-| Display auth (formularz) | Archivo 700 sentence case | `.display-soft` |
-| Display auth editorial | Archivo 800, plakatowa skala | `.display-editorial` |
-| Display landing / auth H1 | Archivo 700 sentence case | `.display-landing` / `.display-landing-xl` — **zero szeryfów, zero kursywy** |
-| Body / UI | Space Grotesk | `font-sans` (domyślny) |
-| Liczby (serie, kg, sekundy, StatBlock) | IBM Plex Mono | `font-mono` + `tabular-nums` |
+| `.t-display` | Instrument Sans | 40 / 600 |
+| `.t-title` | Instrument Sans | 25 / 600 |
+| `.t-heading` | Instrument Sans | 18 / 500 |
+| `.t-body` | Instrument Sans | 15 / 400 |
+| `.t-small` | Instrument Sans | 13 / 400 muted |
+| `.t-label` | Geist Mono | 12 / 500 caps 0.1em |
+| `.t-num` | Geist Mono | 700 tabular |
 
-Ładowane w `apps/web/app/layout.tsx` przez `next/font/google` (`latin` + `latin-ext`).
+Liczba nad labelką: `85,5 kg` / `WAGA`.
 
-## Typografia i casing
+## Prymitywy (`components/ui.tsx`)
 
-| Rola | Klasa | Waga |
-|---|---|---|
-| Micro / meta uppercase | `font-mono text-xs tracking-caps uppercase` / `.eyebrow` | `font-medium` |
-| Body / etykiety | `text-sm` | `font-normal` / `font-medium` |
-| Nazwa ćwiczenia (logger) / wordmark | `.display-caps` | 900 |
-| Nagłówek landingu (H1) | `.display-landing-xl` | Archivo 700 — **sentence case**, tracking −0.04em |
-| Nagłówek landingu (H2) / auth H1 | `.display-landing` | Archivo 700 — **sentence case**, tracking −0.03em |
-| Nagłówek auth (formularz) | `.display-soft` | 700 — **sentence case** |
-| Nagłówek karty | `font-display text-lg font-bold` | bold |
-| Tytuł strony (`PageHeader`) | `font-display text-xl sm:text-2xl font-bold` | bold — **sentence case** |
+`Button` (invert / hairline / ghost / danger), `Card` (+ `flat`), `ListRow`, `Marker`, `Badge`, `Pill`, `SegmentedControl`, `Tabs`, `Switch` (✓ w gałce), `Dialog` (mały center), `Sheet`, `StatBlock`, `IconButton`, `Field` + `inputClass`, `EmptyState`, `ErrorBanner`, `ProgressRing` (`currentColor`).
 
-### Zasady casingu Acid
+Focus: `box-shadow: var(--focus-ring)` (2px bg + 4px fg). Press: `scale(0.97)`.
 
-- **UPPERCASE** tylko: wordmark, mikro-etykiety mono (`SERIA`, `KG`, `POWT`, `PRZERWA`), linki nav landingu (mono caps). **Nie** używaj `.display-caps` na nazwach ćwiczeń w SessionLoggerze — sentence case `font-semibold` (czytelność na siłowni; Archivo 900 UPPERCASE jest za ciężkie).
-- **Landing (Feji/Apple + Softly craft):** nagłówki `.display-landing` / `.display-landing-xl` (Archivo 700 sentence case). **Zakaz szeryfów i kursywy** jako środka wyrazu. Hierarchia z wagi, rozmiaru i powietrza. Near-mono: lime tylko na pill CTA (hero + final). Hero: canvas `HeroField` (dot-field) + `.landing-hero-vignette`. Nav: `.landing-nav` przezroczysty → `.landing-nav-scrolled` (blur + hairline) po scrollu — nie pill Softly. Reveal: line-mask na H1, fade+rise 0.85s / 24px. Marquee mono. Scenariusze (poziomy snap), kaskada telefonów (`.landing-phone-frame` bez notcha), Points ze spotlightem (`.landing-spotlight`, `pointer: fine`, neutral bone), FAQ (`0fr→1fr`). Globalny `.landing-grain` (SVG noise, opacity ~0.28, `overlay`). Edge-mask na scrollerach. Sekcje `py-32 sm:py-44`, numeracja `01 —`. Bez `landing-atmosphere` i bez blobów. Efekty wyłącznie neutralne (żadnego lime bloomu). Copy: krótkie, pełne zdania (H1 maks. 5 słów w 2 liniach).
-- **Auth:** `.display-soft` na tytułach formularza; H1 lewego panelu = `.display-landing-xl` (ten sam grotesk co landing, zero kursywy).
-- Eyebrowy w panelu mogą mieć prefiks `///` (`Card eyebrowMark`, klasa `.eyebrow`). Na landingu: `font-mono text-[11px] uppercase tracking-[var(--tracking-eyebrow)] text-muted`.
-- Tytuły stron panelu i portalu: **sentence case**.
-- Body i kontrolki: sentence case („Start workout” → PL: „Rozpocznij trening”).
-- Liczby zawsze `font-mono tabular-nums`. Zero emoji; Unicode tylko `×` i `·`.
+## Ikony
 
-## Spacing — rytm 4px
+`import { Icon } from "@/components/Icon"` — `name="search" | "dumbbell" | …`, `size={18}`, `decorative`. Aliasy angielskie w pliku. Nigdy kolorowane; `currentColor` / `--fg-muted`.
 
-| Krok | Klasy | Użycie |
-|---|---|---|
-| 4px | `gap-1`, `p-1` | mikro |
-| 8px | `gap-2`, `p-2` | wewnątrz komponentu |
-| 12px | `gap-3`, `p-3` | pola formularza |
-| 16–24px | `p-4`–`p-6` | padding karty (`Card` = `p-5`/`p-6`) |
-| 20px | gutter mobile | |
-| 32px | `mb-8`, `p-8` | sekcje / main |
+## Nav / brand
 
-Tap targets ≥ 44px.
+- Desktop panel trenera: **lewy sidebar** (jak Linear/Stripe) — wordmark, linki z invert gdy active, konto na dole. W kreatorze planu: wąski rail (ikony), pełny po hover.
+- Mobile panel + portal: **floating pill** 20px od dołu, aktywny = invert.
+- Wordmark: sam tekst (`display-caps`), bez lime tile. PWA/ikony: mono `#0B0C0D` + „RM”.
 
-## Border radius
+## Zakazy
 
-- `rounded-[10px]` / `--radius-md` — interaktywne (Button, IconButton, inputy).
-- `rounded-xl` (16px) — kontenery (`Card`).
-- `rounded-3xl` / `--radius-xl` (24px) — arkusze Dialog.
-- `rounded-[var(--radius-pill)]` — Badge, Pill.
-- `--radius-well` (6px) — tabele serii / terminal.
+- Surowy `fetch`, klasy `zinc-*` / `lime-*` / hexy w komponentach.
+- Lucide, emoji, cienie, backdrop-blur, gradienty w app chrome.
+- Sygnalizowanie stanu samym kolorem.
+- Landing: nie ruszaj tokenów Acid w `.theme-acid` przy pracy nad aplikacją.
 
-## Motion
+## Checklist przed merge UI
 
-120ms / 220ms, `--ease-out`. Press: `scale(0.98)`. Bez bounce. Timery/progress animują się ciągle. `prefers-reduced-motion` wyłącza scanline i tick.
-
-## Hierarchia wizualna (3 poziomy)
-
-1. **Primary** — tytuł strony, główny CTA. Max 1–2 na ekran.
-2. **Secondary** — nagłówki kart, kluczowe liczby (mono).
-3. **Tertiary** — etykiety, meta, captions.
-
-## Prymitywy UI
-
-Źródło: [apps/web/components/ui.tsx](apps/web/components/ui.tsx) — `PageHeader`, `Card` (eyebrow/eyebrowMark/title/meta/selected/pending), `Button` (primary/secondary/ghost/danger, sm/md/lg, `glow`), `Field` + `inputClass`, `Badge`, `Pill`, `IconButton`, `Avatar`, `StatBlock`, `Tag`, `Tabs`, `SegmentedControl`, `Switch`, `Dialog`, `ProgressRing`, `EmptyState`, `ErrorBanner`, `useUndoToast`, `formatRest`.
-
-Wordmark: [apps/web/components/Wordmark.tsx](apps/web/components/Wordmark.tsx) — lime block + Archivo 900 UPPERCASE; nigdy rysowanego logo.
-
-## Tone of voice (UX writing)
-
-Głos: **spokojny, dokładny coach**. Druga osoba. Liczby mówią. Bez wykrzykników, hype i emoji.
-
-| Typ | Zasada | Dobrze | Źle |
-|---|---|---|---|
-| CTA | czasownik + rezultat, 1–4 słowa | „Dodaj klienta”, „Utwórz plan” | „OK”, „Potwierdź!” |
-| Błąd | co się stało + jak naprawić | „Ćwiczenie jest w planie — najpierw usuń je z planów.” | „Error 409” |
-| Empty | instruuje, nie przeprasza | „Brak planu. Zbuduj z formuły albo od zera.” | „Ups, nic tu nie ma 😅” |
-| PR | gold tylko przy prawdziwym rekordzie | „★ Personal best” | „Super wynik!!!” |
-
-## Prompt do generowania / audytu UI
-
-```
-Jesteś senior frontend architektem współpracującym z projektantem światowej klasy.
-Pracujesz w Trainer App / Workout Alchemist Acid (Next.js 16 + Tailwind 4, ciemny motyw Acid, UI po polsku).
-
-<design_tokens>
-Źródło: apps/web/app/globals.css (prymitywy + semantyka + @theme inline).
-Komponenty używają WYŁĄCZNIE tokenów semantycznych.
-Gold (pr) TYLKO dla personal bests. Proporcja ~90/8/2. Jeden lime CTA na region.
-Fonty: font-display (Archivo), font-sans (Space Grotesk), font-mono (Plex Mono).
-Utilities: .display-caps, .eyebrow (///), .texture-scan, pending dashed Card.
-</design_tokens>
-```
-
-## Powiązane
-
-- Responsywność: skill `responsive-ui`.
-- Domenowe UX: skill `fitness-ui-ux`.
-- CRO / psychologia: skill `senior-ux-cro`.
-- Interakcje, materiały, craft (Apple): skill `apple-design`.
-- Spec Acid: `.ai/specs/2026-08-03-acid-design-system.md`.
-- Kurs minimalizmu (Styrka → obie strony app): `.ai/specs/2026-08-05-styrka-minimalizm-analiza.md`.
+- [ ] Zero hue w chrome (nav/CTA/focus = invert lub hairline)
+- [ ] Data accents z glifem
+- [ ] Kontrast AA (tekst ≥4.5:1, hairline ≥3:1)
+- [ ] Nic <12px / <400
+- [ ] Karty: fill + hairline; listy: ListRow
+- [ ] Phosphor przez `Icon`
+- [ ] Polskie copy, zdania krótkie, bez wykrzykników

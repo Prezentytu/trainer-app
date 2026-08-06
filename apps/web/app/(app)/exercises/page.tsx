@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pencil, Search, SlidersHorizontal, Trash2, X } from "lucide-react";
+import { Icon } from "@/components/Icon";
 import {
   api,
   CATEGORY_LABELS,
@@ -209,10 +209,11 @@ export default function ExercisesPage() {
       <div className="mb-4 space-y-3 md:sticky md:top-0 md:z-20 md:-mx-1 md:bg-background/95 md:px-1 md:py-3 md:backdrop-blur-sm">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative min-w-0 flex-1">
-            <Search
-              aria-hidden
-              className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-faint"
-              strokeWidth={1.75}
+            <Icon
+              name="search"
+              size={16}
+              className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-faint"
+              decorative
             />
             <input
               ref={searchRef}
@@ -230,7 +231,7 @@ export default function ExercisesPage() {
                 className="absolute top-1/2 right-2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted hover:bg-surface-hover hover:text-foreground"
                 onClick={() => setFilter("query", "")}
               >
-                <X className="h-4 w-4" strokeWidth={1.75} />
+                <Icon name="close" size={16} decorative />
               </button>
             ) : null}
           </div>
@@ -240,7 +241,7 @@ export default function ExercisesPage() {
             aria-expanded={moreFilters}
             className="shrink-0"
           >
-            <SlidersHorizontal className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+            <Icon name="sliders-horizontal" size={16} decorative />
             {advancedCount > 0 ? `Filtry · ${advancedCount}` : "Filtry"}
           </Button>
         </div>
@@ -424,7 +425,7 @@ export default function ExercisesPage() {
             return (
               <div
                 key={ex.id}
-                className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-card transition-colors duration-[var(--dur-fast)] hover:bg-surface-hover"
+                className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-surface transition-colors duration-[var(--dur-fast)] hover:bg-surface-hover"
               >
                 <Link
                   href={`/exercises/${ex.id}`}
@@ -434,7 +435,7 @@ export default function ExercisesPage() {
                 {media ? (
                   <button
                     type="button"
-                    className="relative z-10 block w-full text-left focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+                    className="relative z-10 block w-full text-left focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
                     onClick={() => setPreview(ex)}
                     aria-label={`Podgląd wideo: ${ex.name}`}
                   >
@@ -480,7 +481,7 @@ export default function ExercisesPage() {
                         size="sm"
                         onClick={() => startEdit(ex)}
                       >
-                        <Pencil className="h-4 w-4" strokeWidth={1.4} />
+                        <Icon name="edit" size={16} decorative />
                       </IconButton>
                       <IconButton
                         title="Usuń"
@@ -488,7 +489,7 @@ export default function ExercisesPage() {
                         size="sm"
                         onClick={() => void handleDelete(ex)}
                       >
-                        <Trash2 className="h-4 w-4" strokeWidth={1.4} />
+                        <Icon name="delete" size={16} decorative />
                       </IconButton>
                     </div>
                   </div>

@@ -1,0 +1,50 @@
+<!-- @dsCard group="Panel trenera" viewport="1200x780" name="Panel trenera" subtitle="Desktop: lista klientów → profil klienta (historia / plan)" -->
+<!DOCTYPE html><html lang="pl" data-theme="dark"><head><meta charset="utf-8"><title>Panel trenera — Workout Alchemist</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<script src="../../_ds_bundle.js"></script>
+<script src="data.js"></script>
+<style>html,body{margin:0;min-height:100%}
+.topnav{display:flex;align-items:center;justify-content:space-between;gap:24px;height:64px;padding:0 32px;border-bottom:1px solid var(--line)}
+.navlinks{display:flex;gap:28px}
+.navlink{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:var(--track-label);color:var(--fg-faint);cursor:pointer;border:none;background:none;transition:color var(--dur) var(--ease)}
+.navlink:hover{color:var(--fg)}
+.navlink.is-active{color:var(--fg)}
+.page{max-width:1080px;margin:0 auto;padding:40px 32px 80px}
+</style>
+</head><body><div id="root"></div>
+<script type="text/babel" src="ClientsScreen.jsx"></script>
+<script type="text/babel" src="ClientScreen.jsx"></script>
+<script type="text/babel">
+const { Wordmark, Button } = window.WorkoutAlchemistDesignSystem_381a04;
+function App(){
+  const [route,setRoute]=React.useState("clients");
+  const [theme,setTheme]=React.useState("dark");
+  React.useEffect(()=>{document.documentElement.setAttribute("data-theme",theme)},[theme]);
+  return (<>
+    <div className="topnav">
+      <Wordmark />
+      <div className="navlinks">
+        {[["clients","Klienci"],["plans","Plany"],["exercises","Ćwiczenia"]].map(([k,l])=>(
+          <button key={k} className={"navlink"+((route===k||(k==="clients"&&route==="client"))?" is-active":"")}
+            onClick={()=>setRoute(k)}>{l}</button>))}
+      </div>
+      <div style={{display:"flex",alignItems:"center",gap:16}}>
+        <span className="t-label">{window.PANEL.trainer}</span>
+        <Button variant="outline" size="sm" onClick={()=>setTheme(t=>t==="dark"?"light":"dark")}>
+          {theme==="dark"?"Jasny":"Ciemny"}
+        </Button>
+      </div>
+    </div>
+    <div className="page">
+      {route==="client"
+        ? <ClientScreen onBack={()=>setRoute("clients")} />
+        : <ClientsScreen onOpen={()=>setRoute("client")} />}
+    </div>
+  </>);
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script></body></html>

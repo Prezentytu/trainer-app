@@ -203,7 +203,7 @@ export default function ClientsPage() {
           Zmień filtr albo wyszukiwanie — albo dodaj nowego klienta.
         </EmptyState>
       ) : (
-        <div className="grid gap-2">
+        <div>
           {filtered.map((c) => {
             const ago = c.lastSessionOn ? daysAgo(c.lastSessionOn) : null;
             const stale = ago != null && ago > 7;
@@ -211,20 +211,23 @@ export default function ClientsPage() {
               <Link
                 key={c.id}
                 href={`/clients/${c.id}`}
-                className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 shadow-card transition-[background-color,border-color] duration-[var(--dur-fast)] hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-3 border-b border-border px-1 py-4 transition-colors duration-[var(--dur-fast)] hover:bg-surface-hover/60 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="flex min-w-0 items-start gap-3">
                   <span className="relative shrink-0">
                     <Avatar name={c.name} size="lg" />
                     <span
                       aria-hidden
-                      className={`absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface ${
+                      className={`absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-background ${
                         ago == null
-                          ? "bg-muted-faint"
+                          ? "bg-fg-ghost"
                           : stale
-                            ? "bg-danger"
-                            : "bg-positive"
+                            ? "bg-loss"
+                            : "bg-gain"
                       }`}
+                      title={
+                        ago == null ? "Brak treningów" : stale ? "Bez treningu >7 dni" : "Aktywny"
+                      }
                     />
                   </span>
                   <div className="min-w-0">

@@ -1,7 +1,8 @@
-<!-- @dsCard group="Colors" viewport="700x150" subtitle="Parchment text ramp on dark" name="Text / Bone" -->
-<!DOCTYPE html><html><head><link rel="stylesheet" href="../styles.css"><style>body{display:flex;gap:8px;padding:16px}.sw{flex:1;height:110px;border-radius:10px;background:var(--surface-card);border:1px solid var(--border-subtle);display:flex;flex-direction:column;justify-content:space-between;padding:12px}.n{font:var(--type-mono-sm);color:var(--text-faint)}</style></head><body>
-<div class="sw"><span style="font:var(--type-body-strong);color:var(--bone-100)">Primary text</span><span class="n">bone-100</span></div>
-<div class="sw"><span style="font:var(--type-body-strong);color:var(--bone-300)">Secondary</span><span class="n">bone-300</span></div>
-<div class="sw"><span style="font:var(--type-body-strong);color:var(--bone-500)">Muted</span><span class="n">bone-500</span></div>
-<div class="sw"><span style="font:var(--type-body-strong);color:var(--bone-700)">Faint</span><span class="n">bone-700</span></div>
+<!-- @dsCard group="Colors" viewport="700x180" name="Text ramp & contrast" subtitle="Every text grey measured against --bg. Body and labels clear AA 4.5:1." -->
+<!DOCTYPE html><html lang="pl"><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css"><style>body{margin:0;padding:18px;background:var(--bg);color:var(--fg)}p{margin:0 0 10px;font-size:16px;display:flex;align-items:baseline;gap:10px}.r{font-family:var(--font-mono);font-size:11px;font-weight:500;color:var(--fg-faint)}</style></head><body>
+<p style="color:var(--fg)">--fg #FFFFFF — liczby, tytuły <span class="r">19.8:1 · AAA</span></p>
+<p style="color:var(--fg-muted)">--fg-muted #C9CED4 — treść, wiersze <span class="r">12.6:1 · AAA</span></p>
+<p style="color:var(--fg-faint)">--fg-faint #9AA1A8 — etykiety mono, jednostki <span class="r">7.2:1 · AAA</span></p>
+<p style="color:var(--fg-ghost)">--fg-ghost #6E767E — placeholdery, osie, disabled <span class="r">3.6:1 · non-text only</span></p>
+<p style="color:var(--danger)">--danger #FF6B6B — tylko akcje destrukcyjne <span class="r">6.1:1 · AA</span></p>
 </body></html>

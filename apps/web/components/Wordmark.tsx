@@ -6,15 +6,12 @@ type WordmarkProps = {
   className?: string;
 };
 
-/** Wordmark Acid — lime block + Archivo 900 UPPERCASE. Never draw a mark. */
+/** Wordmark mono — sam typ „RepMaxer” / „RM”, bez kafelka. */
 export function Wordmark({ href = "/", compact = false, className = "" }: WordmarkProps) {
-  const content = compact ? (
-    <span className="inline-flex h-3 w-3 shrink-0 bg-accent" aria-hidden title="RepMaxer" />
-  ) : (
-    <>
-      <span className="inline-flex h-2.5 w-2.5 shrink-0 bg-accent" aria-hidden />
-      <span className="display-caps text-sm text-foreground">RepMaxer</span>
-    </>
+  const content = (
+    <span className="display-caps text-[13px] text-foreground">
+      {compact ? "RM" : "RepMaxer"}
+    </span>
   );
 
   if (href) {
@@ -22,12 +19,12 @@ export function Wordmark({ href = "/", compact = false, className = "" }: Wordma
       <Link
         href={href}
         aria-label={compact ? "RepMaxer" : undefined}
-        className={`flex items-center gap-2.5 ${className}`}
+        className={`flex items-center ${className}`}
       >
         {content}
       </Link>
     );
   }
 
-  return <div className={`flex items-center gap-2.5 ${className}`}>{content}</div>;
+  return <div className={`flex items-center ${className}`}>{content}</div>;
 }

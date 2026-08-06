@@ -2,24 +2,24 @@
  * Appearance dla komponentów Clerka.
  *
  * Clerk nie przyjmuje klas Tailwind ani niezawodnie `var(--token)` w `variables`
- * (psuje generowanie skal kolorów). Hexy poniżej są lustrem warstwy 2 z
+ * (psuje generowanie skal kolorów). Hexy poniżej są lustrem mono z
  * `apps/web/app/globals.css` — jedyne miejsce, gdzie wolno je podać do zewnętrznego SDK.
- * Przy zmianie palety WA zaktualizuj też ten plik.
+ * Przy zmianie palety zaktualizuj też ten plik.
  */
 export const clerkAppearance = {
   variables: {
-    colorBackground: "#1a1b1a", // --surface / --ink-850
-    colorForeground: "#f2f4ec", // --foreground / --bone-100
-    colorPrimary: "#c6f135", // --accent / --lime-500
-    colorPrimaryForeground: "#0c0d0c", // --accent-foreground
-    colorMutedForeground: "#9aa193", // --muted / --bone-500
-    colorBorder: "#3a3c3a", // --border-strong
-    colorInput: "#080908", // --surface-sunken
-    colorDanger: "#e06a4a", // --danger / --clay-500
-    colorRing: "#c6f135", // --accent
-    borderRadius: "10px",
-    fontFamily: "var(--font-space-grotesk), system-ui, sans-serif",
-    fontFamilyMono: "var(--font-ibm-plex-mono), ui-monospace, monospace",
+    colorBackground: "#17191B", // --surface / --ink-800
+    colorForeground: "#FFFFFF", // --fg
+    colorPrimary: "#FFFFFF", // --invert-bg / --accent
+    colorPrimaryForeground: "#0B0C0D", // --invert-fg
+    colorMutedForeground: "#9AA1A8", // --fg-faint
+    colorBorder: "#33373B", // --line
+    colorInput: "#212427", // --field
+    colorDanger: "#FF6B6B", // --danger
+    colorRing: "#FFFFFF", // --fg (focus)
+    borderRadius: "8px",
+    fontFamily: "var(--font-instrument-sans), system-ui, sans-serif",
+    fontFamilyMono: "var(--font-geist-mono), ui-monospace, monospace",
   },
   layout: {
     elevation: "flush" as const,
@@ -34,12 +34,12 @@ export const clerkAppearance = {
     // AuthScreen ma własny przełącznik sign-in / sign-up
     footerAction: { display: "none" },
     socialButtonsBlockButton: {
-      backgroundColor: "#121312", // --surface-raised
-      borderColor: "#3a3c3a", // --border-strong
-      color: "#f2f4ec",
+      backgroundColor: "#212427", // --surface-raised
+      borderColor: "#33373B", // --line
+      color: "#FFFFFF",
       boxShadow: "none",
       "&:hover": {
-        backgroundColor: "#222322", // --surface-hover
+        backgroundColor: "#2B2F33", // --ink-600
       },
     },
     formButtonPrimary: {
@@ -48,7 +48,7 @@ export const clerkAppearance = {
     },
     card: {
       boxShadow: "none",
-      border: "1px solid #2a2c2a", // --border
+      border: "1px solid #2B2F33", // --line-faint
     },
     footer: {
       background: "transparent",

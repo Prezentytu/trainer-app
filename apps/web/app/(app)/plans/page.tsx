@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, X } from "lucide-react";
+import { Icon } from "@/components/Icon";
 import { api, PlanSummary } from "@/lib/api";
 import { daysAgo, formatDayShort, relativeDayLabel } from "@/lib/dates";
 import { polishDayCount, polishExerciseCount, polishWeekCount } from "@/lib/plural";
@@ -24,10 +24,11 @@ import { PlanListSkeleton } from "@/components/skeletons";
 type AssignmentSummary = { planId: number; clientName: string };
 type KindFilter = "all" | "library" | "clients";
 
-/** Wspólna siatka nagłówka i wierszy — 1fr bierze luz, akcje max-content przy lewej krawędzi kolumny. */
-const PLAN_ROW_PAD = "px-4 py-3.5";
-const PLAN_ROW_COLS =
-  "gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(11rem,13rem)_minmax(8rem,10rem)_auto] sm:items-center sm:gap-x-5 lg:grid-cols-[minmax(0,1fr)_minmax(11rem,13rem)_minmax(8rem,10rem)_4.5rem_auto] lg:gap-x-5";
+/** Wspólna siatka nagłówka i wierszy — stałe tracki, żeby komórki zawsze się pokrywały. */
+const PLAN_ROW_PAD = "px-4 py-3";
+/** Plan | Struktura | Klienci | Dodano | Akcje — akcje zawsze ta sama szerokość (2 ikony). */
+const PLAN_GRID =
+  "lg:grid lg:grid-cols-[minmax(0,1fr)_11rem_9rem_5.5rem_5.5rem] lg:items-center lg:gap-x-4";
 
 export default function PlansPage() {
   const router = useRouter();
@@ -130,10 +131,11 @@ export default function PlansPage() {
           <div className="mb-4 flex flex-col gap-3">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <div className="relative min-w-0 flex-1">
-                <Search
-                  aria-hidden
-                  className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-faint"
-                  strokeWidth={1.75}
+                <Icon
+                  name="search"
+                  size={16}
+                  className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-faint"
+                  decorative
                 />
                 <input
                   type="search"
@@ -150,7 +152,7 @@ export default function PlansPage() {
                     className="absolute top-1/2 right-2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted hover:bg-surface-hover hover:text-foreground"
                     onClick={() => setQuery("")}
                   >
-                    <X className="h-4 w-4" strokeWidth={1.75} />
+                    <Icon name="close" size={16} decorative />
                   </button>
                 ) : null}
               </div>
@@ -162,7 +164,7 @@ export default function PlansPage() {
                   items={[
                     { value: "all", label: "Wszystkie", count: plans.length },
                     { value: "library", label: "Biblioteka", count: libraryCount },
-                    { value: "clients", label: "Plany klientów", count: clientCount },
+                    { value: "clients", label: "Klienci", count: clientCount },
                   ]}
                 />
               </div>
@@ -200,30 +202,32 @@ export default function PlansPage() {
               onClearQuery={() => setQuery("")}
             />
           ) : (
-            <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface">
-              <li
-                className={`${PLAN_ROW_PAD} ${PLAN_ROW_COLS} hidden bg-surface-raised font-mono text-xs uppercase tracking-caps text-muted lg:grid`}
+            <div className="overflow-hidden rounded-[var(--r-card)] border border-border bg-surface">
+              <div
+                className={`${PLAN_ROW_PAD} ${PLAN_GRID} hidden border-b border-border bg-surface-raised t-label`}
                 aria-hidden
               >
                 <span>Plan</span>
                 <span>Struktura</span>
                 <span>Klienci</span>
                 <span>Dodano</span>
-                <span>Akcje</span>
-              </li>
-              {filtered.map((p) => (
-                <PlanRow
-                  key={p.id}
-                  plan={p}
-                  clientNames={clientNamesByPlan.get(p.id) ?? []}
-                  onDuplicate={() => void handleDuplicate(p, false)}
-                  onCreateClientPlan={
-                    p.isTemplate ? () => void handleDuplicate(p, true) : undefined
-                  }
-                  onDelete={() => setDeleteTarget(p)}
-                />
-              ))}
-            </ul>
+                <span className="text-right">Akcje</span>
+              </div>
+              <ul className="divide-y divide-border">
+                {filtered.map((p) => (
+                  <PlanRow
+                    key={p.id}
+                    plan={p}
+                    clientNames={clientNamesByPlan.get(p.id) ?? []}
+                    onDuplicate={() => void handleDuplicate(p, false)}
+                    onCreateClientPlan={
+                      p.isTemplate ? () => void handleDuplicate(p, true) : undefined
+                    }
+                    onDelete={() => setDeleteTarget(p)}
+                  />
+                ))}
+              </ul>
+            </div>
           )}
         </>
       ) : null}
@@ -315,71 +319,92 @@ function PlanRow({
 
   return (
     <li
-      className={`group relative grid grid-cols-1 transition-colors hover:bg-surface-hover sm:grid ${PLAN_ROW_PAD} ${PLAN_ROW_COLS}`}
+      className={`group relative grid grid-cols-1 gap-2 transition-colors hover:bg-surface-raised/60 ${PLAN_ROW_PAD} ${PLAN_GRID}`}
     >
-      <div className="flex min-w-0 items-center gap-3">
+      {/* Plan */}
+      <div className="flex min-w-0 items-start gap-3">
         <span
           aria-hidden
-          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-active text-muted-strong"
+          className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--r-field)] bg-surface-active text-fg-muted"
         >
           {plan.isTemplate ? <TemplateIcon /> : <ClientPlanIcon />}
         </span>
         <div className="min-w-0 flex-1">
           <Link
             href={`/plans/${plan.id}`}
-            className="break-words font-display text-base font-semibold text-foreground after:absolute after:inset-0"
+            className="t-heading break-words text-[15px] after:absolute after:inset-0 after:z-0"
           >
             {plan.name}
           </Link>
           {plan.description?.trim() ? (
-            <p className="mt-0.5 line-clamp-1 break-words text-xs text-muted">{plan.description}</p>
+            <p className="mt-0.5 line-clamp-1 break-words text-[13px] text-fg-muted">
+              {plan.description}
+            </p>
           ) : null}
+          {onCreateClientPlan ? (
+            <button
+              type="button"
+              onClick={onCreateClientPlan}
+              className="relative z-10 mt-1 text-[13px] font-medium text-fg-muted underline underline-offset-2 hover:text-foreground"
+            >
+              Utwórz plan klienta
+            </button>
+          ) : null}
+          {/* Mobile meta — jedna linia pod nazwą */}
+          <p className="mt-1 text-[13px] text-fg-faint lg:hidden">
+            {structure}
+            <span className="mx-1.5">·</span>
+            {clientNames.length > 0
+              ? `${visibleClients.join(", ")}${extraClients > 0 ? ` +${extraClients}` : ""}`
+              : "Nieprzypisany"}
+            <span className="mx-1.5">·</span>
+            {addedLabel}
+          </p>
         </div>
       </div>
 
-      <div className="font-mono text-xs leading-snug tabular-nums text-muted-strong sm:min-w-0">
+      {/* Struktura */}
+      <div className="hidden min-w-0 font-mono text-[12px] leading-snug tabular-nums text-fg-muted lg:block">
         {structure}
       </div>
 
-      <div className="min-w-0">
+      {/* Klienci */}
+      <div className="hidden min-w-0 lg:block">
         {clientNames.length > 0 ? (
           <div className="flex min-w-0 items-center gap-2">
             <div className="flex shrink-0 -space-x-1.5">
               {visibleClients.map((name) => (
                 <span
                   key={name}
-                  className="rounded-full ring-2 ring-surface transition-[box-shadow] duration-[var(--dur-fast)] group-hover:ring-surface-hover"
+                  className="rounded-full ring-2 ring-surface transition-[box-shadow] duration-[var(--dur-fast)] group-hover:ring-surface-raised"
                 >
                   <Avatar name={name} size="sm" />
                 </span>
               ))}
             </div>
-            <span className="min-w-0 break-words text-xs text-muted">
+            <span className="min-w-0 truncate text-[12px] text-fg-muted">
               {visibleClients.join(", ")}
               {extraClients > 0 ? ` +${extraClients}` : ""}
             </span>
           </div>
         ) : (
-          <span className="text-xs text-muted-faint">Nieprzypisany</span>
+          <span className="text-[12px] text-fg-ghost">—</span>
         )}
       </div>
 
-      <div className="hidden font-mono text-xs tabular-nums text-muted lg:block">{addedLabel}</div>
+      {/* Dodano */}
+      <div className="hidden font-mono text-[12px] tabular-nums text-fg-faint lg:block">
+        {addedLabel}
+      </div>
 
-      <div className="relative z-10 flex shrink-0 flex-wrap items-center gap-1">
-        {onCreateClientPlan ? (
-          <Button variant="secondary" size="sm" onClick={onCreateClientPlan}>
-            Utwórz plan klienta
-          </Button>
-        ) : null}
-        <div className="flex items-center gap-0.5 transition-opacity duration-[var(--dur-fast)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
-          <IconButton title={`Duplikuj „${plan.name}"`} size="sm" onClick={onDuplicate}>
-            <DuplicateIcon />
-          </IconButton>
-          <IconButton title={`Usuń „${plan.name}"`} size="sm" variant="danger" onClick={onDelete}>
-            <TrashIcon />
-          </IconButton>
-        </div>
+      {/* Akcje — stała szerokość, zawsze te same 2 ikony */}
+      <div className="relative z-10 flex w-full shrink-0 items-center justify-end gap-0.5 lg:w-auto">
+        <IconButton title={`Duplikuj „${plan.name}"`} size="xs" onClick={onDuplicate}>
+          <DuplicateIcon />
+        </IconButton>
+        <IconButton title={`Usuń „${plan.name}"`} size="xs" variant="danger" onClick={onDelete}>
+          <TrashIcon />
+        </IconButton>
       </div>
     </li>
   );

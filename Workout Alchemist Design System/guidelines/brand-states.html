@@ -1,9 +1,10 @@
-<!-- @dsCard group="Brand" viewport="700x160" subtitle="Hover lightens · press darkens + scales 0.98 · gold focus ring" name="Interaction states" -->
-<!DOCTYPE html><html><head><link rel="stylesheet" href="../styles.css"><style>body{display:flex;gap:14px;padding:24px;align-items:center}.b{height:var(--control-h-md);padding:0 20px;border-radius:var(--radius-md);font:var(--type-body-strong);display:inline-flex;align-items:center;border:none}</style></head><body>
-<button class="b" style="background:var(--accent);color:var(--text-on-accent)">Rest</button>
-<button class="b" style="background:var(--accent-hover);color:var(--text-on-accent)">Hover</button>
-<button class="b" style="background:var(--accent-press);color:var(--text-on-accent);transform:scale(0.98)">Press</button>
-<button class="b" style="background:var(--accent);color:var(--text-on-accent);box-shadow:var(--glow-accent)">Focus</button>
-<button class="b" style="background:var(--accent);color:var(--text-on-accent);opacity:0.4">Disabled</button>
-<span style="font:var(--type-caption);color:var(--text-muted)">120ms / 220ms · ease-out · no bounces</span>
-</body></html>
+<!-- @dsCard group="Brand" viewport="700x180" name="States" subtitle="Hover = krok jaśniej · press 0.97 · focus = dwuwarstwowy pierścień" -->
+<!DOCTYPE html><html lang="pl"><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css"><style>body{margin:0;padding:18px;background:var(--bg);color:var(--fg)}.r{display:flex;gap:14px;flex-wrap:wrap;align-items:center}.t{font-family:var(--font-mono);font-size:10px;font-weight:500;letter-spacing:.05em;color:var(--fg-faint);margin-top:8px;text-align:center}</style></head><body>
+<div class="r">
+<div><span class="s-btn s-btn--solid">Rozpocznij</span><div class="t">REST</div></div>
+<div><span class="s-btn s-btn--solid" style="background:var(--fg-muted)">Rozpocznij</span><div class="t">HOVER</div></div>
+<div><span class="s-btn s-btn--solid" style="transform:scale(0.97)">Rozpocznij</span><div class="t">PRESS</div></div>
+<div><span class="s-btn s-btn--outline" style="box-shadow:var(--focus-ring)">Anuluj</span><div class="t">FOCUS</div></div>
+<div><span class="s-btn s-btn--solid" style="opacity:.45">Zapisz</span><div class="t">DISABLED</div></div>
+<div><span class="s-btn s-btn--danger">Usuń trening</span><div class="t">DANGER</div></div>
+</div></body></html>

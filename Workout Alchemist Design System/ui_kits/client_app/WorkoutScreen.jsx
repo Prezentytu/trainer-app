@@ -1,54 +1,113 @@
-function WorkoutScreen({ onFinish }) {
-  const { Button, Icon, ProgressRing, Badge } = window.WorkoutAlchemistDesignSystem_5f0610;
-  const w = window.WAAppData.workout;
-  const [exi, setExi] = React.useState(0);
-  const [done, setDone] = React.useState(w.ex.map((x) => x.sets.map(() => false)));
-  const [rest, setRest] = React.useState(0);
-  React.useEffect(() => { if (rest <= 0) return; const t = setTimeout(() => setRest(rest - 1), 1000); return () => clearTimeout(t); }, [rest]);
-  const x = w.ex[exi];
-  const total = w.ex.reduce((a, e) => a + e.sets.length, 0);
-  const nDone = done.flat().filter(Boolean).length;
-  const toggle = (si) => {
-    const was = done[exi][si];
-    setDone(done.map((d, i) => i === exi ? d.map((v, j) => j === si ? !v : v) : d));
-    if (!was) setRest(x.rest);
-  };
-  const fmt = (s) => String(Math.floor(s / 60)) + ":" + String(s % 60).padStart(2, "0");
+const { TopBar, Button, IconButton, Icon, ExerciseBlock, SetRow, SetRowHeader, Sheet, Input, ListRow } =
+  window.WorkoutAlchemistDesignSystem_381a04;
+
+function WorkoutScreen({ onCancel, onFinish }) {
+  const src = window.APP.session;
+  const [exercises, setExercises] = React.useState(() => JSON.parse(JSON.stringify(src.exercises)));
+  const [picker, setPicker] = React.useState(false);
+  const [search, setSearch] = React.useState("");
+  const [confirm, setConfirm] = React.useState(false);
+
+  const patch = (ei, si, key, v) =>
+    setExercises((xs) => xs.map((e, i) => (i === ei ? { ...e, sets: e.sets.map((s, j) => (j === si ? { ...s, [key]: v } : s)) } : e)));
+  const addSet = (ei) =>
+    setExercises((xs) => xs.map((e, i) => (i === ei ? { ...e, sets: [...e.sets, { w: e.bodyweight ? "BW" : "", r: "" }] } : e)));
+  const delSet = (ei, si) =>
+    setExercises((xs) => xs.map((e, i) => (i === ei ? { ...e, sets: e.sets.filter((_, j) => j !== si) } : e)));
+
+  const library = src.library.filter((e) => e.name.toLowerCase().includes(search.toLowerCase()));
+  const totalSets = exercises.reduce((n, e) => n + e.sets.length, 0);
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100%" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 20px", borderBottom: "1px solid var(--border-subtle)", position: "sticky", top: 0, background: "rgba(11,12,10,0.8)", backdropFilter: "blur(12px)", zIndex: 10 }}>
-        <button onClick={onFinish} style={{ all: "unset", cursor: "pointer", color: "var(--text-muted)", display: "flex" }}><Icon name="chevron-down" size={22} /></button>
-        <div style={{ flex: 1 }}>
-          <div style={{ font: "var(--type-body-strong)", fontSize: "var(--text-sm)" }}>{w.label}</div>
-          <div style={{ font: "var(--type-mono-sm)", fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>{nDone}/{total} sets</div>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <TopBar
+        left={<Button variant="plain" size="sm" onClick={() => setConfirm(true)}>Anuluj</Button>}
+        title="Trening"
+        right={
+          <>
+            <Button variant="plain" size="sm">Zapisz</Button>
+            <Button caps size="sm" onClick={onFinish}>Finish</Button>
+          </>
+        }
+      />
+
+      <div style={{ flex: 1, overflowY: "auto", padding: "4px var(--gutter) 40px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 4 }}>
+          <span className="t-label">{src.date}</span>
+          <span className="t-label">{totalSets} serii</span>
         </div>
-        {rest > 0 ? <ProgressRing value={rest / x.rest} color="var(--teal-300)" label={fmt(rest)} size={46} stroke={4} /> : <Badge tone="positive">Live</Badge>}
+
+        {exercises.map((ex, ei) => (
+          <ExerciseBlock
+            key={ei}
+            name={ex.name}
+            action={
+              <IconButton
+                title="Usuń ćwiczenie"
+                size="sm"
+                onClick={() => setExercises((xs) => xs.filter((_, i) => i !== ei))}
+              >
+                <Icon name="trash" size={14} />
+              </IconButton>
+            }
+            onAddSet={() => addSet(ei)}
+          >
+            <SetRowHeader left={ex.bodyweight ? "Ciężar" : "Ciężar (kg)"} right="Powt." />
+            {ex.sets.map((s, si) => (
+              <SetRow
+                key={si}
+                index={si + 1}
+                weight={s.w}
+                reps={s.r}
+                weightSuffix={ex.bodyweight ? "BW" : "kg"}
+                onWeight={(v) => patch(ei, si, "w", v)}
+                onReps={(v) => patch(ei, si, "r", v)}
+                onDelete={() => delSet(ei, si)}
+              />
+            ))}
+          </ExerciseBlock>
+        ))}
+
+        <button type="button" className="s-addset" style={{ paddingTop: 20 }} onClick={() => setPicker(true)}>
+          + Dodaj ćwiczenie
+        </button>
       </div>
-      <div style={{ padding: "18px 20px", flex: 1 }}>
-        <div style={{ font: "var(--type-label)", color: "var(--text-muted)", letterSpacing: "var(--tracking-caps)", textTransform: "uppercase" }}>Exercise {exi + 1} of {w.ex.length}</div>
-        <h2 style={{ font: "var(--type-h2)", margin: "4px 0 2px" }}>{x.name}</h2>
-        <div style={{ font: "var(--type-mono-sm)", color: "var(--accent)", marginBottom: 16 }}>{x.target} · rest {fmt(x.rest)}</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {x.sets.map((s, si) => {
-            const on = done[exi][si];
-            return (
-              <button key={si} onClick={() => toggle(si)} style={{ all: "unset", cursor: "pointer", display: "flex", alignItems: "center", gap: 14, minHeight: 44, padding: "10px 14px", borderRadius: "var(--radius-md)", background: on ? "var(--positive-dim)" : "var(--surface-card)", border: "1px solid " + (on ? "var(--teal-700)" : "var(--border-subtle)"), transition: "background var(--dur-fast) var(--ease-out)" }}>
-                <span style={{ font: "var(--type-label)", color: "var(--text-faint)", letterSpacing: "var(--tracking-caps)", width: 40 }}>SET {si + 1}</span>
-                <span style={{ font: "var(--type-stat)", fontSize: 20 }}>{s.w}<span style={{ font: "var(--type-mono-sm)", color: "var(--text-muted)" }}> kg</span></span>
-                <span style={{ font: "var(--type-stat)", fontSize: 20 }}>{s.r}<span style={{ font: "var(--type-mono-sm)", color: "var(--text-muted)" }}> reps</span></span>
-                <span style={{ marginLeft: "auto", width: 26, height: 26, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: on ? "var(--teal-300)" : "var(--ink-700)", color: on ? "var(--ink-950)" : "var(--text-faint)" }}><Icon name="check" size={16} /></span>
-              </button>
-            );
-          })}
+
+      <Sheet open={picker} onClose={() => setPicker(false)} title="Dodaj ćwiczenie">
+        <Input value={search} onChange={setSearch} placeholder="Szukaj…" />
+        <div style={{ marginTop: 8, maxHeight: 260, overflowY: "auto" }}>
+          {library.map((e) => (
+            <ListRow
+              key={e.name}
+              title={e.name}
+              sub={e.group}
+              right={<Icon name="plus" size={15} color="var(--fg-faint)" />}
+              onClick={() => {
+                setExercises((xs) => [...xs, { name: e.name, bodyweight: false, sets: [{ w: "", r: "" }] }]);
+                setPicker(false);
+                setSearch("");
+              }}
+            />
+          ))}
         </div>
-      </div>
-      <div style={{ display: "flex", gap: 10, padding: "14px 20px 24px", position: "sticky", bottom: 0, background: "rgba(11,12,10,0.8)", backdropFilter: "blur(12px)", borderTop: "1px solid var(--border-subtle)" }}>
-        <Button variant="secondary" full disabled={exi === 0} onClick={() => setExi(exi - 1)} icon={<Icon name="arrow-left" size={18} />}>Back</Button>
-        {exi < w.ex.length - 1
-          ? <Button full onClick={() => setExi(exi + 1)} icon={<Icon name="arrow-right" size={18} />}>Next exercise</Button>
-          : <Button full onClick={onFinish} icon={<Icon name="check" size={18} />}>Finish workout</Button>}
-      </div>
+      </Sheet>
+
+      <Sheet
+        center
+        open={confirm}
+        onClose={() => setConfirm(false)}
+        title="Odrzucić trening?"
+        footer={
+          <>
+            <Button variant="outline" full onClick={() => setConfirm(false)}>Wróć</Button>
+            <Button variant="danger" full onClick={onCancel}>Odrzuć</Button>
+          </>
+        }
+      >
+        <p className="t-small" style={{ margin: 0 }}>Serie z tej sesji nie zostaną zapisane.</p>
+      </Sheet>
     </div>
   );
 }
-window.WAWorkoutScreen = WorkoutScreen;
+
+Object.assign(window, { WorkoutScreen });

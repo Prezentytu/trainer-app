@@ -10,7 +10,7 @@ import { LandingFooter } from "./LandingFooter";
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="theme-acid min-h-screen bg-background text-foreground">
       <LandingNav />
       <main>
         <Hero />

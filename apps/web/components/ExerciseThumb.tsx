@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Dumbbell, Play } from "lucide-react";
+import { Icon } from "@/components/Icon";
 import { CATEGORY_LABELS, ExerciseCategory } from "@/lib/api";
 import { formatVideoSeconds, thumbUrl } from "@/lib/youtube";
 
@@ -64,9 +64,11 @@ export function ExerciseThumb({
         />
       ) : (
         <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-muted">
-          <Dumbbell
-            className={square ? "h-4 w-4 text-muted-faint" : "h-7 w-7 text-muted-faint"}
-            aria-hidden
+          <Icon
+            name="dumbbell"
+            size={square ? 16 : 28}
+            className="text-muted-faint"
+            decorative
           />
           {!square && catLabel ? (
             <span className="text-xs font-semibold uppercase tracking-[0.08em]">{catLabel}</span>
@@ -82,7 +84,7 @@ export function ExerciseThumb({
           }`}
         >
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-background/80 text-foreground shadow-raised">
-            <Play className="h-4 w-4 fill-current" aria-hidden />
+            <Icon name="play" size={16} decorative />
           </span>
         </div>
       ) : null}

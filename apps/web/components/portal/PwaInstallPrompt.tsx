@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { Share } from "lucide-react";
+import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
 import { isIosDevice, useIsStandalone } from "@/lib/pwa";
 
@@ -82,7 +82,7 @@ export function PwaInstallPrompt({
         <ol className="mt-4 space-y-2.5 text-sm text-foreground-secondary">
           <li className="flex items-start gap-2.5">
             <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-surface-active text-accent">
-              <Share className="h-3.5 w-3.5" aria-hidden />
+              <Icon name="share" size={14} decorative />
             </span>
             <span>
               Kliknij ikonę <strong className="font-semibold text-foreground">Udostępnij</strong>{" "}
