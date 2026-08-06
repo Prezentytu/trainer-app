@@ -8,7 +8,7 @@ description: Nasza paleta i system projektowy Trainer App / RepMaxer mono v2 —
 Cichy instrument: near-black / white / greys. Emfaza = **invert fill**, nigdy hue w chrome. Kolor tylko na danych: PR / gain / loss.
 
 > Źródło prawdy: `apps/web/app/globals.css` + ten skill. Spec: `.ai/specs/2026-08-06-mono-epic-minimalism.md`.  
-> Folder `RepMaxer Design System/` = referencja specimenów (mono). Landing marketingowy trzyma stary Acid pod klasą `.theme-acid` do osobnego redesignu.
+> Folder `RepMaxer Design System/` = referencja specimenów (mono). Landing marketingowy używa tych samych tokenów mono v2.
 
 ## Non-negotiables
 
@@ -73,7 +73,7 @@ Focus: `box-shadow: var(--focus-ring)` (2px bg + 4px fg). Press: `scale(0.97)`.
 - Surowy `fetch`, klasy `zinc-*` / `lime-*` / hexy w komponentach.
 - Lucide, emoji, cienie, backdrop-blur, gradienty w app chrome.
 - Sygnalizowanie stanu samym kolorem.
-- Landing: nie ruszaj tokenów Acid w `.theme-acid` przy pracy nad aplikacją.
+- Landing i app dzielą te same tokeny mono — nie wprowadzaj osobnego hue-theme na marketing.
 
 ## Checklist przed merge UI
 

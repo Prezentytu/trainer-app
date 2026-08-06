@@ -1,50 +1,48 @@
-import Link from "next/link";
-import { Button } from "@/components/ui";
-import { HeroField } from "./HeroField";
+import { LandingReveal } from "./LandingReveal";
+import { LiveFeed } from "./LiveFeed";
+import { LandingCta } from "./primitives";
 
 export function Hero() {
   return (
-    <section className="relative flex min-h-[88svh] scroll-mt-24 items-center justify-center overflow-hidden px-5 pt-16 sm:px-6 sm:pt-[4.5rem]">
-      <HeroField />
-
-      <div className="landing-hero-vignette relative z-[1] mx-auto w-full max-w-4xl pb-16 text-center sm:pb-20">
-        <p className="landing-eyebrow-in font-mono text-[11px] uppercase tracking-[var(--tracking-eyebrow)] text-muted">
-          Dla trenerów personalnych
-        </p>
-
-        <h1 className="mt-7 display-landing-xl text-[clamp(1.75rem,5.2vw,4.5rem)] text-foreground text-pretty sm:mt-10">
-          <span className="landing-mask">
-            <span className="landing-mask-inner" style={{ ["--i" as string]: 0 }}>
-              Wysyłasz link.
-            </span>
+    <section
+      id="top"
+      className="mx-auto flex min-h-[calc(100svh-72px)] max-w-[1200px] flex-col justify-center px-5 pb-24 pt-24 sm:px-8 sm:pb-24 sm:pt-32"
+    >
+      <LandingReveal>
+        <h1 className="m-0 max-w-[18ch] text-[clamp(2.75rem,7.4vw,6rem)] font-semibold leading-[1.02] tracking-[-0.035em] text-foreground text-balance">
+          <span className="landing-stagger block" style={{ ["--i" as string]: 0 }}>
+            Wysyłasz link.
           </span>
-          <span className="landing-mask mt-1 sm:mt-2">
-            <span className="landing-mask-inner" style={{ ["--i" as string]: 1 }}>
-              Widzisz każdy trening.
-            </span>
+          <span
+            className="landing-stagger mt-1 block text-muted sm:mt-0"
+            style={{ ["--i" as string]: 1 }}
+          >
+            Widzisz każdy trening.
           </span>
         </h1>
 
-        <p className="landing-reveal landing-reveal-delay-3 mx-auto mt-6 max-w-[34ch] text-[16px] leading-relaxed text-muted text-pretty sm:mt-7 sm:text-[17px]">
-          Klient odhacza serie w telefonie. Bez aplikacji, bez konta.
-        </p>
+        <div className="mt-12 grid grid-cols-1 items-end gap-12 md:mt-16 md:grid-cols-2 md:gap-16">
+          <div className="max-w-[42ch]">
+            <p
+              className="landing-stagger m-0 text-[17px] font-normal leading-[1.6] text-muted text-pretty"
+              style={{ ["--i" as string]: 2 }}
+            >
+              Klient odhacza serie w telefonie. Bez aplikacji, bez konta.
+            </p>
+            <div
+              className="landing-stagger mt-8 flex flex-wrap items-center gap-x-6 gap-y-3"
+              style={{ ["--i" as string]: 3 }}
+            >
+              <LandingCta />
+              <span className="t-label tracking-[0.16em] text-muted">0 zł · bez karty</span>
+            </div>
+          </div>
 
-        <div className="landing-reveal landing-reveal-delay-4 mt-8 flex flex-wrap items-center justify-center gap-x-7 gap-y-4 sm:mt-10">
-          <Link href="/sign-up">
-            <Button size="lg" className="landing-cta-pill">
-              Załóż darmowe konto
-            </Button>
-          </Link>
-          <a href="#produkt" className="landing-scroll-cta">
-            <span>Zobacz produkt</span>
-            <span aria-hidden>↓</span>
-          </a>
+          <div className="landing-stagger" style={{ ["--i" as string]: 4 }}>
+            <LiveFeed />
+          </div>
         </div>
-
-        <p className="landing-reveal landing-reveal-delay-5 mt-5 text-sm text-muted-faint sm:mt-6">
-          0 zł · bez karty
-        </p>
-      </div>
+      </LandingReveal>
     </section>
   );
 }

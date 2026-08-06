@@ -1,32 +1,24 @@
-import Link from "next/link";
-import { Button } from "@/components/ui";
 import { LandingReveal } from "./LandingReveal";
+import { LandingCta } from "./primitives";
 
 export function FinalCta() {
   return (
     <LandingReveal
       as="section"
-      id="cennik"
-      className="scroll-mt-24 border-t border-border px-5 py-32 sm:px-6 sm:py-44"
+      className="mx-auto max-w-[1200px] px-5 pb-[clamp(6rem,12vw,10rem)] pt-[clamp(8rem,16vw,10rem)] sm:px-8"
     >
-      <div className="mx-auto flex max-w-6xl flex-col items-center gap-10 text-center sm:gap-12">
-        <div className="min-w-0">
-          <p className="font-mono text-[11px] uppercase tracking-[var(--tracking-eyebrow)] text-muted">
-            06 — Cena
-          </p>
-          <p className="mt-6 display-landing-xl text-[clamp(5rem,15vw,9rem)] tabular-nums leading-none text-foreground">
-            0
-            <span className="ml-2 text-[0.28em] text-muted sm:ml-3">zł</span>
-          </p>
-          <p className="mx-auto mt-8 max-w-[34ch] text-[15px] leading-relaxed text-muted text-pretty">
-            Wczesny dostęp bez karty. Potem 149 zł miesięcznie. Klient nie płaci nic.
-          </p>
-        </div>
-        <Link href="/sign-up">
-          <Button size="lg" className="landing-cta-pill">
-            Załóż darmowe konto
-          </Button>
-        </Link>
+      <h2
+        className="landing-stagger m-0 max-w-[12ch] text-[clamp(2.75rem,7.4vw,6rem)] font-semibold leading-[1.02] tracking-[-0.035em] text-balance"
+        style={{ ["--i" as string]: 0 }}
+      >
+        Gotowy na trening?
+      </h2>
+      <div
+        className="landing-stagger mt-10 flex flex-wrap items-center gap-x-6 gap-y-3"
+        style={{ ["--i" as string]: 1 }}
+      >
+        <LandingCta />
+        <span className="t-label tracking-[0.16em] text-muted">0 zł · bez karty</span>
       </div>
     </LandingReveal>
   );

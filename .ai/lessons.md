@@ -47,7 +47,7 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 **Kontekst**: Tokeny light były w `globals.css`, ale bez przełącznika.
 **Problem**: React 19 / Next 16 rzuca „Encountered a script tag…” gdy `<script>` jest w drzewie komponentu; FOUC przy ustawieniu motywu po hydracji.
-**Zasada**: Preferencja w `localStorage` (`repmaxer-theme`); boot przez `ThemeBoot` + `useServerInsertedHTML` (poza drzewem klienta); UI w `/settings` przez `useTheme()` / `Switch`. Landing (`.theme-acid`) ma własne tokeny — nie ruszaj.
+**Zasada**: Preferencja w `localStorage` (`repmaxer-theme`); boot przez `ThemeBoot` + `useServerInsertedHTML` (poza drzewem klienta); UI w `/settings` przez `useTheme()` / `Switch`. Landing i app dzielą tokeny mono v2.
 **Dotyczy**: `lib/theme.ts`, `components/ThemeBoot.tsx`, `app/layout.tsx`, `/settings`.
 
 ## Chrome planu = 2 pasy, zero powtórzeń
@@ -75,8 +75,8 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 **Kontekst**: Redesign epic minimalism (2026-08-06).
 **Problem**: Stary Acid wkładał lime w nav/CTA/focus; Lucide + 3 fonty + cienie/blur.
-**Zasada**: Primary = `bg-invert-bg`; data accents `pr`/`gain`/`loss` z glifem; Instrument Sans + Geist Mono; Phosphor przez `Icon`; landing zostaje w `.theme-acid`. Skill `design-system` jest źródłem prawdy.
-**Dotyczy**: `globals.css`, `ui.tsx`, `AppShell`, portal nav, SessionLogger, wykresy.
+**Zasada**: Primary = `bg-invert-bg`; data accents `pr`/`gain`/`loss` z glifem; Instrument Sans + Geist Mono; Phosphor przez `Icon`; landing też mono v2 (bez `.theme-acid`). Skill `design-system` jest źródłem prawdy.
+**Dotyczy**: `globals.css`, `ui.tsx`, `AppShell`, portal nav, SessionLogger, wykresy, `components/landing/`.
 
 ## Nazwa produktu: RepMaxer (nie Workout Alchemist)
 

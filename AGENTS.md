@@ -14,7 +14,7 @@ Ten plik jest punktem startowym dla każdego agenta. Zanim zaczniesz kodować, d
 | Testy API | xUnit + `WebApplicationFactory` | — | `tests/api/` |
 
 - Namespace backendu: `TrainerApp.Api`. Lokalnie (SQLite) schemat powstaje przez `EnsureCreated()`; na produkcji (Postgres) przez migracje EF z `apps/api/Migrations/`. Zmiana encji wymaga **obu**: nowej migracji i usunięcia `apps/api/trainer.db`.
-- UI jest w całości po polsku, ciemny motyw RepMaxer **mono v2** (invert fill zamiast hue w chrome; gold/green/red tylko na danych). Kolory wyłącznie przez tokeny z `apps/web/app/globals.css` — skill `design-system`. Landing marketingowy tymczasowo pod `.theme-acid`.
+- UI jest w całości po polsku, ciemny motyw RepMaxer **mono v2** (invert fill zamiast hue w chrome; gold/green/red tylko na danych). Kolory wyłącznie przez tokeny z `apps/web/app/globals.css` — skill `design-system`. Landing marketingowy też na mono v2 (`components/landing/`).
 - Monorepo, jeden git w root: deployowalne aplikacje pod `apps/`, testy pod `tests/`.
 
 ## Układ repo

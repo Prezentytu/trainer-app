@@ -78,6 +78,6 @@ export default function ClientsPage() {
 
 ## Styl / Tailwind
 
-- Motyw **mono v2**: tło `bg-background`, tekst `text-foreground`, primary = invert (`bg-invert-bg` / legacy `bg-accent` → biały fill). Data accents: `pr` / `gain` / `loss`. Skill `design-system`. Landing: `.theme-acid` (stary lime — nie ruszaj przy pracy nad appką).
+- Motyw **mono v2**: tło `bg-background`, tekst `text-foreground`, primary = invert (`bg-invert-bg` / legacy `bg-accent` → biały fill). Data accents: `pr` / `gain` / `loss`. Skill `design-system`. Landing marketingowy też na mono (`components/landing/`).
 - Statusy: `Badge` / `Marker` z tonami `neutral | accent | positive/gain | danger/loss | pr`.
 - Fonty w `layout.tsx`: Instrument Sans (`font-sans` / display), Geist Mono (`font-mono`). Role: `.t-title`, `.t-label`, `.t-num`.

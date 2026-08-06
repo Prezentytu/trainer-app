@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { auth } from "@clerk/nextjs/server";
 import { clerkEnabled } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
@@ -6,6 +7,17 @@ import { LandingPage } from "@/components/landing/LandingPage";
 
 // Landing vs Panel zależy od sesji Clerka — nie wolno zamrozić jednej wersji w buildzie.
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "RepMaxer — wysyłasz link, widzisz każdy trening",
+  description:
+    "Panel dla trenerów personalnych. Klient odhacza serie w telefonie — bez aplikacji, bez konta. Wczesny dostęp 0 zł.",
+  openGraph: {
+    title: "RepMaxer — wysyłasz link, widzisz każdy trening",
+    description:
+      "Klient odhacza serie w telefonie. Bez aplikacji, bez konta. Wczesny dostęp 0 zł.",
+  },
+};
 
 export default async function HomePage() {
   if (!clerkEnabled) {

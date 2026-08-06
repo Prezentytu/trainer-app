@@ -1,48 +1,37 @@
 import Link from "next/link";
-import { Wordmark } from "@/components/Wordmark";
+
+const FOOTER_LINKS = [
+  { href: "/regulamin", label: "Regulamin" },
+  { href: "/prywatnosc", label: "Prywatność" },
+  { href: "mailto:kontakt@repmaxer.pl", label: "Kontakt" },
+  { href: "/sign-in", label: "Zaloguj się" },
+] as const;
 
 export function LandingFooter() {
   return (
-    <footer className="border-t border-border px-5 pb-12 pt-16 sm:px-6 sm:pb-14 sm:pt-24">
-      <div className="mx-auto max-w-6xl">
-        <p
-          aria-hidden
-          className="display-landing text-[clamp(2rem,6vw,4.5rem)] leading-none text-muted-faint"
+    <footer className="border-t border-border">
+      <div className="mx-auto grid max-w-[1200px] gap-12 px-5 pb-12 pt-16 sm:px-8 sm:pb-12 sm:pt-16">
+        <Link
+          href="/"
+          className="text-[clamp(2.5rem,6vw,2.75rem)] font-semibold tracking-[-0.03em] text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
         >
           RepMaxer
-        </p>
-
-        <div className="mt-12 flex flex-col gap-6 border-t border-border pt-8 sm:flex-row sm:items-center sm:justify-between">
-          <Wordmark />
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-muted">
-            <Link
-              href="/sign-in"
-              className="landing-link-underline transition-colors hover:text-foreground"
-            >
-              Zaloguj się
-            </Link>
-            <Link
-              href="/sign-up"
-              className="landing-link-underline transition-colors hover:text-foreground"
-            >
-              Załóż darmowe konto
-            </Link>
-            <Link
-              href="/prywatnosc"
-              className="landing-link-underline transition-colors hover:text-foreground"
-            >
-              Polityka prywatności
-            </Link>
-            <Link
-              href="/regulamin"
-              className="landing-link-underline transition-colors hover:text-foreground"
-            >
-              Regulamin
-            </Link>
-            <span className="text-muted-faint">
-              © {new Date().getFullYear()} RepMaxer
-            </span>
-          </div>
+        </Link>
+        <div className="flex flex-col gap-6 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
+          <nav className="flex flex-wrap gap-x-8 gap-y-3" aria-label="Stopka">
+            {FOOTER_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="t-label tracking-[0.16em] text-foreground transition-colors duration-[var(--dur-fast)] hover:text-muted focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+          <span className="t-label tracking-[0.16em] text-fg-ghost">
+            © {new Date().getFullYear()} RepMaxer
+          </span>
         </div>
       </div>
     </footer>
