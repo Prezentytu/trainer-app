@@ -630,6 +630,18 @@ export type ExerciseStats = {
   trend: { date: string; estimated1Rm: number }[];
 };
 
+/** Największy % przyrost e1RM w oknie (Styrka Most Improved). */
+export type MostImproved = {
+  exerciseId: number;
+  exerciseName: string;
+  percentGain: number;
+  startE1Rm: number;
+  endE1Rm: number;
+  deltaKg: number;
+  days: number;
+  sessionCount: number;
+};
+
 export type PortalWeekDay = {
   id: number;
   weekNumber: number;
@@ -922,6 +934,8 @@ export const api = {
     progress: (clientId: number) => request<ClientProgress>(`/api/clients/${clientId}/progress`),
     exerciseStats: (clientId: number, exerciseId: number) =>
       request<ExerciseStats>(`/api/clients/${clientId}/exercises/${exerciseId}/stats`),
+    mostImproved: (clientId: number, days = 90) =>
+      request<MostImproved | null>(`/api/clients/${clientId}/most-improved?days=${days}`),
     accessToken: (clientId: number) =>
       request<{ token: string; createdAt: string; expiresAt: string | null }>(
         `/api/clients/${clientId}/access-token`,
@@ -1037,6 +1051,10 @@ export const api = {
     home: (token: string) => request<PortalHome>(`/api/portal/${token}`),
     sessions: (token: string) => request<PortalSessionSummary[]>(`/api/portal/${token}/sessions`),
     records: (token: string) => request<ClientRecord[]>(`/api/portal/${token}/records`),
+    mostImproved: (token: string, days = 90) =>
+      request<MostImproved | null>(`/api/portal/${token}/most-improved?days=${days}`),
+    exerciseStats: (token: string, exerciseId: number) =>
+      request<ExerciseStats>(`/api/portal/${token}/exercises/${exerciseId}/stats`),
     progressReport: (token: string) =>
       request<ProgressReport>(`/api/portal/${token}/progress-report`),
     checkIns: (token: string) => request<ClientCheckIn[]>(`/api/portal/${token}/check-ins`),

@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+
 namespace TrainerApp.Api;
 
 /// <summary>Wzory i agregacje progresu (Epley, wolumen, PR).</summary>
@@ -8,6 +10,65 @@ public static class Stats
         if (weightKg is null || reps is null || reps < 1) return null;
         if (reps == 1) return RoundToHalf(weightKg.Value);
         return RoundToHalf(weightKg.Value * (1.0 + reps.Value / 30.0));
+    }
+
+    public static async Task<object> ExerciseStatsAsync(AppDb db, int clientId, int exerciseId)
+    {
+        var sets = await db.LoggedSets
+            .Include(s => s.LoggedExercise).ThenInclude(e => e!.Session)
+            .Where(s => s.LoggedExercise!.Session!.ClientId == clientId
+                        && s.LoggedExercise.ExerciseId == exerciseId
+                        && s.LoggedExercise.Session.Status == "completed"
+                        && !s.IsWarmup)
+            .ToListAsync();
+
+        var with1Rm = sets
+            .Select(s => new
+            {
+                s,
+                E1 = Epley1Rm(s.WeightKg, s.Reps),
+                Date = s.LoggedExercise!.Session!.PerformedOn,
+            })
+            .Where(x => x.E1 is not null)
+            .OrderBy(x => x.Date)
+            .ToList();
+
+        var estimated1Rm = with1Rm.Select(x => x.E1!.Value).DefaultIfEmpty(0).Max();
+        var maxWeight = sets.Where(s => s.WeightKg is not null).OrderByDescending(s => s.WeightKg).FirstOrDefault();
+        var bySession = sets.GroupBy(s => s.LoggedExercise!.WorkoutSessionId)
+            .Select(g => new
+            {
+                Date = g.First().LoggedExercise!.Session!.PerformedOn,
+                Volume = VolumeKg(g),
+            })
+            .OrderByDescending(x => x.Volume)
+            .FirstOrDefault();
+
+        var repMaxes = sets
+            .Where(s => s.Reps is not null && s.WeightKg is not null)
+            .GroupBy(s => s.Reps!.Value)
+            .Select(g => new { reps = g.Key, weightKg = g.Max(x => x.WeightKg!.Value) })
+            .OrderBy(x => x.reps)
+            .ToList();
+
+        var trend = with1Rm
+            .GroupBy(x => x.Date)
+            .Select(g => new { date = g.Key, estimated1Rm = g.Max(x => x.E1!.Value) })
+            .OrderBy(x => x.date)
+            .ToList();
+
+        return new
+        {
+            clientId,
+            exerciseId,
+            estimated1Rm = estimated1Rm > 0 ? estimated1Rm : (double?)null,
+            maxWeightKg = maxWeight?.WeightKg,
+            maxWeightDate = maxWeight?.LoggedExercise?.Session?.PerformedOn,
+            maxVolumeKg = bySession?.Volume,
+            maxVolumeDate = bySession?.Date,
+            repMaxes,
+            trend,
+        };
     }
 
     public static double RoundToHalf(double kg) =>

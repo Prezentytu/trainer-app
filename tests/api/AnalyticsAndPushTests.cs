@@ -84,6 +84,31 @@ public class AnalyticsAndPushTests : IClassFixture<TestWebAppFactory>
     }
 
     [Fact]
+    public async Task MostImproved_ReturnsTopPercentGain()
+    {
+        var (clientId, _) = await SeedLoggedSetsAsync(
+            muscles: ["Klatka"],
+            sessions: 4,
+            setsPerSession: 2,
+            weight: 60,
+            reps: 8,
+            daysApart: 7,
+            flatWeight: false);
+
+        var res = await _client.GetAsync($"/api/clients/{clientId}/most-improved?days=90");
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        var json = await res.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal(JsonValueKind.Object, doc.RootElement.ValueKind);
+        Assert.True(doc.RootElement.GetProperty("percentGain").GetDouble() > 0);
+        Assert.True(doc.RootElement.GetProperty("sessionCount").GetInt32() >= 2);
+
+        var token = await PortalTokenAsync(clientId);
+        var portal = await _client.GetAsync($"/api/portal/{token}/most-improved?days=90");
+        Assert.Equal(HttpStatusCode.OK, portal.StatusCode);
+    }
+
+    [Fact]
     public async Task Stagnation_DetectsNoE1rmProgress()
     {
         var (clientId, _) = await SeedLoggedSetsAsync(

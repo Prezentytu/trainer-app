@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api, ClientMeasurement } from "@/lib/api";
 import { Button, ErrorBanner, Field, inputClass, inputNumericClass } from "@/components/ui";
+import { WeightTrendSparkline } from "@/components/WeightTrendSparkline";
 
 function formatDay(iso: string): string {
   const d = new Date(`${iso}T12:00:00`);
@@ -38,6 +39,14 @@ export default function PortalMeasurementsPage() {
   }, [token]);
 
   useEffect(load, [load]);
+
+  const weightTrend = useMemo(() => {
+    if (!rows) return [];
+    return [...rows]
+      .filter((r) => r.weightKg != null)
+      .sort((a, b) => a.measuredOn.localeCompare(b.measuredOn) || a.id - b.id)
+      .map((r) => ({ date: r.measuredOn, value: r.weightKg as number }));
+  }, [rows]);
 
   const add = async () => {
     setSaving(true);
@@ -116,21 +125,31 @@ export default function PortalMeasurementsPage() {
       ) : rows.length === 0 ? (
         <p className="text-sm text-muted">Brak pomiarów — dodaj pierwszy powyżej.</p>
       ) : (
-        <ul className="space-y-2">
-          {rows.map((r) => (
-            <li
-              key={r.id}
-              className="rounded-2xl border border-border bg-surface px-4 py-3 shadow-card"
-            >
-              <p className="font-mono text-[13px] tabular-nums text-muted">{formatDay(r.measuredOn)}</p>
-              <p className="mt-1 font-mono text-[15px] tabular-nums">
-                {r.weightKg != null ? `${r.weightKg} kg` : "—"}
-                {r.waistCm != null ? ` · talia ${r.waistCm} cm` : ""}
+        <>
+          {weightTrend.length >= 2 ? (
+            <section aria-label="Trend wagi" className="border-y border-border py-4">
+              <p className="mb-3 font-mono text-xs font-medium uppercase tracking-caps text-muted">
+                Trend wagi
               </p>
-              {r.note ? <p className="mt-1 text-[13px] text-muted">{r.note}</p> : null}
-            </li>
-          ))}
-        </ul>
+              <WeightTrendSparkline points={weightTrend} />
+            </section>
+          ) : null}
+          <ul className="space-y-2">
+            {rows.map((r) => (
+              <li
+                key={r.id}
+                className="rounded-2xl border border-border bg-surface px-4 py-3 shadow-card"
+              >
+                <p className="font-mono text-[13px] tabular-nums text-muted">{formatDay(r.measuredOn)}</p>
+                <p className="mt-1 font-mono text-[15px] tabular-nums">
+                  {r.weightKg != null ? `${r.weightKg} kg` : "—"}
+                  {r.waistCm != null ? ` · talia ${r.waistCm} cm` : ""}
+                </p>
+                {r.note ? <p className="mt-1 text-[13px] text-muted">{r.note}</p> : null}
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );

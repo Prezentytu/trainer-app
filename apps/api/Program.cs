@@ -1139,63 +1139,22 @@ app.MapGet("/api/clients/{clientId:int}/exercises/{exerciseId:int}/stats", async
 {
     try
     {
-    var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
-    if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
-    var sets = await db.LoggedSets
-        .Include(s => s.LoggedExercise).ThenInclude(e => e!.Session)
-        .Where(s => s.LoggedExercise!.Session!.ClientId == clientId
-                    && s.LoggedExercise.ExerciseId == exerciseId
-                    && s.LoggedExercise.Session.Status == "completed"
-                    && !s.IsWarmup)
-        .ToListAsync();
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        return Results.Ok(await Stats.ExerciseStatsAsync(db, clientId, exerciseId));
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
 
-    var with1Rm = sets
-        .Select(s => new
-        {
-            s,
-            E1 = Stats.Epley1Rm(s.WeightKg, s.Reps),
-            Date = s.LoggedExercise!.Session!.PerformedOn,
-        })
-        .Where(x => x.E1 is not null)
-        .OrderBy(x => x.Date)
-        .ToList();
-
-    var estimated1Rm = with1Rm.Select(x => x.E1!.Value).DefaultIfEmpty(0).Max();
-    var maxWeight = sets.Where(s => s.WeightKg is not null).OrderByDescending(s => s.WeightKg).FirstOrDefault();
-    var bySession = sets.GroupBy(s => s.LoggedExercise!.WorkoutSessionId)
-        .Select(g => new
-        {
-            Date = g.First().LoggedExercise!.Session!.PerformedOn,
-            Volume = Stats.VolumeKg(g),
-        })
-        .OrderByDescending(x => x.Volume)
-        .FirstOrDefault();
-
-    var repMaxes = sets
-        .Where(s => s.Reps is not null && s.WeightKg is not null)
-        .GroupBy(s => s.Reps!.Value)
-        .Select(g => new { reps = g.Key, weightKg = g.Max(x => x.WeightKg!.Value) })
-        .OrderBy(x => x.reps)
-        .ToList();
-
-    var trend = with1Rm
-        .GroupBy(x => x.Date)
-        .Select(g => new { date = g.Key, estimated1Rm = g.Max(x => x.E1!.Value) })
-        .OrderBy(x => x.date)
-        .ToList();
-
-    return Results.Ok(new
+app.MapGet("/api/clients/{clientId:int}/most-improved", async (
+    int clientId, int? days, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
     {
-        clientId,
-        exerciseId,
-        estimated1Rm = estimated1Rm > 0 ? estimated1Rm : (double?)null,
-        maxWeightKg = maxWeight?.WeightKg,
-        maxWeightDate = maxWeight?.LoggedExercise?.Session?.PerformedOn,
-        maxVolumeKg = bySession?.Volume,
-        maxVolumeDate = bySession?.Date,
-        repMaxes,
-        trend,
-    });
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        var row = await ProgressReports.MostImprovedAsync(db, clientId, days ?? 90);
+        return Results.Ok(row);
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
@@ -1791,6 +1750,21 @@ app.MapGet("/api/portal/{token}/records", async (string token, AppDb db) =>
     var access = await ResolvePortalToken(db, token);
     if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
     return Results.Ok(await LoadClientRecordsAsync(db, access.ClientId));
+}).RequireRateLimiting("portal");
+
+app.MapGet("/api/portal/{token}/most-improved", async (string token, int? days, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    var row = await ProgressReports.MostImprovedAsync(db, access.ClientId, days ?? 90);
+    return Results.Ok(row);
+}).RequireRateLimiting("portal");
+
+app.MapGet("/api/portal/{token}/exercises/{exerciseId:int}/stats", async (string token, int exerciseId, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    return Results.Ok(await Stats.ExerciseStatsAsync(db, access.ClientId, exerciseId));
 }).RequireRateLimiting("portal");
 
 app.MapGet("/api/portal/{token}/exercises", async (string token, AppDb db) =>
