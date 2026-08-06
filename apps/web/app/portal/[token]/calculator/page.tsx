@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api, ClientRecord } from "@/lib/api";
-import { ErrorBanner } from "@/components/ui";
+import { EmptyState, ErrorBanner } from "@/components/ui";
 import { PortalPageSkeleton } from "@/components/skeletons";
 import { DEFAULT_PLATE_CONFIG, formatKg, solvePlates } from "@/lib/plates";
 
@@ -86,9 +86,9 @@ export default function PortalCalculatorPage() {
       {!records ? (
         <PortalPageSkeleton label="Wczytuję rekordy…" />
       ) : records.length === 0 ? (
-        <p className="text-sm text-muted">
+        <EmptyState title="Brak szacowanego maxu">
           Najpierw zalicz serie z ciężarem — wtedy zobaczysz strefy per ćwiczenie.
-        </p>
+        </EmptyState>
       ) : (
         <>
           <label className="block">

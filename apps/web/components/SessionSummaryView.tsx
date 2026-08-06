@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { SessionDetail } from "@/lib/api";
+import { api, SessionDetail } from "@/lib/api";
 import { Button, StatBlock } from "@/components/ui";
 import { formatKg } from "@/lib/plates";
 
@@ -41,9 +41,7 @@ function prHeadline(count: number): string {
 }
 
 async function shareSessionCard(shareImageUrl: string, title: string) {
-  const res = await fetch(shareImageUrl);
-  if (!res.ok) throw new Error("Nie udało się przygotować karty.");
-  const blob = await res.blob();
+  const blob = await api.shareSessionCardBlob(shareImageUrl);
   const file = new File([blob], "trening-repmaxer.png", { type: "image/png" });
   const canFiles =
     typeof navigator !== "undefined" &&

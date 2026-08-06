@@ -47,7 +47,10 @@ export function PlateCalculator({ targetKg, onApply, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center sm:p-4">
+    <div
+      data-session-plates
+      className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center sm:p-4"
+    >
       <button
         type="button"
         aria-label="Zamknij"

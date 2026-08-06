@@ -66,10 +66,26 @@ public class MvpRetentionTests : IClassFixture<TestWebAppFactory>
         var res = await _client.GetAsync("/api/export");
         res.EnsureSuccessStatusCode();
         var json = await res.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.True(json.TryGetProperty("clients", out _));
+        Assert.True(json.TryGetProperty("clients", out var clients));
         Assert.True(json.TryGetProperty("plans", out _));
         Assert.True(json.TryGetProperty("sessions", out _));
+        Assert.True(clients.GetArrayLength() >= 1);
+        var first = clients[0];
+        Assert.True(first.TryGetProperty("measurements", out _));
+        Assert.True(first.TryGetProperty("checkIns", out _));
+        Assert.False(first.TryGetProperty("tokens", out _), "Eksport nie może zawierać surowych tokenów portalu.");
+        Assert.True(first.TryGetProperty("portalLinkCount", out _));
     }
+
+    [Fact]
+    public async Task ExportCsv_IncludesSetRows()
+    {
+        var res = await _client.GetAsync("/api/export/csv");
+        res.EnsureSuccessStatusCode();
+        var csv = await res.Content.ReadAsStringAsync();
+        Assert.Contains("section,sessionId,client,date,exercise,setNumber", csv);
+    }
+
 
     [Fact]
     public async Task PortalProgressReport_WorksForDemoToken()

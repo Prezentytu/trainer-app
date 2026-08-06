@@ -48,6 +48,9 @@ function DockBtn({
     <button
       type="button"
       onClick={onClick}
+      // Nie zabieraj fokusu z inputu przed clickiem — inaczej iOS bywa kapryśny;
+      // activeCell i tak trzymamy w stanie (pointerdown dock jest wyłączony z clear).
+      onMouseDown={(e) => e.preventDefault()}
       title={title}
       aria-label={title}
       className={`inline-flex h-10 min-w-10 items-center justify-center rounded-[8px] px-2 text-[13px] font-semibold focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] active:scale-[0.96] ${
@@ -95,6 +98,7 @@ export function SessionDock({
 
   return (
     <div
+      data-session-dock
       className="session-chrome fixed inset-x-0 z-50 border-t border-border px-3 pt-2"
       style={{
         bottom: inset,

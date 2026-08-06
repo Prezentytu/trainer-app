@@ -50,7 +50,7 @@ Status: **Mamy** / **Częściowo** / **Brak** / **Nie kopiować**. Dowody w kodz
 | Reorder ćwiczeń mid-workout | **Mamy** (Fala 0) | W górę / W dół w menu |
 | Notatka per seria | **Mamy** (Fala 3) | Menu wiersza → `LoggedSet.Note` |
 | Notatka sesji w trakcie | Częściowo | Tylko po zakończeniu |
-| Edycja daty sesji po fakcie | Brak (backlog) | Backend przyjmuje; brak UI |
+| Edycja daty sesji po fakcie | **Mamy** (pre-launch) | UI w `SessionReview` u trenera |
 | Cap 4 h na czas treningu | **Mamy** (Fala 0) | `MaxDurationSeconds` |
 | Typ weight+distance (Farmer's Walk) | Brak (backlog) | Typy: `reps`/`time`/`distance` |
 | Logowanie L/R unilateral | **Mamy** (Fala 3) | Chip L/P + para serii; `LoggedSet.Side` |
@@ -80,7 +80,7 @@ Status: **Mamy** / **Częściowo** / **Brak** / **Nie kopiować**. Dowody w kodz
 | Avg RPE | Brak (backlog) | |
 | Kalkulator %1RM + strefy | **Mamy** (Fala 3) | Portal `/calculator` |
 | Share card | **Mamy** (Fala 3) | PNG + `navigator.share({ files })` |
-| CSV z seriami / import | Częściowo | CSV bez serii; brak importu backupu |
+| CSV z seriami / import | Częściowo | CSV z seriami (pre-launch); brak importu backupu |
 | Detektor zastoju | **Mamy** (Fala 3) | Portal + trener |
 | Rep-maxy w UI | **Mamy** (Fala 3) | `RepMaxList` w expandzie |
 
@@ -106,9 +106,9 @@ Kreator planów z %1RM / rampami / superseriami, import planu AI, portal bez kon
 | **3** | Share, %1RM, zastój portalu, rep-maxy, migracja Note/Side/Goal | `2026-08-06-styrka-parity-fala-3.md` |
 | 4+ | CSV, import, cardio, avg RPE, drill-down… | backlog poniżej |
 
-### Backlog (po Fali 3)
+### Backlog (po Fali 3 / pre-launch)
 
-Weight+distance w loggerze, drill-down mięśni, cardio totals, avg RPE, CSV z seriami + import, licznik wykonań per ćwiczenie, edycja daty sesji, notatka sesji w trakcie.
+Weight+distance w loggerze, drill-down mięśni, cardio totals, avg RPE, import backupu, licznik wykonań per ćwiczenie, notatka sesji w trakcie.
 
 ## Wynik audytu Fali D (2026-08-05) — historyczny
 

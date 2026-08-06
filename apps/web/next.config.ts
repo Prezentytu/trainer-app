@@ -20,6 +20,14 @@ const nextConfig: NextConfig = {
     webpackMemoryOptimizations: true,
     preloadEntriesOnStart: false,
   },
+  async headers() {
+    return [
+      {
+        source: "/portal/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

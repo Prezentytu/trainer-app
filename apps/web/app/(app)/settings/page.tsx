@@ -1,25 +1,39 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useClerk } from "@clerk/nextjs";
 import { Icon } from "@/components/Icon";
-import { api, NavCounts } from "@/lib/api";
+import { api, NavCounts, clerkEnabled } from "@/lib/api";
 import { useTheme } from "@/lib/theme";
-import { Button, Card, ErrorBanner, PageHeader, Switch } from "@/components/ui";
+import { Button, Card, ErrorBanner, PageHeader, Skeleton, Switch } from "@/components/ui";
 
 export default function SettingsPage() {
   const [counts, setCounts] = useState<NavCounts | null>(null);
+  const [loadingCounts, setLoadingCounts] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [downloadingCsv, setDownloadingCsv] = useState(false);
   const [downloadingJson, setDownloadingJson] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState("");
   const { theme, setTheme } = useTheme();
 
   useEffect(() => {
+    let cancelled = false;
     api
       .counts()
-      .then(setCounts)
-      .catch(() => {
-        // Liczniki są pomocnicze — brak nie blokuje pobierania.
+      .then((c) => {
+        if (!cancelled) setCounts(c);
+      })
+      .catch((e: Error) => {
+        if (!cancelled) setError(e.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingCounts(false);
       });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const downloadCsv = async () => {
@@ -62,13 +76,21 @@ export default function SettingsPage() {
 
   const summary =
     counts != null
-      ? `Kopia obejmuje ${counts.clients} ${pluralClients(counts.clients)} i ${counts.plans} ${pluralPlans(counts.plans)} wraz z historią treningów.`
-      : "Kopia obejmuje klientów, plany i historię treningów.";
+      ? `Kopia obejmuje ${counts.clients} ${pluralClients(counts.clients)} i ${counts.plans} ${pluralPlans(counts.plans)} wraz z historią treningów, pomiarami i wywiadem.`
+      : "Kopia obejmuje klientów, plany, historie treningów, pomiary i wywiad.";
 
   return (
     <div className="space-y-4">
       <PageHeader title="Ustawienia" subtitle="Wygląd, konto i kopia danych" />
       <ErrorBanner message={error} />
+
+      {loadingCounts ? (
+        <div className="max-w-2xl space-y-3 rounded-[var(--r-card)] border border-border bg-surface p-4">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-3 w-64" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      ) : null}
 
       <Card
         className="max-w-2xl"
@@ -98,7 +120,7 @@ export default function SettingsPage() {
             <Button
               onClick={() => void downloadCsv()}
               loading={downloadingCsv}
-              disabled={downloadingCsv || downloadingJson}
+              disabled={downloadingCsv || downloadingJson || deleting}
             >
               Pobierz plik dla Excela (.csv)
             </Button>
@@ -106,17 +128,112 @@ export default function SettingsPage() {
               variant="secondary"
               onClick={() => void downloadJson()}
               loading={downloadingJson}
-              disabled={downloadingCsv || downloadingJson}
+              disabled={downloadingCsv || downloadingJson || deleting}
             >
               Pobierz pełną kopię (.json)
             </Button>
           </div>
           <p className="text-xs text-muted">
-            Pełna kopia zawiera każdą serię i powtórzenie — przydatne przy przenoszeniu danych do innego programu.
+            CSV zawiera też wiersze serii. Pełna kopia JSON obejmuje pomiary, wywiad i check-iny —
+            bez tokenów linków portalu.
           </p>
         </div>
       </Card>
+
+      <Card
+        className="max-w-2xl"
+        icon={<Icon name="warning-circle" size={16} decorative />}
+        title="Usuń konto"
+        meta="Nieodwracalne — kasuje klientów, plany i historię treningów."
+      >
+        <p className="mb-3 text-sm text-foreground-secondary">
+          Najpierw pobierz kopię danych. Potem wpisz{" "}
+          <span className="font-mono font-semibold text-foreground">USUN</span>, żeby potwierdzić.
+        </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <input
+            className="h-[var(--h-field)] w-full max-w-xs rounded-[var(--r-field)] border border-border-strong bg-field px-2.5 text-base font-medium uppercase tracking-wide text-foreground outline-none focus:border-foreground focus:shadow-[var(--focus-ring)] sm:text-sm"
+            value={confirmDelete}
+            onChange={(e) => setConfirmDelete(e.target.value)}
+            placeholder="USUN"
+            autoComplete="off"
+            aria-label="Potwierdzenie usunięcia konta"
+          />
+          {clerkEnabled ? (
+            <ClerkDeleteButton
+              enabled={confirmDelete.trim().toUpperCase() === "USUN"}
+              deleting={deleting}
+              setDeleting={setDeleting}
+              setError={setError}
+            />
+          ) : (
+            <Button
+              variant="danger"
+              disabled={confirmDelete.trim().toUpperCase() !== "USUN" || deleting}
+              loading={deleting}
+              onClick={() => {
+                void (async () => {
+                  setDeleting(true);
+                  setError(null);
+                  try {
+                    await api.deleteAccount();
+                    window.location.href = "/";
+                  } catch (e) {
+                    setError((e as Error).message);
+                    setDeleting(false);
+                  }
+                })();
+              }}
+            >
+              Usuń konto na zawsze
+            </Button>
+          )}
+        </div>
+        <p className="mt-3 text-xs text-muted">
+          Zobacz też{" "}
+          <Link href="/prywatnosc" className="text-foreground underline-offset-2 hover:underline">
+            politykę prywatności
+          </Link>
+          .
+        </p>
+      </Card>
     </div>
+  );
+}
+
+function ClerkDeleteButton({
+  enabled,
+  deleting,
+  setDeleting,
+  setError,
+}: {
+  enabled: boolean;
+  deleting: boolean;
+  setDeleting: (v: boolean) => void;
+  setError: (v: string | null) => void;
+}) {
+  const { signOut } = useClerk();
+  return (
+    <Button
+      variant="danger"
+      disabled={!enabled || deleting}
+      loading={deleting}
+      onClick={() => {
+        void (async () => {
+          setDeleting(true);
+          setError(null);
+          try {
+            await api.deleteAccount();
+            await signOut({ redirectUrl: "/" });
+          } catch (e) {
+            setError((e as Error).message);
+            setDeleting(false);
+          }
+        })();
+      }}
+    >
+      Usuń konto na zawsze
+    </Button>
   );
 }
 

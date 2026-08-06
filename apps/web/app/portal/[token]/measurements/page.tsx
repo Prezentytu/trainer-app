@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api, ClientMeasurement } from "@/lib/api";
-import { Button, ErrorBanner, Field, inputClass, inputNumericClass } from "@/components/ui";
+import { Button, EmptyState, ErrorBanner, Field, inputClass, inputNumericClass } from "@/components/ui";
+import { PortalPageSkeleton } from "@/components/skeletons";
 import { WeightTrendSparkline } from "@/components/WeightTrendSparkline";
 import { formatKg } from "@/lib/plates";
 
@@ -131,9 +132,11 @@ export default function PortalMeasurementsPage() {
       </div>
 
       {!rows ? (
-        <p className="text-sm text-muted">Ładowanie…</p>
+        <PortalPageSkeleton label="Wczytuję pomiary…" />
       ) : rows.length === 0 ? (
-        <p className="text-sm text-muted">Brak pomiarów — dodaj pierwszy powyżej.</p>
+        <EmptyState title="Pierwszy pomiar">
+          Zapisz wagę lub obwód powyżej — zobaczysz trend i postęp do celu.
+        </EmptyState>
       ) : (
         <>
           {goalWeightKg != null ? (

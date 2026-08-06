@@ -107,6 +107,14 @@ Repozytorium jest przygotowane pod pracę z agentami (Cursor, Claude Code, Codex
 - **Skille** — powtarzalne workflow w `.cursor/skills/` (m.in. `add-crud-feature` — scaffold nowego zasobu end-to-end na wzór modułu `Clients`).
 - **Pamięć** — `.ai/lessons.md` gromadzi wnioski, żeby nie powtarzać błędów.
 
-## Poza zakresem MVP (świadomie)
+## Auth i deploy
 
-Auth/logowanie, aplikacja mobilna klienta, historia wykonań treningów, multi-trener/multi-tenant, media ćwiczeń. Model danych (plan → pozycje z parametrami i przerwami) jest przygotowany pod player mobilny (odznaczanie serii + timery przerw).
+- Login trenera: **Clerk** (gdy ustawione `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` + `Clerk__Authority` w API).
+- Lokalnie bez Clerk: API działa jako seedowy trener `local-dev`.
+- **Production:** puste `Clerk__Authority` = API **nie startuje** (fail-fast).
+- Portal klienta: magic link `/portal/[token]` (bez konta), `noindex`, rotacja tokenu u trenera.
+- Deploy: [`docs/deploy.md`](docs/deploy.md). Zmienne: [`.env.example`](.env.example).
+
+## Poza zakresem early access (świadomie)
+
+Billing/Stripe, osobna aplikacja natywna, import backupu z innych trackerów, Sentry (do decyzji). Model danych jest przygotowany pod dalszy rozwój.

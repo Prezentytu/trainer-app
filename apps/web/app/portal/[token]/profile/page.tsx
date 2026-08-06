@@ -185,7 +185,8 @@ export default function PortalProfilePage() {
             <div className="min-w-0 flex-1">
               <p className="text-[15px] text-foreground-secondary">Przerwa na ekranie blokady</p>
               <p className="mt-0.5 text-xs text-muted">
-                Pokazuje odliczanie w kontrolkach odtwarzania — działa przy zgaszonym ekranie.
+                Odliczanie na Lock Screen (jak widget). W przeglądarce pojawia się w Now
+                Playing — to jedyna droga bez natywnej apki.
               </p>
             </div>
             <Switch
@@ -279,6 +280,17 @@ export default function PortalProfilePage() {
               className="flex min-h-14 items-center justify-between gap-3 py-2 text-[15px] font-medium text-foreground transition-colors duration-[var(--dur-fast)] hover:text-foreground-secondary focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
             >
               Kalkulator %1RM
+              <span className="text-muted-faint" aria-hidden>
+                ›
+              </span>
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/prywatnosc"
+              className="flex min-h-14 items-center justify-between gap-3 py-2 text-[15px] font-medium text-foreground transition-colors duration-[var(--dur-fast)] hover:text-foreground-secondary focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+            >
+              Polityka prywatności
               <span className="text-muted-faint" aria-hidden>
                 ›
               </span>

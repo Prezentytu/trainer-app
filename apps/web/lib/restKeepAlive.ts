@@ -63,16 +63,31 @@ function artwork(): MediaImage[] {
   ];
 }
 
+let lastAppliedLeft = -1;
+let lastAppliedKey = "";
+
 function applyMediaSession(state: RestKeepAliveState) {
   if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
   const left = leftSeconds(state);
-  const next = state.nextLabel?.trim();
-  const title = left > 0 ? `Przerwa ${mmss(left)}` : "Koniec przerwy";
-  const artist = next ? `Dalej: ${next}` : "RepMaxer";
+  const next = state.nextLabel?.trim() ?? "";
+  const metaKey = `${next}|${state.setsDone}|${state.setsTotal}|${state.totalSeconds}`;
+  // Odświeżaj tytuł tylko gdy zmieniła się sekunda — unika flashu „0:01” na iOS
+  // przy przepisywaniu całego MediaMetadata co tick.
+  const leftChanged = left !== lastAppliedLeft;
+  const metaChanged = metaKey !== lastAppliedKey;
+  if (!leftChanged && !metaChanged) return;
+  lastAppliedLeft = left;
+  lastAppliedKey = metaKey;
+
+  // Wygląd bliższy widgetowi przerwy niż „utworowi”: duży countdown w tytule,
+  // kontekst w artist/album. True Live Activity wymaga natywnej apki — w PWA
+  // Now Playing + cichy keep-alive to jedyna droga na Lock Screen.
+  const title = left > 0 ? mmss(left) : "Koniec";
+  const artist = next ? `Dalej · ${next}` : "Przerwa";
   const album =
     state.setsTotal > 0
-      ? `Seria ${state.setsDone} z ${state.setsTotal}`
-      : "Trening";
+      ? `Seria ${state.setsDone} / ${state.setsTotal}`
+      : "RepMaxer";
 
   try {
     navigator.mediaSession.metadata = new MediaMetadata({
@@ -90,9 +105,11 @@ function applyMediaSession(state: RestKeepAliveState) {
       state.totalSeconds,
       Math.max(0, state.totalSeconds - left),
     );
+    // playbackRate: 0 — iOS nie przesuwa scrubbera między naszymi tickami.
+    // Przy rate 1 system i metadane walczyły → skoki (np. 0:01 → właściwy czas).
     navigator.mediaSession.setPositionState({
       duration: Math.max(1, state.totalSeconds),
-      playbackRate: 1,
+      playbackRate: 0,
       position: elapsed,
     });
   } catch {
@@ -180,6 +197,8 @@ export function stop() {
   clearMetaTimer();
   current = null;
   handlers = {};
+  lastAppliedLeft = -1;
+  lastAppliedKey = "";
   if (audio) {
     try {
       audio.pause();

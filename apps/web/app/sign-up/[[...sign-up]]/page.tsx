@@ -33,6 +33,7 @@ export default function SignUpPage() {
       switchLabel="Masz już konto?"
       switchHref="/sign-in"
       switchCta="Zaloguj się"
+      requireConsent
     >
       <SignUp
         routing="path"

@@ -7,8 +7,6 @@ export const viewport: Viewport = {
   themeColor: "#0B0C0D",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: "cover",
 };
 
@@ -22,6 +20,7 @@ export async function generateMetadata({
 
   return {
     title: "RepMaxer",
+    robots: { index: false, follow: false, nocache: true, googleBot: { index: false, follow: false, noimageindex: true } },
     manifest,
     appleWebApp: {
       capable: true,

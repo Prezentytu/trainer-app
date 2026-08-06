@@ -895,6 +895,13 @@ export const api = {
   me: () => request<TrainerMe>("/api/me"),
   export: () => request<unknown>("/api/export"),
   exportCsv: () => requestText("/api/export/csv"),
+  deleteAccount: () => request<void>("/api/account", { method: "DELETE" }),
+  /** Pobiera PNG karty treningu (same-origin route Next) — bez ujawniania tokenu. */
+  shareSessionCardBlob: async (shareImageUrl: string): Promise<Blob> => {
+    const res = await fetch(shareImageUrl);
+    if (!res.ok) throw new Error("Nie udało się przygotować karty.");
+    return res.blob();
+  },
   clients: {
     list: () => request<ClientSummary[]>("/api/clients"),
     get: (id: number) => request<ClientDetails>(`/api/clients/${id}`),

@@ -35,6 +35,7 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
     p.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod()));
 
 var clerkAuthority = builder.Configuration["Clerk:Authority"];
+var clerkAudience = builder.Configuration["Clerk:Audience"];
 if (!string.IsNullOrWhiteSpace(clerkAuthority))
 {
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -45,7 +46,9 @@ if (!string.IsNullOrWhiteSpace(clerkAuthority))
             {
                 ValidateIssuer = true,
                 ValidIssuer = clerkAuthority,
-                ValidateAudience = false,
+                // Clerk session JWT wymaga jawnego Audience (JWT template / API).
+                ValidateAudience = !string.IsNullOrWhiteSpace(clerkAudience),
+                ValidAudience = string.IsNullOrWhiteSpace(clerkAudience) ? null : clerkAudience,
                 ValidateLifetime = true,
                 NameClaimType = "sub",
             };
@@ -69,6 +72,39 @@ builder.Services.AddSingleton<EmailService>();
 builder.Services.AddScoped<PushService>();
 
 var app = builder.Build();
+AuthStartup.EnsureProductionAuthConfigured(app.Environment, app.Configuration);
+
+app.Use(async (ctx, next) =>
+{
+    var correlationId = ctx.Request.Headers.TryGetValue("X-Correlation-Id", out var incoming)
+                        && !string.IsNullOrWhiteSpace(incoming)
+        ? incoming.ToString()
+        : Guid.NewGuid().ToString("N");
+    ctx.Response.Headers["X-Correlation-Id"] = correlationId;
+    ctx.Items["CorrelationId"] = correlationId;
+    using (ctx.RequestServices.GetRequiredService<ILoggerFactory>()
+               .CreateLogger("Request")
+               .BeginScope(new Dictionary<string, object> { ["CorrelationId"] = correlationId }))
+    {
+        await next();
+    }
+});
+
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async ctx =>
+    {
+        var feature = ctx.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+        var ex = feature?.Error;
+        var logger = ctx.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("ExceptionHandler");
+        var correlationId = ctx.Items.TryGetValue("CorrelationId", out var cid) ? cid?.ToString() : null;
+        logger.LogError(ex, "Unhandled exception ({CorrelationId})", correlationId);
+        ctx.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        ctx.Response.ContentType = "application/json";
+        await ctx.Response.WriteAsJsonAsync(new { message = "Wystąpił nieoczekiwany błąd. Spróbuj ponownie." });
+    });
+});
+
 app.UseCors();
 app.UseRateLimiter();
 
@@ -151,6 +187,20 @@ app.MapGet("/api/export/csv", async (HttpContext http, AppDb db, IConfiguration 
         var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
         var csv = await ExportData.BuildCsvAsync(db, trainerId);
         return Results.Text(csv, "text/csv; charset=utf-8");
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapDelete("/api/account", async (HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainer = await TrainerAccess.RequireTrainerAsync(http, db, config);
+        // Cascade: Clients → sessions/measurements/intake/tokens; Plans → days/items.
+        // Ćwiczenia własne trenera: TrainerId SetNull (biblioteka wspólna zostaje).
+        db.Trainers.Remove(trainer);
+        await db.SaveChangesAsync();
+        return Results.NoContent();
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
@@ -1647,7 +1697,7 @@ app.MapGet("/api/portal/{token}", async (string token, AppDb db) =>
         week,
         inProgressSession = inProgress,
     });
-});
+}).RequireRateLimiting("portal");
 
 app.MapGet("/api/portal/{token}/sessions", async (string token, AppDb db) =>
 {
@@ -1754,7 +1804,7 @@ app.MapGet("/api/portal/{token}/sessions", async (string token, AppDb db) =>
         Prs = prsBySession.TryGetValue(s.Id, out var prs) ? prs : [],
     });
     return Results.Ok(result);
-});
+}).RequireRateLimiting("portal");
 
 app.MapGet("/api/portal/{token}/records", async (string token, AppDb db) =>
 {
@@ -2002,7 +2052,7 @@ app.MapGet("/api/portal/{token}/sessions/{id:int}", async (string token, int id,
     var session = await db.WorkoutSessions.FindAsync(id);
     if (session is null || session.ClientId != access.ClientId) return Results.NotFound();
     return Results.Ok(await Sessions.LoadDto(db, id));
-});
+}).RequireRateLimiting("portal");
 
 app.MapPost("/api/portal/{token}/sessions/start", async (string token, StartSessionInput input, AppDb db) =>
 {
@@ -2012,7 +2062,7 @@ app.MapPost("/api/portal/{token}/sessions/start", async (string token, StartSess
     var (session, error) = await Sessions.StartAsync(db, input, requireDayOwnedByClient: true);
     if (error is not null) return error;
     return Results.Created($"/api/portal/{token}/sessions/{session!.Id}", await Sessions.LoadDto(db, session.Id));
-});
+}).RequireRateLimiting("portal");
 
 app.MapPut("/api/portal/{token}/sessions/{id:int}", async (string token, int id, WorkoutSessionInput input, AppDb db) =>
 {
@@ -2030,7 +2080,7 @@ app.MapPut("/api/portal/{token}/sessions/{id:int}", async (string token, int id,
     Sessions.ApplyUpdate(db, session, input);
     await db.SaveChangesAsync();
     return Results.Ok(await Sessions.LoadDto(db, session.Id));
-});
+}).RequireRateLimiting("portal");
 
 app.MapPatch("/api/portal/{token}/sessions/{id:int}/complete", async (string token, int id, AppDb db) =>
 {
@@ -2040,7 +2090,7 @@ app.MapPatch("/api/portal/{token}/sessions/{id:int}/complete", async (string tok
     if (session is null || session.ClientId != access.ClientId) return Results.NotFound();
     await Sessions.CompleteAsync(db, session);
     return Results.Ok(await Sessions.LoadDto(db, session.Id));
-});
+}).RequireRateLimiting("portal");
 
 app.MapPost("/api/portal/{token}/sessions/{id:int}/comment", async (string token, int id, SessionCommentInput input, AppDb db) =>
 {
@@ -2076,7 +2126,7 @@ app.MapPatch("/api/portal/{token}/sessions/{id:int}/checkin", async (string toke
     if (validation is not null) return validation;
     await Sessions.CheckinAsync(db, session, input);
     return Results.Ok(await Sessions.LoadDto(db, session.Id));
-});
+}).RequireRateLimiting("portal");
 
 // ---------- Przypisania ----------
 

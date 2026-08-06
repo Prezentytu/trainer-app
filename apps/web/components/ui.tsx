@@ -350,8 +350,9 @@ export function Field({
   );
 }
 
+/** 16px na mobile (iOS nie auto-zoomuje); sm:text-sm na większych ekranach. */
 export const inputClass =
-  "h-[var(--h-field)] w-full rounded-[var(--r-field)] border border-border-strong bg-field px-2.5 text-sm font-medium text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:font-normal placeholder:text-fg-ghost focus:border-foreground focus:shadow-[var(--focus-ring)] sm:text-sm";
+  "h-[var(--h-field)] w-full rounded-[var(--r-field)] border border-border-strong bg-field px-2.5 text-base font-medium text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:font-normal placeholder:text-fg-ghost focus:border-foreground focus:shadow-[var(--focus-ring)] sm:text-sm";
 
 /** Input liczbowy — mono + tabular, bez „drgania” layoutu przy zmianie cyfr. 16px na mobile (iOS nie zoomuje). */
 export const inputNumericClass =
@@ -359,7 +360,7 @@ export const inputNumericClass =
 
 /** Textarea — bez sztywnego h-field (inputClass zmiażdżyłby treść do jednej linii). */
 export const textareaClass =
-  "min-h-20 w-full rounded-[var(--r-field)] border border-border-strong bg-field px-2.5 py-2 text-sm font-medium text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:font-normal placeholder:text-fg-ghost focus:border-foreground focus:shadow-[var(--focus-ring)] sm:text-sm";
+  "min-h-20 w-full rounded-[var(--r-field)] border border-border-strong bg-field px-2.5 py-2 text-base font-medium text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:font-normal placeholder:text-fg-ghost focus:border-foreground focus:shadow-[var(--focus-ring)] sm:text-sm";
 
 export function ErrorBanner({ message }: { message: string | null }) {
   if (!message) return null;

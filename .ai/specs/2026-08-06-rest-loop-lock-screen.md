@@ -67,3 +67,4 @@ Watch, widgety, własne profile progresji u klienta. Pozostałe luki (Powtórz o
 
 - 2026-08-06 — utworzono spec (analiza luki vs Styrka Live Activity, keep-alive + Media Session).
 - 2026-08-06 — wdrożono: `restKeepAlive` + `silence.wav`, `setTimeout` na `endsAt`, Media Session (odliczanie / Dalej / Seria X z Y), lokalne powiadomienie w tle, Switch w profilu portalu, linia licznika w `RestTimer`.
+- 2026-08-06 — fix skakania na Lock Screen: `playbackRate: 0`, update metadata tylko przy zmianie sekundy; tytuł = sam countdown (bliżej widgetu niż „muzyki”).

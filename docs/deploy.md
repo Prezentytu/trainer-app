@@ -375,11 +375,51 @@ Jeśli pusty ekran / CORS: wróć do E1 (`ALLOWED_ORIGINS` musi być **dokładni
 | GitHub | `API_HEALTH_URL` | `https://….azurewebsites.net/api/health` |
 | Azure App Settings | `Database__Provider` | `Postgres` |
 | Azure App Settings | `ConnectionStrings__Default` | ten sam Neon |
-| Azure App Settings | `Clerk__Authority` | `https://….clerk.accounts.dev` |
+| Azure App Settings | `Clerk__Authority` | `https://….clerk.accounts.dev` — **wymagane w Production** (API nie wystartuje bez tego) |
+| Azure App Settings | `Clerk__Audience` | opcjonalnie — gdy ustawione, walidacja `aud` JWT |
 | Azure App Settings | `ALLOWED_ORIGINS` | Vercel + localhost |
 | Azure App Settings | `WEBSITES_PORT` | `8080` |
 | Vercel | `NEXT_PUBLIC_API_URL` | URL Azure API |
 | Vercel | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `pk_test_…` |
 | Vercel | `CLERK_SECRET_KEY` | `sk_test_…` |
 
+---
+
+# H. Backup i odtworzenie (Neon)
+
+Neon trzyma automatyczne PITR w planie — to nie zwalnia z procedury.
+
+### H1. Ręczny snapshot przed ryzykowną migracją
+
+1. Neon Console → projekt → **Branches** / **Backups** (nazwa zależy od UI).
+2. Utwórz branch / point-in-time bookmark z opisem `pre-migrate-YYYY-MM-DD`.
+3. Alternatywa CLI: `pg_dump` connection string (preferuj **direct**, nie pooler) → plik `.sql.gz` poza repo.
+
+### H2. Test restore (raz przed launch design partners)
+
+1. Utwórz tymczasowy branch Neon z punktu H1.
+2. Podstaw `ConnectionStrings__Default` lokalnie / na staging Web App.
+3. `GET /api/health` → `"database":"ok"`.
+4. Zaloguj trenera, otwórz jednego klienta — dane widoczne.
+5. Usuń tymczasowy branch.
+
+### H3. Eksport aplikacyjny (uzupełnienie, nie zamiennik)
+
+Trener: **Ustawienia → Pobierz pełną kopię (.json)** — zawiera klientów, plany, sesje z seriami, pomiary, wywiad, check-iny (bez surowych tokenów portalu).
+
+RPO/RTO (MVP): RPO ≈ okno Neon PITR; RTO = odtworzenie brancha + podmiana connection string (~30–60 min).
+
+---
+
+# I. Observability (MVP)
+
+- Health: `GET /api/health` (+ GitHub `keepalive.yml`).
+- Każda odpowiedź API: nagłówek `X-Correlation-Id` (przyjmujemy też z requestu).
+- Nieobsłużone wyjątki → JSON `{ "message": "…" }` + log z CorrelationId (bez stack trace w Production).
+- Sentry / analytics produktowe: poza zakresem early access (wymaga osobnej decyzji o zależności).
+
+---
+
 **Następny krok dla Ciebie teraz:** sekcja **A (Clerk)**, potem **B (Azure Web App)**. Jak dojdziesz do konkretnego ekranu i coś nie pasuje do opisu — wklej screenshot / nazwę pola, dopasujemy 1:1.
+
+Przykładowe zmienne: [`.env.example`](../.env.example). Deploy runbook: ten plik.

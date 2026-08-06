@@ -464,6 +464,9 @@ export function SessionLogger({
     const onPointerDown = (e: PointerEvent) => {
       const target = e.target as HTMLElement | null;
       if (target?.closest("[data-session-menu]")) return;
+      // Dock / kalkulator talerzy — nie zamykaj komórki przed clickiem przycisku
+      // (pointerdown blur+clear → Talerze/+2,5 wyglądały jak „zamykanie”).
+      if (target?.closest("[data-session-dock], [data-session-plates]")) return;
       // Tap poza menu / polem — zamknij menu i klawiaturę (Styrka 3.7).
       if (menusOpen) {
         setMenuExIdx(null);
@@ -476,6 +479,7 @@ export function SessionLogger({
         if (tag === "INPUT" || tag === "TEXTAREA") {
           document.activeElement.blur();
           setActiveCell(null);
+          setPlatesOpen(false);
         }
       }
     };
@@ -706,32 +710,25 @@ export function SessionLogger({
       return next;
     });
 
-    if (nextCompleted) {
+      if (nextCompleted) {
       if (liveClock) {
         // Event handler — znacznik czasu startu count-upu „od serii”.
-         
         setLastSetAt(Date.now());
       }
       if (liveClock && readAutoRest()) {
         const seconds = restOverrideByEx[exIdx] ?? exercise.restSeconds ?? 90;
         setActiveCell(null);
+        setPlatesOpen(false);
         (document.activeElement as HTMLElement | null)?.blur?.();
         startRest(seconds);
       }
+      // Zwiń tylko ukończone ćwiczenie — bez scrollIntoView (skok na górę / do następnej
+      // serii rozprasza przy szybkim odhaczaniu na siłowni).
       queueMicrotask(() => {
         const next = draftRef.current;
         const exDone = next.exercises[exIdx]?.sets.every((s) => s.completed);
         if (exDone) {
           setCollapsedEx((prev) => new Set(prev).add(exIdx));
-        }
-        outer: for (let i = 0; i < next.exercises.length; i++) {
-          for (let j = 0; j < next.exercises[i].sets.length; j++) {
-            if (!next.exercises[i].sets[j].completed) {
-              const uid = next.exercises[i].sets[j].uid;
-              setRowRefs.current.get(uid)?.scrollIntoView({ block: "center", behavior: "smooth" });
-              break outer;
-            }
-          }
         }
       });
     } else {
@@ -1959,6 +1956,7 @@ export function SessionLogger({
         onNext={() => navigateCell(1)}
         onDone={() => {
           setActiveCell(null);
+          setPlatesOpen(false);
           (document.activeElement as HTMLElement | null)?.blur?.();
         }}
         rest={rest}

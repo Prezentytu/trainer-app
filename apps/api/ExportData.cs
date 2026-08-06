@@ -11,7 +11,7 @@ public static class ExportData
             .OrderBy(c => c.Name)
             .Select(c => new
             {
-                c.Id, c.Name, c.Email, c.Note, c.CreatedAt,
+                c.Id, c.Name, c.Email, c.Note, c.GoalWeightKg, c.CreatedAt,
                 Maxes = c.Maxes.Select(m => new
                 {
                     m.ExerciseId,
@@ -20,7 +20,40 @@ public static class ExportData
                     m.MeasuredOn,
                     m.Note,
                 }),
-                Tokens = c.AccessTokens.Select(t => new { t.Token, t.CreatedAt, t.ExpiresAt }),
+                Measurements = c.Measurements
+                    .OrderByDescending(m => m.MeasuredOn)
+                    .Select(m => new
+                    {
+                        m.Id, m.MeasuredOn, m.WeightKg, m.WaistCm, m.ChestCm, m.HipsCm, m.Note, m.CreatedAt,
+                    }),
+                Intake = c.Intake == null ? null : new
+                {
+                    c.Intake.GoalType,
+                    c.Intake.GoalDetails,
+                    c.Intake.Injuries,
+                    c.Intake.Pains,
+                    c.Intake.ChronicConditions,
+                    c.Intake.Medications,
+                    c.Intake.WorkType,
+                    c.Intake.StressLevel,
+                    c.Intake.SleepHours,
+                    c.Intake.FreeTimeActivity,
+                    c.Intake.ExperienceLevel,
+                    c.Intake.PastActivities,
+                    c.Intake.TrainingHistoryNotes,
+                    c.Intake.SessionsPerWeek,
+                    c.Intake.Availability,
+                    c.Intake.Equipment,
+                    c.Intake.UpdatedAt,
+                },
+                CheckIns = c.CheckIns
+                    .OrderByDescending(x => x.Date)
+                    .Select(x => new
+                    {
+                        x.Id, x.Date, x.MoodScore, x.SleepScore, x.Note, x.CreatedAt,
+                    }),
+                // Świadomie bez surowych tokenów portalu — rotacja w UI, nie w eksporcie.
+                PortalLinkCount = c.AccessTokens.Count,
             })
             .ToListAsync();
 
@@ -57,6 +90,9 @@ public static class ExportData
                 s.DurationSeconds,
                 s.Status,
                 s.Note,
+                s.FeelingScore,
+                s.SleepScore,
+                s.EnergyScore,
                 Exercises = s.Exercises.OrderBy(e => e.Order).Select(e => new
                 {
                     e.ExerciseId,
@@ -108,6 +144,57 @@ public static class ExportData
             .ToListAsync();
         foreach (var s in sessions)
             sb.AppendLine($"session,{s.Id},{Csv(s.ClientName)},{s.PerformedOn:yyyy-MM-dd},{Csv(s.PlanName)}");
+
+        // Wiersze serii — jedna linia na set (Styrka-style CSV).
+        sb.AppendLine();
+        sb.AppendLine("section,sessionId,client,date,exercise,setNumber,weightKg,reps,durationSeconds,distanceMeters,rir,rpe,warmup,completed,note,side");
+        var sets = await db.LoggedSets
+            .AsNoTracking()
+            .Where(x => x.LoggedExercise!.Session!.Client!.TrainerId == trainerId
+                        && x.LoggedExercise.Session.Status == "completed")
+            .OrderByDescending(x => x.LoggedExercise!.Session!.PerformedOn)
+            .ThenBy(x => x.LoggedExercise!.WorkoutSessionId)
+            .ThenBy(x => x.LoggedExercise!.Order)
+            .ThenBy(x => x.SetNumber)
+            .Select(x => new
+            {
+                SessionId = x.LoggedExercise!.WorkoutSessionId,
+                ClientName = x.LoggedExercise.Session!.Client!.Name,
+                Date = x.LoggedExercise.Session.PerformedOn,
+                ExerciseName = x.LoggedExercise.Exercise!.Name,
+                x.SetNumber,
+                x.WeightKg,
+                x.Reps,
+                x.DurationSeconds,
+                x.DistanceMeters,
+                x.Rir,
+                x.Rpe,
+                x.IsWarmup,
+                x.Completed,
+                x.Note,
+                x.Side,
+            })
+            .ToListAsync();
+        foreach (var x in sets)
+        {
+            sb.AppendLine(string.Join(',',
+                "set",
+                x.SessionId,
+                Csv(x.ClientName),
+                x.Date.ToString("yyyy-MM-dd"),
+                Csv(x.ExerciseName),
+                x.SetNumber,
+                x.WeightKg?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "",
+                x.Reps?.ToString() ?? "",
+                x.DurationSeconds?.ToString() ?? "",
+                x.DistanceMeters?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "",
+                x.Rir?.ToString() ?? "",
+                x.Rpe?.ToString() ?? "",
+                x.IsWarmup ? "1" : "0",
+                x.Completed ? "1" : "0",
+                Csv(x.Note),
+                Csv(x.Side)));
+        }
 
         return sb.ToString();
     }

@@ -1,5 +1,5 @@
 /* RepMaxer — portal client SW (push + app shell). */
-const CACHE_VERSION = "rm-portal-v2";
+const CACHE_VERSION = "rm-portal-v3";
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const OFFLINE_URL = "/portal/offline";
@@ -9,7 +9,14 @@ self.addEventListener("install", (event) => {
     caches
       .open(SHELL_CACHE)
       .then(async (cache) => {
-        const urls = [OFFLINE_URL, "/icons/192", "/icons/180", "/silence.wav"];
+        const urls = [
+          OFFLINE_URL,
+          "/icons/192",
+          "/icons/180",
+          "/silence.wav",
+          "/fonts/phosphor/style.css",
+          "/fonts/phosphor/Phosphor.woff2",
+        ];
         await Promise.all(
           urls.map((url) =>
             cache.add(url).catch(() => {
@@ -59,6 +66,7 @@ function isStaticAsset(url) {
     (url.pathname.startsWith("/_next/static/") ||
       url.pathname.startsWith("/icons/") ||
       url.pathname.startsWith("/splash/") ||
+      url.pathname.startsWith("/fonts/") ||
       url.pathname === "/icon.svg" ||
       url.pathname === "/silence.wav")
   );

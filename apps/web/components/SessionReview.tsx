@@ -1,9 +1,43 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api, SessionDetail } from "@/lib/api";
-import { Badge, Button, Card, ErrorBanner, formatRest, inputClass } from "@/components/ui";
+import { api, SessionDetail, WorkoutSessionInput } from "@/lib/api";
+import { Badge, Button, Card, ErrorBanner, Field, formatRest, inputClass } from "@/components/ui";
 import { formatKg } from "@/lib/plates";
+
+function toSessionInput(session: SessionDetail, performedOn: string): WorkoutSessionInput {
+  return {
+    clientId: session.clientId,
+    performedOn,
+    assignmentId: session.assignmentId,
+    planDayId: session.planDayId,
+    planId: session.planId,
+    durationSeconds: session.durationSeconds,
+    note: session.note,
+    status: session.status,
+    exercises: session.exercises.map((e) => ({
+      id: e.id > 0 ? e.id : null,
+      exerciseId: e.exerciseId,
+      substitutedFromExerciseId: e.substitutedFromExerciseId ?? null,
+      order: e.order,
+      note: e.note,
+      sets: e.sets.map((s) => ({
+        id: s.id > 0 ? s.id : null,
+        setNumber: s.setNumber,
+        weightKg: s.weightKg,
+        reps: s.reps,
+        durationSeconds: s.durationSeconds,
+        distanceMeters: s.distanceMeters,
+        rir: s.rir,
+        rpe: s.rpe,
+        isWarmup: s.isWarmup,
+        completed: s.completed,
+        note: s.note ?? null,
+        side: s.side ?? null,
+      })),
+    })),
+  };
+}
 
 function formatDay(iso: string): string {
   const d = new Date(`${iso}T12:00:00`);
@@ -59,10 +93,14 @@ export function SessionReview({
   onUpdated: (session: SessionDetail) => void;
 }) {
   const [trainerComment, setTrainerComment] = useState("");
+  /** Lokalny draft daty — po udanym zapisie równa się `session.performedOn`. */
+  const [performedOn, setPerformedOn] = useState(session.performedOn);
   const [saving, setSaving] = useState(false);
+  const [savingDate, setSavingDate] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const inProgress = session.status === "in_progress";
+  const dateDirty = performedOn !== session.performedOn;
   const doneTotal = session.exercises.reduce(
     (acc, ex) => {
       const done = ex.sets.filter((s) => s.completed).length;
@@ -90,6 +128,22 @@ export function SessionReview({
       setError((e as Error).message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const saveDate = async () => {
+    if (!performedOn || !dateDirty) return;
+    setSavingDate(true);
+    setError(null);
+    try {
+      const updated = await api.sessions.update(session.id, toSessionInput(session, performedOn));
+      setPerformedOn(updated.performedOn);
+      onUpdated(updated);
+    } catch (e) {
+      setError((e as Error).message);
+      setPerformedOn(session.performedOn);
+    } finally {
+      setSavingDate(false);
     }
   };
 
@@ -122,6 +176,31 @@ export function SessionReview({
           {session.planName ? ` · ${session.planName}` : ""}
         </p>
       </div>
+
+      {!inProgress ? (
+        <Card title="Data treningu" meta="Popraw, gdy klient zapomniał odhaczyć we właściwym dniu.">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="min-w-0 flex-1">
+              <Field label="Data">
+                <input
+                  type="date"
+                  className={inputClass}
+                  value={performedOn}
+                  onChange={(e) => setPerformedOn(e.target.value)}
+                />
+              </Field>
+            </div>
+            <Button
+              variant="secondary"
+              disabled={savingDate || !dateDirty || !performedOn}
+              loading={savingDate}
+              onClick={() => void saveDate()}
+            >
+              Zapisz datę
+            </Button>
+          </div>
+        </Card>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-3">
         <StatCard

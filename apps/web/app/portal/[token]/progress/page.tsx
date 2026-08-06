@@ -13,7 +13,7 @@ import {
   PortalSessionSummary,
   StagnationResponse,
 } from "@/lib/api";
-import { ErrorBanner, StatBlock } from "@/components/ui";
+import { EmptyState, ErrorBanner, StatBlock } from "@/components/ui";
 import { PortalPageSkeleton } from "@/components/skeletons";
 import { WeeklyActivityBar } from "@/components/WeeklyActivityBar";
 import { MuscleVolumeBars } from "@/components/MuscleVolumeBars";
@@ -375,16 +375,20 @@ export default function PortalProgressPage() {
               Rekordy · est. 1RM
             </p>
             {records.length === 0 ? (
-              <div className="space-y-3 pt-3">
-                <p className="text-sm text-muted">
-                  Tu zobaczysz rekordy per ćwiczenie — po zapisaniu serii.
-                </p>
-                <Link
-                  href={`/portal/${token}`}
-                  className="inline-flex min-h-11 items-center text-sm font-medium text-accent-text transition-colors hover:text-accent-strong focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+              <div className="pt-3">
+                <EmptyState
+                  title="Jeszcze bez rekordów"
+                  action={
+                    <Link
+                      href={`/portal/${token}`}
+                      className="inline-flex min-h-11 items-center text-sm font-medium text-foreground underline-offset-4 hover:underline"
+                    >
+                      Rozpocznij trening
+                    </Link>
+                  }
                 >
-                  Rozpocznij trening
-                </Link>
+                  Tu zobaczysz rekordy per ćwiczenie — po zapisaniu serii z ciężarem.
+                </EmptyState>
               </div>
             ) : (
               <ul className="mt-2 divide-y divide-border border-y border-border">

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api, PortalSessionSummary } from "@/lib/api";
-import { ErrorBanner } from "@/components/ui";
+import { EmptyState, ErrorBanner } from "@/components/ui";
 import { PortalPageSkeleton } from "@/components/skeletons";
 import { formatDurationMinutes } from "@/lib/estimateDuration";
 
@@ -116,17 +116,19 @@ export default function PortalHistoryPage() {
       {!history ? (
         <PortalPageSkeleton label="Wczytuję historię…" />
       ) : history.length === 0 ? (
-        <section className="space-y-3">
-          <p className="text-sm text-muted">
-            Tu zobaczysz ukończone treningi — od najnowszego. Wejdź, żeby sprawdzić serie i rekordy.
-          </p>
-          <Link
-            href={`/portal/${token}`}
-            className="inline-flex min-h-11 items-center text-sm font-medium text-accent-text transition-colors hover:text-accent-strong focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
-          >
-            Idź do dzisiejszego treningu
-          </Link>
-        </section>
+        <EmptyState
+          title="Historia pojawi się po pierwszym treningu"
+          action={
+            <Link
+              href={`/portal/${token}`}
+              className="inline-flex min-h-11 items-center text-sm font-medium text-foreground underline-offset-4 hover:underline"
+            >
+              Idź do dzisiejszego treningu
+            </Link>
+          }
+        >
+          Tu zobaczysz ukończone treningi — od najnowszego. Wejdź, żeby sprawdzić serie i rekordy.
+        </EmptyState>
       ) : (
         <div className="space-y-8">
           {groups.map(([ym, sessions]) => (

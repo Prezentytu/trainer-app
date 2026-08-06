@@ -348,6 +348,20 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: Na iOS PWA utrzymuj sesję dźwiękową cichym zapętlonym `<audio>` (`restKeepAlive` + `/silence.wav`). Koniec przerwy = `setTimeout` na `endsAt` (nie polling). Metadane na Lock Screen przez `navigator.mediaSession`. Preferencja użytkownika + etykieta o kontrolkach odtwarzania. `wakeLock` zostaje jako bonus na Android/desktop.
 **Dotyczy**: `lib/restKeepAlive.ts`, `useRestTimer.ts`, `restAlarm.ts`, profil portalu, `public/silence.wav`.
 
+## Media Session: `playbackRate: 0` + update tylko przy zmianie sekundy
+
+**Kontekst**: Na zminimalizowanym iPhonie odliczanie przerwy skakało (np. `0:01` → właściwy czas) w kółko.
+**Problem**: `setPositionState({ playbackRate: 1 })` kazało iOS samemu przesuwać scrubber, a my co sekundę nadpisywaliśmy metadata/position — UI walczyło ze sobą i flashowało.
+**Zasada**: Countdown w `title`; `playbackRate: 0`; `setPositionState` + metadata tylko gdy zmieniła się sekunda / kontekst. True Live Activity / home-screen widget wymaga natywnej apki — w PWA zostaje Now Playing.
+**Dotyczy**: `lib/restKeepAlive.ts`.
+
+## Dock sesji: nie czyść `activeCell` na pointerdown w doku
+
+**Kontekst**: Przyciski +2,5 / Talerze „zamykały się” zamiast działać.
+**Problem**: Globalny `pointerdown` blur+`setActiveCell(null)` odpalał się przed `click` na DockBtn — `platesOpen && activeCell` było już fałszywe.
+**Zasada**: Elementy doku / sheetów oznaczaj `data-session-dock` / `data-session-plates` i wyłączaj je z clear. `onMouseDown.preventDefault` na przyciskach doku chroni fokus inputu.
+**Dotyczy**: `SessionLogger.tsx`, `SessionDock.tsx`, `PlateCalculator.tsx`.
+
 ## Bodyweight = `equipment`, nie `category`
 
 **Kontekst**: Spec odhaczył „BW zamiast 0 kg" jako wdrożone; `formatPrev` sprawdzał `category === "bodyweight"`.
@@ -368,3 +382,10 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Problem**: W Minimal API `Results.Ok(null)` zwraca 200 z pustym body. `response.json()` wtedy się wywala.
 **Zasada**: Endpointy mogące zwrócić „brak": `Results.Content("null", "application/json")` — zarówno `Ok(null)`, jak i `Json(null)` dają puste body. W `request()` traktuj puste body jako `null`. Testuj ścieżkę bez danych.
 **Dotyczy**: `Program.cs` (`most-improved`), `apps/web/lib/api.ts` (`request`).
+
+## Ikony PWA: lokalny font, nie CDN
+
+**Kontekst**: Phosphor był ładowany z `unpkg.com` w `layout.tsx`; service worker cache'uje tylko same-origin.
+**Problem**: Offline w hali = brak wszystkich ikon w loggerze — „mamy ikony" w UI, ale ścieżka danych (CDN → SW) była martwa poza siecią. Ten sam wzorzec błędu co fałszywe „BW".
+**Zasada**: Assety krytyczne dla offline (ikony, silence.wav, splash) trzymaj pod `public/` i dopisz do precache + `isStaticAsset` w `sw.js`. Przed odhaczeniem „działa offline" zweryfikuj ścieżkę bez sieci, nie obecność stringa w HTML.
+**Dotyczy**: `apps/web/public/fonts/phosphor/`, `apps/web/public/sw.js`, `apps/web/app/layout.tsx`.

@@ -27,6 +27,18 @@ export function LandingFooter() {
             >
               Załóż darmowe konto
             </Link>
+            <Link
+              href="/prywatnosc"
+              className="landing-link-underline transition-colors hover:text-foreground"
+            >
+              Polityka prywatności
+            </Link>
+            <Link
+              href="/regulamin"
+              className="landing-link-underline transition-colors hover:text-foreground"
+            >
+              Regulamin
+            </Link>
             <span className="text-muted-faint">
               © {new Date().getFullYear()} RepMaxer
             </span>

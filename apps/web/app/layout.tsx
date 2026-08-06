@@ -56,8 +56,6 @@ export const viewport: Viewport = {
   themeColor: "#0B0C0D",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: "cover",
 };
 
@@ -74,9 +72,15 @@ export default function RootLayout({
     >
       <head>
         <link
-          rel="stylesheet"
-          href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css"
+          rel="preload"
+          href="/fonts/phosphor/Phosphor.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
         />
+        {/* Public URL — SW precache'uje ten sam plik dla offline; nie import CSS z bundla. */}
+        {/* eslint-disable-next-line @next/next/no-css-tags */}
+        <link rel="stylesheet" href="/fonts/phosphor/style.css" />
       </head>
       <body className="min-h-screen bg-background font-sans text-foreground">
         <ThemeBoot />

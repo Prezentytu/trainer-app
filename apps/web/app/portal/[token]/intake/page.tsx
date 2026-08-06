@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { api, ClientIntake, ClientIntakeInput } from "@/lib/api";
 import { ClientIntakeForm } from "@/components/ClientIntakeForm";
 import { Button, ErrorBanner } from "@/components/ui";
+import { PortalPageSkeleton } from "@/components/skeletons";
 
 export default function PortalIntakePage() {
   const params = useParams<{ token: string }>();
@@ -39,7 +40,7 @@ export default function PortalIntakePage() {
     return (
       <div className="space-y-4">
         <ErrorBanner message={error} />
-        {!error ? <p className="text-sm text-muted">Ładowanie ankiety…</p> : null}
+        {!error ? <PortalPageSkeleton label="Wczytuję ankietę…" /> : null}
       </div>
     );
   }
@@ -69,6 +70,14 @@ export default function PortalIntakePage() {
         <h1 className="font-display text-2xl font-bold">Poznajmy się</h1>
         <p className="mt-2 max-w-[40ch] text-sm leading-[var(--leading-body)] text-muted-strong">
           Kilka pytań o cele, zdrowie i styl życia. Wszystko opcjonalne — uzupełnij to, co znasz.
+        </p>
+        <p className="mt-3 max-w-[48ch] text-xs leading-relaxed text-muted">
+          Odpowiedzi widzi Twój trener — pomagają ułożyć bezpieczny plan. Możesz pominąć
+          pytania o zdrowie. Szczegóły:{" "}
+          <Link href="/prywatnosc" className="text-foreground underline-offset-2 hover:underline">
+            polityka prywatności
+          </Link>
+          .
         </p>
       </header>
       <ErrorBanner message={error} />

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import PlanBuilder from "@/components/plan-builder/PlanBuilder";
 import { consumeImportHandoff, PlanImportHandoff } from "@/lib/planImportHandoff";
-import { Button, Card, Field, PageHeader, Pill, inputClass } from "@/components/ui";
+import { Button, Card, ErrorBanner, Field, PageHeader, Pill, inputClass } from "@/components/ui";
 import { PlanWizardSkeleton } from "@/components/skeletons";
 
 type StructurePreset = {
@@ -37,6 +37,7 @@ export default function NewPlanPage() {
   const [presetId, setPresetId] = useState<string>("6x4");
   const [name, setName] = useState(`Nowy plan — ${todayLabel()}`);
   const [started, setStarted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -94,9 +95,19 @@ export default function NewPlanPage() {
     );
   }
 
+  const startBuilder = () => {
+    if (!name.trim()) {
+      setError("Podaj nazwę planu.");
+      return;
+    }
+    setError(null);
+    setStarted(true);
+  };
+
   return (
     <div className="mx-auto max-w-2xl">
       <PageHeader title="Nowy plan" subtitle="Wybierz strukturę — poprawisz ją później w kreatorze" />
+      <ErrorBanner message={error} />
 
       <div className="mb-6 flex items-center gap-2" aria-label="Krok 1 z 3 · struktura wybrana">
         <div className="h-1.5 flex-1 rounded-full bg-accent" />
@@ -150,7 +161,7 @@ export default function NewPlanPage() {
         </Field>
       </Card>
 
-      <Button onClick={() => setStarted(true)} disabled={!name.trim()}>
+      <Button onClick={startBuilder} disabled={!name.trim()}>
         Przejdź do kreatora →
       </Button>
     </div>
