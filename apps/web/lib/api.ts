@@ -817,7 +817,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error(message);
   }
   if (res.status === 204) return undefined as T;
-  return res.json();
+  // Puste body (np. Results.Ok(null) w Minimal API) — nie wywołuj res.json().
+  const text = await res.text();
+  if (!text) return null as T;
+  return JSON.parse(text) as T;
 }
 
 async function requestText(path: string, init?: RequestInit): Promise<string> {

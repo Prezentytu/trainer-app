@@ -109,6 +109,35 @@ public class AnalyticsAndPushTests : IClassFixture<TestWebAppFactory>
     }
 
     [Fact]
+    public async Task MostImproved_WhenNoData_ReturnsJsonNull()
+    {
+        // Results.Ok(null) dawało puste body → błąd parse JSON w portalu.
+        var (clientId, _) = await SeedLoggedSetsAsync(
+            muscles: ["Plecy"],
+            sessions: 1,
+            setsPerSession: 1,
+            weight: 40,
+            reps: 8,
+            daysApart: 1,
+            flatWeight: true);
+
+        var res = await _client.GetAsync($"/api/clients/{clientId}/most-improved?days=90");
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        var json = await res.Content.ReadAsStringAsync();
+        Assert.False(string.IsNullOrWhiteSpace(json));
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal(JsonValueKind.Null, doc.RootElement.ValueKind);
+
+        var token = await PortalTokenAsync(clientId);
+        var portal = await _client.GetAsync($"/api/portal/{token}/most-improved?days=90");
+        Assert.Equal(HttpStatusCode.OK, portal.StatusCode);
+        var portalJson = await portal.Content.ReadAsStringAsync();
+        Assert.False(string.IsNullOrWhiteSpace(portalJson));
+        using var portalDoc = JsonDocument.Parse(portalJson);
+        Assert.Equal(JsonValueKind.Null, portalDoc.RootElement.ValueKind);
+    }
+
+    [Fact]
     public async Task Stagnation_DetectsNoE1rmProgress()
     {
         var (clientId, _) = await SeedLoggedSetsAsync(

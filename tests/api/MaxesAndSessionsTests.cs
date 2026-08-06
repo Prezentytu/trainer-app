@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using TrainerApp.Api;
 using Xunit;
 
 namespace TrainerApp.Api.Tests;
@@ -362,6 +363,18 @@ public class MaxesAndSessionsTests : IClassFixture<TestWebAppFactory>
         var set = ex.GetProperty("sets")[0];
         Assert.True(!set.TryGetProperty("targetWeightKg", out var tw) || tw.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined);
         Assert.True(!set.TryGetProperty("targetReps", out var treps) || treps.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined);
+    }
+
+    [Fact]
+    public void VolumeKg_IgnoresIncompletePrefill()
+    {
+        var sets = new LoggedSet[]
+        {
+            new() { WeightKg = 100, Reps = 10, Completed = false, IsWarmup = false },
+            new() { WeightKg = 80, Reps = 8, Completed = true, IsWarmup = false },
+            new() { WeightKg = 60, Reps = 10, Completed = true, IsWarmup = true },
+        };
+        Assert.Equal(640, Stats.VolumeKg(sets));
     }
 
     private record ClientRow(int Id, string Name);

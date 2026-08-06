@@ -566,7 +566,7 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
                 s.CreatedAt,
                 TotalSets = s.Exercises.SelectMany(e => e.Sets).Count(x => !x.IsWarmup),
                 TotalVolumeKg = s.Exercises.SelectMany(e => e.Sets)
-                    .Where(x => !x.IsWarmup && x.WeightKg != null && x.Reps != null)
+                    .Where(x => !x.IsWarmup && x.Completed && x.WeightKg != null && x.Reps != null)
                     .Sum(x => x.WeightKg!.Value * x.Reps!.Value),
                 ExerciseCount = s.Exercises.Count,
             })
@@ -964,7 +964,7 @@ app.MapGet("/api/clients/{clientId:int}/sessions", async (int clientId, HttpCont
                 s.CreatedAt,
                 TotalSets = s.Exercises.SelectMany(e => e.Sets).Count(x => !x.IsWarmup),
                 TotalVolumeKg = s.Exercises.SelectMany(e => e.Sets)
-                    .Where(x => !x.IsWarmup && x.WeightKg != null && x.Reps != null)
+                    .Where(x => !x.IsWarmup && x.Completed && x.WeightKg != null && x.Reps != null)
                     .Sum(x => x.WeightKg!.Value * x.Reps!.Value),
                 ExerciseCount = s.Exercises.Count,
             })
@@ -1154,7 +1154,10 @@ app.MapGet("/api/clients/{clientId:int}/most-improved", async (
         var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
         if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
         var row = await ProgressReports.MostImprovedAsync(db, clientId, days ?? 90);
-        return Results.Ok(row);
+        // Ok/Json(null) → puste body w Minimal API; literał JSON null dla klienta.
+        return row is null
+            ? Results.Content("null", "application/json")
+            : Results.Ok(row);
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
@@ -1666,7 +1669,7 @@ app.MapGet("/api/portal/{token}/sessions", async (string token, AppDb db) =>
             s.CreatedAt,
             TotalSets = s.Exercises.SelectMany(e => e.Sets).Count(x => !x.IsWarmup),
             TotalVolumeKg = s.Exercises.SelectMany(e => e.Sets)
-                .Where(x => !x.IsWarmup && x.WeightKg != null && x.Reps != null)
+                .Where(x => !x.IsWarmup && x.Completed && x.WeightKg != null && x.Reps != null)
                 .Sum(x => x.WeightKg!.Value * x.Reps!.Value),
             ExerciseCount = s.Exercises.Count,
         })
@@ -1757,7 +1760,10 @@ app.MapGet("/api/portal/{token}/most-improved", async (string token, int? days, 
     var access = await ResolvePortalToken(db, token);
     if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
     var row = await ProgressReports.MostImprovedAsync(db, access.ClientId, days ?? 90);
-    return Results.Ok(row);
+    // Ok/Json(null) → puste body w Minimal API; literał JSON null dla klienta.
+    return row is null
+        ? Results.Content("null", "application/json")
+        : Results.Ok(row);
 }).RequireRateLimiting("portal");
 
 app.MapGet("/api/portal/{token}/exercises/{exerciseId:int}/stats", async (string token, int exerciseId, AppDb db) =>

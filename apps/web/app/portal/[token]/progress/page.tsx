@@ -130,7 +130,7 @@ export default function PortalProgressPage() {
       api.portal.records(token),
       api.portal.muscleVolume(token, 4),
       api.portal.trends(token, 12),
-      api.portal.mostImproved(token, 90),
+      api.portal.mostImproved(token, 90).catch(() => null),
     ])
       .then(([s, r, mv, tr, mi]) => {
         setSessions(s);

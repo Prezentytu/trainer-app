@@ -74,8 +74,12 @@ public static class Stats
     public static double RoundToHalf(double kg) =>
         Math.Round(kg * 2, MidpointRounding.AwayFromZero) / 2;
 
+    /// <summary>
+    /// Tonaż tylko z ukończonych serii roboczych.
+    /// Prefill planu (kg×reps bez checkmarka) nie wlicza się — inaczej „0/6 serii" pokazuje tony.
+    /// </summary>
     public static double VolumeKg(IEnumerable<LoggedSet> sets) =>
-        sets.Where(s => !s.IsWarmup && s.WeightKg is not null && s.Reps is not null)
+        sets.Where(s => !s.IsWarmup && s.Completed && s.WeightKg is not null && s.Reps is not null)
             .Sum(s => s.WeightKg!.Value * s.Reps!.Value);
 
     public static int WorkingSetCount(IEnumerable<LoggedSet> sets) =>

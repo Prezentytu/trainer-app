@@ -354,3 +354,17 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Problem**: `Exercise.Category` to tylko grupy mięśniowe (`chest`, `back`…); masa ciała żyje w `equipment: ["bodyweight"]`. Warunek był zawsze fałszywy — martwy kod. DTO sesji nie zwracało `equipment`.
 **Zasada**: Przed odhaczeniem „mamy" zweryfikuj ścieżkę danych end-to-end. Bodyweight rozpoznawaj przez `equipment.includes("bodyweight")`. Rzutowanie sesji (`Stats.LoadDto`) musi zawierać `equipment`.
 **Dotyczy**: `Stats.cs`, `SessionLogger.tsx`, `LoggedExercise` w `api.ts`, seed ćwiczeń.
+
+## Objętość sesji = tylko serie z checkmarkiem
+
+**Kontekst**: Podsumowanie treningu pokazywało 3060 kg przy 0/6 ukończonych serii.
+**Problem**: `TotalVolumeKg` / `Stats.VolumeKg` sumowały wszystkie serie z kg×reps, w tym prefill z planu bez `Completed`.
+**Zasada**: Tonaż (session summary, listy, max volume) liczy wyłącznie `!IsWarmup && Completed && WeightKg && Reps`. Prefill bez checkmarka = 0 kg. Trendy / muscle volume już tak robiły.
+**Dotyczy**: `Stats.VolumeKg`, agregaty `TotalVolumeKg` w `Program.cs`.
+
+## Nullable endpoint: `Results.Json(null)`, nie `Results.Ok(null)`
+
+**Kontekst**: Portal `/progress` wołał `most-improved`; przy braku danych UI pokazywało „Unexpected end of JSON input".
+**Problem**: W Minimal API `Results.Ok(null)` zwraca 200 z pustym body. `response.json()` wtedy się wywala.
+**Zasada**: Endpointy mogące zwrócić „brak": `Results.Content("null", "application/json")` — zarówno `Ok(null)`, jak i `Json(null)` dają puste body. W `request()` traktuj puste body jako `null`. Testuj ścieżkę bez danych.
+**Dotyczy**: `Program.cs` (`most-improved`), `apps/web/lib/api.ts` (`request`).

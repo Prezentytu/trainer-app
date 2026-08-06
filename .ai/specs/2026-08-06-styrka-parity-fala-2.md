@@ -45,3 +45,4 @@ Bez zmian schematu.
 
 - 2026-08-06 — utworzono spec.
 - 2026-08-06 — zaimplementowano: `MostImprovedAsync`, endpointy portal/trener, `portal.exerciseStats`, karta Największy progres, expand e1RM, kalendarz miesiąca, śr. czas, sparkline wagi na pomiarach.
+- 2026-08-06 — fix: `most-improved` przy braku danych zwraca literał JSON `null` (`Results.Content`), nie puste body; `request()` toleruje puste body.
