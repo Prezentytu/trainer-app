@@ -9,7 +9,7 @@ import { ClerkAppProvider } from "@/components/ClerkAppProvider";
  */
 const DEV_SW_CLEANUP = `
 if (navigator.serviceWorker) navigator.serviceWorker.getRegistrations().then(function (rs) { rs.forEach(function (r) { r.unregister(); }); });
-if (typeof caches !== "undefined") caches.keys().then(function (ks) { ks.filter(function (k) { return k.indexOf("wa-portal-") === 0; }).forEach(function (k) { caches.delete(k); }); });
+if (typeof caches !== "undefined") caches.keys().then(function (ks) { ks.filter(function (k) { return k.indexOf("wa-portal-") === 0 || k.indexOf("rm-portal-") === 0; }).forEach(function (k) { caches.delete(k); }); });
 `;
 
 const fontSans = Instrument_Sans({

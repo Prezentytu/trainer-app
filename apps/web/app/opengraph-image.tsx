@@ -15,32 +15,29 @@ export default function OpenGraphImage() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          background: "#0C0D0C",
+          background: "#0B0C0D",
           padding: 72,
           fontFamily: "system-ui, sans-serif",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: 12, height: 12, background: "#C6F135" }} />
-          <div
-            style={{
-              fontSize: 20,
-              fontWeight: 700,
-              color: "#F2F4EC",
-              letterSpacing: "-0.02em",
-              textTransform: "uppercase",
-            }}
-          >
-            RepMaxer
-          </div>
+        <div
+          style={{
+            fontSize: 18,
+            fontWeight: 600,
+            color: "#FFFFFF",
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+          }}
+        >
+          RepMaxer
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div
             style={{
               fontSize: 52,
-              fontWeight: 700,
-              color: "#F2F4EC",
+              fontWeight: 600,
+              color: "#FFFFFF",
               lineHeight: 1.1,
               maxWidth: 900,
               letterSpacing: "-0.02em",
@@ -48,7 +45,7 @@ export default function OpenGraphImage() {
           >
             Wysyłasz link. Widzisz każdy trening.
           </div>
-          <div style={{ fontSize: 22, color: "#9AA193", maxWidth: 640, lineHeight: 1.45 }}>
+          <div style={{ fontSize: 22, color: "#C9CED4", maxWidth: 640, lineHeight: 1.45 }}>
             Klient odhacza serie w telefonie. Bez aplikacji, bez konta.
           </div>
         </div>
@@ -58,7 +55,7 @@ export default function OpenGraphImage() {
             display: "flex",
             gap: 20,
             fontSize: 15,
-            color: "#6E7566",
+            color: "#9AA1A8",
           }}
         >
           <span>Wczesny dostęp za darmo</span>

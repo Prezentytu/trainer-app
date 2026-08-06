@@ -1,4 +1,4 @@
-# Deploy Workout Alchemist — od zera do działającej produkcji (MVP)
+# Deploy RepMaxer — od zera do działającej produkcji (MVP)
 
 **Założenie MVP:** jedno środowisko (produkcja dla design partnerów).  
 Nie zakładamy osobnego Azure DEV. Vercel Preview = darmowy front do testów.
@@ -28,7 +28,7 @@ Idź **po kolei** od kroku, na którym jesteś.
 
 1. Otwórz [https://dashboard.clerk.com](https://dashboard.clerk.com)
 2. U góry przełącznik aplikacji → **Create application**
-3. **Name:** `Workout Alchemist`
+3. **Name:** `RepMaxer`
 4. Zaznacz **Email** (reszta opcjonalnie)
 5. Kliknij **Create application**
 
@@ -110,7 +110,7 @@ Sekrety keep-alive: `API_HEALTH_URL` (dev) i `API_HEALTH_URL_PROD` (prod) — te
 | `WEBSITES_PORT` | `8080` | wpisz ręcznie (Docker słucha na 8080) |
 | `WEB_ORIGIN` | `https://twoja-app.vercel.app` | origin frontu (linki w e-mailach) |
 | `Email__ResendApiKey` | `re_…` | klucz [Resend](https://resend.com) — opcjonalnie; bez niego wysyłka linków zwraca komunikat |
-| `Email__From` | `Workout Alchemist <hello@twojadomena.pl>` | nadawca Resend (zweryfikowana domena) |
+| `Email__From` | `RepMaxer <hello@twojadomena.pl>` | nadawca Resend (zweryfikowana domena) |
 | `Push__PublicKey` | klucz VAPID publiczny | para z `web-push generate-vapid-keys`; ten sam publiczny w Vercel jako `NEXT_PUBLIC_VAPID_PUBLIC_KEY` |
 | `Push__PrivateKey` | klucz VAPID prywatny | tylko na API — nigdy na froncie |
 | `Push__Subject` | `mailto:support@…` | kontakt VAPID |
@@ -215,7 +215,7 @@ Checklist sekretów po tej sekcji:
 
 | Pole | Wartość |
 |---|---|
-| Project Name | `trainer-app` (lub `workout-alchemist`) |
+| Project Name | `trainer-app` (lub `repmaxer`) |
 | Framework Preset | Next.js |
 | Root Directory | **Edit** → wpisz `apps/web` → **Continue** |
 | Build Command | zostaw domyślne |
@@ -260,7 +260,7 @@ https://trainer-app.vercel.app,http://localhost:3000
 
 Aplikacja używa **własnych** stron `/sign-in` i `/sign-up` (nie hostowanego Account Portal). Middleware przekierowuje niezalogowanych na `/sign-in`; `/` jest publiczne (landing dla gości, Panel dla zalogowanych).
 
-1. Clerk Dashboard → Twoja app **Workout Alchemist**
+1. Clerk Dashboard → Twoja app **RepMaxer**
 2. **Configure** → **Domains** / **Paths** / **Redirects** (zależnie od UI)
 3. Dodaj / ustaw:
    - Sign-in URL: `https://<twoj-vercel>/sign-in`
@@ -321,7 +321,7 @@ Oczekiwane: JSON z `"status":"ok"`.
 1. Otwórz URL Vercel
 2. Powinien przekierować na Clerk Sign-in
 3. Zaloguj się (konto, które masz w Clerk Users — albo najpierw **Invite** siebie w Clerk → **Users** → **Invite**)
-4. Po logowaniu: Panel Workout Alchemist
+4. Po logowaniu: Panel RepMaxer
 
 Jeśli pusty ekran / CORS: wróć do E1 (`ALLOWED_ORIGINS` musi być **dokładnie** origin z paska adresu, `https://…` bez `/` na końcu).
 

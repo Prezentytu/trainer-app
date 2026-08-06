@@ -29,6 +29,12 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: Primary = `bg-invert-bg`; data accents `pr`/`gain`/`loss` z glifem; Instrument Sans + Geist Mono; Phosphor przez `Icon`; landing zostaje w `.theme-acid`. Skill `design-system` jest źródłem prawdy.
 **Dotyczy**: `globals.css`, `ui.tsx`, `AppShell`, portal nav, SessionLogger, wykresy.
 
+## Nazwa produktu: RepMaxer (nie Workout Alchemist)
+
+**Kontekst**: Stara nazwa WA pojawiała się w mailach, eksporcie, docs i folderze design systemu.
+**Zasada**: Produkt = **RepMaxer**, compact = **RM**. Nigdzie nie wprowadzaj „Workout Alchemist” w UI, mailach ani nowych docs. Folder DS: `RepMaxer Design System/`.
+**Dotyczy**: Wordmark, brandMark, manifests, Email:From, settings export, AGENTS, deploy.
+
 ## Panel trenera: lewy sidebar, nie top nav
 
 **Kontekst**: DS specimen mówił o hairline top nav; użytkownik skorygował — dashboard jak Linear/Stripe ma nawigację z lewej.

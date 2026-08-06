@@ -29,7 +29,7 @@ export default function SettingsPage() {
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `workout-alchemist-export-${new Date().toISOString().slice(0, 10)}.csv`;
+      anchor.download = `repmaxer-export-${new Date().toISOString().slice(0, 10)}.csv`;
       anchor.click();
       URL.revokeObjectURL(url);
     } catch (e) {
@@ -48,7 +48,7 @@ export default function SettingsPage() {
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `workout-alchemist-export-${new Date().toISOString().slice(0, 10)}.json`;
+      anchor.download = `repmaxer-export-${new Date().toISOString().slice(0, 10)}.json`;
       anchor.click();
       URL.revokeObjectURL(url);
     } catch (e) {

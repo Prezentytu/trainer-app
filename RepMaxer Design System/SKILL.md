@@ -1,6 +1,6 @@
 ---
-name: workout-alchemist-design
-description: Use this skill to generate well-branded interfaces and assets for Workout Alchemist (a Polish-language personal-training platform — trainer desktop panel + client mobile tracker), either for production or throwaway prototypes/mocks/etc. Contains essential design guidelines, colors, type, fonts, assets, and UI kit components for protoyping.
+name: repmaxer-design
+description: Use this skill to generate well-branded interfaces and assets for RepMaxer (a Polish-language personal-training platform — trainer desktop panel + client mobile tracker), either for production or throwaway prototypes/mocks/etc. Contains essential design guidelines, colors, type, fonts, assets, and UI kit components for protoyping.
 user-invocable: true
 ---
 

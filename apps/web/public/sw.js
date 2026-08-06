@@ -1,5 +1,5 @@
 /* RepMaxer — portal client SW (push + app shell). */
-const CACHE_VERSION = "wa-portal-v1";
+const CACHE_VERSION = "rm-portal-v1";
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const OFFLINE_URL = "/portal/offline";
@@ -29,7 +29,11 @@ self.addEventListener("activate", (event) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((key) => key.startsWith("wa-portal-") && !key.startsWith(CACHE_VERSION))
+            .filter(
+              (key) =>
+                (key.startsWith("rm-portal-") || key.startsWith("wa-portal-")) &&
+                !key.startsWith(CACHE_VERSION),
+            )
             .map((key) => caches.delete(key)),
         ),
       )

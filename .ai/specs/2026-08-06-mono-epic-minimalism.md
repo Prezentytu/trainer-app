@@ -1,4 +1,4 @@
-# Redesign mono — epic minimalism (Workout Alchemist DS v2)
+# Redesign mono — epic minimalism (RepMaxer DS v2)
 
 ## TLDR
 
@@ -61,3 +61,4 @@ Brak zmian.
 
 - 2026-08-06 — utworzono spec; decyzje: app-first (landing później), tokeny light gotowe bez przełącznika.
 - 2026-08-06 — wdrożono: `globals.css` mono + `.theme-acid`, Instrument Sans/Geist Mono, `ui.tsx` + `Icon`, top/floating nav, brand/Clerk/PWA mono, wykresy, usunięte lucide; `./scripts/check.sh` zielony.
+- 2026-08-06 — branding: produkt = RepMaxer (nie Workout Alchemist); folder DS → `RepMaxer Design System/`; maile/eksport/manifesty/OG zaktualizowane.

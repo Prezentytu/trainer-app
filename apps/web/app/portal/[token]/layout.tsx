@@ -4,7 +4,7 @@ import { PortalShell } from "@/components/portal/PortalShell";
 import { IOS_SPLASH_ENTRIES } from "@/lib/iosSplash";
 
 export const viewport: Viewport = {
-  themeColor: "#0C0D0C",
+  themeColor: "#0B0C0D",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -21,11 +21,11 @@ export async function generateMetadata({
   const manifest = `/portal/${token}/manifest.webmanifest`;
 
   return {
-    title: "WA Klient",
+    title: "RepMaxer",
     manifest,
     appleWebApp: {
       capable: true,
-      title: "WA Klient",
+      title: "RepMaxer",
       statusBarStyle: "black-translucent",
       startupImage: IOS_SPLASH_ENTRIES.map((entry) => ({
         url: `/splash/${entry.size}`,

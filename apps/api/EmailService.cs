@@ -20,7 +20,7 @@ public sealed class EmailService(IHttpClientFactory httpFactory, IConfiguration 
             return (false, "E-mail nie jest skonfigurowany (brak Email:ResendApiKey).");
         }
 
-        var from = config["Email:From"] ?? "Workout Alchemist <onboarding@resend.dev>";
+        var from = config["Email:From"] ?? "RepMaxer <onboarding@resend.dev>";
         var client = httpFactory.CreateClient("resend");
         using var req = new HttpRequestMessage(HttpMethod.Post, "https://api.resend.com/emails");
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
- * Workout Alchemist — mono v2 (epic minimalism).
+ * RepMaxer — mono v2 (epic minimalism).
  *
  * Chrome: near-black / white / greys. Emphasis = invert fill, never a hue.
  * Data accents only: --pr / --gain / --loss (+ --danger for destructive).
@@ -9,7 +9,7 @@
  */
 
 :root {
-  /* —— Mono ramp (Workout Alchemist Design System) —— */
+  /* —— Mono ramp (RepMaxer design system) —— */
   --ink-900: #0b0c0d;
   --ink-850: #121415;
   --ink-800: #17191b;

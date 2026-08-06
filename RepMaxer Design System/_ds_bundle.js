@@ -475,7 +475,7 @@ try { (() => {
  * tracked. No mark exists — never draw one.
  */
 function Wordmark({
-  children = "Workout Alchemist",
+  children = "RepMaxer",
   size = 13,
   className = ""
 }) {

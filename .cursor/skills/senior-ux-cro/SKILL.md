@@ -14,7 +14,7 @@ Stosuj ŁĄCZNIE z:
 - `responsive-ui` — mobile-first, nic ucięte, nic poza kontenerem.
 - `apple-design` — response/press feedback, materiały (`.session-chrome`), spójność przestrzenna, typografia optyczna, craft — bez nowej biblioteki motion.
 
-Kontekst: dark-only (Workout Alchemist), UI po polsku, portal trenera (B2B) + portal klienta. Brak konsumenckiego premium — hooki subskrypcyjne tylko przy realnym billingu.
+Kontekst: dark-only (RepMaxer), UI po polsku, portal trenera (B2B) + portal klienta. Brak konsumenckiego premium — hooki subskrypcyjne tylko przy realnym billingu.
 
 ---
 

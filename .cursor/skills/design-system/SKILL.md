@@ -1,14 +1,14 @@
 ---
 name: design-system
-description: Nasza paleta i system projektowy Trainer App / Workout Alchemist mono v2 — kolory (apps/web/app/globals.css), typografia, spacing, hierarchia wizualna. Użyj ZAWSZE przy tworzeniu nowego UI, dodawaniu kolorów, review/audycie istniejących komponentów pod kątem zgodności z paletą, albo gdy trzeba wygenerować/poprawić komponent dla światowej klasy UI.
+description: Nasza paleta i system projektowy Trainer App / RepMaxer mono v2 — kolory (apps/web/app/globals.css), typografia, spacing, hierarchia wizualna. Użyj ZAWSZE przy tworzeniu nowego UI, dodawaniu kolorów, review/audycie istniejących komponentów pod kątem zgodności z paletą, albo gdy trzeba wygenerować/poprawić komponent dla światowej klasy UI.
 ---
 
-# Design tokens — Workout Alchemist mono v2
+# Design tokens — RepMaxer mono v2
 
 Cichy instrument: near-black / white / greys. Emfaza = **invert fill**, nigdy hue w chrome. Kolor tylko na danych: PR / gain / loss.
 
 > Źródło prawdy: `apps/web/app/globals.css` + ten skill. Spec: `.ai/specs/2026-08-06-mono-epic-minimalism.md`.  
-> Folder `Workout Alchemist Design System/` = referencja specimenów (mono). Landing marketingowy trzyma stary Acid pod klasą `.theme-acid` do osobnego redesignu.
+> Folder `RepMaxer Design System/` = referencja specimenów (mono). Landing marketingowy trzyma stary Acid pod klasą `.theme-acid` do osobnego redesignu.
 
 ## Non-negotiables
 
@@ -66,7 +66,7 @@ Focus: `box-shadow: var(--focus-ring)` (2px bg + 4px fg). Press: `scale(0.97)`.
 
 - Desktop panel trenera: **lewy sidebar** (jak Linear/Stripe) — wordmark, linki z invert gdy active, konto na dole. W kreatorze planu: wąski rail (ikony), pełny po hover.
 - Mobile panel + portal: **floating pill** 20px od dołu, aktywny = invert.
-- Wordmark: sam tekst (`display-caps`), bez lime tile. PWA/ikony: mono `#0B0C0D` + „RM”.
+- Wordmark: sam tekst (`display-caps`), bez lime tile. PWA/ikony: mono `#0B0C0D` + wordmark „RM” (RepMaxer).
 
 ## Zakazy
 

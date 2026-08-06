@@ -15,8 +15,8 @@ export function GET(
       scope,
       display: "standalone",
       orientation: "portrait",
-      background_color: "#0C0D0C",
-      theme_color: "#0C0D0C",
+      background_color: "#0B0C0D",
+      theme_color: "#0B0C0D",
       lang: "pl",
       categories: ["health", "fitness", "sports"],
       icons: [

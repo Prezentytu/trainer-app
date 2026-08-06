@@ -1,4 +1,4 @@
-# Workout Alchemist — Design System
+# RepMaxer — Design System
 
 A personal-training platform: the trainer builds plans in a desktop panel, the client logs sets on their phone. Polish UI (`pl_PL`).
 
@@ -33,11 +33,9 @@ This system is a **deliberate reset**, now in its second pass. The first version
 - **Feel reference (not a template):** *Styrka Gym Tracker* App Store screenshots — `uploads/pasted-1785933646142-0.png`, `uploads/pasted-1785933677526-0.png`, `uploads/composite-6761281378-3-en-1x1.png`, `uploads/460x996bb.webp`, `uploads/230x498bb.webp`, and <https://apps.apple.com/pl/app/styrka-gym-tracker/id6761281378>. Used only as evidence that a gym tracker can be monochrome and dense: mono numerals over tracked caps labels, filled/outlined pill chips, a four-column set grid, a floating pill nav, a single-line chart, light-and-dark parity. **This is deliberately not a clone** — the palette is a cool near-black rather than pure black, cards carry both a fill and a hairline, type is a high-legibility grotesque rather than a geometric light, labels are 12px rather than 10px, and every grey is chosen against a contrast floor. None of Styrka's branding, copy, layout or artwork was copied.
 - **Product context:** the attached read-only folder `trainer-app/` — a monorepo with `apps/web` (Next.js 16 App Router, Tailwind 4, Clerk, lucide-react) and `apps/api` (.NET 10 + EF Core + SQLite). Screen inventory, domain language, Polish copy and flows come from there: `components/ui.tsx`, `components/SessionLogger.tsx`, `components/plan-builder/*`, `components/portal/*`, `app/portal/[token]/*`, `components/landing/*`.
   **Its visual tokens (`app/globals.css`) were intentionally *not* carried over** — that is the styling being replaced.
-- A previous from-scratch design system also exists inside that folder (`trainer-app/Workout Alchemist Design System/`, teal accent). Unused, superseded.
-
 ## Brand assets
 
-**There are none, by design.** No logo, no mark, no illustration, no photography, no product screenshots in this system. The brand is the product name set in type (`Wordmark`): Jost 500, uppercase, 0.24em tracking. Never draw, reconstruct, or approximate a mark. The lime "WA" app-icon tile that exists in the codebase (`lib/brandMark.tsx`) belongs to the old direction and is not part of this system.
+**There are none, by design.** No logo, no mark, no illustration, no photography, no product screenshots in this system. The brand is the product name set in type (`Wordmark`): **RepMaxer**, Instrument Sans / display caps, tracked. Compact mark for icons/PWA: **RM**. Never draw, reconstruct, or approximate a pictorial logo.
 
 ---
 
