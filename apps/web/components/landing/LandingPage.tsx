@@ -1,8 +1,10 @@
 import { LandingNav } from "./LandingNav";
 import { Hero } from "./Hero";
 import { Marquee } from "./Marquee";
+import { ScenarioScroll } from "./ScenarioScroll";
 import { ProductShots } from "./ProductShots";
 import { Points } from "./Points";
+import { Faq } from "./Faq";
 import { FinalCta } from "./FinalCta";
 import { LandingFooter } from "./LandingFooter";
 
@@ -13,11 +15,14 @@ export function LandingPage() {
       <main>
         <Hero />
         <Marquee />
+        <ScenarioScroll />
         <ProductShots />
         <Points />
+        <Faq />
         <FinalCta />
       </main>
       <LandingFooter />
+      <div className="landing-grain" aria-hidden />
     </div>
   );
 }

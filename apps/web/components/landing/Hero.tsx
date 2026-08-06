@@ -4,10 +4,10 @@ import { HeroField } from "./HeroField";
 
 export function Hero() {
   return (
-    <section className="relative flex min-h-[88svh] scroll-mt-20 items-center justify-center overflow-hidden px-5 sm:px-6">
+    <section className="relative flex min-h-[88svh] scroll-mt-24 items-center justify-center overflow-hidden px-5 pt-16 sm:px-6 sm:pt-[4.5rem]">
       <HeroField />
 
-      <div className="relative z-[1] mx-auto w-full max-w-4xl pb-16 text-center sm:pb-20">
+      <div className="landing-hero-vignette relative z-[1] mx-auto w-full max-w-4xl pb-16 text-center sm:pb-20">
         <p className="landing-eyebrow-in font-mono text-[11px] uppercase tracking-[var(--tracking-eyebrow)] text-muted">
           Dla trenerów personalnych
         </p>
@@ -35,11 +35,9 @@ export function Hero() {
               Załóż darmowe konto
             </Button>
           </Link>
-          <a
-            href="#produkt"
-            className="landing-link-underline font-mono text-[11px] uppercase tracking-[var(--tracking-eyebrow)] text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
-          >
-            Zobacz produkt ↓
+          <a href="#produkt" className="landing-scroll-cta">
+            <span>Zobacz produkt</span>
+            <span aria-hidden>↓</span>
           </a>
         </div>
 

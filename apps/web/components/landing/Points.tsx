@@ -1,3 +1,6 @@
+"use client";
+
+import type { MouseEvent } from "react";
 import { LandingReveal } from "./LandingReveal";
 
 const TRAINER_POINTS = [
@@ -36,6 +39,15 @@ const CLIENT_POINTS = [
   },
 ] as const;
 
+function onGridMove(e: MouseEvent<HTMLOListElement>) {
+  const grid = e.currentTarget;
+  for (const cell of grid.querySelectorAll<HTMLElement>(".landing-spotlight")) {
+    const rect = cell.getBoundingClientRect();
+    cell.style.setProperty("--mouse-x", `${e.clientX - rect.left}px`);
+    cell.style.setProperty("--mouse-y", `${e.clientY - rect.top}px`);
+  }
+}
+
 function PointCell({
   n,
   title,
@@ -49,7 +61,7 @@ function PointCell({
 }) {
   return (
     <li
-      className="landing-point-cell landing-stagger flex flex-col gap-3 border-b border-r border-border p-6 sm:p-8"
+      className="landing-point-cell landing-spotlight landing-stagger flex flex-col gap-3 border-b border-r border-border p-6 sm:p-8"
       style={{ ["--i" as string]: index }}
     >
       <span className="font-mono text-lg uppercase tracking-caps text-muted-faint">{n}</span>
@@ -66,12 +78,12 @@ export function Points() {
     <LandingReveal
       as="section"
       id="co-dostajesz"
-      className="scroll-mt-20 border-t border-border px-5 py-32 sm:px-6 sm:py-44"
+      className="scroll-mt-24 border-t border-border px-5 py-32 sm:px-6 sm:py-44"
     >
       <div className="mx-auto max-w-6xl">
         <div className="mx-auto max-w-2xl text-center">
           <p className="font-mono text-[11px] uppercase tracking-[var(--tracking-eyebrow)] text-muted">
-            03 — Co dostajesz
+            04 — Co dostajesz
           </p>
           <h2 className="mt-4 display-landing text-[clamp(1.5rem,3.4vw,2.75rem)] text-foreground text-pretty">
             Reszta dzieje się sama.
@@ -83,7 +95,10 @@ export function Points() {
             <p className="mb-4 font-mono text-[11px] uppercase tracking-[var(--tracking-eyebrow)] text-muted">
               Dla ciebie
             </p>
-            <ol className="grid border-t border-l border-border sm:grid-cols-3">
+            <ol
+              className="grid border-t border-l border-border sm:grid-cols-3"
+              onMouseMove={onGridMove}
+            >
               {TRAINER_POINTS.map((point, i) => (
                 <PointCell key={point.n} {...point} index={i} />
               ))}
@@ -94,7 +109,10 @@ export function Points() {
             <p className="mb-4 font-mono text-[11px] uppercase tracking-[var(--tracking-eyebrow)] text-muted">
               Dla twojego klienta
             </p>
-            <ol className="grid border-t border-l border-border sm:grid-cols-3">
+            <ol
+              className="grid border-t border-l border-border sm:grid-cols-3"
+              onMouseMove={onGridMove}
+            >
               {CLIENT_POINTS.map((point, i) => (
                 <PointCell key={point.n} {...point} index={i} />
               ))}
