@@ -49,7 +49,7 @@ export function Faq() {
         Zanim zapytasz.
       </h2>
 
-      <div className="max-w-[800px] border-t border-border">
+      <div className="border-t border-border">
         {FAQ_ITEMS.map((item, i) => {
           const isOpen = open === i;
           const panelId = `${baseId}-panel-${i}`;

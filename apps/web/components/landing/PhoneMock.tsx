@@ -65,7 +65,8 @@ export function PhoneMock() {
         Otwiera link i odhacza serie.
       </h2>
 
-      <div className="mt-12 grid grid-cols-1 items-center gap-12 md:mt-16 md:grid-cols-2 md:gap-16">
+      {/* Prawa kolumna ma szerokość mocka — telefon siada na linii siatki, nie pływa. */}
+      <div className="mt-12 grid grid-cols-1 items-center gap-12 md:mt-16 md:grid-cols-[minmax(0,1fr)_380px] md:gap-16">
         <div
           className="landing-stagger w-full max-w-[380px] justify-self-center rounded-3xl border border-border-strong bg-surface-sunken px-6 py-7 md:order-2"
           style={{ ["--i" as string]: 2 }}

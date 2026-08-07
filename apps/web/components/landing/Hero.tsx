@@ -3,9 +3,9 @@ import { LiveFeed } from "./LiveFeed";
 import { LandingCta } from "./primitives";
 
 /**
- * Hero na jednej osi kompozycji: blok tekstu (H1 → subcopy → CTA) wyśrodkowany
- * w pionie, a feed jako pełnoszerokościowy „horyzont danych" na dole,
- * wygasający maską w czerń — artefakt tła, nie konkurencyjny widget.
+ * Hero — moment deklaracji: blok tekstu wyśrodkowany na stronie, ale tekst
+ * w środku wyrównany do lewej (H1, subcopy i CTA dzielą jedną krawędź).
+ * Feed jest pełnoszerokościowym „horyzontem danych" wygaszanym maską w czerń.
  */
 export function Hero() {
   return (
@@ -15,29 +15,31 @@ export function Hero() {
       className="mx-auto flex min-h-[calc(100svh-72px)] max-w-[1200px] flex-col px-5 sm:px-8"
     >
       <div className="flex flex-1 flex-col justify-center pb-14 pt-20 sm:pt-24">
-        <h1 className="m-0 max-w-[18ch] text-[clamp(2.75rem,7.4vw,6rem)] font-semibold leading-[1.02] tracking-[-0.035em] text-foreground text-balance">
-          <span className="landing-stagger block" style={{ ["--i" as string]: 0 }}>
-            Wysyłasz link.
-          </span>
-          <span
-            className="landing-stagger mt-1 block text-muted"
-            style={{ ["--i" as string]: 1 }}
+        <div className="w-full sm:mx-auto sm:w-fit">
+          <h1 className="m-0 max-w-[18ch] text-[clamp(2.75rem,7.4vw,6rem)] font-semibold leading-[1.02] tracking-[-0.035em] text-foreground text-balance">
+            <span className="landing-stagger block" style={{ ["--i" as string]: 0 }}>
+              Wysyłasz link.
+            </span>
+            <span
+              className="landing-stagger mt-1 block text-muted"
+              style={{ ["--i" as string]: 1 }}
+            >
+              Widzisz każdy trening.
+            </span>
+          </h1>
+          <p
+            className="landing-stagger m-0 mt-8 max-w-[42ch] text-[17px] font-normal leading-[1.6] text-muted text-pretty"
+            style={{ ["--i" as string]: 2 }}
           >
-            Widzisz każdy trening.
-          </span>
-        </h1>
-        <p
-          className="landing-stagger m-0 mt-8 max-w-[42ch] text-[17px] font-normal leading-[1.6] text-muted text-pretty"
-          style={{ ["--i" as string]: 2 }}
-        >
-          Klient odhacza serie w telefonie. Bez aplikacji, bez konta.
-        </p>
-        <div
-          className="landing-stagger mt-10 flex flex-wrap items-center gap-x-6 gap-y-3"
-          style={{ ["--i" as string]: 3 }}
-        >
-          <LandingCta />
-          <span className="t-label tracking-[0.16em] text-muted">0 zł · bez karty</span>
+            Klient odhacza serie w telefonie. Bez aplikacji, bez konta.
+          </p>
+          <div
+            className="landing-stagger mt-10 flex flex-wrap items-center gap-x-6 gap-y-3"
+            style={{ ["--i" as string]: 3 }}
+          >
+            <LandingCta />
+            <span className="t-label tracking-[0.16em] text-muted">0 zł · bez karty</span>
+          </div>
         </div>
       </div>
 

@@ -17,11 +17,17 @@ export function PricingSection() {
 
       <div className="mt-12 grid grid-cols-1 items-end gap-12 md:grid-cols-2 md:gap-16">
         <div>
+          {/* Kwota i waluta osobno — spacja w foncie mono robiłaby dziurę na pół ekranu. */}
           <p
-            className="landing-stagger t-num m-0 text-[clamp(4rem,11vw,8.75rem)] leading-none tracking-[-0.03em] text-foreground"
+            className="landing-stagger m-0 flex items-baseline gap-2"
             style={{ ["--i" as string]: 1 }}
           >
-            0 zł
+            <span className="t-num text-[clamp(4rem,11vw,8.75rem)] leading-none tracking-[-0.03em] text-foreground">
+              0
+            </span>
+            <span className="t-num text-[clamp(1.5rem,3.2vw,2.5rem)] leading-none text-fg-faint">
+              zł
+            </span>
           </p>
           <p
             className="landing-stagger t-label mt-6 tracking-[0.16em]"

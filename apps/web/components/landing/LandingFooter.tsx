@@ -13,7 +13,7 @@ export function LandingFooter() {
       <div className="mx-auto grid max-w-[1200px] gap-12 px-5 pb-12 pt-16 sm:px-8 sm:pb-12 sm:pt-16">
         <Link
           href="/"
-          className="text-[clamp(2.5rem,6vw,2.75rem)] font-semibold tracking-[-0.03em] text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+          className="text-[clamp(2.5rem,6vw,2.75rem)] font-semibold uppercase tracking-[-0.03em] text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
         >
           RepMaxer
         </Link>
