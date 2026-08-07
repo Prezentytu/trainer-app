@@ -7,10 +7,15 @@ import { PricingSection } from "./PricingSection";
 import { Faq } from "./Faq";
 import { FinalCta } from "./FinalCta";
 import { LandingFooter } from "./LandingFooter";
+import { LandingThemeLock } from "./LandingThemeLock";
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen overflow-x-hidden bg-background text-foreground">
+    <div
+      data-theme="light"
+      className="min-h-screen overflow-x-hidden bg-background text-foreground"
+    >
+      <LandingThemeLock />
       <LandingNav />
       <main>
         <Hero />

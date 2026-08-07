@@ -28,7 +28,7 @@ const FAQ_ITEMS = [
 
 export function Faq() {
   const baseId = useId();
-  const [open, setOpen] = useState<number | null>(0);
+  const [open, setOpen] = useState<number | null>(null);
 
   return (
     <LandingReveal

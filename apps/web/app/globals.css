@@ -5,7 +5,7 @@
  *
  * Chrome: near-black / white / greys. Emphasis = invert fill, never a hue.
  * Data accents only: --pr / --gain / --loss (+ --danger for destructive).
- * Landing = te same tokeny mono v2 (bez osobnego theme-guard).
+ * Landing = te same tokeny mono v2, zawsze `data-theme="light"` (LandingThemeLock).
  */
 
 :root {
@@ -464,7 +464,6 @@ body {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: var(--track-num);
-  color: var(--fg);
 }
 
 .texture-scan {

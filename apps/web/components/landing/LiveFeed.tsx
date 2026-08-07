@@ -7,6 +7,7 @@ import { LANDING_EASE } from "./primitives";
 type FeedTone = "pr" | "gain" | "flat";
 
 type FeedRow = {
+  id: string;
   name: string;
   lift: string;
   value: string;
@@ -14,15 +15,35 @@ type FeedRow = {
   mark: string;
 };
 
-/** Spójny cast z PanelMock — ten sam Michał Dąbrowski ma PR w martwym ciągu. */
+/**
+ * Szeroki cast — cykl 5 widocznych wierszy nie wraca do tych samych osób co chwilę.
+ * Michał Dąbrowski zostaje (spójność z PanelMock).
+ */
 const FEED: FeedRow[] = [
-  { name: "Michał Dąbrowski", lift: "Martwy ciąg", value: "142,5 kg × 3", tone: "pr", mark: "PR" },
-  { name: "Marta Lewicka", lift: "Wyciskanie", value: "62,5 kg × 8", tone: "gain", mark: "+2,5" },
-  { name: "Ola Wiśniewska", lift: "Przysiad", value: "85,0 kg × 5", tone: "gain", mark: "+5,0" },
-  { name: "Piotr Sikora", lift: "Wiosłowanie", value: "70,0 kg × 10", tone: "flat", mark: "=" },
-  { name: "Ewa Sobczak", lift: "Podciąganie", value: "8,0 kg × 6", tone: "gain", mark: "+2,0" },
-  { name: "Tomek Rak", lift: "OHP", value: "52,5 kg × 5", tone: "flat", mark: "=" },
-  { name: "Julia Bąk", lift: "Hip thrust", value: "110,0 kg × 8", tone: "pr", mark: "PR" },
+  { id: "1", name: "Michał Dąbrowski", lift: "Martwy ciąg", value: "142,5 kg × 3", tone: "pr", mark: "PR" },
+  { id: "2", name: "Marta Lewicka", lift: "Wyciskanie", value: "62,5 kg × 8", tone: "gain", mark: "+2,5" },
+  { id: "3", name: "Ola Wiśniewska", lift: "Przysiad", value: "85,0 kg × 5", tone: "gain", mark: "+5,0" },
+  { id: "4", name: "Piotr Sikora", lift: "Wiosłowanie", value: "70,0 kg × 10", tone: "flat", mark: "=" },
+  { id: "5", name: "Ewa Sobczak", lift: "Podciąganie", value: "8,0 kg × 6", tone: "gain", mark: "+2,0" },
+  { id: "6", name: "Tomek Rak", lift: "OHP", value: "52,5 kg × 5", tone: "flat", mark: "=" },
+  { id: "7", name: "Julia Bąk", lift: "Hip thrust", value: "110,0 kg × 8", tone: "pr", mark: "PR" },
+  { id: "8", name: "Kasia Nowak", lift: "Martwy rumuński", value: "90,0 kg × 8", tone: "gain", mark: "+5,0" },
+  { id: "9", name: "Adam Król", lift: "Wyciskanie", value: "100,0 kg × 5", tone: "pr", mark: "PR" },
+  { id: "10", name: "Natalia Górska", lift: "Przysiad goblet", value: "32,0 kg × 12", tone: "gain", mark: "+2,0" },
+  { id: "11", name: "Bartek Lis", lift: "Uginanie", value: "22,5 kg × 10", tone: "flat", mark: "=" },
+  { id: "12", name: "Zuzanna Pawlak", lift: "Wykroki", value: "40,0 kg × 8", tone: "gain", mark: "+2,5" },
+  { id: "13", name: "Filip Mazur", lift: "Martwy ciąg", value: "160,0 kg × 2", tone: "pr", mark: "PR" },
+  { id: "14", name: "Ania Kubiak", lift: "Wyciskanie hantli", value: "22,5 kg × 10", tone: "gain", mark: "+2,5" },
+  { id: "15", name: "Marek Ostrowski", lift: "Przysiad", value: "120,0 kg × 5", tone: "gain", mark: "+5,0" },
+  { id: "16", name: "Iga Zielińska", lift: "Wiosło jednorącz", value: "28,0 kg × 10", tone: "flat", mark: "=" },
+  { id: "17", name: "Paweł Chmiel", lift: "OHP", value: "60,0 kg × 4", tone: "pr", mark: "PR" },
+  { id: "18", name: "Weronika Szał", lift: "Hip thrust", value: "130,0 kg × 6", tone: "gain", mark: "+10" },
+  { id: "19", name: "Dominik Jank", lift: "Podciąganie", value: "BW × 12", tone: "gain", mark: "+2" },
+  { id: "20", name: "Karolina Rut", lift: "Martwy ciąg", value: "95,0 kg × 5", tone: "flat", mark: "=" },
+  { id: "21", name: "Szymon Dudek", lift: "Wyciskanie", value: "87,5 kg × 3", tone: "gain", mark: "+2,5" },
+  { id: "22", name: "Magda Kaczor", lift: "Przysiad front", value: "70,0 kg × 6", tone: "pr", mark: "PR" },
+  { id: "23", name: "Rafał Wolski", lift: "Farmers walk", value: "2×40 kg", tone: "flat", mark: "=" },
+  { id: "24", name: "Hania Biel", lift: "Wyciskanie nóg", value: "140,0 kg × 10", tone: "gain", mark: "+10" },
 ];
 
 const STEP = [
@@ -94,7 +115,7 @@ export function LiveFeed() {
       <ul className="m-0 list-none p-0" aria-label="Przykładowe wyniki klientów">
         {rows.map((r, i) => (
           <li
-            key={r.name}
+            key={r.id}
             ref={i === 0 ? firstRowRef : undefined}
             className="grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-border sm:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_auto]"
           >

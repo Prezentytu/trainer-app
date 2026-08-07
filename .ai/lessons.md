@@ -47,8 +47,14 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 **Kontekst**: Tokeny light były w `globals.css`, ale bez przełącznika.
 **Problem**: React 19 / Next 16 rzuca „Encountered a script tag…” gdy `<script>` jest w drzewie komponentu; FOUC przy ustawieniu motywu po hydracji.
-**Zasada**: Preferencja w `localStorage` (`repmaxer-theme`); boot przez `ThemeBoot` + `useServerInsertedHTML` (poza drzewem klienta); UI w `/settings` przez `useTheme()` / `Switch`. Landing i app dzielą tokeny mono v2.
-**Dotyczy**: `lib/theme.ts`, `components/ThemeBoot.tsx`, `app/layout.tsx`, `/settings`.
+**Zasada**: Preferencja w `localStorage` (`repmaxer-theme`); boot przez `ThemeBoot` + `useServerInsertedHTML` (poza drzewem klienta); UI w `/settings` przez `useTheme()` / `Switch`. Landing zawsze light: `data-theme="light"` na root + `LandingThemeLock` (tylko `lockLightTheme` w efekcie — **bez** drugiego `useServerInsertedHTML`, bo koliduje z ThemeBoot i psuje hydrację).
+**Dotyczy**: `lib/theme.ts`, `components/ThemeBoot.tsx`, `components/landing/LandingThemeLock.tsx`, `app/layout.tsx`, `/settings`.
+
+## `.t-num` bez `color` — nie blokuj `text-pr` / `text-gain`
+
+**Problem**: `.t-num { color: var(--fg) }` wygrywało z utility `text-pr`, więc rekord 142,5 kg na landingu wyglądał na czarny mimo `tone="pr"`.
+**Zasada**: `.t-num` tylko font/waga/tabular; kolor wyłącznie z `text-*` (foreground / pr / gain / loss) albo inherit.
+**Dotyczy**: `globals.css` `.t-num`, `StatTile`, `StatBlock`, markery PR.
 
 ## Chrome planu = 2 pasy, zero powtórzeń
 
