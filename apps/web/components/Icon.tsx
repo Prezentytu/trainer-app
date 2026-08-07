@@ -39,6 +39,8 @@ export type IconName =
   | "copy-simple"
   | "circle"
   | "user"
+  | "eye"
+  | "eye-slash"
   // English aliases
   | "copy"
   | "dumbbell"

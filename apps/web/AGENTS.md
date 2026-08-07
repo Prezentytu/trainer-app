@@ -19,7 +19,8 @@ Next.js 16 (App Router) + React 19 + Tailwind 4. Port 3000. Ciemny motyw, UI po 
 | `app/page.tsx` | `/` — landing (gość) albo Panel w `AppShell` (zalogowany / lokal) |
 | `components/AppShell.tsx` | Sidebar (desktop) + mobilny drawer + tablica `NAV` (tu dopisujesz nowe działy) |
 | `components/landing/` | Sekcje strony powitalnej |
-| `components/auth/AuthScreen.tsx` | Split-screen dla `/sign-in` i `/sign-up` |
+| `components/auth/AuthScreen.tsx` | Split-screen layout dla `/sign-in` i `/sign-up` |
+| `components/auth/SignInForm.tsx` / `SignUpForm.tsx` | Własne formularze headless Clerk (Future API) |
 | `app/{zasób}/page.tsx` | Strona listy zasobu (client component) — w grupie `(app)` |
 | `app/{zasób}/[id]/page.tsx` | Strona szczegółów |
 | `lib/api.ts` | Typowany klient API — typy TS + obiekt `api` z metodami per zasób |

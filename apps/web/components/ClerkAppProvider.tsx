@@ -4,8 +4,6 @@ import { ReactNode, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { ClerkProvider, RedirectToSignIn, useAuth } from "@clerk/nextjs";
 import { clerkEnabled, setAuthTokenGetter } from "@/lib/api";
-import { clerkAppearance } from "@/lib/clerkAppearance";
-import { clerkLocalization } from "@/lib/clerkLocalization";
 
 function AuthTokenBridge({ children }: { children: ReactNode }) {
   const { getToken } = useAuth();
@@ -23,7 +21,8 @@ function Guard({ children }: { children: ReactNode }) {
     pathname === "/" ||
     pathname.startsWith("/portal") ||
     pathname.startsWith("/sign-in") ||
-    pathname.startsWith("/sign-up");
+    pathname.startsWith("/sign-up") ||
+    pathname.startsWith("/sso-callback");
 
   if (isPublic) return <>{children}</>;
   // Nie podmieniaj drzewa przed isLoaded — SSR już przeszedł auth.protect();
@@ -45,8 +44,6 @@ export function ClerkAppProvider({ children }: { children: ReactNode }) {
       signInFallbackRedirectUrl="/"
       signUpFallbackRedirectUrl="/"
       afterSignOutUrl="/sign-in"
-      localization={clerkLocalization}
-      appearance={clerkAppearance}
     >
       <AuthTokenBridge>
         <Guard>{children}</Guard>
