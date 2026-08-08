@@ -327,6 +327,115 @@ app.MapPut("/api/clients/{id:int}/intake", async (int id, ClientIntakeInput inpu
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
+// ---------- Notatki trenera (prywatne — nigdy w /api/portal/*) ----------
+
+static object TrainerNoteToDto(TrainerNote n) => new
+{
+    n.Id,
+    n.ClientId,
+    n.Body,
+    Pinned = n.PinnedAt != null,
+    n.PinnedAt,
+    n.CreatedAt,
+    n.UpdatedAt,
+};
+
+app.MapGet("/api/clients/{clientId:int}/notes", async (int clientId, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        var rows = await db.TrainerNotes
+            .AsNoTracking()
+            .Where(n => n.ClientId == clientId)
+            .OrderByDescending(n => n.PinnedAt != null)
+            .ThenByDescending(n => n.PinnedAt)
+            .ThenByDescending(n => n.CreatedAt)
+            .ThenByDescending(n => n.Id)
+            .ToListAsync();
+        return Results.Ok(rows.Select(TrainerNoteToDto));
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapPost("/api/clients/{clientId:int}/notes", async (
+    int clientId, TrainerNoteInput input, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        var body = (input.Body ?? "").Trim();
+        if (body.Length == 0)
+            return Results.BadRequest(new { message = "Notatka nie może być pusta." });
+
+        var note = new TrainerNote
+        {
+            ClientId = clientId,
+            Body = body,
+            PinnedAt = input.Pinned ? DateTime.UtcNow : null,
+        };
+        db.TrainerNotes.Add(note);
+        await db.SaveChangesAsync();
+        return Results.Created($"/api/clients/{clientId}/notes/{note.Id}", TrainerNoteToDto(note));
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapPut("/api/clients/{clientId:int}/notes/{noteId:int}", async (
+    int clientId, int noteId, TrainerNoteInput input, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        var note = await db.TrainerNotes.FirstOrDefaultAsync(n => n.Id == noteId && n.ClientId == clientId);
+        if (note is null) return Results.NotFound();
+
+        var body = (input.Body ?? "").Trim();
+        if (body.Length == 0)
+            return Results.BadRequest(new { message = "Notatka nie może być pusta." });
+
+        note.Body = body;
+        note.PinnedAt = input.Pinned
+            ? (note.PinnedAt ?? DateTime.UtcNow)
+            : null;
+        note.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+        return Results.Ok(TrainerNoteToDto(note));
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapDelete("/api/clients/{clientId:int}/notes/{noteId:int}", async (
+    int clientId, int noteId, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        var note = await db.TrainerNotes.FirstOrDefaultAsync(n => n.Id == noteId && n.ClientId == clientId);
+        if (note is null) return Results.NotFound();
+        db.TrainerNotes.Remove(note);
+        await db.SaveChangesAsync();
+        return Results.NoContent();
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapGet("/api/clients/{clientId:int}/client-notes", async (
+    int clientId, int? limit, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        return Results.Ok(await ClientNotes.ForClientDtoAsync(db, clientId, limit ?? 30));
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
 // ---------- Ćwiczenia ----------
 
 static void ApplyExerciseInput(Exercise exercise, ExerciseInput input, string name)
@@ -668,6 +777,7 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
 
         var allSets = await db.LoggedSets
             .Where(s => !s.IsWarmup
+                        && s.Completed
                         && s.WeightKg != null
                         && s.Reps != null
                         && s.LoggedExercise!.Session!.Status == "completed"
@@ -695,7 +805,8 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
             var e1 = Stats.Epley1Rm(row.WeightKg, row.Reps);
             if (e1 is null) continue;
             var key = (row.ClientId, row.ExerciseId);
-            if (!best.TryGetValue(key, out var prev) || e1.Value > prev + 0.01)
+            best.TryGetValue(key, out var prev);
+            if (Stats.IsEpleyPr(e1, prev))
             {
                 best[key] = e1.Value;
                 allPrs.Add(new
@@ -704,7 +815,7 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
                     clientName = row.ClientName,
                     exerciseId = row.ExerciseId,
                     exerciseName = row.ExerciseName,
-                    estimated1Rm = e1.Value,
+                    estimated1Rm = Stats.RoundToHalf(e1.Value),
                     weightKg = row.WeightKg,
                     reps = row.Reps,
                     performedOn = row.PerformedOn,
@@ -1227,6 +1338,7 @@ static async Task<object> LoadClientRecordsAsync(AppDb db, int clientId)
         .Where(s => s.LoggedExercise!.Session!.ClientId == clientId
                     && s.LoggedExercise.Session.Status == "completed"
                     && !s.IsWarmup
+                    && s.Completed
                     && s.WeightKg != null
                     && s.Reps != null)
         .Select(s => new
@@ -1245,20 +1357,23 @@ static async Task<object> LoadClientRecordsAsync(AppDb db, int clientId)
         .Select(g =>
         {
             var best = g
-                .Select(s => new { Set = s, E1 = Stats.Epley1Rm(s.WeightKg, s.Reps)!.Value })
-                .OrderByDescending(x => x.E1)
+                .Select(s => new { Set = s, E1 = Stats.Epley1Rm(s.WeightKg, s.Reps) })
+                .Where(x => x.E1 is not null)
+                .OrderByDescending(x => x.E1!.Value)
                 .ThenByDescending(x => x.Set.PerformedOn)
-                .First();
-            return new
-            {
-                exerciseId = g.Key,
-                exerciseName = best.Set.ExerciseName ?? "",
-                estimated1Rm = best.E1,
-                weightKg = best.Set.WeightKg,
-                reps = best.Set.Reps,
-                performedOn = best.Set.PerformedOn,
-                sessionId = best.Set.SessionId,
-            };
+                .FirstOrDefault();
+            return best;
+        })
+        .Where(best => best is not null)
+        .Select(best => new
+        {
+            exerciseId = best!.Set.ExerciseId,
+            exerciseName = best.Set.ExerciseName ?? "",
+            estimated1Rm = Stats.RoundToHalf(best.E1!.Value),
+            weightKg = best.Set.WeightKg,
+            reps = best.Set.Reps,
+            performedOn = best.Set.PerformedOn,
+            sessionId = best.Set.SessionId,
         })
         .OrderByDescending(r => r.estimated1Rm)
         .ToList();
@@ -1739,6 +1854,7 @@ app.MapGet("/api/portal/{token}/sessions", async (string token, AppDb db) =>
         .Where(s => s.LoggedExercise!.Session!.ClientId == access.ClientId
                     && s.LoggedExercise.Session.Status == "completed"
                     && !s.IsWarmup
+                    && s.Completed
                     && s.WeightKg != null
                     && s.Reps != null)
         .Select(s => new
@@ -1762,7 +1878,8 @@ app.MapGet("/api/portal/{token}/sessions", async (string token, AppDb db) =>
     {
         var e1 = Stats.Epley1Rm(row.WeightKg, row.Reps);
         if (e1 is null) continue;
-        if (!best.TryGetValue(row.ExerciseId, out var prev) || e1.Value > prev + 0.01)
+        best.TryGetValue(row.ExerciseId, out var prev);
+        if (Stats.IsEpleyPr(e1, prev))
         {
             best[row.ExerciseId] = e1.Value;
             if (!prsBySession.TryGetValue(row.SessionId, out var list))
@@ -1776,7 +1893,8 @@ app.MapGet("/api/portal/{token}/sessions", async (string token, AppDb db) =>
                 exerciseName = row.ExerciseName,
                 weightKg = row.WeightKg,
                 reps = row.Reps,
-                estimated1Rm = e1.Value,
+                estimated1Rm = Stats.RoundToHalf(e1.Value),
+                previousBest1Rm = prev > 0 ? Stats.RoundToHalf(prev) : (double?)null,
             });
         }
     }

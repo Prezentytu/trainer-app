@@ -41,8 +41,18 @@ export type IconName =
   | "user"
   | "eye"
   | "eye-slash"
+  | "lock-simple"
+  | "push-pin"
+  | "push-pin-slash"
+  | "note-blank"
+  | "chat-text"
   // English aliases
   | "copy"
+  | "lock"
+  | "pin"
+  | "unpin"
+  | "note"
+  | "chat"
   | "dumbbell"
   | "workout"
   | "progress"
@@ -85,6 +95,11 @@ const ALIASES: Partial<Record<IconName, string>> = {
   menu: "list",
   history: "clock-counter-clockwise",
   activity: "pulse",
+  lock: "lock-simple",
+  pin: "push-pin",
+  unpin: "push-pin-slash",
+  note: "note-blank",
+  chat: "chat-text",
 };
 
 type IconProps = {

@@ -21,6 +21,12 @@ import {
 } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { DashboardSkeleton } from "@/components/skeletons";
+import {
+  getPortalLinkSent,
+  markPortalLinkSent,
+  subscribePortalLinkSent,
+} from "@/lib/portalLinkSent";
+import { formatKg } from "@/lib/plates";
 
 type RowStatus = {
   kind: "no_plan" | "attention" | "ok";
@@ -29,22 +35,6 @@ type RowStatus = {
   portalToken?: string | null;
   attention?: AttentionItem;
 };
-
-const PORTAL_LINK_SENT_KEY = "wa-portal-link-sent";
-const PORTAL_LINK_SENT_EVENT = "wa-portal-link-sent";
-
-function subscribePortalLinkSent(onChange: () => void) {
-  window.addEventListener("storage", onChange);
-  window.addEventListener(PORTAL_LINK_SENT_EVENT, onChange);
-  return () => {
-    window.removeEventListener("storage", onChange);
-    window.removeEventListener(PORTAL_LINK_SENT_EVENT, onChange);
-  };
-}
-
-function getPortalLinkSent() {
-  return localStorage.getItem(PORTAL_LINK_SENT_KEY) === "1";
-}
 
 export function TrainerDashboard() {
   const [dash, setDash] = useState<DashboardData | null>(null);
@@ -72,6 +62,17 @@ export function TrainerDashboard() {
       cancelled = true;
     };
   }, []);
+
+  // Klient już trenował / ma PR → link musiał dotrzeć; zsynchronizuj flagę onboardingu.
+  useEffect(() => {
+    if (portalLinkSent || !dash) return;
+    const evidence =
+      dash.recentSessions.length > 0 ||
+      dash.sessionsLast7Days > 0 ||
+      dash.prsLast7Days > 0 ||
+      dash.recentPrs.length > 0;
+    if (evidence) markPortalLinkSent();
+  }, [dash, portalLinkSent]);
 
   const recentSessions = dash?.recentSessions ?? [];
   const recentPrs = dash?.recentPrs ?? [];
@@ -124,8 +125,7 @@ export function TrainerDashboard() {
     const url = `${window.location.origin}/portal/${portalToken}`;
     try {
       await navigator.clipboard.writeText(url);
-      localStorage.setItem(PORTAL_LINK_SENT_KEY, "1");
-      window.dispatchEvent(new Event(PORTAL_LINK_SENT_EVENT));
+      markPortalLinkSent();
       setCopiedId(clientId);
       setTimeout(() => setCopiedId(null), 2000);
     } catch {
@@ -264,7 +264,7 @@ export function TrainerDashboard() {
                   ) : null}
                   <Link href={`/clients/${client.clientId}`}>
                     <Button size="sm" variant="ghost">
-                      Otwórz klienta
+                      Przejdź do klienta
                     </Button>
                   </Link>
                   {status.action === "copy_portal_link" && status.portalToken ? (
@@ -456,7 +456,7 @@ export function TrainerDashboard() {
                     </span>
                   </Link>
                   <span className="shrink-0 rounded-[var(--radius-pill)] border border-pr-border bg-pr-dim px-2.5 py-0.5 font-mono text-sm font-semibold tabular-nums text-pr">
-                    {r.estimated1Rm} kg
+                    {formatKg(r.estimated1Rm)} kg
                   </span>
                 </li>
               ))}

@@ -343,6 +343,8 @@ public static class Sessions
                 .Include(s => s.LoggedExercise).ThenInclude(e => e!.Session)
                 .Where(s => s.LoggedExercise!.Session!.ClientId == session.ClientId
                             && s.LoggedExercise.Session.Status == "completed"
+                            && s.Completed
+                            && !s.IsWarmup
                             && exerciseIds.Contains(s.LoggedExercise.ExerciseId)
                             && s.LoggedExercise.Session.Id != session.Id
                             && (s.LoggedExercise.Session.PerformedOn < session.PerformedOn

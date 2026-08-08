@@ -11,6 +11,7 @@ import {
   ClientIntakeInput,
   ClientMax,
   ClientMeasurement,
+  ClientNoteGroup,
   ClientProgress,
   ClientRecord,
   ClientTrendsResponse,
@@ -21,8 +22,12 @@ import {
   PlanSummary,
   SessionSummary,
   StagnationResponse,
+  TrainerNote,
 } from "@/lib/api";
+import { ClientNotesTab, countClientNotes } from "@/components/client/ClientNotesTab";
+import { TrainerNotesTab } from "@/components/client/TrainerNotesTab";
 import { daysAgo, formatDayShort, relativeDayLabel, withinLastDays } from "@/lib/dates";
+import { markPortalLinkSent } from "@/lib/portalLinkSent";
 import { TrendSparkline } from "@/components/TrendSparkline";
 import { WeightTrendSparkline } from "@/components/WeightTrendSparkline";
 import { RepMaxList } from "@/components/RepMaxList";
@@ -125,6 +130,8 @@ export default function ClientDetailsPage() {
   const [muscleVolume, setMuscleVolume] = useState<MuscleVolumeResponse | null>(null);
   const [trends, setTrends] = useState<ClientTrendsResponse | null>(null);
   const [stagnation, setStagnation] = useState<StagnationResponse | null>(null);
+  const [trainerNotes, setTrainerNotes] = useState<TrainerNote[]>([]);
+  const [clientNotes, setClientNotes] = useState<ClientNoteGroup[]>([]);
 
   const load = useCallback(() => {
     Promise.all([
@@ -135,8 +142,10 @@ export default function ClientDetailsPage() {
       api.clients.progress(clientId),
       api.clients.getIntake(clientId),
       api.clients.records(clientId),
+      api.clients.notes(clientId),
+      api.clients.clientNotes(clientId),
     ])
-      .then(([c, p, ex, s, prog, intk, r]) => {
+      .then(([c, p, ex, s, prog, intk, r, notes, cNotes]) => {
         setClient(c);
         setGoalWeightDraft(c.goalWeightKg != null ? String(c.goalWeightKg).replace(".", ",") : "");
         const assignable = p.filter((plan) => !plan.isTemplate);
@@ -146,6 +155,8 @@ export default function ClientDetailsPage() {
         setProgress(prog);
         setIntake(intk);
         setRecords(r);
+        setTrainerNotes(notes);
+        setClientNotes(cNotes);
         setPlanId((prev) => (prev === "" && assignable.length > 0 ? assignable[0].id : prev));
         setMaxExerciseId((prev) => (prev === "" && ex.length > 0 ? ex[0].id : prev));
         // Nie otwieraj automatycznie ściany kafelków — CTA „Przypisz plan" na żądanie.
@@ -466,6 +477,7 @@ export default function ClientDetailsPage() {
       const { token } = await api.clients.accessToken(clientId);
       const url = `${window.location.origin}/portal/${token}`;
       await navigator.clipboard.writeText(url);
+      markPortalLinkSent();
       showUndoToast(toastMessage);
     } catch (err) {
       setError((err as Error).message);
@@ -475,6 +487,7 @@ export default function ClientDetailsPage() {
   const sendPortalLink = async () => {
     try {
       await api.clients.sendPortalLink(clientId);
+      markPortalLinkSent();
       showUndoToast("Wysłano link portalu e-mailem");
     } catch (err) {
       setError((err as Error).message);
@@ -660,6 +673,8 @@ export default function ClientDetailsPage() {
           { value: "plans", label: "Plany", count: client.assignments.length },
           { value: "history", label: "Historia", count: sessions.length },
           { value: "results", label: "Wyniki", count: records.length + latestMaxes.length + measurements.length },
+          { value: "notes", label: "Moje notatki", count: trainerNotes.length },
+          { value: "client-notes", label: "Notatki klienta", count: countClientNotes(clientNotes) },
           { value: "intake", label: "Wywiad" },
         ]}
         value={activeTab}
@@ -923,7 +938,7 @@ export default function ClientDetailsPage() {
                           <div className="flex items-center gap-3">
                             <div className="text-right">
                               <p className="font-mono text-lg font-semibold tabular-nums text-pr">
-                                {r.estimated1Rm} kg
+                                {formatKg(r.estimated1Rm)} kg
                               </p>
                               <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">
                                 Szacowany max
@@ -1159,6 +1174,19 @@ export default function ClientDetailsPage() {
               )}
             </section>
           </div>
+        )}
+
+        {activeTab === "notes" && (
+          <TrainerNotesTab
+            clientId={clientId}
+            notes={trainerNotes}
+            onChange={setTrainerNotes}
+            onUndoToast={showUndoToast}
+          />
+        )}
+
+        {activeTab === "client-notes" && (
+          <ClientNotesTab clientId={clientId} groups={clientNotes} />
         )}
 
         {activeTab === "intake" && intake && (

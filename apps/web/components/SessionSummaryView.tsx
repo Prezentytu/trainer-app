@@ -118,6 +118,9 @@ export function SessionSummaryView({
                     <span className="text-base font-medium text-muted">
                       {" "}
                       · est. {formatKg(p.estimated1Rm)}
+                      {p.previousBest1Rm != null
+                        ? ` (poprz. ${formatKg(p.previousBest1Rm)})`
+                        : ""}
                     </span>
                   ) : null}
                 </p>

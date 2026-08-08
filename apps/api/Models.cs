@@ -29,7 +29,20 @@ public class Client
     public List<ClientAccessToken> AccessTokens { get; set; } = [];
     public List<ClientCheckIn> CheckIns { get; set; } = [];
     public List<ClientPushSubscription> PushSubscriptions { get; set; } = [];
+    public List<TrainerNote> TrainerNotes { get; set; } = [];
     public ClientIntake? Intake { get; set; }
+}
+
+/// <summary>Prywatna notatka trenera o kliencie. NIGDY nie wystawiana w /api/portal/*.</summary>
+public class TrainerNote
+{
+    public int Id { get; set; }
+    public int ClientId { get; set; }
+    public Client? Client { get; set; }
+    public string Body { get; set; } = "";
+    public DateTime? PinnedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
 }
 
 /// <summary>Lekki check-in między sesjami (samopoczucie / sen / notatka).</summary>

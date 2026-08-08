@@ -111,6 +111,8 @@ public record ClientMeasurementInput(
     double? HipsCm = null,
     string? Note = null);
 
+public record TrainerNoteInput(string Body, bool Pinned = false);
+
 public record SessionCheckinInput(int? FeelingScore, int? SleepScore, int? EnergyScore);
 
 public record LoggedSetInput(

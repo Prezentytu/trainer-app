@@ -32,13 +32,10 @@ public static class Stagnation
                 {
                     e.ExerciseId,
                     Name = e.Exercise!.Name,
-                    BestE1Rm = e.Sets
+                    Sets = e.Sets
                         .Where(x => !x.IsWarmup && x.Completed && x.WeightKg != null && x.Reps != null)
-                        .Select(x => (double?)(x.WeightKg!.Value * (1.0 + x.Reps!.Value / 30.0)))
-                        .Max(),
-                    Volume = e.Sets
-                        .Where(x => !x.IsWarmup && x.Completed && x.WeightKg != null && x.Reps != null)
-                        .Sum(x => x.WeightKg!.Value * x.Reps!.Value),
+                        .Select(x => new { WeightKg = x.WeightKg!.Value, Reps = x.Reps!.Value })
+                        .ToList(),
                 }).ToList(),
             })
             .ToListAsync();
@@ -48,14 +45,23 @@ public static class Stagnation
         {
             foreach (var e in s.Exercises)
             {
-                if (e.BestE1Rm is null) continue;
-                var e1 = Stats.RoundToHalf(e.BestE1Rm.Value);
+                if (e.Sets.Count == 0) continue;
+                var e1Values = e.Sets
+                    .Select(x => Stats.Epley1Rm(x.WeightKg, x.Reps))
+                    .Where(v => v is not null)
+                    .Select(v => v!.Value)
+                    .ToList();
+                // Sesja bez serii w zakresie e1RM (np. same serie >12 powt.) — pomijamy w trendzie siły,
+                // ale tonaż nadal liczymy do detektora spadku objętości.
+                var volume = e.Sets.Sum(x => x.WeightKg * x.Reps);
+                if (e1Values.Count == 0) continue;
+                var e1 = e1Values.Max();
                 if (!byExercise.TryGetValue(e.ExerciseId, out var list))
                 {
                     list = [];
                     byExercise[e.ExerciseId] = list;
                 }
-                list.Add((s.PerformedOn, e1, e.Volume, e.Name));
+                list.Add((s.PerformedOn, e1, volume, e.Name));
             }
         }
 
@@ -70,13 +76,13 @@ public static class Stagnation
             var window = history.TakeLast(MinSessionsWithoutProgress).ToList();
             var before = history.Take(history.Count - MinSessionsWithoutProgress).ToList();
             var priorBest = before.Count > 0 ? before.Max(h => h.E1Rm) : window[0].E1Rm;
-            var improved = window.Any(h => h.E1Rm > priorBest + 0.01);
+            var improved = window.Any(h => Stats.IsEpleyPr(h.E1Rm, priorBest));
             // Alternatywnie: w oknie żadna sesja nie poprawia maxa z poprzednich w oknie
             var noProgressInWindow = true;
             var running = window[0].E1Rm;
             for (var i = 1; i < window.Count; i++)
             {
-                if (window[i].E1Rm > running + 0.01)
+                if (Stats.IsEpleyPr(window[i].E1Rm, running))
                 {
                     noProgressInWindow = false;
                     break;

@@ -163,7 +163,7 @@ Priorytetyzacja: **wartość** (retencja trenera × retencja klienta) vs **wysi�
 
 - **Gdzie:** Panel trenera + badge na kliencie.
 - **Sygnały (MVP):** dni od ostatniej ukończonej sesji; stosunek ukończonych / zaplanowanych w 14/30 dniach; klient z aktywnym planem i 0 sesji w N dniach.
-- **Akcja 1-klik:** „Otwórz klienta" / „Skopiuj link portalu" / później „Wyślij przypomnienie".
+- **Akcja 1-klik:** Przejdź do klienta" / „Skopiuj link portalu" / później „Wyślij przypomnienie".
 - **Czego unikać:** push do klienta w stylu „straciłeś streak" (patrz anty-scope).
 
 #### 2. Auto-raport postępów

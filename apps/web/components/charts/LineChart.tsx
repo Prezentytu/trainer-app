@@ -1,14 +1,19 @@
 "use client";
 
+import { useId } from "react";
+
 export type LineChartPoint = {
   label: string;
   value: number;
 };
 
-/** Uniwersalny wykres liniowy SVG — mono polyline 2px, bez fill/gradientu. */
+/**
+ * Wykres liniowy SVG — mono line + miękki gradient pod krzywą.
+ * Zachowuje proporcje (bez `preserveAspectRatio=none`), żeby kropki i oś nie były „rozjechane”.
+ */
 export function LineChart({
   points,
-  height = 120,
+  height = 140,
   unit = "",
   emptyHint = "Za mało danych na wykres.",
   ariaLabel,
@@ -19,92 +24,143 @@ export function LineChart({
   emptyHint?: string;
   ariaLabel?: string;
 }) {
+  const gradId = useId().replace(/:/g, "");
+
   if (points.length < 2) {
     return <p className="py-2 text-sm text-muted">{emptyHint}</p>;
   }
 
   const values = points.map((p) => p.value);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-  const padL = 8;
-  const padR = 38;
-  const padY = 12;
-  const w = 320;
-  const innerH = height - padY * 2;
+  const dataMin = Math.min(...values);
+  const dataMax = Math.max(...values);
+  // Dla nieujemnych serii (tonaż, częstotliwość) kotwica w 0 — czytelniejsza skala.
+  const min = dataMin >= 0 ? 0 : dataMin;
+  const max = dataMax === min ? min + 1 : dataMax;
+  const range = max - min;
+  const padL = 4;
+  const padR = 36;
+  const padTop = 14;
+  const padBottom = 8;
+  const w = 360;
+  const innerH = height - padTop - padBottom;
   const innerW = w - padL - padR;
+  const baselineY = padTop + innerH;
 
   const coords = points.map((p, i) => {
     const x = padL + (points.length === 1 ? innerW / 2 : (i / (points.length - 1)) * innerW);
-    const y = padY + innerH - ((p.value - min) / range) * innerH;
+    const y = padTop + innerH - ((p.value - min) / range) * innerH;
     return { x, y, ...p };
   });
 
-  const line = coords.map((c) => `${c.x},${c.y}`).join(" ");
-  const yTicks = max - min < 0.01 ? [max] : [min, (min + max) / 2, max];
+  const linePoints = coords.map((c) => `${c.x},${c.y}`).join(" ");
+  const areaPath = [
+    `M ${coords[0].x},${baselineY}`,
+    ...coords.map((c) => `L ${c.x},${c.y}`),
+    `L ${coords[coords.length - 1].x},${baselineY}`,
+    "Z",
+  ].join(" ");
+
+  const yTicks =
+    max - min < 0.01
+      ? [max]
+      : [min, min + range / 2, max].map((v) =>
+          Number.isInteger(range) && Number.isInteger(min) ? Math.round(v) : v,
+        );
   const first = coords[0];
   const last = coords[coords.length - 1];
 
-  const fmt = (n: number) =>
-    Number.isInteger(n) ? String(n) : n.toFixed(n >= 100 ? 0 : 1).replace(".", ",");
+  const fmt = (n: number) => {
+    if (Number.isInteger(n)) return String(n);
+    if (Math.abs(n) >= 100) return n.toFixed(0);
+    return n.toFixed(1).replace(".", ",");
+  };
 
   return (
     <div className="min-w-0">
+      <div className="mb-2 flex items-baseline justify-end gap-1.5">
+        <span className="font-mono text-lg font-semibold tabular-nums tracking-tight text-foreground">
+          {fmt(last.value)}
+        </span>
+        {unit ? <span className="font-mono text-xs text-fg-ghost">{unit}</span> : null}
+      </div>
+
       <svg
         viewBox={`0 0 ${w} ${height}`}
-        className="h-28 w-full"
+        className="aspect-[18/7] h-auto w-full"
         role="img"
         aria-label={
           ariaLabel ??
           `Wykres od ${fmt(first.value)} do ${fmt(last.value)}${unit ? ` ${unit}` : ""}`
         }
-        preserveAspectRatio="none"
+        preserveAspectRatio="xMidYMid meet"
       >
+        <defs>
+          <linearGradient id={`area-${gradId}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--fg)" stopOpacity="0.28" />
+            <stop offset="55%" stopColor="var(--fg)" stopOpacity="0.08" />
+            <stop offset="100%" stopColor="var(--fg)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+
         {yTicks.map((v, i) => {
-          const y = padY + innerH - ((v - min) / range) * innerH;
+          const y = padTop + innerH - ((v - min) / range) * innerH;
           return (
-            <text
-              key={`ytick-${i}`}
-              x={w - padR + 8}
-              y={y + 3}
-              fill="var(--fg-ghost)"
-              fontSize="10"
-              fontFamily="var(--font-geist-mono), monospace"
-            >
-              {fmt(v)}
-            </text>
+            <g key={`ytick-${i}`}>
+              <line
+                x1={padL}
+                x2={padL + innerW}
+                y1={y}
+                y2={y}
+                stroke="var(--line-faint)"
+                strokeWidth="1"
+                strokeDasharray={i === 0 ? undefined : "3 4"}
+                opacity={i === 0 ? 0.9 : 0.55}
+              />
+              <text
+                x={w - padR + 6}
+                y={y + 3.5}
+                fill="var(--fg-ghost)"
+                fontSize="10"
+                fontFamily="var(--font-geist-mono), monospace"
+              >
+                {fmt(v)}
+              </text>
+            </g>
           );
         })}
+
+        <path d={areaPath} fill={`url(#area-${gradId})`} />
+
         <polyline
-          points={line}
+          points={linePoints}
           fill="none"
           stroke="var(--fg)"
           strokeWidth="2"
           strokeLinejoin="round"
           strokeLinecap="round"
-          vectorEffect="non-scaling-stroke"
         />
-        {coords.map((c) => (
-          <circle
-            key={`${c.label}-${c.x}`}
-            cx={c.x}
-            cy={c.y}
-            r="3"
-            fill="var(--fg)"
-            stroke="var(--bg)"
-            strokeWidth="1.5"
-          />
-        ))}
+
+        {coords.map((c, i) => {
+          const isLast = i === coords.length - 1;
+          return (
+            <circle
+              key={`${c.label}-${i}`}
+              cx={c.x}
+              cy={c.y}
+              r={isLast ? 3.5 : 2.5}
+              fill="var(--fg)"
+              stroke="var(--surface)"
+              strokeWidth="2"
+            />
+          );
+        })}
       </svg>
-      <div className="mt-1 flex items-baseline justify-between gap-2">
-        <span className="min-w-0 truncate font-mono text-xs tabular-nums text-fg-faint">
+
+      <div className="mt-1.5 flex items-center justify-between gap-3">
+        <span className="min-w-0 truncate font-mono text-xs tabular-nums text-fg-ghost">
           {first.label}
         </span>
-        <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-foreground">
-          {fmt(last.value)}
-          {unit ? ` ${unit}` : ""}
-        </span>
-        <span className="min-w-0 truncate text-right font-mono text-xs tabular-nums text-fg-faint">
+        <span className="min-w-0 truncate text-right font-mono text-xs tabular-nums text-fg-ghost">
           {last.label}
         </span>
       </div>

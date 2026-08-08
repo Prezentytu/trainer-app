@@ -1,6 +1,7 @@
 /** Detekcja trybu PWA / iOS — wspólna dla install prompt i push gating. */
 
-import { useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
+import { detectInstallEnv, type InstallEnv } from "@/lib/installEnv";
 
 export function isStandaloneDisplay(): boolean {
   if (typeof window === "undefined") return false;
@@ -20,10 +21,9 @@ export function isIosDevice(): boolean {
 }
 
 export function isIosSafari(): boolean {
-  if (!isIosDevice()) return false;
-  const ua = window.navigator.userAgent;
-  const isOtherBrowser = /CriOS|FxiOS|EdgiOS|OPiOS|DuckDuckGo/.test(ua);
-  return !isOtherBrowser;
+  if (typeof window === "undefined") return false;
+  const env = detectInstallEnv({ standalone: isStandaloneDisplay() });
+  return env.platform === "ios" && env.browser === "safari" && !env.inApp;
 }
 
 function subscribeStandalone(onStoreChange: () => void): () => void {
@@ -59,4 +59,41 @@ export function useIsOffline(): boolean {
     () => typeof navigator !== "undefined" && !navigator.onLine,
     () => false,
   );
+}
+
+const SSR_INSTALL_ENV: InstallEnv = {
+  platform: "desktop",
+  browser: "unknown",
+  inApp: null,
+  iosVersion: null,
+  capability: "manual",
+  escapeUrl: null,
+};
+
+function subscribeInstallEnv(onStoreChange: () => void): () => void {
+  const mq = window.matchMedia("(display-mode: standalone)");
+  mq.addEventListener("change", onStoreChange);
+  window.addEventListener("popstate", onStoreChange);
+  return () => {
+    mq.removeEventListener("change", onStoreChange);
+    window.removeEventListener("popstate", onStoreChange);
+  };
+}
+
+function readInstallEnv(): InstallEnv {
+  return detectInstallEnv({ standalone: isStandaloneDisplay() });
+}
+
+/**
+ * Środowisko instalacji PWA (platforma / przeglądarka / in-app).
+ * `hasNativePrompt` — ustaw z zewnątrz gdy złapano `beforeinstallprompt`.
+ */
+export function useInstallEnv(hasNativePrompt = false): InstallEnv {
+  const base = useSyncExternalStore(subscribeInstallEnv, readInstallEnv, () => SSR_INSTALL_ENV);
+  return useMemo(() => {
+    if (!hasNativePrompt) return base;
+    if (base.capability === "installed" || base.capability === "escape-required") return base;
+    if (base.platform === "ios") return base;
+    return { ...base, capability: "native-prompt" as const };
+  }, [base, hasNativePrompt]);
 }

@@ -5,11 +5,26 @@ namespace TrainerApp.Api;
 /// <summary>Wzory i agregacje progresu (Epley, wolumen, PR).</summary>
 public static class Stats
 {
+    /// <summary>
+    /// Powyżej tej liczby powtórzeń e1RM jest zbyt niedokładny (Strong odcina przy 12).
+    /// Serie wykończeniowe nie mogą blokować prawdziwych rekordów.
+    /// </summary>
+    public const int MaxRepsFor1Rm = 12;
+
+    /// <summary>Surowy e1RM Epleya — do porównań PR. Null gdy reps &gt; <see cref="MaxRepsFor1Rm"/>.</summary>
     public static double? Epley1Rm(double? weightKg, int? reps)
     {
         if (weightKg is null || reps is null || reps < 1) return null;
-        if (reps == 1) return RoundToHalf(weightKg.Value);
-        return RoundToHalf(weightKg.Value * (1.0 + reps.Value / 30.0));
+        if (reps > MaxRepsFor1Rm) return null;
+        if (reps == 1) return weightKg.Value;
+        return weightKg.Value * (1.0 + reps.Value / 30.0);
+    }
+
+    /// <summary>e1RM zaokrąglony do 0,5 kg — wyłącznie do serializacji / UI.</summary>
+    public static double? Epley1RmDisplay(double? weightKg, int? reps)
+    {
+        var raw = Epley1Rm(weightKg, reps);
+        return raw is null ? null : RoundToHalf(raw.Value);
     }
 
     public static async Task<object> ExerciseStatsAsync(AppDb db, int clientId, int exerciseId)
@@ -19,7 +34,8 @@ public static class Stats
             .Where(s => s.LoggedExercise!.Session!.ClientId == clientId
                         && s.LoggedExercise.ExerciseId == exerciseId
                         && s.LoggedExercise.Session.Status == "completed"
-                        && !s.IsWarmup)
+                        && !s.IsWarmup
+                        && s.Completed)
             .ToListAsync();
 
         var with1Rm = sets
@@ -33,7 +49,7 @@ public static class Stats
             .OrderBy(x => x.Date)
             .ToList();
 
-        var estimated1Rm = with1Rm.Select(x => x.E1!.Value).DefaultIfEmpty(0).Max();
+        var estimated1RmRaw = with1Rm.Select(x => x.E1!.Value).DefaultIfEmpty(0).Max();
         var maxWeight = sets.Where(s => s.WeightKg is not null).OrderByDescending(s => s.WeightKg).FirstOrDefault();
         var bySession = sets.GroupBy(s => s.LoggedExercise!.WorkoutSessionId)
             .Select(g => new
@@ -53,7 +69,7 @@ public static class Stats
 
         var trend = with1Rm
             .GroupBy(x => x.Date)
-            .Select(g => new { date = g.Key, estimated1Rm = g.Max(x => x.E1!.Value) })
+            .Select(g => new { date = g.Key, estimated1Rm = RoundToHalf(g.Max(x => x.E1!.Value)) })
             .OrderBy(x => x.date)
             .ToList();
 
@@ -61,7 +77,7 @@ public static class Stats
         {
             clientId,
             exerciseId,
-            estimated1Rm = estimated1Rm > 0 ? estimated1Rm : (double?)null,
+            estimated1Rm = estimated1RmRaw > 0 ? RoundToHalf(estimated1RmRaw) : (double?)null,
             maxWeightKg = maxWeight?.WeightKg,
             maxWeightDate = maxWeight?.LoggedExercise?.Session?.PerformedOn,
             maxVolumeKg = bySession?.Volume,
@@ -85,13 +101,15 @@ public static class Stats
     public static int WorkingSetCount(IEnumerable<LoggedSet> sets) =>
         sets.Count(s => !s.IsWarmup);
 
-    /// <summary>Czy ta seria ustanawia nowy rekord e1RM względem wcześniejszej historii.</summary>
-    public static bool IsEpleyPr(double? candidate1Rm, IEnumerable<double> previousBest1Rms)
+    /// <summary>Czy ta seria ustanawia nowy rekord e1RM względem wcześniejszego besta.</summary>
+    public static bool IsEpleyPr(double? candidate1Rm, double previousBest1Rm = 0)
     {
         if (candidate1Rm is null) return false;
-        var best = previousBest1Rms.DefaultIfEmpty(0).Max();
-        return candidate1Rm.Value > best + 0.01;
+        return candidate1Rm.Value > previousBest1Rm + 0.01;
     }
+
+    public static bool IsEpleyPr(double? candidate1Rm, IEnumerable<double> previousBest1Rms) =>
+        IsEpleyPr(candidate1Rm, previousBest1Rms.DefaultIfEmpty(0).Max());
 
     public static object SessionSummary(WorkoutSession s)
     {
@@ -136,26 +154,40 @@ public static class Stats
         string? PlanNote,
         IReadOnlyDictionary<int, SetTargets> Sets);
 
+    public sealed record PrHit(
+        int ExerciseId,
+        int SetId,
+        double Estimated1Rm,
+        double? PreviousBest1Rm);
+
     public static object SessionDetail(
         WorkoutSession s,
-        HashSet<(int ExerciseId, int SetId)> prSetIds,
+        IReadOnlyList<PrHit> prHits,
         IReadOnlyDictionary<int, List<object>>? prevSetsByExercise = null,
         IReadOnlyDictionary<int, int?>? restSecondsByExercise = null,
         IReadOnlyDictionary<int, ExerciseTargets>? targetsByExercise = null,
         IReadOnlyDictionary<int, DateOnly>? prevPerformedOnByExercise = null)
     {
         var allSets = s.Exercises.SelectMany(e => e.Sets).ToList();
+        var prBySet = prHits.ToDictionary(p => (p.ExerciseId, p.SetId));
         var prs = s.Exercises
             .SelectMany(e => e.Sets.Select(set => new { Exercise = e, Set = set }))
-            .Where(x => prSetIds.Contains((x.Exercise.ExerciseId, x.Set.Id)))
-            .Select(x => new
+            .Where(x => prBySet.ContainsKey((x.Exercise.ExerciseId, x.Set.Id)))
+            .Select(x =>
             {
-                exerciseId = x.Exercise.ExerciseId,
-                exerciseName = x.Exercise.Exercise?.Name ?? "",
-                setNumber = x.Set.SetNumber,
-                weightKg = x.Set.WeightKg,
-                reps = x.Set.Reps,
-                estimated1Rm = Epley1Rm(x.Set.WeightKg, x.Set.Reps),
+                var hit = prBySet[(x.Exercise.ExerciseId, x.Set.Id)];
+                return new
+                {
+                    exerciseId = x.Exercise.ExerciseId,
+                    exerciseName = x.Exercise.Exercise?.Name ?? "",
+                    setNumber = x.Set.SetNumber,
+                    weightKg = x.Set.WeightKg,
+                    reps = x.Set.Reps,
+                    estimated1Rm = RoundToHalf(hit.Estimated1Rm),
+                    previousBest1Rm = hit.PreviousBest1Rm is null
+                        ? (double?)null
+                        : RoundToHalf(hit.PreviousBest1Rm.Value),
+                };
             })
             .ToList();
 
@@ -225,6 +257,7 @@ public static class Stats
                         SetTargets? setTarget = null;
                         if (targets?.Sets is not null)
                             targets.Sets.TryGetValue(x.SetNumber, out setTarget);
+                        var pr = prBySet.TryGetValue((e.ExerciseId, x.Id), out var hit) ? hit : null;
                         return new
                         {
                             x.Id,
@@ -239,8 +272,11 @@ public static class Stats
                             x.Completed,
                             x.Note,
                             x.Side,
-                            Estimated1Rm = Epley1Rm(x.WeightKg, x.Reps),
-                            IsPr = prSetIds.Contains((e.ExerciseId, x.Id)),
+                            Estimated1Rm = Epley1RmDisplay(x.WeightKg, x.Reps),
+                            IsPr = pr is not null,
+                            PreviousBest1Rm = pr?.PreviousBest1Rm is null
+                                ? (double?)null
+                                : RoundToHalf(pr.PreviousBest1Rm.Value),
                             TargetWeightKg = setTarget?.TargetWeightKg,
                             TargetReps = setTarget?.TargetReps,
                             TargetDurationSeconds = setTarget?.TargetDurationSeconds,
@@ -255,23 +291,25 @@ public static class Stats
     /// PR e1RM względem historii + wcześniejszych ukończonych serii w tej sesji.
     /// Tylko serie z <see cref="LoggedSet.Completed"/> = true (nagroda po checkmarku, jak Gravitus).
     /// </summary>
-    public static HashSet<(int ExerciseId, int SetId)> FindPrSets(
+    public static List<PrHit> FindPrSets(
         WorkoutSession session,
         IReadOnlyList<LoggedSet> historicalWorkingSets)
     {
         var bestByExercise = new Dictionary<int, double>();
         foreach (var group in historicalWorkingSets
-            .Where(s => !s.IsWarmup && s.WeightKg is not null && s.Reps is not null)
+            .Where(s => !s.IsWarmup && s.Completed && s.WeightKg is not null && s.Reps is not null)
             .GroupBy(s => s.LoggedExercise!.ExerciseId))
         {
             var best = group
-                .Select(s => Epley1Rm(s.WeightKg, s.Reps) ?? 0)
+                .Select(s => Epley1Rm(s.WeightKg, s.Reps))
+                .Where(v => v is not null)
+                .Select(v => v!.Value)
                 .DefaultIfEmpty(0)
                 .Max();
             bestByExercise[group.Key] = best;
         }
 
-        var prs = new HashSet<(int, int)>();
+        var prs = new List<PrHit>();
         foreach (var ex in session.Exercises.OrderBy(e => e.Order))
         {
             if (!bestByExercise.TryGetValue(ex.ExerciseId, out var best))
@@ -281,9 +319,10 @@ public static class Stats
                 // Prefill / niezrobione serie nie są PR — dopiero checkmark.
                 if (set.IsWarmup || !set.Completed) continue;
                 var e1 = Epley1Rm(set.WeightKg, set.Reps);
-                if (e1 is not null && e1.Value > best + 0.01)
+                if (IsEpleyPr(e1, best))
                 {
-                    prs.Add((ex.ExerciseId, set.Id));
+                    double? previous = best > 0 ? best : null;
+                    prs.Add(new PrHit(ex.ExerciseId, set.Id, e1!.Value, previous));
                     best = e1.Value;
                 }
             }

@@ -77,6 +77,43 @@ export type ClientIntake = {
 
 export type ClientIntakeInput = Omit<ClientIntake, "clientId" | "updatedAt">;
 
+/** Prywatna notatka trenera o kliencie (nigdy w portalu). */
+export type TrainerNote = {
+  id: number;
+  clientId: number;
+  body: string;
+  pinned: boolean;
+  pinnedAt: string | null;
+  createdAt: string;
+  updatedAt: string | null;
+};
+
+export type TrainerNoteInput = {
+  body: string;
+  pinned?: boolean;
+};
+
+/** Notatka klienta z treningu (seria lub ćwiczenie). */
+export type ClientNoteItem = {
+  exerciseId: number;
+  exerciseName: string;
+  setNumber: number | null;
+  weightKg: number | null;
+  reps: number | null;
+  rpe: number | null;
+  note: string;
+};
+
+/** Grupa notatek klienta z jednej sesji. */
+export type ClientNoteGroup = {
+  sessionId: number;
+  performedOn: string;
+  planName: string | null;
+  dayLabel: string | null;
+  sessionNote: string | null;
+  items: ClientNoteItem[];
+};
+
 export const WORK_TYPES = ["siedząca", "stojąca", "fizyczna", "mieszana"] as const;
 export const EXPERIENCE_LEVELS = ["brak", "początkujący", "średniozaawansowany", "zaawansowany"] as const;
 export const SLEEP_HOURS_OPTIONS = ["poniżej 6h", "6–7h", "7–8h", "powyżej 8h"] as const;
@@ -518,6 +555,8 @@ export type LoggedSet = {
   side: SetSide | null;
   estimated1Rm: number | null;
   isPr: boolean;
+  /** Poprzedni best e1RM przed tym PR-em (null = pierwszy rekord). */
+  previousBest1Rm?: number | null;
   /** Cel z planu (additive — nie w encji). */
   targetWeightKg?: number | null;
   targetReps?: number | null;
@@ -560,6 +599,7 @@ export type SessionPr = {
   weightKg: number | null;
   reps: number | null;
   estimated1Rm: number;
+  previousBest1Rm?: number | null;
 };
 
 export type SessionSummary = {
@@ -603,6 +643,7 @@ export type SessionDetail = SessionSummary & {
     weightKg: number | null;
     reps: number | null;
     estimated1Rm: number | null;
+    previousBest1Rm?: number | null;
   }[];
   exercises: LoggedExercise[];
 };
@@ -982,6 +1023,21 @@ export const api = {
         method: "PUT",
         body: JSON.stringify(input),
       }),
+    notes: (clientId: number) => request<TrainerNote[]>(`/api/clients/${clientId}/notes`),
+    addNote: (clientId: number, input: TrainerNoteInput) =>
+      request<TrainerNote>(`/api/clients/${clientId}/notes`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    updateNote: (clientId: number, noteId: number, input: TrainerNoteInput) =>
+      request<TrainerNote>(`/api/clients/${clientId}/notes/${noteId}`, {
+        method: "PUT",
+        body: JSON.stringify(input),
+      }),
+    removeNote: (clientId: number, noteId: number) =>
+      request(`/api/clients/${clientId}/notes/${noteId}`, { method: "DELETE" }),
+    clientNotes: (clientId: number, limit = 30) =>
+      request<ClientNoteGroup[]>(`/api/clients/${clientId}/client-notes?limit=${limit}`),
     muscleVolume: (clientId: number, weeks = 4) =>
       request<MuscleVolumeResponse>(`/api/clients/${clientId}/muscle-volume?weeks=${weeks}`),
     trends: (clientId: number, weeks = 12) =>

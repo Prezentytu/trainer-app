@@ -15,6 +15,13 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## e1RM: limit powtórzeń, surowe porównanie, tylko odhaczone serie
+
+**Kontekst**: PR liczony samym Epleyem bez limitu powtórzeń; zaokrąglenie do 0,5 kg przed porównaniem; rekordy klienta / dashboard / stats brały prefill bez `Completed`.
+**Problem**: Serie wykończeniowe (np. 20×40) nadmuchują e1RM i blokują prawdziwe PR. Marginalne przebicia giną w remisie po `RoundToHalf`. Prefill z planu udaje rekord, którego klient nie zrobił.
+**Zasada**: `Stats.Epley1Rm` — surowa wartość, `reps ≤ MaxRepsFor1Rm` (12, jak Strong). Do JSON tylko `Epley1RmDisplay` / `RoundToHalf`. PR wyłącznie przez `IsEpleyPr`. We wszystkich agregacjach rekordów: `Completed && !IsWarmup`. Nie duplikuj wzoru inline (patrz `Stagnation`).
+**Dotyczy**: `apps/api/Stats.cs`, `ProgressReports.cs`, `Stagnation.cs`, `Sessions.cs`, feed PR w `Program.cs`, testy `EpleyPrTests`.
+
 ## Gęsta tabela nie mieszka w wąskiej kolumnie boardu
 
 **Kontekst**: Widok `/plans/[id]` pokazywał 6-kolumnową tabelę serii wewnątrz karty dnia (~300px). Tabela rozpychała kolumnę; `min-w-0` tylko ukryło objaw.
@@ -40,7 +47,7 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 **Kontekst**: Równe kolumny + page scroll + horizontal board = nested scroll confusion; composer i wyniki wyszukiwania uciekały za fold.
 **Problem**: FitPros/Trello/Jira nie scrollują całej strony w pionie przy boardzie.
-**Zasada**: Chrome (header/taby) `shrink-0`; board `flex-1 min-h-0` wypełnia viewport (`md:h-dvh` w AppShell dla `/plans/*`); w kolumnie lista kart `overflow-y-auto`, composer `shrink-0` na dole. Poziomo tylko tor kolumn.
+**Zasada**: Chrome (header/taby) `shrink-0`; board `flex-1 min-h-0` wypełnia viewport (`md:h-dvh` w AppShell dla `/plans/[id]` i `/plans/new`); w kolumnie lista kart `overflow-y-auto`, composer `shrink-0` na dole. Poziomo tylko tor kolumn. **Nie** włączaj tego trybu dla `/plans/import` (i innych długich formularzy pod `/plans/*`) — `overflow-hidden` bez lokalnego scrolla odcina treść.
 **Dotyczy**: `AppShell`, `PlanBuilder`, `DayBoard`/`DayColumn`, `PlanBoard`/`PlanDayColumn`, `/plans/[id]`.
 
 ## Motyw: `data-theme` + `useServerInsertedHTML`, nie `<script>` w JSX
@@ -55,6 +62,18 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Problem**: `.t-num { color: var(--fg) }` wygrywało z utility `text-pr`, więc rekord 142,5 kg na landingu wyglądał na czarny mimo `tone="pr"`.
 **Zasada**: `.t-num` tylko font/waga/tabular; kolor wyłącznie z `text-*` (foreground / pr / gain / loss) albo inherit.
 **Dotyczy**: `globals.css` `.t-num`, `StatTile`, `StatBlock`, markery PR.
+
+## Onboarding: link portalu — wszystkie ścieżki kopiowania/wysyłki
+
+**Problem**: Krok „Skopiuj link portalu…” czytał tylko `localStorage` ustawiany przy kopiowaniu z Panelu; karta klienta (`/clients/[id]`) i e-mail nie oznaczały kroku — checklista wisiała na 2/3 mimo realnego wysłania.
+**Zasada**: Wspólne `markPortalLinkSent()` (`lib/portalLinkSent.ts`) po każdym copy/send; przy istniejącej aktywności (sesje/PR) zsynchronizuj flagę na dashboardzie.
+**Dotyczy**: `TrainerDashboard`, `clients/[id]/page.tsx`, `lib/portalLinkSent.ts`.
+
+## Dialog: bez zamykania kliknięciem w tło
+
+**Problem**: Przypadkowe kliknięcie w scrim zamykało formularz (np. Dodaj klienta) i kasowało wpis.
+**Zasada**: `Dialog` zamyka tylko Anuluj / Escape / akcja w stopce — scrim jest dekoracyjny (`div`, bez `onClick`).
+**Dotyczy**: `components/ui.tsx` `Dialog`.
 
 ## Chrome planu = 2 pasy, zero powtórzeń
 
@@ -395,3 +414,26 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Problem**: Offline w hali = brak wszystkich ikon w loggerze — „mamy ikony" w UI, ale ścieżka danych (CDN → SW) była martwa poza siecią. Ten sam wzorzec błędu co fałszywe „BW".
 **Zasada**: Assety krytyczne dla offline (ikony, silence.wav, splash) trzymaj pod `public/` i dopisz do precache + `isStaticAsset` w `sw.js`. Przed odhaczeniem „działa offline" zweryfikuj ścieżkę bez sieci, nie obecność stringa w HTML.
 **Dotyczy**: `apps/web/public/fonts/phosphor/`, `apps/web/public/sw.js`, `apps/web/app/layout.tsx`.
+
+## Wykres liniowy: nie rozciągaj SVG; wartość poza osią dat
+
+**Kontekst**: Karty „Tonaż / Częstotliwość" wyglądały „rozjechane": kropki owalne, `3060 kg` wciśnięte między daty na dole.
+**Problem**: `preserveAspectRatio="none"` rozciąga stroke i circle wraz z kontenerem. Footer `justify-between` z trzema slotami (data · wartość · data) centruje KPI w osi X.
+**Zasada**: Wykres: `meet` + stały aspect ratio. KPI (ostatnia wartość) nad SVG; pod spodem tylko pierwsza/ostatnia data. Pod linią dozwolony miękki mono gradient fill (`--fg` → transparent) — to data viz, nie chrome.
+**Dotyczy**: `components/charts/LineChart.tsx`, podobne sparklines.
+
+## PWA install: nie binarnie iOS / nie-iOS
+
+**Kontekst**: `PwaInstallPrompt` pokazywał instrukcję Safari albo czekał na `beforeinstallprompt`. Klienci z Messengera / Chrome iOS nie widzieli sensownych kroków.
+**Problem**: Na iOS od 16.4 Chrome/Firefox też instalują (Share w pasku adresu). In-app WebView (Messenger) nie ma A2HS ani BIP — prompt znikał (`null`).
+**Zasada**: Model `InstallEnv` (platforma + przeglądarka + inApp + capability). In-app → escape + kopiuj link (nie udawaj instalacji). Instrukcje per przeglądarka. In-app pomija peak-end (ostrzeżenie od razu).
+**Dotyczy**: `lib/installEnv.ts`, `PwaInstallPrompt.tsx`, `InstallGuideSheet.tsx`.
+
+## PR nigdy nie maluj na czerwono; notatka serii musi być widoczna
+
+**Kontekst**: W `SessionReview` wynik PR (`42,5×8`) świecił na czerwono z ▾, bo był „poniżej celu" z planu (mniej powtórzeń). Notatki klienta do serii (`LoggedSet.Note`) w ogóle nie były renderowane.
+**Problem**: Sygnał „poniżej planu" kolidował z sygnałem sukcesu (PR). Trener widział badge PR i jednocześnie czerwony wynik — sprzeczność. Komentarz do serii ginął mimo że był w DTO.
+**Zasada**: Hierarchia statusu wyniku: PR > poniżej celu > zwykły. Rekord osobisty zawsze `text-foreground` + badge `pr`, nigdy `text-danger`. Notatki klienta (`set.note`, `exercise.note`) pokazuj w review pod wierszem / pod kartą z etykietą.
+**Dotyczy**: `SessionReview.tsx`, przyszłe widoki porównania plan vs wykonanie.
+
+---

@@ -53,6 +53,7 @@ public static class ProgressReports
     {
         var sets = await db.LoggedSets
             .Where(s => !s.IsWarmup
+                        && s.Completed
                         && s.WeightKg != null
                         && s.Reps != null
                         && s.LoggedExercise!.Session!.ClientId == clientId
@@ -74,7 +75,8 @@ public static class ProgressReports
         {
             var e1 = Stats.Epley1Rm(row.WeightKg, row.Reps);
             if (e1 is null) continue;
-            if (!best.TryGetValue(row.ExerciseId, out var prev) || e1.Value > prev + 0.01)
+            best.TryGetValue(row.ExerciseId, out var prev);
+            if (Stats.IsEpleyPr(e1, prev))
             {
                 best[row.ExerciseId] = e1.Value;
                 if (row.PerformedOn >= since) count++;
@@ -87,6 +89,7 @@ public static class ProgressReports
     {
         var sets = await db.LoggedSets
             .Where(s => !s.IsWarmup
+                        && s.Completed
                         && s.WeightKg != null
                         && s.Reps != null
                         && s.LoggedExercise!.Session!.ClientId == clientId
@@ -119,13 +122,14 @@ public static class ProgressReports
             if (bestOld is null || bestNew is null) continue;
             var delta = bestNew.Value - bestOld.Value;
             if (Math.Abs(delta) < 0.5) continue;
-            var sign = delta > 0 ? "+" : "";
+            var deltaDisplay = Stats.RoundToHalf(delta);
+            var sign = deltaDisplay > 0 ? "+" : "";
             ranked.Add((Math.Abs(delta), new
             {
                 kind = "strength",
-                text = $"{g.Key.ExerciseName}: {sign}{delta:0.#} kg e1RM vs 4 tyg. temu",
+                text = $"{g.Key.ExerciseName}: {sign}{deltaDisplay:0.#} kg e1RM vs 4 tyg. temu",
                 exerciseId = g.Key.ExerciseId,
-                deltaKg = delta,
+                deltaKg = deltaDisplay,
             }));
         }
 
@@ -146,6 +150,7 @@ public static class ProgressReports
         var sets = await db.LoggedSets
             .AsNoTracking()
             .Where(s => !s.IsWarmup
+                        && s.Completed
                         && s.WeightKg != null
                         && s.Reps != null
                         && s.LoggedExercise!.Session!.ClientId == clientId

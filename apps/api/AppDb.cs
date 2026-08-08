@@ -21,6 +21,7 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
     public DbSet<ClientIntake> ClientIntakes => Set<ClientIntake>();
     public DbSet<ClientCheckIn> ClientCheckIns => Set<ClientCheckIn>();
     public DbSet<ClientPushSubscription> ClientPushSubscriptions => Set<ClientPushSubscription>();
+    public DbSet<TrainerNote> TrainerNotes => Set<TrainerNote>();
     public DbSet<WorkoutSession> WorkoutSessions => Set<WorkoutSession>();
     public DbSet<LoggedExercise> LoggedExercises => Set<LoggedExercise>();
     public DbSet<LoggedSet> LoggedSets => Set<LoggedSet>();
@@ -214,6 +215,15 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
         modelBuilder.Entity<ClientPushSubscription>()
             .HasIndex(s => s.Endpoint)
             .IsUnique();
+
+        modelBuilder.Entity<TrainerNote>()
+            .HasOne(n => n.Client)
+            .WithMany(c => c.TrainerNotes)
+            .HasForeignKey(n => n.ClientId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TrainerNote>()
+            .HasIndex(n => new { n.ClientId, n.CreatedAt });
 
         modelBuilder.Entity<LoggedSet>()
             .HasOne(s => s.LoggedExercise)

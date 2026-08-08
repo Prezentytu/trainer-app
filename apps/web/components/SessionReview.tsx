@@ -250,7 +250,9 @@ export function SessionReview({
                 <div>Wynik</div>
               </div>
               {ex.sets.map((s) => {
-                const below = isBelowTarget(s, isTime);
+                const isPr = s.isPr && s.completed;
+                // PR nigdy nie malujemy na czerwono — rekord > „poniżej celu planu”.
+                const below = !isPr && isBelowTarget(s, isTime);
                 const target = formatSet(
                   s.targetWeightKg,
                   s.targetReps,
@@ -260,38 +262,57 @@ export function SessionReview({
                 const actual = s.completed
                   ? formatSet(s.weightKg, s.reps, s.durationSeconds, isTime)
                   : "—";
+                const setNote = s.note?.trim() || null;
                 return (
-                  <div
-                    key={s.id}
-                    className="grid min-h-10 grid-cols-[2rem_1fr_1fr] items-center gap-x-2 border-b border-border py-1.5 last:border-0"
-                  >
-                    <span className="font-mono text-[13px] tabular-nums text-muted">
-                      {String(s.setNumber).padStart(2, "0")}
-                      {s.isWarmup ? (
-                        <span className="block text-[10px] text-muted-faint">W</span>
-                      ) : null}
-                    </span>
-                    <span className="font-mono text-[13px] tabular-nums text-muted-faint">
-                      {target}
-                    </span>
-                    <span
-                      className={`flex items-center gap-1.5 font-mono text-[13px] tabular-nums ${
-                        below
-                          ? "text-danger-hover"
-                          : s.completed
+                  <div key={s.id} className="border-b border-border py-1.5 last:border-0">
+                    <div className="grid min-h-10 grid-cols-[2rem_1fr_1fr] items-center gap-x-2">
+                      <span className="font-mono text-[13px] tabular-nums text-muted">
+                        {String(s.setNumber).padStart(2, "0")}
+                        {s.isWarmup ? (
+                          <span className="block text-[10px] text-muted-faint">W</span>
+                        ) : null}
+                      </span>
+                      <span className="font-mono text-[13px] tabular-nums text-muted-faint">
+                        {target}
+                      </span>
+                      <span
+                        className={`flex flex-wrap items-center gap-1.5 font-mono text-[13px] tabular-nums ${
+                          isPr
                             ? "text-foreground"
-                            : "text-muted"
-                      }`}
-                    >
-                      {actual}
-                      {s.isPr && s.completed ? <Badge tone="pr">PR</Badge> : null}
-                      {below ? <span className="text-xs">▾</span> : null}
-                    </span>
+                            : below
+                              ? "text-danger-hover"
+                              : s.completed
+                                ? "text-foreground"
+                                : "text-muted"
+                        }`}
+                      >
+                        {actual}
+                        {isPr ? <Badge tone="pr">PR</Badge> : null}
+                        {below ? (
+                          <span className="text-xs text-danger-hover" title="Poniżej celu z planu">
+                            ▾
+                          </span>
+                        ) : null}
+                      </span>
+                    </div>
+                    {setNote ? (
+                      <p className="mt-1 pl-10 whitespace-pre-wrap text-[13px] leading-snug text-foreground-secondary">
+                        <span className="mr-1.5 font-mono text-[10px] font-medium uppercase tracking-caps text-fg-ghost">
+                          Notatka
+                        </span>
+                        {setNote}
+                      </p>
+                    ) : null}
                   </div>
                 );
               })}
-              {ex.note ? (
-                <p className="mt-2 text-[13px] text-foreground-secondary">{ex.note}</p>
+              {ex.note?.trim() ? (
+                <p className="mt-2 whitespace-pre-wrap text-[13px] leading-snug text-foreground-secondary">
+                  <span className="mr-1.5 font-mono text-[10px] font-medium uppercase tracking-caps text-fg-ghost">
+                    Notatka do ćwiczenia
+                  </span>
+                  {ex.note.trim()}
+                </p>
               ) : null}
             </Card>
           );

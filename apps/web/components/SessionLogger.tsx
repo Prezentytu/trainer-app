@@ -210,6 +210,7 @@ function reconcile(local: LocalSession, server: SessionDetail): LocalSession {
         uid: lSet.uid,
         isPr: sSet.isPr,
         estimated1Rm: sSet.estimated1Rm,
+        previousBest1Rm: sSet.previousBest1Rm,
         targetWeightKg: sSet.targetWeightKg ?? lSet.targetWeightKg,
         targetReps: sSet.targetReps ?? lSet.targetReps,
         targetDurationSeconds: sSet.targetDurationSeconds ?? lSet.targetDurationSeconds,
@@ -757,11 +758,16 @@ export function SessionLogger({
           });
         if (logged?.s.isPr && logged.s.completed) {
           const e1 = logged.s.estimated1Rm;
-          flashPr(
-            e1 != null
-              ? `PR! ${logged.ex.exerciseName} · max ${e1} kg`
-              : `PR! ${logged.ex.exerciseName}`,
-          );
+          const prev = logged.s.previousBest1Rm;
+          if (e1 != null && prev != null) {
+            flashPr(
+              `PR! ${logged.ex.exerciseName} · max ${formatKg(e1)} kg (poprz. ${formatKg(prev)} kg)`,
+            );
+          } else if (e1 != null) {
+            flashPr(`PR! ${logged.ex.exerciseName} · max ${formatKg(e1)} kg`);
+          } else {
+            flashPr(`PR! ${logged.ex.exerciseName}`);
+          }
         }
       })
       .catch(() => {

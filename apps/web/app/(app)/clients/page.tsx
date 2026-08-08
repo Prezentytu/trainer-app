@@ -22,6 +22,8 @@ import { ClientListSkeleton } from "@/components/skeletons";
 
 type TabFilter = "all" | "active" | "idle";
 
+const DAYS_PER_WEEK = [1, 2, 3, 4, 5, 6, 7] as const;
+
 function activePlansLabel(count: number): string {
   if (count === 1) return "1 aktywny plan";
   const lastDigit = count % 10;
@@ -32,6 +34,18 @@ function activePlansLabel(count: number): string {
   return `${count} aktywnych planów`;
 }
 
+/** Notatka listy klientów: cele + dostępność (zgodne z seedem „Cel: …, Nx w tygodniu”). */
+function buildClientNote(goals: string[], daysPerWeek: number | null): string | null {
+  const parts: string[] = [];
+  if (goals.length > 0) {
+    parts.push(`Cel: ${goals.map((g) => g.toLowerCase()).join(", ")}`);
+  }
+  if (daysPerWeek != null) {
+    parts.push(`${daysPerWeek}× w tygodniu`);
+  }
+  return parts.length > 0 ? parts.join(", ") : null;
+}
+
 export default function ClientsPage() {
   const [clients, setClients] = useState<ClientSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +53,8 @@ export default function ClientsPage() {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [goal, setGoal] = useState<string | null>(null);
+  const [goals, setGoals] = useState<string[]>([]);
+  const [daysPerWeek, setDaysPerWeek] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<TabFilter>("all");
@@ -58,14 +73,23 @@ export default function ClientsPage() {
   const resetForm = () => {
     setName("");
     setEmail("");
-    setGoal(null);
+    setGoals([]);
+    setDaysPerWeek(null);
+  };
+
+  const toggleGoal = (g: string) => {
+    setGoals((prev) => (prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]));
   };
 
   const handleCreate = async () => {
     if (!name.trim() || saving) return;
     setSaving(true);
     setError(null);
-    const payload = { name: name.trim(), email: email.trim() || null, note: goal };
+    const payload = {
+      name: name.trim(),
+      email: email.trim() || null,
+      note: buildClientNote(goals, daysPerWeek),
+    };
     const tempId = -Date.now();
     const optimistic: ClientSummary = {
       id: tempId,
@@ -152,10 +176,23 @@ export default function ClientsPage() {
             />
           </Field>
           <Field label="Cel treningowy">
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Cele treningowe">
               {CLIENT_GOALS.map((g) => (
-                <Pill key={g} active={goal === g} onClick={() => setGoal((prev) => (prev === g ? null : g))}>
+                <Pill key={g} active={goals.includes(g)} onClick={() => toggleGoal(g)}>
                   {g}
+                </Pill>
+              ))}
+            </div>
+          </Field>
+          <Field label="Dni w tygodniu na trening">
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Dostępne dni w tygodniu">
+              {DAYS_PER_WEEK.map((n) => (
+                <Pill
+                  key={n}
+                  active={daysPerWeek === n}
+                  onClick={() => setDaysPerWeek((prev) => (prev === n ? null : n))}
+                >
+                  {n}×
                 </Pill>
               ))}
             </div>

@@ -156,6 +156,8 @@ public class TenantIsolationTests : IClassFixture<TestWebAppFactory>
         Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync($"/api/clients/{ids.ClientId}/muscle-volume")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync($"/api/clients/{ids.ClientId}/trends")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync($"/api/clients/{ids.ClientId}/stagnation")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync($"/api/clients/{ids.ClientId}/notes")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync($"/api/clients/{ids.ClientId}/client-notes")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync($"/api/plans/{ids.PlanId}/muscle-volume")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync($"/api/clients/{ids.ClientId}/access-token")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync($"/api/sessions/{ids.SessionId}")).StatusCode);

@@ -337,8 +337,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   });
   const [trainerName, setTrainerName] = useState("Trener");
   const pathname = usePathname();
-  // Kreator planu: wąski rail z ikonami, pełny sidebar po hover.
-  const isPlanEditor = /^\/plans\/.+/.test(pathname ?? "");
+  // Board/kreator: viewport lock + wąski rail. /plans/import to długi formularz — normalny scroll strony.
+  const isPlanEditor =
+    /^\/plans\/.+/.test(pathname ?? "") && !(pathname ?? "").startsWith("/plans/import");
   const showRail = isPlanEditor && !railExpanded;
 
   useEffect(() => {

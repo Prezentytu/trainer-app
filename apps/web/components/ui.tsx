@@ -694,29 +694,36 @@ export function Tabs({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="flex gap-1 border-b border-border" role="tablist">
-      {items.map((item) => {
-        const v = tabValue(item);
-        const active = v === value;
-        const count = tabCount(item);
-        return (
-          <button
-            key={v}
-            type="button"
-            role="tab"
-            aria-selected={active}
-            onClick={() => onChange(v)}
-            className={`-mb-px inline-flex items-center gap-2 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] ${FOCUS} ${
-              active
-                ? "border-foreground text-foreground"
-                : "border-transparent text-fg-faint hover:text-fg-muted"
-            }`}
-          >
-            {tabLabel(item)}
-            {count != null ? <span className="font-mono text-xs tabular-nums text-fg-ghost">{count}</span> : null}
-          </button>
-        );
-      })}
+    <div
+      className="-mx-1 overflow-x-auto overscroll-x-contain border-b border-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      role="tablist"
+    >
+      <div className="flex min-w-max gap-1 px-1">
+        {items.map((item) => {
+          const v = tabValue(item);
+          const active = v === value;
+          const count = tabCount(item);
+          return (
+            <button
+              key={v}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => onChange(v)}
+              className={`-mb-px inline-flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition-colors duration-[var(--dur-fast)] ${FOCUS} ${
+                active
+                  ? "border-foreground text-foreground"
+                  : "border-transparent text-fg-faint hover:text-fg-muted"
+              }`}
+            >
+              {tabLabel(item)}
+              {count != null ? (
+                <span className="font-mono text-xs tabular-nums text-fg-ghost">{count}</span>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -893,12 +900,8 @@ export function Dialog({
   const showDefaultFooter = footer === undefined;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <button
-        type="button"
-        aria-label="Zamknij"
-        className="absolute inset-0 bg-[var(--scrim)]"
-        onClick={onCancel}
-      />
+      {/* Scrim bez onClick — dialog zamyka tylko Anuluj / Escape / potwierdzenie. */}
+      <div className="absolute inset-0 bg-[var(--scrim)]" aria-hidden />
       <div
         ref={panelRef}
         role="dialog"
