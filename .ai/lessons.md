@@ -443,4 +443,11 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: (1) Azure Always On + ARR Off + HTTP/2. (2) Liveness `/` i `/api/health/live` **bez** bazy — tylko to w Azure Health check / `WEBSITE_WARMUP_PATH`. (3) `/api/health` z DB tylko do smoke po deployu. (4) Migracje Postgres w CI; `Database:MigrateOnStartup=false`. (5) `EnableRetryOnFailure` na Npgsql. (6) UI: centralne `ApiError` w `api.ts`, zero portów/env w komunikatach, brak fallbacku localhost w prod (poza `SKIP_ENV_VALIDATION` w CI).
 **Dotyczy**: `docs/deploy.md`, `Program.cs`, `WarmupService.cs`, `apps/web/lib/api.ts`, Azure App Settings, Neon.
 
+## Auth token: brama gotowości, nie sam `useEffect` w rodzicu
+
+**Kontekst**: Po wylogowaniu/zalogowaniu Panel pokazywał „Sesja wygasła. Zaloguj się ponownie." bez przycisku; liczby w sidebarze pojawiały się dopiero po wejściu w Klienci.
+**Problem**: `AuthTokenBridge` rejestrował getter tokenu w `useEffect` rodzica, a efekty dzieci (`TrainerDashboard`, `AppShell`) biegną **wcześniej** — pierwsze `api.dashboard()` / `api.counts()` szły bez `Authorization` → 401. Counts były połykane przez `.catch(() => {})`.
+**Zasada**: (1) Promise-brama `authReady` + `markAuthReady()` po `isLoaded`; `buildHeaders` czeka (z timeoutem) przed requestami trenera. (2) Jednorazowy retry 401 z `getToken({ skipCache: true })`. (3) Baner 401 zawsze z CTA „Zaloguj się ponownie". (4) Liczniki nawigacji w cache (`navCounts.ts`), nie w lokalnym stanie montażu.
+**Dotyczy**: `apps/web/lib/api.ts`, `ClerkAppProvider.tsx`, `ErrorBanner`, `lib/navCounts.ts`, `AppShell.tsx`.
+
 ---

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { api, CLIENT_GOALS, ClientSummary } from "@/lib/api";
 import { daysAgo, relativeDayLabel } from "@/lib/dates";
+import { refreshNavCounts } from "@/lib/navCounts";
 import {
   Avatar,
   Badge,
@@ -104,6 +105,7 @@ export default function ClientsPage() {
     setShowForm(false);
     try {
       await api.clients.create(payload);
+      void refreshNavCounts();
       load();
     } catch (err) {
       setClients((prev) => prev.filter((c) => c.id !== tempId));

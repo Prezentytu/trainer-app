@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, Plan, PlanInput } from "@/lib/api";
+import { refreshNavCounts } from "@/lib/navCounts";
 import { computeGroupsFromLinks } from "@/lib/supersets";
 import { BuilderDay } from "./types";
 
@@ -136,6 +137,7 @@ export function usePlanPersistence({
           router.push(`/plans/${plan.id}`);
         } else {
           const created = await api.plans.create(input);
+          void refreshNavCounts();
           lastSavedPayloadRef.current = JSON.stringify(input);
           setIsDirty(false);
           router.push(`/plans/${created.id}`);

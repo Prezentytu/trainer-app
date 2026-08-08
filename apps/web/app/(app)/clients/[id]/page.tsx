@@ -27,6 +27,7 @@ import {
 import { ClientNotesTab, countClientNotes } from "@/components/client/ClientNotesTab";
 import { TrainerNotesTab } from "@/components/client/TrainerNotesTab";
 import { daysAgo, formatDayShort, relativeDayLabel, withinLastDays } from "@/lib/dates";
+import { refreshNavCounts } from "@/lib/navCounts";
 import { markPortalLinkSent } from "@/lib/portalLinkSent";
 import { TrendSparkline } from "@/components/TrendSparkline";
 import { WeightTrendSparkline } from "@/components/WeightTrendSparkline";
@@ -511,6 +512,7 @@ export default function ClientDetailsPage() {
     setDeleteClientOpen(false);
     try {
       await api.clients.remove(client.id);
+      void refreshNavCounts();
       router.push("/clients");
     } catch (err) {
       setError((err as Error).message);

@@ -1,12 +1,13 @@
 "use client";
 
-import { type ReactNode, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import {
   api,
   AttentionItem,
   ClientActivityItem,
   DashboardData,
+  SESSION_EXPIRED_MESSAGE,
 } from "@/lib/api";
 import {
   Avatar,
@@ -61,6 +62,16 @@ export function TrainerDashboard() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  const retry = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    api
+      .dashboard()
+      .then(setDash)
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setLoading(false));
   }, []);
 
   // Klient już trenował / ma PR → link musiał dotrzeć; zsynchronizuj flagę onboardingu.
@@ -159,7 +170,16 @@ export function TrainerDashboard() {
           </Link>
         }
       />
-      <ErrorBanner message={error} />
+      <ErrorBanner
+        message={error}
+        action={
+          error && error !== SESSION_EXPIRED_MESSAGE ? (
+            <Button size="sm" variant="secondary" onClick={retry}>
+              Spróbuj ponownie
+            </Button>
+          ) : undefined
+        }
+      />
 
       {showOnboarding && (
         <Card className="mb-6" title="Pierwsze 15 minut">

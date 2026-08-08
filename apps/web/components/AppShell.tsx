@@ -1,13 +1,16 @@
 "use client";
 
-import { ReactNode, useEffect, useId, useRef, useState } from "react";
+import { ReactNode, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useClerk, useUser } from "@clerk/nextjs";
-import { api, clerkEnabled } from "@/lib/api";
+import { clerkEnabled } from "@/lib/api";
+import { getNavShell, refreshNavCounts, subscribeNavShell } from "@/lib/navCounts";
 import { Avatar, useIsClient } from "@/components/ui";
 import { Icon, type IconName } from "@/components/Icon";
 import { Wordmark } from "@/components/Wordmark";
+
+const NAV_SHELL_SSR = { clients: null, plans: null, trainerName: "Trener" } as const;
 
 const NAV: { href: string; label: string; icon: IconName; countKey: "clients" | "plans" | null }[] = [
   { href: "/", label: "Panel", icon: "home", countKey: null },
@@ -331,11 +334,9 @@ function FloatingBottomNav() {
 export function AppShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [railExpanded, setRailExpanded] = useState(false);
-  const [counts, setCounts] = useState<{ clients: number | null; plans: number | null }>({
-    clients: null,
-    plans: null,
-  });
-  const [trainerName, setTrainerName] = useState("Trener");
+  const shell = useSyncExternalStore(subscribeNavShell, getNavShell, () => NAV_SHELL_SSR);
+  const counts = { clients: shell.clients, plans: shell.plans };
+  const trainerName = shell.trainerName;
   const pathname = usePathname();
   // Board/kreator: viewport lock + wąski rail. /plans/import to długi formularz — normalny scroll strony.
   const isPlanEditor =
@@ -343,18 +344,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const showRail = isPlanEditor && !railExpanded;
 
   useEffect(() => {
-    api
-      .counts()
-      .then((c) => setCounts({ clients: c.clients, plans: c.plans }))
-      .catch(() => {});
-    api
-      .me()
-      .then((me) => {
-        const n = me.name?.trim();
-        if (n) setTrainerName(n);
-      })
-      .catch(() => {});
-  }, []);
+    void refreshNavCounts();
+  }, [pathname]);
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">

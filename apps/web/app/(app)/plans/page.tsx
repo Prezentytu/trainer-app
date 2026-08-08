@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { api, PlanSummary } from "@/lib/api";
 import { daysAgo, formatDayShort, relativeDayLabel } from "@/lib/dates";
+import { refreshNavCounts } from "@/lib/navCounts";
 import { polishDayCount, polishExerciseCount, polishWeekCount } from "@/lib/plural";
 import {
   Avatar,
@@ -86,6 +87,7 @@ export default function PlansPage() {
         name: asClientPlan ? `${plan.name} — plan klienta` : null,
         isTemplate: asClientPlan ? false : null,
       });
+      void refreshNavCounts();
       router.push(`/plans/${created.id}`);
     } catch (err) {
       setError((err as Error).message);
@@ -98,6 +100,7 @@ export default function PlansPage() {
     setPlans((prev) => prev.filter((p) => p.id !== plan.id));
     try {
       await api.plans.remove(plan.id);
+      void refreshNavCounts();
       showUndoToast("Usunięto plan");
     } catch (err) {
       setPlans(snapshot);

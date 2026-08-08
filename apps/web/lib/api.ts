@@ -28,6 +28,9 @@ export class ApiError extends Error {
   }
 }
 
+/** Stały komunikat 401 — ErrorBanner rozpoznaje go i dokłada CTA „Zaloguj się ponownie". */
+export const SESSION_EXPIRED_MESSAGE = "Sesja wygasła. Zaloguj się ponownie.";
+
 function userMessageForStatus(status: number, bodyMessage?: string): string {
   if (bodyMessage && status >= 400 && status < 500 && status !== 401 && status !== 429) {
     // Komunikaty biznesowe z backendu (Conflict, walidacja) — po polsku, przechodzą bez zmian.
@@ -35,7 +38,7 @@ function userMessageForStatus(status: number, bodyMessage?: string): string {
   }
   switch (status) {
     case 401:
-      return "Sesja wygasła. Zaloguj się ponownie.";
+      return SESSION_EXPIRED_MESSAGE;
     case 403:
       return "Brak uprawnień do tej operacji.";
     case 404:
@@ -63,14 +66,33 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Opcjonalny getter tokenu Clerk — ustawiany przez AuthTokenBridge gdy Clerk włączony. */
-let authTokenGetter: (() => Promise<string | null>) | null = null;
+export type AuthTokenOptions = { skipCache?: boolean };
+type AuthTokenGetter = (opts?: AuthTokenOptions) => Promise<string | null>;
 
-export function setAuthTokenGetter(getter: (() => Promise<string | null>) | null) {
+/** Opcjonalny getter tokenu Clerk — ustawiany przez AuthTokenBridge gdy Clerk włączony. */
+let authTokenGetter: AuthTokenGetter | null = null;
+
+export function setAuthTokenGetter(getter: AuthTokenGetter | null) {
   authTokenGetter = getter;
 }
 
 export const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+
+/** Max czas czekania na Clerk przed pierwszym requestem (ms). */
+const AUTH_READY_TIMEOUT_MS = 8_000;
+
+let resolveAuthReady: (() => void) | null = null;
+const authReady: Promise<void> = clerkEnabled
+  ? new Promise<void>((resolve) => {
+      resolveAuthReady = resolve;
+    })
+  : Promise.resolve();
+
+/** Clerk załadowany i getter tokenu podpięty — dopiero teraz requesty trenera mają sens. */
+export function markAuthReady(): void {
+  resolveAuthReady?.();
+  resolveAuthReady = null;
+}
 
 export type ClientSummary = {
   id: number;
@@ -909,13 +931,19 @@ async function buildHeaders(
   path: string,
   init?: RequestInit,
   withJsonContentType = true,
+  tokenOpts?: AuthTokenOptions,
 ): Promise<Record<string, string>> {
   const headers: Record<string, string> = {
     ...(withJsonContentType ? { "Content-Type": "application/json" } : {}),
     ...(init?.headers as Record<string, string> | undefined),
   };
+  const needsAuth = clerkEnabled && !path.startsWith("/api/portal/");
+  if (needsAuth) {
+    // Efekty dzieci biegną przed efektem AuthTokenBridge — czekamy na markAuthReady().
+    await Promise.race([authReady, sleep(AUTH_READY_TIMEOUT_MS)]);
+  }
   if (authTokenGetter && !path.startsWith("/api/portal/")) {
-    const token = await authTokenGetter();
+    const token = await authTokenGetter(tokenOpts);
     if (token) headers.Authorization = `Bearer ${token}`;
   }
   return headers;
@@ -971,9 +999,23 @@ async function fetchWithRetry(
   });
 }
 
+/** Jednorazowy retry po 401 na świeżym tokenie (Clerk cache mógł być przeterminowany). */
+async function sendRequest(
+  path: string,
+  init: RequestInit | undefined,
+  withJsonContentType: boolean,
+): Promise<Response> {
+  const headers = await buildHeaders(path, init, withJsonContentType);
+  let res = await fetchWithRetry(path, init, headers);
+  if (res.status === 401 && authTokenGetter && !path.startsWith("/api/portal/")) {
+    const retryHeaders = await buildHeaders(path, init, withJsonContentType, { skipCache: true });
+    res = await fetchWithRetry(path, init, retryHeaders);
+  }
+  return res;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers = await buildHeaders(path, init, true);
-  const res = await fetchWithRetry(path, init, headers);
+  const res = await sendRequest(path, init, true);
   if (!res.ok) {
     const message = await parseErrorMessage(res);
     const warming = isRetriableStatus(res.status) ? WARMING_MESSAGE : message;
@@ -987,8 +1029,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 async function requestText(path: string, init?: RequestInit): Promise<string> {
-  const headers = await buildHeaders(path, init, false);
-  const res = await fetchWithRetry(path, init, headers);
+  const res = await sendRequest(path, init, false);
   if (!res.ok) {
     const message = await parseErrorMessage(res);
     const warming = isRetriableStatus(res.status) ? WARMING_MESSAGE : message;

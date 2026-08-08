@@ -1,6 +1,9 @@
 "use client";
 
+import Link from "next/link";
+import { useClerk } from "@clerk/nextjs";
 import { ReactNode, useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
+import { SESSION_EXPIRED_MESSAGE, clerkEnabled } from "@/lib/api";
 
 const subscribeNoop = () => () => {};
 const snapshotClient = () => true;
@@ -362,14 +365,43 @@ export const inputNumericClass =
 export const textareaClass =
   "min-h-20 w-full rounded-[var(--r-field)] border border-border-strong bg-field px-2.5 py-2 text-base font-medium text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:font-normal placeholder:text-fg-ghost focus:border-foreground focus:shadow-[var(--focus-ring)] sm:text-sm";
 
-export function ErrorBanner({ message }: { message: string | null }) {
+function ClerkSignInAgainButton() {
+  const { signOut } = useClerk();
+  return (
+    <Button size="sm" variant="secondary" onClick={() => void signOut({ redirectUrl: "/sign-in" })}>
+      Zaloguj się ponownie
+    </Button>
+  );
+}
+
+function SignInAgainAction() {
+  if (clerkEnabled) return <ClerkSignInAgainButton />;
+  return (
+    <Link href="/sign-in">
+      <Button size="sm" variant="secondary">
+        Zaloguj się ponownie
+      </Button>
+    </Link>
+  );
+}
+
+export function ErrorBanner({
+  message,
+  action,
+}: {
+  message: string | null;
+  action?: ReactNode;
+}) {
   if (!message) return null;
+  const resolvedAction =
+    action ?? (message === SESSION_EXPIRED_MESSAGE ? <SignInAgainAction /> : null);
   return (
     <div
       role="alert"
-      className="mb-4 rounded-[var(--r-field)] border border-danger-border bg-danger-bg px-4 py-2 text-sm leading-[var(--leading-body)] text-danger"
+      className="mb-4 flex flex-col gap-3 rounded-[var(--r-field)] border border-danger-border bg-danger-bg px-4 py-2 text-sm leading-[var(--leading-body)] text-danger sm:flex-row sm:items-center sm:justify-between"
     >
-      {message}
+      <span className="min-w-0">{message}</span>
+      {resolvedAction ? <div className="shrink-0">{resolvedAction}</div> : null}
     </div>
   );
 }

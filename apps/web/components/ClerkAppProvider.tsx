@@ -3,14 +3,15 @@
 import { ReactNode, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { ClerkProvider, RedirectToSignIn, useAuth } from "@clerk/nextjs";
-import { clerkEnabled, setAuthTokenGetter } from "@/lib/api";
+import { clerkEnabled, markAuthReady, setAuthTokenGetter } from "@/lib/api";
 
 function AuthTokenBridge({ children }: { children: ReactNode }) {
-  const { getToken } = useAuth();
+  const { isLoaded, getToken } = useAuth();
   useEffect(() => {
-    setAuthTokenGetter(() => getToken());
+    setAuthTokenGetter((opts) => getToken(opts));
+    if (isLoaded) markAuthReady();
     return () => setAuthTokenGetter(null);
-  }, [getToken]);
+  }, [getToken, isLoaded]);
   return <>{children}</>;
 }
 
