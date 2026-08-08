@@ -4,7 +4,14 @@ export const runtime = "edge";
 export const contentType = "image/png";
 export const size = { width: 1080, height: 1350 };
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5210";
+function resolveShareApiBase(): string {
+  const fromEnv = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, "");
+  if (fromEnv) return fromEnv;
+  if (process.env.NODE_ENV === "production" && process.env.SKIP_ENV_VALIDATION !== "true") {
+    throw new Error("Brak NEXT_PUBLIC_API_URL. Ustaw zmienną w Vercel i przebuduj front.");
+  }
+  return "http://localhost:5210";
+}
 
 type ShareSession = {
   dayLabel: string | null;
@@ -38,7 +45,7 @@ export async function GET(
   ctx: { params: Promise<{ token: string; sessionId: string }> },
 ) {
   const { token, sessionId } = await ctx.params;
-  const res = await fetch(`${API}/api/portal/${token}/sessions/${sessionId}`, {
+  const res = await fetch(`${resolveShareApiBase()}/api/portal/${token}/sessions/${sessionId}`, {
     cache: "no-store",
   });
   if (!res.ok) {

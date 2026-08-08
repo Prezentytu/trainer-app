@@ -5,6 +5,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>4c385ea5-1ac6-4cb9-a7b3-57f543859a49</UserSecretsId>
+    <!-- Szybszy cold start kontenera (R2R) + optymalizacja JIT w steady-state (PGO). -->
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <TieredPGO>true</TieredPGO>
   </PropertyGroup>
 
   <ItemGroup>

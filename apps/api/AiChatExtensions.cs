@@ -33,7 +33,7 @@ public static class AiChatExtensions
 public sealed class UnavailableChatClient : IChatClient
 {
     public const string Message =
-        "Brak klucza AI (Ai:OpenRouterApiKey). Ustaw User Secrets lub zmienną Ai__OpenRouterApiKey.";
+        "Import AI jest chwilowo niedostępny. Spróbuj ponownie później.";
 
     public ChatClientMetadata Metadata { get; } = new("unavailable");
 

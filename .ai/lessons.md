@@ -436,4 +436,11 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: Hierarchia statusu wyniku: PR > poniżej celu > zwykły. Rekord osobisty zawsze `text-foreground` + badge `pr`, nigdy `text-danger`. Notatki klienta (`set.note`, `exercise.note`) pokazuj w review pod wierszem / pod kartą z etykietą.
 **Dotyczy**: `SessionReview.tsx`, przyszłe widoki porównania plan vs wykonanie.
 
+## Cold start: Always On + liveness bez DB; nie cron GitHub
+
+**Kontekst**: Długi cold start na Azure B1; keep-alive z `keepalive.yml` (cron `*/5`) + UI pokazywał „port 5210".
+**Problem**: Cron GitHub Actions jest best-effort (opóźnienia, dropy, auto-disable po 60 dniach w public repo). Ping do `/api/health` z `CanConnectAsync` trzymałby Neon aktywny 24/7 i kasował scale-to-zero. `Always On` pinguje `/`, którego nie było. `Migrate()`+`Seed` na starcie blokowały gotowość HTTP. Fallback `localhost:5210` i dopisek w dashboardzie wyciekały do produkcji.
+**Zasada**: (1) Azure Always On + ARR Off + HTTP/2. (2) Liveness `/` i `/api/health/live` **bez** bazy — tylko to w Azure Health check / `WEBSITE_WARMUP_PATH`. (3) `/api/health` z DB tylko do smoke po deployu. (4) Migracje Postgres w CI; `Database:MigrateOnStartup=false`. (5) `EnableRetryOnFailure` na Npgsql. (6) UI: centralne `ApiError` w `api.ts`, zero portów/env w komunikatach, brak fallbacku localhost w prod (poza `SKIP_ENV_VALIDATION` w CI).
+**Dotyczy**: `docs/deploy.md`, `Program.cs`, `WarmupService.cs`, `apps/web/lib/api.ts`, Azure App Settings, Neon.
+
 ---

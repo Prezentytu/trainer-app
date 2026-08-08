@@ -53,7 +53,7 @@ export function TrainerDashboard() {
         if (!cancelled) setDash(data);
       })
       .catch((e: Error) => {
-        if (!cancelled) setError(`${e.message}. Czy backend działa na porcie 5210?`);
+        if (!cancelled) setError(e.message);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

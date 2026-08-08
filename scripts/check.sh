@@ -19,6 +19,7 @@ echo "==> [4/5] Web: typecheck"
 npm run typecheck --prefix apps/web
 
 echo "==> [5/5] Web: build"
-npm run build --prefix apps/web
+# Jak CI: build bez sekretów Vercel nie powinien padać na brak NEXT_PUBLIC_API_URL.
+SKIP_ENV_VALIDATION=true npm run build --prefix apps/web
 
 echo "==> OK — bramka walidacyjna zielona."

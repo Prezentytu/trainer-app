@@ -73,8 +73,8 @@ export default function ClientsPage() {
 
 ## Kontrakt `lib/api.ts`
 
-- Base URL: `process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5210"`.
-- `request<T>()` ustawia `Content-Type: application/json`, przy `!res.ok` wyciąga `body.message` i rzuca `Error`, przy `204` zwraca `undefined`.
+- Base URL: `NEXT_PUBLIC_API_URL` (dev fallback `http://localhost:5210`; produkcja bez zmiennej = błąd, CI: `SKIP_ENV_VALIDATION=true`).
+- `request<T>()` mapuje błędy na `ApiError` (polski `message`), retry GET przy sieci/502–504, przy `204` zwraca `undefined`.
 - Metody grupowane per zasób: `api.clients`, `api.exercises`, `api.plans`, `api.assignments`. Nowy zasób dokładaj analogicznie.
 
 ## Styl / Tailwind

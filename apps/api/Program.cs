@@ -22,10 +22,16 @@ var connectionString = DbConnectionString.Normalize(builder.Configuration.GetCon
 builder.Services.AddDbContext<AppDb>(o =>
 {
     if (string.Equals(provider, "Postgres", StringComparison.OrdinalIgnoreCase))
-        o.UseNpgsql(connectionString);
+    {
+        // Retry przy cold start Neona (scale-to-zero) — zamiast 500 pierwsze zapytanie dostaje backoff.
+        o.UseNpgsql(connectionString, npg =>
+            npg.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(2), errorCodesToAdd: null));
+    }
     else
         o.UseSqlite(connectionString);
 });
+
+builder.Services.AddHostedService<WarmupService>();
 
 var allowedOrigins = builder.Configuration["ALLOWED_ORIGINS"]
     ?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -114,27 +120,41 @@ if (!string.IsNullOrWhiteSpace(clerkAuthority))
     app.UseAuthorization();
 }
 
+// Postgres: migracje wyłącznie w CI (efbundle), chyba że jawnie włączysz Database:MigrateOnStartup.
+// Seed na Postgresie idzie w WarmupService (po starcie HTTP). SQLite lokalnie — EnsureCreated + Seed synchronicznie.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDb>();
-    if (string.Equals(provider, "Postgres", StringComparison.OrdinalIgnoreCase))
+    var migrateOnStartup = app.Configuration.GetValue("Database:MigrateOnStartup", false);
+    if (DatabaseBootstrap.ShouldMigrateOnStartup(provider, migrateOnStartup))
         db.Database.Migrate();
-    else
+    else if (DatabaseBootstrap.ShouldSeedSynchronously(provider))
+    {
         db.Database.EnsureCreated();
-    Seed.Run(db);
+        Seed.Run(db);
+    }
 }
 
-static async Task<IResult> UnauthorizedTrainer(Exception ex) =>
-    Results.Json(new { message = ex.Message }, statusCode: 401);
+static Task<IResult> UnauthorizedTrainer(Exception _)
+{
+    // Szczegóły (np. brak claimu sub) tylko w logach endpointu — UI dostaje stały komunikat.
+    return Task.FromResult(Results.Json(
+        new { message = "Brak dostępu. Zaloguj się ponownie." },
+        statusCode: 401));
+}
 
-// ---------- Health / me ----------
+// ---------- Liveness / Health / me ----------
+
+// Always On pinguje `/` — musi być 2xx bez bazy (żeby nie trzymać Neona always-on).
+app.MapGet("/", () => Results.Ok(new { service = "RepMaxer API", status = "ok" }));
+app.MapGet("/api/health/live", () => Results.Ok(new { status = "ok", utc = DateTime.UtcNow }));
 
 app.MapGet("/api/health", async (AppDb db) =>
 {
     var utc = DateTime.UtcNow;
     try
     {
-        // Lekki ping DB — budzi też Neon autosuspend i wykrywa martwą bazę.
+        // Readiness z pingiem DB — tylko smoke po deployu / diagnostyka, NIE Azure Health check.
         var canConnect = await db.Database.CanConnectAsync();
         if (!canConnect)
             return Results.Json(new { status = "degraded", utc, database = "unreachable" }, statusCode: 503);
@@ -2466,9 +2486,14 @@ app.MapPost("/api/ai/plan-import", async (
                 }
             }));
         }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("OpenRouterApiKey", StringComparison.Ordinal))
+        catch (InvalidOperationException ex) when (
+            ex.Message.Contains("OpenRouterApiKey", StringComparison.Ordinal)
+            || ex.Message == UnavailableChatClient.Message)
         {
-            return Results.Json(new { message = ex.Message }, statusCode: 503);
+            logger.LogWarning(ex, "Plan import AI niedostępny (brak klucza lub stub)");
+            return Results.Json(
+                new { message = UnavailableChatClient.Message },
+                statusCode: 503);
         }
         catch (Exception ex)
         {
@@ -2477,7 +2502,7 @@ app.MapPost("/api/ai/plan-import", async (
                 : ex;
             logger.LogError(root, "Plan import AI call failed");
             return Results.Json(
-                new { message = $"Nie udało się połączyć z AI: {root.Message}" },
+                new { message = "Nie udało się połączyć z AI. Spróbuj ponownie za chwilę." },
                 statusCode: 502);
         }
 

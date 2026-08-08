@@ -9,13 +9,17 @@ WORKDIR /src
 COPY ["TrainerApp.Api.csproj", "."]
 RUN dotnet restore "TrainerApp.Api.csproj"
 COPY . .
-RUN dotnet build "TrainerApp.Api.csproj" -c $BUILD_CONFIGURATION -o /app/build
-
-FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "TrainerApp.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+# publish buduje sam — bez osobnego `dotnet build` (szybszy obraz CI).
+# RID linux-x64 wymagany przez PublishReadyToRun; framework-dependent (ASP.NET base image).
+RUN dotnet publish "TrainerApp.Api.csproj" \
+    -c $BUILD_CONFIGURATION \
+    -o /app/publish \
+    -r linux-x64 \
+    --no-self-contained \
+    --no-restore \
+    /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
-COPY --from=publish /app/publish .
+COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "TrainerApp.Api.dll"]

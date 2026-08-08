@@ -1,4 +1,67 @@
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5210";
+function resolveApiBase(): string {
+  const fromEnv = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, "");
+  if (fromEnv) return fromEnv;
+  // Produkcja bez URL = twardy błąd (nie strzał w localhost:5210).
+  // CI ustawia SKIP_ENV_VALIDATION=true przy `npm run build` bez sekretów Vercel.
+  if (process.env.NODE_ENV === "production" && process.env.SKIP_ENV_VALIDATION !== "true") {
+    throw new Error(
+      "Brak NEXT_PUBLIC_API_URL. Ustaw zmienną w Vercel (Production) i przebuduj front.",
+    );
+  }
+  return "http://localhost:5210";
+}
+
+const API = resolveApiBase();
+
+/** Błąd API gotowy do pokazania użytkownikowi (`message` = userMessage). */
+export class ApiError extends Error {
+  readonly status: number | null;
+  readonly userMessage: string;
+  readonly technical: string | null;
+
+  constructor(userMessage: string, opts?: { status?: number | null; technical?: string | null }) {
+    super(userMessage);
+    this.name = "ApiError";
+    this.userMessage = userMessage;
+    this.status = opts?.status ?? null;
+    this.technical = opts?.technical ?? null;
+  }
+}
+
+function userMessageForStatus(status: number, bodyMessage?: string): string {
+  if (bodyMessage && status >= 400 && status < 500 && status !== 401 && status !== 429) {
+    // Komunikaty biznesowe z backendu (Conflict, walidacja) — po polsku, przechodzą bez zmian.
+    return bodyMessage;
+  }
+  switch (status) {
+    case 401:
+      return "Sesja wygasła. Zaloguj się ponownie.";
+    case 403:
+      return "Brak uprawnień do tej operacji.";
+    case 404:
+      return bodyMessage || "Nie znaleziono zasobu.";
+    case 429:
+      return "Za dużo prób. Odczekaj chwilę i spróbuj ponownie.";
+    default:
+      if (status >= 500) return "Serwer chwilowo niedostępny. Spróbuj ponownie za chwilę.";
+      return bodyMessage || `Błąd ${status}`;
+  }
+}
+
+function isRetriableStatus(status: number): boolean {
+  return status === 502 || status === 503 || status === 504;
+}
+
+function isNetworkError(err: unknown): boolean {
+  if (err instanceof TypeError) return true;
+  if (err instanceof DOMException && err.name === "AbortError") return false;
+  const msg = err instanceof Error ? err.message : String(err);
+  return /failed to fetch|networkerror|load failed|network request failed/i.test(msg);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 /** Opcjonalny getter tokenu Clerk — ustawiany przez AuthTokenBridge gdy Clerk włączony. */
 let authTokenGetter: (() => Promise<string | null>) | null = null;
@@ -842,28 +905,79 @@ export type PlanInput = {
   days: PlanDayInput[];
 };
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function buildHeaders(
+  path: string,
+  init?: RequestInit,
+  withJsonContentType = true,
+): Promise<Record<string, string>> {
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+    ...(withJsonContentType ? { "Content-Type": "application/json" } : {}),
     ...(init?.headers as Record<string, string> | undefined),
   };
   if (authTokenGetter && !path.startsWith("/api/portal/")) {
     const token = await authTokenGetter();
     if (token) headers.Authorization = `Bearer ${token}`;
   }
-  const res = await fetch(`${API}${path}`, {
-    ...init,
-    headers,
-  });
-  if (!res.ok) {
-    let message = `Błąd ${res.status}`;
+  return headers;
+}
+
+async function parseErrorMessage(res: Response): Promise<string> {
+  let bodyMessage: string | undefined;
+  try {
+    const body = await res.json();
+    if (body?.message && typeof body.message === "string") bodyMessage = body.message;
+  } catch {
+    // brak body
+  }
+  return userMessageForStatus(res.status, bodyMessage);
+}
+
+const WARMING_MESSAGE = "Uruchamiamy serwer. Odśwież za chwilę.";
+const NETWORK_MESSAGE = "Brak połączenia z serwerem. Sprawdź internet i spróbuj ponownie.";
+
+async function fetchWithRetry(
+  path: string,
+  init: RequestInit | undefined,
+  headers: Record<string, string>,
+): Promise<Response> {
+  const method = (init?.method ?? "GET").toUpperCase();
+  const canRetry = method === "GET" || method === "HEAD";
+  const maxAttempts = canRetry ? 3 : 1;
+  let lastNetworkError: unknown = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const body = await res.json();
-      if (body?.message) message = body.message;
-    } catch {
-      // brak body
+      const res = await fetch(`${API}${path}`, { ...init, headers });
+      if (canRetry && isRetriableStatus(res.status) && attempt < maxAttempts) {
+        await sleep(400 * attempt);
+        continue;
+      }
+      return res;
+    } catch (err) {
+      lastNetworkError = err;
+      if (!canRetry || !isNetworkError(err) || attempt >= maxAttempts) {
+        throw new ApiError(attempt > 1 ? WARMING_MESSAGE : NETWORK_MESSAGE, {
+          status: null,
+          technical: err instanceof Error ? err.message : String(err),
+        });
+      }
+      await sleep(400 * attempt);
     }
-    throw new Error(message);
+  }
+
+  throw new ApiError(WARMING_MESSAGE, {
+    status: null,
+    technical: lastNetworkError instanceof Error ? lastNetworkError.message : null,
+  });
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = await buildHeaders(path, init, true);
+  const res = await fetchWithRetry(path, init, headers);
+  if (!res.ok) {
+    const message = await parseErrorMessage(res);
+    const warming = isRetriableStatus(res.status) ? WARMING_MESSAGE : message;
+    throw new ApiError(warming, { status: res.status, technical: message });
   }
   if (res.status === 204) return undefined as T;
   // Puste body (np. Results.Ok(null) w Minimal API) — nie wywołuj res.json().
@@ -873,23 +987,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 async function requestText(path: string, init?: RequestInit): Promise<string> {
-  const headers: Record<string, string> = {
-    ...(init?.headers as Record<string, string> | undefined),
-  };
-  if (authTokenGetter && !path.startsWith("/api/portal/")) {
-    const token = await authTokenGetter();
-    if (token) headers.Authorization = `Bearer ${token}`;
-  }
-  const res = await fetch(`${API}${path}`, { ...init, headers });
+  const headers = await buildHeaders(path, init, false);
+  const res = await fetchWithRetry(path, init, headers);
   if (!res.ok) {
-    let message = `Błąd ${res.status}`;
-    try {
-      const body = await res.json();
-      if (body?.message) message = body.message;
-    } catch {
-      // brak body
-    }
-    throw new Error(message);
+    const message = await parseErrorMessage(res);
+    const warming = isRetriableStatus(res.status) ? WARMING_MESSAGE : message;
+    throw new ApiError(warming, { status: res.status, technical: message });
   }
   return res.text();
 }

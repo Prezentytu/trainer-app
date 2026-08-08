@@ -84,15 +84,52 @@ Zapisz URL z Overview, np.:
 
 ### B1b. Always On + Health check (cold start)
 
-Na planie **Basic B1+** włącz **Always On**, żeby App Service nie usypiał procesu po bezczynności (klient na siłowni nie czeka 15–30 s na pierwszy request).
+**Mechanizm podstawowy = Azure Always On** (darmowe na planie Basic B1+). Bez tego App Service usypia proces po ~20 min bezczynności — klient na siłowni czeka na pull obrazu + start .NET (dziesiątki sekund).
 
-1. Web App → **Settings** → **Configuration** → **General settings**
-2. **Always On** → **On** → Save
-3. Web App → **Monitoring** → **Health check** → ścieżka `/api/health` → Enable
+**Nie używamy crona GitHub Actions jako keep-alive** — schedule jest best-effort (opóźnienia 10–40 min, runy bywają porzucane; w repo publicznym wyłącza się po 60 dniach bez aktywności). Ping do endpointu z bazą trzymałby też Neon aktywny 24/7 i psuł scale-to-zero.
 
-Endpoint `/api/health` pinga też bazę (Neon). Jeśli Neon ma autosuspend na free tierze, keep-alive z GitHub Actions (`.github/workflows/keepalive.yml`, co 5 min) budzi API + DB. Preferuj Always On + wyłączony autosuspend Neona na prod; cron to siatka bezpieczeństwa.
+#### General settings (Settings → Configuration → General settings)
 
-Sekrety keep-alive: `API_HEALTH_URL` (dev) i `API_HEALTH_URL_PROD` (prod) — te same co health check po deployu.
+| Pole | Wartość |
+|---|---|
+| **Always On** | **On** |
+| ARR affinity | **Off** |
+| HTTP version | **2.0** |
+
+Save.
+
+#### App settings (Settings → Environment variables)
+
+| Name | Value | Po co |
+|---|---|---|
+| `WEBSITES_PORT` | `8080` | port kontenera (już masz) |
+| `WEBSITES_CONTAINER_START_TIME_LIMIT` | `600` | domyślne 230 s bywa za krótkie przy pullu obrazu → restart w pętli |
+| `WEBSITES_ENABLE_APP_SERVICE_STORAGE` | `false` | bez montowania `/home` → szybszy start |
+| `WEBSITE_WARMUP_PATH` | `/api/health/live` | warmup po deployu (bez bazy) |
+| `Database__MigrateOnStartup` | `false` | migracje tylko w CI (`Deploy API` → job migrate) |
+
+#### Health check (Monitoring → Health check) — dopiero po deployu z `/api/health/live`
+
+1. Enable
+2. Ścieżka: **`/api/health/live`** (bez bazy)
+
+**Nigdy** nie ustawiaj tu `/api/health` — ten endpoint robi `CanConnectAsync()` do Neona. Azure Health check pinguje ~co minutę i **kasuje oszczędności scale-to-zero** (~+14 USD/mies. przy Launch 0.25 CU always-on).
+
+Rozdział endpointów:
+
+| Endpoint | Dotyka DB? | Do czego |
+|---|---|---|
+| `/` oraz `/api/health/live` | nie | Always On, Azure Health check, warmup |
+| `/api/health` | tak | smoke po deployu (`API_HEALTH_URL` w GitHub), diagnostyka |
+
+#### Neon (Console → Branch → Compute)
+
+- Azure App Settings `ConnectionStrings__Default` → connection string **pooled** (host z `-pooler`).
+- GitHub secret `DEV_DB_CONNECTION_STRING` (migracje CI) → **direct** (bez `-pooler`).
+- **Scale to zero** zostaje włączone (5 min) — wybudzenie bazy to ~kilkaset ms. Wyłączaj dopiero gdy po Always On różnica warm vs cold-DB > 800 ms.
+- Sprawdź **region** Neon vs Azure Web App (Overview → Location). Różne regiony = +100 ms na każde SQL.
+
+Sekrety `API_HEALTH_URL` / `API_HEALTH_URL_PROD` zostają — używa ich health check w workflow `Deploy API` (po deployu), nie keep-alive.
 
 ### B2. Ustawienia aplikacji (env) — WAŻNE, zrób przed deployem
 
@@ -413,7 +450,8 @@ RPO/RTO (MVP): RPO ≈ okno Neon PITR; RTO = odtworzenie brancha + podmiana conn
 
 # I. Observability (MVP)
 
-- Health: `GET /api/health` (+ GitHub `keepalive.yml`).
+- Liveness (bez DB): `GET /` oraz `GET /api/health/live` — Always On + Azure Health check.
+- Readiness (z DB): `GET /api/health` — smoke po deployu (`API_HEALTH_URL` w Actions).
 - Każda odpowiedź API: nagłówek `X-Correlation-Id` (przyjmujemy też z requestu).
 - Nieobsłużone wyjątki → JSON `{ "message": "…" }` + log z CorrelationId (bez stack trace w Production).
 - Sentry / analytics produktowe: poza zakresem early access (wymaga osobnej decyzji o zależności).
