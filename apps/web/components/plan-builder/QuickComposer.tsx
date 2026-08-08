@@ -14,7 +14,7 @@ import { demoMedia } from "@/lib/youtube";
 import { Icon } from "@/components/Icon";
 import { Badge, IconButton, inputClass } from "@/components/ui";
 import { ComposerHelp, markComposerHelpSeen, useComposerHelpOpen } from "./ComposerHelp";
-import { CreateExerciseRow } from "./CreateExerciseRow";
+import { CreateExerciseRow } from "@/components/CreateExerciseRow";
 import { useExerciseLibraryActions } from "./ExerciseLibraryContext";
 import { BuilderDay, BuilderItem } from "./types";
 

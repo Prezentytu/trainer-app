@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, Exercise } from "@/lib/api";
 import { ExerciseInput } from "@/lib/exerciseDraft";
+import { createOrReuseExercise } from "@/lib/exerciseLibrary";
 
 function sortByName(list: Exercise[]): Exercise[] {
   return [...list].sort((a, b) => a.name.localeCompare(b.name, "pl"));
@@ -38,21 +39,9 @@ export function useExerciseLibrary() {
 
   const createExercise = useCallback(
     async (input: ExerciseInput): Promise<{ exercise: Exercise; created: boolean }> => {
-      try {
-        const created = await api.exercises.create(input);
-        sync(mergeExercise(exercisesRef.current, created));
-        return { exercise: created, created: true };
-      } catch (err) {
-        const list = await api.exercises.list().catch(() => null);
-        if (list) {
-          sync(list);
-          const existing = list.find(
-            (e) => e.name.toLowerCase() === input.name.trim().toLowerCase()
-          );
-          if (existing) return { exercise: existing, created: false };
-        }
-        throw err;
-      }
+      const result = await createOrReuseExercise(input);
+      sync(mergeExercise(exercisesRef.current, result.exercise));
+      return result;
     },
     [sync]
   );

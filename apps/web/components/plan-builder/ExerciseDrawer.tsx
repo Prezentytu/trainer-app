@@ -17,7 +17,7 @@ import {
 import { filterExercises } from "@/lib/quickEntry";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { formatRest, inputClass } from "@/components/ui";
-import { CreateExerciseRow } from "./CreateExerciseRow";
+import { CreateExerciseRow } from "@/components/CreateExerciseRow";
 import { useExerciseLibraryActions } from "./ExerciseLibraryContext";
 
 function defaultsLine(e: Exercise): string {

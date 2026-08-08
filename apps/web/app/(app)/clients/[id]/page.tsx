@@ -26,7 +26,10 @@ import {
 } from "@/lib/api";
 import { ClientNotesTab, countClientNotes } from "@/components/client/ClientNotesTab";
 import { TrainerNotesTab } from "@/components/client/TrainerNotesTab";
+import { ExerciseCombobox } from "@/components/ExerciseCombobox";
 import { daysAgo, formatDayShort, relativeDayLabel, withinLastDays } from "@/lib/dates";
+import { DEFAULT_EXERCISE_INPUT } from "@/lib/exerciseDraft";
+import { createOrReuseExercise } from "@/lib/exerciseLibrary";
 import { refreshNavCounts } from "@/lib/navCounts";
 import { markPortalLinkSent } from "@/lib/portalLinkSent";
 import { TrendSparkline } from "@/components/TrendSparkline";
@@ -105,7 +108,8 @@ export default function ClientDetailsPage() {
   const [saving, setSaving] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
 
-  const [maxExerciseId, setMaxExerciseId] = useState<number | "">("");
+  const [maxExerciseId, setMaxExerciseId] = useState<number | null>(null);
+  const [maxExerciseError, setMaxExerciseError] = useState<string | null>(null);
   const [maxKg, setMaxKg] = useState("");
   const [maxDate, setMaxDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [showMaxForm, setShowMaxForm] = useState(false);
@@ -159,7 +163,6 @@ export default function ClientDetailsPage() {
         setTrainerNotes(notes);
         setClientNotes(cNotes);
         setPlanId((prev) => (prev === "" && assignable.length > 0 ? assignable[0].id : prev));
-        setMaxExerciseId((prev) => (prev === "" && ex.length > 0 ? ex[0].id : prev));
         // Nie otwieraj automatycznie ściany kafelków — CTA „Przypisz plan" na żądanie.
         setAssignOpen(false);
         setTab((prev) => prev ?? (s.length > 0 ? "history" : "plans"));
@@ -359,7 +362,12 @@ export default function ClientDetailsPage() {
 
   const handleAddMax = async (e: FormEvent) => {
     e.preventDefault();
-    if (maxExerciseId === "" || !maxKg) return;
+    setMaxExerciseError(null);
+    if (maxExerciseId == null) {
+      setMaxExerciseError("Wybierz ćwiczenie.");
+      return;
+    }
+    if (!maxKg) return;
     try {
       await api.clients.addMax(clientId, {
         exerciseId: maxExerciseId,
@@ -367,6 +375,8 @@ export default function ClientDetailsPage() {
         measuredOn: maxDate,
       });
       setMaxKg("");
+      setMaxExerciseId(null);
+      setMaxExerciseError(null);
       setShowMaxForm(false);
       load();
     } catch (err) {
@@ -994,19 +1004,40 @@ export default function ClientDetailsPage() {
               {showMaxForm ? (
                 <Card className="mb-4" title="Dodaj max (1RM)">
                   <form onSubmit={handleAddMax} className="grid gap-3 sm:grid-cols-4">
-                    <Field label="Ćwiczenie">
-                      <select
-                        className={inputClass}
+                    <div className="flex flex-col gap-1.5 text-sm sm:col-span-1">
+                      <span className="t-label">Ćwiczenie</span>
+                      <ExerciseCombobox
+                        exercises={exercises}
                         value={maxExerciseId}
-                        onChange={(e) => setMaxExerciseId(Number(e.target.value))}
-                      >
-                        {exercises.map((ex) => (
-                          <option key={ex.id} value={ex.id}>
-                            {ex.name}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
+                        placeholder="Szukaj lub utwórz ćwiczenie…"
+                        onSelect={(exercise) => {
+                          setMaxExerciseId(exercise.id);
+                          setMaxExerciseError(null);
+                          setExercises((prev) => {
+                            if (prev.some((e) => e.id === exercise.id)) return prev;
+                            return [...prev, exercise].sort((a, b) =>
+                              a.name.localeCompare(b.name, "pl")
+                            );
+                          });
+                        }}
+                        onCreate={async (input) => {
+                          const { exercise } = await createOrReuseExercise({
+                            ...DEFAULT_EXERCISE_INPUT,
+                            ...input,
+                          });
+                          setExercises((prev) => {
+                            if (prev.some((e) => e.id === exercise.id)) return prev;
+                            return [...prev, exercise].sort((a, b) =>
+                              a.name.localeCompare(b.name, "pl")
+                            );
+                          });
+                          return exercise;
+                        }}
+                      />
+                      {maxExerciseError ? (
+                        <p className="mt-1 text-xs text-danger">{maxExerciseError}</p>
+                      ) : null}
+                    </div>
                     <Field label="Kg">
                       <input
                         className={inputClass}
@@ -1026,7 +1057,14 @@ export default function ClientDetailsPage() {
                     </Field>
                     <div className="flex flex-wrap items-end gap-2">
                       <Button type="submit">Dodaj max</Button>
-                      <Button type="button" variant="ghost" onClick={() => setShowMaxForm(false)}>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => {
+                          setShowMaxForm(false);
+                          setMaxExerciseError(null);
+                        }}
+                      >
                         Anuluj
                       </Button>
                     </div>

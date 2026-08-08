@@ -15,7 +15,8 @@ export function CreateExerciseRow({
   creating?: boolean;
   error?: string | null;
   onCreate: () => void;
-  onDetails: () => void;
+  /** Opcjonalne — poza kreatorem nie ma dialogu szczegółów. */
+  onDetails?: () => void;
 }) {
   return (
     <div
@@ -43,14 +44,16 @@ export function CreateExerciseRow({
             <span className="rounded-full border border-accent-border bg-accent-dim px-2 py-0.5 text-xs font-semibold text-accent-strong">
               ↵ utwórz
             </span>
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={onDetails}
-              className="rounded-full border border-border px-2 py-0.5 text-xs text-muted hover:text-foreground-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-            >
-              ⇥ szczegóły
-            </button>
+            {onDetails ? (
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={onDetails}
+                className="rounded-full border border-border px-2 py-0.5 text-xs text-muted hover:text-foreground-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                ⇥ szczegóły
+              </button>
+            ) : null}
           </div>
         )}
       </div>

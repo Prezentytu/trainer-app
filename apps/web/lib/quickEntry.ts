@@ -184,8 +184,8 @@ export function parseQuickEntry(raw: string): ParsedQuickEntry {
 }
 
 /**
- * Filtruje ćwiczenia case-insensitive `includes`, bez limitu ani rankingu — jedyne źródło prawdy
- * dla dopasowania, używane też przez `ExercisePicker` (tryb „przeglądaj listę").
+ * Filtruje ćwiczenia case-insensitive `includes`, bez limitu ani rankingu — źródło prawdy
+ * dla dopasowania w drawerze / composerze.
  */
 export function filterExercises(query: string, exercises: Exercise[]): Exercise[] {
   const q = query.trim().toLowerCase();

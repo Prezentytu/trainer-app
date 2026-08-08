@@ -71,6 +71,40 @@ export function filterExercisesLibrary(exercises: Exercise[], filters: ExerciseF
   return exercises.filter((ex) => matchesFilters(ex, filters));
 }
 
+/**
+ * Dopasowania do comboboxa / typeaheadu: foldDiacritics + AND po tokenach,
+ * ranking prefiks → początek słowa → najkrótsza nazwa.
+ */
+export function matchExercisesByName(
+  query: string,
+  exercises: Exercise[],
+  limit = 8
+): Exercise[] {
+  const folded = foldDiacritics(query.trim());
+  if (!folded) return exercises.slice(0, limit);
+
+  const tokens = folded.split(/\s+/).filter(Boolean);
+  return exercises
+    .map((e) => {
+      const name = foldDiacritics(e.name);
+      if (!tokens.every((t) => name.includes(t))) return null;
+      const prefixRank = name.startsWith(folded) ? 0 : 1;
+      const wordStartRank = name.split(/\s+/).some((w) => w.startsWith(folded) || tokens.every((t) => w.startsWith(t)))
+        ? 0
+        : 1;
+      return { exercise: e, prefixRank, wordStartRank, length: name.length };
+    })
+    .filter((m): m is NonNullable<typeof m> => m != null)
+    .sort(
+      (a, b) =>
+        a.prefixRank - b.prefixRank ||
+        a.wordStartRank - b.wordStartRank ||
+        a.length - b.length
+    )
+    .slice(0, limit)
+    .map((m) => m.exercise);
+}
+
 /** Liczniki fasetowe: dana opcja uwzględnia pozostałe aktywne filtry (bez własnego wymiaru). */
 export function facetCounts(exercises: Exercise[], filters: ExerciseFilters) {
   const baseWithoutCategory = exercises.filter((ex) => matchesFilters(ex, filters, ["category"]));

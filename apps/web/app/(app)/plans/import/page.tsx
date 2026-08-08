@@ -9,7 +9,9 @@ import {
   PlanImportDraft,
   PlanImportItem,
 } from "@/lib/api";
-import { DEFAULT_EXERCISE_INPUT } from "@/lib/exerciseDraft";
+import { DEFAULT_EXERCISE_INPUT, ExerciseInput } from "@/lib/exerciseDraft";
+import { createOrReuseExercise } from "@/lib/exerciseLibrary";
+import { foldDiacritics } from "@/lib/exerciseSearch";
 import {
   allItemsMapped,
   countUnmapped,
@@ -18,6 +20,7 @@ import {
   itemMapKey,
   saveImportHandoff,
 } from "@/lib/planImportHandoff";
+import { ExerciseCombobox } from "@/components/ExerciseCombobox";
 import {
   Badge,
   Button,
@@ -66,6 +69,19 @@ function draftWeekBadge(draft: PlanImportDraft): string {
   return `${weekLabel} · ${days.length} dni · ${items} poz.`;
 }
 
+function importItemCreateInput(item: PlanImportItem, name?: string): ExerciseInput {
+  return {
+    ...DEFAULT_EXERCISE_INPUT,
+    name: (name ?? item.exerciseName).trim().replace(/\s+/g, " "),
+    type: item.measureType === "time" || item.measureType === "distance" ? item.measureType : "reps",
+    defaultSets: item.sets ?? 3,
+    defaultReps: item.reps ?? 10,
+    defaultRepDurationSeconds: item.repDurationSeconds,
+    defaultDistanceMeters: item.distanceMeters,
+    defaultLoadKg: item.loadKg,
+  };
+}
+
 export default function PlanImportPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("paste");
@@ -76,7 +92,8 @@ export default function PlanImportPage() {
   const [draft, setDraft] = useState<PlanImportDraft | null>(null);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [idMap, setIdMap] = useState<ExerciseIdMap>({});
-  const [creatingKey, setCreatingKey] = useState<string | null>(null);
+  const [bulkCreating, setBulkCreating] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [retrying, setRetrying] = useState(false);
 
@@ -195,31 +212,103 @@ export default function PlanImportPage() {
   const resolveId = (dayIdx: number, itemIdx: number, item: PlanImportItem) =>
     idMap[itemMapKey(dayIdx, itemIdx)] ?? item.matchedExerciseId ?? null;
 
-  const setMappedId = (dayIdx: number, itemIdx: number, exerciseId: number) => {
-    setIdMap((prev) => ({ ...prev, [itemMapKey(dayIdx, itemIdx)]: exerciseId }));
+  /** Mapuje pozycję + wszystkie niezmapowane o tej samej (folded) nazwie. */
+  const mapExerciseAndDuplicates = useCallback(
+    (dayIdx: number, itemIdx: number, exercise: Exercise) => {
+      if (!draft) {
+        setIdMap((prev) => ({ ...prev, [itemMapKey(dayIdx, itemIdx)]: exercise.id }));
+        return;
+      }
+      const sourceName = foldDiacritics(
+        draft.days?.[dayIdx]?.items?.[itemIdx]?.exerciseName ?? ""
+      );
+      setIdMap((prev) => {
+        const next = { ...prev, [itemMapKey(dayIdx, itemIdx)]: exercise.id };
+        if (!sourceName) return next;
+        draft.days?.forEach((day, di) => {
+          day.items?.forEach((it, ii) => {
+            if (di === dayIdx && ii === itemIdx) return;
+            const key = itemMapKey(di, ii);
+            const already = next[key] ?? it.matchedExerciseId;
+            if (already != null) return;
+            if (foldDiacritics(it.exerciseName) === sourceName) {
+              next[key] = exercise.id;
+            }
+          });
+        });
+        return next;
+      });
+      setExercises((prev) => {
+        if (prev.some((e) => e.id === exercise.id)) return prev;
+        return [...prev, exercise].sort((a, b) => a.name.localeCompare(b.name, "pl"));
+      });
+    },
+    [draft]
+  );
+
+  const createForItem = async (
+    dayIdx: number,
+    itemIdx: number,
+    item: PlanImportItem,
+    input: ExerciseInput
+  ): Promise<Exercise> => {
+    setError(null);
+    const { exercise } = await createOrReuseExercise(input);
+    mapExerciseAndDuplicates(dayIdx, itemIdx, exercise);
+    return exercise;
   };
 
-  const createMissing = async (dayIdx: number, itemIdx: number, item: PlanImportItem) => {
-    const key = itemMapKey(dayIdx, itemIdx);
-    setCreatingKey(key);
+  const createAllMissing = async () => {
+    if (!draft || unmapped === 0 || bulkCreating) return;
     setError(null);
-    try {
-      const created = await api.exercises.create({
-        ...DEFAULT_EXERCISE_INPUT,
-        name: item.exerciseName,
-        type: item.measureType === "time" || item.measureType === "distance" ? item.measureType : "reps",
-        defaultSets: item.sets ?? 3,
-        defaultReps: item.reps ?? 10,
-        defaultRepDurationSeconds: item.repDurationSeconds,
-        defaultDistanceMeters: item.distanceMeters,
-        defaultLoadKg: item.loadKg,
+    setBulkCreating(true);
+    const working: ExerciseIdMap = { ...idMap };
+    const pending: { di: number; ii: number; item: PlanImportItem }[] = [];
+    draft.days?.forEach((day, di) => {
+      day.items?.forEach((it, ii) => {
+        const id = working[itemMapKey(di, ii)] ?? it.matchedExerciseId;
+        if (id == null) pending.push({ di, ii, item: it });
       });
-      setExercises((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name, "pl")));
-      setMappedId(dayIdx, itemIdx, created.id);
+    });
+    // dedupe po folded nazwie — jedna create, potem auto-map duplikatów
+    const seen = new Set<string>();
+    const unique = pending.filter(({ item }) => {
+      const key = foldDiacritics(item.exerciseName);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    setBulkProgress({ done: 0, total: unique.length });
+    try {
+      for (let i = 0; i < unique.length; i++) {
+        const { di, ii, item } = unique[i];
+        const key = itemMapKey(di, ii);
+        if ((working[key] ?? item.matchedExerciseId) != null) {
+          setBulkProgress({ done: i + 1, total: unique.length });
+          continue;
+        }
+        const { exercise } = await createOrReuseExercise(importItemCreateInput(item));
+        const folded = foldDiacritics(item.exerciseName);
+        working[key] = exercise.id;
+        draft.days?.forEach((day, ddi) => {
+          day.items?.forEach((it, iii) => {
+            const k = itemMapKey(ddi, iii);
+            if ((working[k] ?? it.matchedExerciseId) != null) return;
+            if (foldDiacritics(it.exerciseName) === folded) working[k] = exercise.id;
+          });
+        });
+        setExercises((prev) => {
+          if (prev.some((e) => e.id === exercise.id)) return prev;
+          return [...prev, exercise].sort((a, b) => a.name.localeCompare(b.name, "pl"));
+        });
+        setIdMap({ ...working });
+        setBulkProgress({ done: i + 1, total: unique.length });
+      }
     } catch (err) {
       setError((err as Error).message);
     } finally {
-      setCreatingKey(null);
+      setBulkCreating(false);
+      setBulkProgress(null);
     }
   };
 
@@ -322,11 +411,23 @@ export default function PlanImportPage() {
                   <p className="mt-1 text-sm text-muted break-words">{draft.description}</p>
                 ) : null}
               </div>
-              <div className="flex shrink-0 flex-wrap gap-2">
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
                 <Badge tone={unmapped === 0 ? "positive" : "neutral"}>
                   {unmapped === 0 ? "Wszystko dopasowane" : `${unmapped} bez dopasowania`}
                 </Badge>
                 <Badge tone="accent">{draftWeekBadge(draft)}</Badge>
+                {unmapped > 0 ? (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={bulkCreating || loading}
+                    onClick={() => void createAllMissing()}
+                  >
+                    {bulkProgress
+                      ? `Tworzę… ${bulkProgress.done}/${bulkProgress.total}`
+                      : `Utwórz wszystkie brakujące (${unmapped})`}
+                  </Button>
+                ) : null}
               </div>
             </div>
           </Card>
@@ -403,32 +504,18 @@ export default function PlanImportPage() {
                             <Badge tone="danger">Brak w bibliotece</Badge>
                           )}
                         </div>
-                        <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
-                          <select
-                            className={`${inputClass} min-w-0 flex-1`}
-                            value={mappedId ?? ""}
-                            onChange={(e) => {
-                              const v = Number(e.target.value);
-                              if (Number.isFinite(v) && v > 0) setMappedId(di, ii, v);
-                            }}
-                          >
-                            <option value="">— wybierz ćwiczenie —</option>
-                            {exercises.map((e) => (
-                              <option key={e.id} value={e.id}>
-                                {e.name}
-                              </option>
-                            ))}
-                          </select>
-                          {mappedId == null && (
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              disabled={creatingKey === key}
-                              onClick={() => void createMissing(di, ii, it)}
-                            >
-                              {creatingKey === key ? "Tworzę…" : "Utwórz w bibliotece"}
-                            </Button>
-                          )}
+                        <div className="mt-2">
+                          <ExerciseCombobox
+                            key={key}
+                            exercises={exercises}
+                            value={mappedId}
+                            suggestedName={it.exerciseName}
+                            placeholder="Szukaj lub utwórz ćwiczenie…"
+                            disabled={bulkCreating}
+                            onSelect={(exercise) => mapExerciseAndDuplicates(di, ii, exercise)}
+                            buildCreateInput={(name) => importItemCreateInput(it, name)}
+                            onCreate={async (input) => createForItem(di, ii, it, input)}
+                          />
                         </div>
                       </li>
                     );

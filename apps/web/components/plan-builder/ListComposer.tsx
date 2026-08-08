@@ -11,7 +11,7 @@ import { formatMeasureCore, measureOverridesFromParsed } from "@/lib/measure";
 import { matchExercises, parseQuickEntry, rampOverridesFromParsed } from "@/lib/quickEntry";
 import { demoMedia } from "@/lib/youtube";
 import { ComposerHelp, markComposerHelpSeen, useComposerHelpOpen } from "./ComposerHelp";
-import { CreateExerciseRow } from "./CreateExerciseRow";
+import { CreateExerciseRow } from "@/components/CreateExerciseRow";
 import { useExerciseLibraryActions } from "./ExerciseLibraryContext";
 import { buildListGroups, nextPositionLabel, superHintLabel } from "./listGroups";
 import { BuilderDay, BuilderItem } from "./types";
