@@ -80,8 +80,26 @@ function subscribeInstallEnv(onStoreChange: () => void): () => void {
   };
 }
 
+let installEnvCache: InstallEnv | null = null;
+
+// useSyncExternalStore porównuje referencje — detectInstallEnv zwraca nowy obiekt,
+// więc bez cache każdy odczyt wygląda jak zmiana i leci pętla renderów.
 function readInstallEnv(): InstallEnv {
-  return detectInstallEnv({ standalone: isStandaloneDisplay() });
+  const next = detectInstallEnv({ standalone: isStandaloneDisplay() });
+  const prev = installEnvCache;
+  if (
+    prev &&
+    prev.platform === next.platform &&
+    prev.browser === next.browser &&
+    prev.inApp === next.inApp &&
+    prev.iosVersion === next.iosVersion &&
+    prev.capability === next.capability &&
+    prev.escapeUrl === next.escapeUrl
+  ) {
+    return prev;
+  }
+  installEnvCache = next;
+  return next;
 }
 
 /**

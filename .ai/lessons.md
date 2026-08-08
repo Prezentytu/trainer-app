@@ -450,4 +450,11 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: (1) Promise-brama `authReady` + `markAuthReady()` po `isLoaded`; `buildHeaders` czeka (z timeoutem) przed requestami trenera. (2) Jednorazowy retry 401 z `getToken({ skipCache: true })`. (3) Baner 401 zawsze z CTA „Zaloguj się ponownie". (4) Liczniki nawigacji w cache (`navCounts.ts`), nie w lokalnym stanie montażu.
 **Dotyczy**: `apps/web/lib/api.ts`, `ClerkAppProvider.tsx`, `ErrorBanner`, `lib/navCounts.ts`, `AppShell.tsx`.
 
+## `useSyncExternalStore`: getSnapshot musi zwracać stabilną referencję
+
+**Kontekst**: Produkcja padała na `app/error.tsx` („Coś poszło nie tak"), w konsoli minified React error #185 (Maximum update depth exceeded).
+**Problem**: `getNavShell` (snapshot dla `AppShell`) czytał `sessionStorage` i budował **nowy obiekt** przy każdym wywołaniu. React porównuje snapshoty przez `Object.is`, więc każdy render wyglądał jak zmiana store'a → nieskończona pętla renderów. Pętla startowała dopiero po pierwszym udanym `refreshNavCounts()` (wcześniej storage był pusty i zwracany był stabilny `memory`), więc lokalnie łatwo to przeoczyć. Ten sam błąd był w `readInstallEnv` (`detectInstallEnv` też zwraca świeży obiekt).
+**Zasada**: Snapshot zwracający obiekt musi mieć cache: porównaj pola z poprzednią wartością i zwróć **starą referencję**, gdy nic się nie zmieniło. Prymitywy (`boolean`, `string`) są bezpieczne. Przy review nowego `useSyncExternalStore` zawsze sprawdź, czy getSnapshot nie tworzy obiektu/tablicy.
+**Dotyczy**: `lib/navCounts.ts`, `lib/pwa.ts`, każdy nowy store oparty o `useSyncExternalStore`.
+
 ---

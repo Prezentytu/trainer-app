@@ -20,13 +20,17 @@ const DEFAULT: NavShellState = {
 let memory: NavShellState = DEFAULT;
 let inflight: Promise<void> | null = null;
 
+function isSame(a: NavShellState, b: NavShellState): boolean {
+  return a.clients === b.clients && a.plans === b.plans && a.trainerName === b.trainerName;
+}
+
 function readStorage(): NavShellState {
   if (typeof window === "undefined") return DEFAULT;
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return memory;
     const parsed = JSON.parse(raw) as Partial<NavShellState>;
-    return {
+    const next: NavShellState = {
       clients: typeof parsed.clients === "number" ? parsed.clients : null,
       plans: typeof parsed.plans === "number" ? parsed.plans : null,
       trainerName:
@@ -34,12 +38,15 @@ function readStorage(): NavShellState {
           ? parsed.trainerName
           : "Trener",
     };
+    // useSyncExternalStore porównuje referencje — bez tego każdy odczyt to nowy obiekt i pętla renderów.
+    return isSame(memory, next) ? memory : next;
   } catch {
     return memory;
   }
 }
 
 function write(next: NavShellState): void {
+  if (isSame(memory, next)) return;
   memory = next;
   if (typeof window === "undefined") return;
   try {
