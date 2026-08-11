@@ -311,7 +311,7 @@ public class WorkoutSession
     public DateTime? ClientReplyAt { get; set; }
     /// <summary>Kiedy trener przeczytał odpowiedź klienta (null = nieprzeczytane).</summary>
     public DateTime? ClientReplyReadAt { get; set; }
-    // "in_progress" | "completed"
+    // "in_progress" | "completed" | "abandoned"
     public string Status { get; set; } = "in_progress";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

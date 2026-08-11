@@ -7,6 +7,7 @@ import { api, PortalSessionSummary } from "@/lib/api";
 import { EmptyState, ErrorBanner } from "@/components/ui";
 import { PortalPageSkeleton } from "@/components/skeletons";
 import { formatDurationMinutes } from "@/lib/estimateDuration";
+import { todayIsoLocal } from "@/lib/dates";
 
 /** Kiedy trenowałem — oś skanu dla bywalca. */
 function formatWhen(iso: string, todayIso: string): string {
@@ -54,7 +55,7 @@ export default function PortalHistoryPage() {
   const token = params.token;
   const [history, setHistory] = useState<PortalSessionSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const todayIso = useMemo(() => todayIsoLocal(), []);
 
   const load = useCallback(() => {
     api.portal

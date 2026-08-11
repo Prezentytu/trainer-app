@@ -19,6 +19,7 @@ import { estimateDayMinutes, formatDurationApprox } from "@/lib/estimateDuration
 import { buildWeekStrip } from "@/lib/portalWeekStrip";
 import { CheckInCard } from "@/components/portal/CheckInCard";
 import { PwaInstallPrompt } from "@/components/portal/PwaInstallPrompt";
+import { relativeDayFromLabel, todayIsoLocal } from "@/lib/dates";
 
 function schemeLine(item: NonNullable<PortalHome["today"]>["day"]["items"][number]): string {
   const measure = item.measureType ?? "reps";
@@ -35,6 +36,11 @@ function schemeLine(item: NonNullable<PortalHome["today"]>["day"]["items"][numbe
     : `${item.sets} × ${item.reps}`;
 }
 
+function setsProgressLabel(completed: number, total: number): string {
+  if (total <= 0) return `${completed} serii`;
+  return `${completed}/${total} serii`;
+}
+
 export default function PortalTodayPage() {
   const params = useParams<{ token: string }>();
   const token = params.token;
@@ -47,11 +53,13 @@ export default function PortalTodayPage() {
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [repeating, setRepeating] = useState(false);
+  const [staleBusy, setStaleBusy] = useState<"save" | "discard" | null>(null);
   const { setStickyCta } = usePortalStickyCta();
+  const todayIso = useMemo(() => todayIsoLocal(), []);
 
   const load = useCallback(() => {
     Promise.all([
-      api.portal.home(token),
+      api.portal.home(token, todayIso),
       api.portal.sessions(token).catch(() => [] as PortalSessionSummary[]),
       api.portal.progressReport(token).catch(() => null),
       api.portal.getIntake(token).catch(() => null),
@@ -65,7 +73,7 @@ export default function PortalTodayPage() {
         setCheckIns(checkinRows);
       })
       .catch((e: Error) => setError(e.message));
-  }, [token]);
+  }, [token, todayIso]);
 
   useEffect(load, [load]);
 
@@ -91,6 +99,7 @@ export default function PortalTodayPage() {
         assignmentId: home.today.assignmentId,
         planId: home.today.planId,
         planDayId: home.today.day.id,
+        performedOn: todayIso,
       });
       router.push(`/portal/${token}/session/${session.id}`);
     } catch (e) {
@@ -98,7 +107,7 @@ export default function PortalTodayPage() {
     } finally {
       setStarting(false);
     }
-  }, [home, router, token]);
+  }, [home, router, token, todayIso]);
 
   const repeatLast = useCallback(async () => {
     if (!home || !lastCompleted) return;
@@ -114,6 +123,7 @@ export default function PortalTodayPage() {
         repeatSessionId: lastCompleted.id,
         assignmentId: home.today?.assignmentId ?? null,
         planId: home.today?.planId ?? lastCompleted.planId ?? null,
+        performedOn: todayIso,
       });
       router.push(`/portal/${token}/session/${session.id}`);
     } catch (e) {
@@ -121,23 +131,64 @@ export default function PortalTodayPage() {
     } finally {
       setRepeating(false);
     }
-  }, [home, lastCompleted, router, token]);
+  }, [home, lastCompleted, router, token, todayIso]);
 
-  // CTA w dolnym pasku — plan = primary; bez planu = Powtórz ostatni jako primary.
+  const saveStale = useCallback(async () => {
+    if (!home?.staleSession) return;
+    setStaleBusy("save");
+    setError(null);
+    try {
+      await api.portal.completeSession(token, home.staleSession.id);
+      load();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setStaleBusy(null);
+    }
+  }, [home, token, load]);
+
+  const discardStale = useCallback(async () => {
+    if (!home?.staleSession) return;
+    const label = home.staleSession.dayLabel ?? "trening";
+    if (
+      !window.confirm(
+        `Odrzucić niedokończony ${label}? Zapisane serie nie trafią do historii.`,
+      )
+    ) {
+      return;
+    }
+    setStaleBusy("discard");
+    setError(null);
+    try {
+      await api.portal.abandonSession(token, home.staleSession.id);
+      load();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setStaleBusy(null);
+    }
+  }, [home, token, load]);
+
+  // CTA w dolnym pasku — świeża sesja = Kontynuuj z kontekstem; inaczej Rozpocznij / Powtórz.
   useEffect(() => {
+    if (home?.inProgressSession) {
+      const label = home.inProgressSession.dayLabel?.trim() || "trening";
+      setStickyCta({
+        label: `Kontynuuj: ${label}`,
+        disabled: false,
+        onClick: () => router.push(`/portal/${token}/session/${home.inProgressSession!.id}`),
+      });
+      return () => setStickyCta(null);
+    }
     if (home?.today) {
       setStickyCta({
-        label: home.inProgressSession
-          ? "Kontynuuj trening"
-          : starting
-            ? "Startuję…"
-            : "Rozpocznij trening",
+        label: starting ? "Startuję…" : "Rozpocznij trening",
         disabled: starting,
         onClick: () => void start(),
       });
       return () => setStickyCta(null);
     }
-    if (home && lastCompleted && !home.inProgressSession) {
+    if (home && lastCompleted) {
       setStickyCta({
         label: repeating ? "Startuję…" : "Powtórz ostatni trening",
         disabled: repeating,
@@ -145,17 +196,19 @@ export default function PortalTodayPage() {
       });
       return () => setStickyCta(null);
     }
-    if (home?.inProgressSession) {
-      setStickyCta({
-        label: "Kontynuuj trening",
-        disabled: false,
-        onClick: () => router.push(`/portal/${token}/session/${home.inProgressSession!.id}`),
-      });
-      return () => setStickyCta(null);
-    }
     setStickyCta(null);
     return () => setStickyCta(null);
-  }, [home, lastCompleted, setStickyCta, start, starting, repeating, repeatLast, router, token]);
+  }, [
+    home,
+    lastCompleted,
+    setStickyCta,
+    start,
+    starting,
+    repeating,
+    repeatLast,
+    router,
+    token,
+  ]);
 
   if (!home) {
     return (
@@ -167,15 +220,21 @@ export default function PortalTodayPage() {
   }
 
   const today = home.today;
+  const fresh = home.inProgressSession;
+  const stale = home.staleSession;
   const firstName = home.client.name.split(" ")[0];
   const tip = progress?.facts[0]?.text;
   const estMin = today ? estimateDayMinutes(today.day.items) : null;
   const weekMeta = today?.day ? `tydzień ${today.day.weekNumber}` : null;
-  const todayIso = new Date().toISOString().slice(0, 10);
   const hasTodayCheckIn = checkIns.some((checkIn) => checkIn.date.slice(0, 10) === todayIso);
   const needsIntake = Boolean(intake && !hasEssentialIntake(intake));
 
-  const showSticky = Boolean(today || lastCompleted || home.inProgressSession);
+  const showSticky = Boolean(today || lastCompleted || fresh);
+  // Gdy świeża sesja trwa — karta pokazuje dzień tej sesji (spójność z CTA).
+  const cardTitle = fresh?.dayLabel?.trim() || today?.day.label || null;
+  const cardSubtitle = today
+    ? `${today.planName}${weekMeta ? ` · ${weekMeta}` : ""}`
+    : null;
 
   return (
     <div className={`mx-auto max-w-lg space-y-8 ${showSticky ? "pb-36" : "pb-24"}`}>
@@ -213,7 +272,48 @@ export default function PortalTodayPage() {
         ))}
       </section>
 
-      {!today ? (
+      {stale ? (
+        <section
+          aria-label="Niedokończony trening"
+          className="rounded-xl border border-border-strong bg-surface-raised px-4 py-4"
+        >
+          <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
+            Niedokończony trening
+          </p>
+          <h2 className="mt-2 break-words text-lg font-semibold tracking-tight text-foreground">
+            {stale.dayLabel?.trim() || "Trening"}{" "}
+            <span className="font-normal text-muted">
+              {relativeDayFromLabel(stale.performedOn, todayIso)}
+            </span>
+          </h2>
+          <p className="mt-1 font-mono text-sm tabular-nums text-muted">
+            {setsProgressLabel(stale.completedSets, stale.totalSets)}
+          </p>
+          <p className="mt-2 text-sm text-muted">
+            Zapisz to, co zrobiłeś, albo odrzuć i zacznij dzisiejszy trening.
+          </p>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <Button
+              variant="primary"
+              full
+              disabled={staleBusy !== null}
+              onClick={() => void saveStale()}
+            >
+              {staleBusy === "save" ? "Zapisuję…" : "Zapisz trening"}
+            </Button>
+            <Button
+              variant="secondary"
+              full
+              disabled={staleBusy !== null}
+              onClick={() => void discardStale()}
+            >
+              {staleBusy === "discard" ? "Odrzucam…" : "Odrzuć"}
+            </Button>
+          </div>
+        </section>
+      ) : null}
+
+      {!today && !fresh ? (
         <section className="rounded-xl border border-border bg-surface-raised px-4 py-5">
           <p className="text-[15px] font-semibold text-foreground">Brak aktywnego planu</p>
           <p className="mt-1 text-sm text-muted">
@@ -226,38 +326,51 @@ export default function PortalTodayPage() {
         <section aria-label="Dzisiejszy trening" className="space-y-1">
           <div className="flex items-baseline justify-between gap-3">
             <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
-              Dzisiejszy trening
+              {fresh ? "Trening w toku" : "Dzisiejszy trening"}
             </p>
-            {estMin != null ? (
+            {fresh ? (
+              <p className="shrink-0 font-mono text-xs tabular-nums text-muted">
+                {setsProgressLabel(fresh.completedSets, fresh.totalSets)}
+              </p>
+            ) : estMin != null ? (
               <p className="shrink-0 font-mono text-xs tabular-nums text-muted">
                 {formatDurationApprox(estMin)}
               </p>
             ) : null}
           </div>
-          <h2 className="break-words text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-            {today.day.label}
-          </h2>
-          <p className="mt-1 text-[15px] text-muted">
-            {today.planName}
-            {weekMeta ? ` · ${weekMeta}` : ""}
-          </p>
+          {cardTitle ? (
+            <h2 className="break-words text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+              {cardTitle}
+            </h2>
+          ) : null}
+          {cardSubtitle ? (
+            <p className="mt-1 text-[15px] text-muted">{cardSubtitle}</p>
+          ) : null}
 
-          <ul className="mt-6 divide-y divide-border border-y border-border">
-            {today.day.items.map((item) => (
-              <li key={item.id} className="py-4">
-                <p className="break-words text-[15px] font-semibold leading-snug text-foreground">
-                  {item.exerciseName}
-                </p>
-                <p className="mt-1 font-mono text-[15px] tabular-nums text-muted">
-                  {schemeLine(item)}
-                </p>
-              </li>
-            ))}
-          </ul>
+          {today?.cycleRestart && !fresh ? (
+            <p className="mt-3 text-sm text-muted">
+              Cykl ukończony — zaczynasz od nowa.
+            </p>
+          ) : null}
 
-          {tip ? <p className="pt-3 text-sm text-muted">Ostatnio: {tip}</p> : null}
+          {today && !fresh ? (
+            <ul className="mt-6 divide-y divide-border border-y border-border">
+              {today.day.items.map((item) => (
+                <li key={item.id} className="py-4">
+                  <p className="break-words text-[15px] font-semibold leading-snug text-foreground">
+                    {item.exerciseName}
+                  </p>
+                  <p className="mt-1 font-mono text-[15px] tabular-nums text-muted">
+                    {schemeLine(item)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          ) : null}
 
-          {lastCompleted && !home.inProgressSession ? (
+          {tip && !fresh ? <p className="pt-3 text-sm text-muted">Ostatnio: {tip}</p> : null}
+
+          {lastCompleted && !fresh && !stale ? (
             <div className="pt-4">
               <Button
                 variant="secondary"

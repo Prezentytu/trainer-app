@@ -785,6 +785,16 @@ export type PortalWeekDay = {
   isToday: boolean;
 };
 
+/** Sesja w toku (świeża lub zalegająca) zwracana z home portalu. */
+export type PortalSessionProgress = {
+  id: number;
+  planDayId: number | null;
+  performedOn: string;
+  dayLabel: string | null;
+  completedSets: number;
+  totalSets: number;
+};
+
 export type PortalHome = {
   client: { id: number; name: string; goalWeightKg?: number | null };
   today: {
@@ -795,9 +805,11 @@ export type PortalHome = {
     completed: number;
     total: number;
     percent: number;
+    cycleRestart?: boolean;
   } | null;
   week: PortalWeekDay[] | null;
-  inProgressSession: { id: number; planDayId: number | null; performedOn: string } | null;
+  inProgressSession: PortalSessionProgress | null;
+  staleSession: PortalSessionProgress | null;
 };
 
 export type AttentionItem = {
@@ -1279,7 +1291,10 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ email }),
       }),
-    home: (token: string) => request<PortalHome>(`/api/portal/${token}`),
+    home: (token: string, today?: string) =>
+      request<PortalHome>(
+        `/api/portal/${token}${today ? `?today=${encodeURIComponent(today)}` : ""}`,
+      ),
     sessions: (token: string) => request<PortalSessionSummary[]>(`/api/portal/${token}/sessions`),
     records: (token: string) => request<ClientRecord[]>(`/api/portal/${token}/records`),
     mostImproved: (token: string, days = 90) =>
@@ -1329,6 +1344,10 @@ export const api = {
       }),
     completeSession: (token: string, id: number) =>
       request<SessionDetail>(`/api/portal/${token}/sessions/${id}/complete`, {
+        method: "PATCH",
+      }),
+    abandonSession: (token: string, id: number) =>
+      request<SessionDetail>(`/api/portal/${token}/sessions/${id}/abandon`, {
         method: "PATCH",
       }),
     replySession: (token: string, id: number, comment: string) =>

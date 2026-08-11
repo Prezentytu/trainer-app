@@ -47,11 +47,116 @@ public static class Sessions
         return s is "left" or "right" ? s : null;
     }
 
+    /// <summary>Grace przez północ — spójne z MaxDurationSeconds.</summary>
+    public static readonly TimeSpan FreshGrace = TimeSpan.FromHours(4);
+
+    public static bool IsFreshInProgress(WorkoutSession session, DateOnly clientToday, DateTime utcNow)
+    {
+        if (session.Status != "in_progress") return false;
+        if (session.PerformedOn == clientToday) return true;
+        // Trening rozpoczęty wczoraj i wciąż w oknie 4 h od CreatedAt.
+        if (session.PerformedOn == clientToday.AddDays(-1)
+            && utcNow - session.CreatedAt < FreshGrace)
+            return true;
+        return false;
+    }
+
+    public static int CountCompletedSets(WorkoutSession session) =>
+        session.Exercises.SelectMany(e => e.Sets).Count(s => s.Completed && !s.IsWarmup);
+
+    public static int CountTotalSets(WorkoutSession session) =>
+        session.Exercises.SelectMany(e => e.Sets).Count(s => !s.IsWarmup);
+
+    /// <summary>
+    /// Rozstrzyga sesje in_progress klienta względem lokalnego „dziś”:
+    /// świeża → zwróć; zalegająca pusta → auto-abandon; zalegająca z seriami → stale.
+    /// </summary>
+    public static async Task<(WorkoutSession? Fresh, WorkoutSession? Stale)> ResolveInProgressAsync(
+        AppDb db, int clientId, DateOnly clientToday, DateTime? utcNow = null)
+    {
+        var now = utcNow ?? DateTime.UtcNow;
+        var open = await db.WorkoutSessions
+            .Include(s => s.PlanDay)
+            .Include(s => s.Exercises).ThenInclude(e => e.Sets)
+            .Where(s => s.ClientId == clientId && s.Status == "in_progress")
+            .OrderByDescending(s => s.Id)
+            .ToListAsync();
+
+        WorkoutSession? fresh = null;
+        WorkoutSession? stale = null;
+        var dirty = false;
+
+        foreach (var s in open)
+        {
+            if (IsFreshInProgress(s, clientToday, now))
+            {
+                fresh ??= s;
+                continue;
+            }
+
+            if (CountCompletedSets(s) == 0)
+            {
+                s.Status = "abandoned";
+                dirty = true;
+                continue;
+            }
+
+            stale ??= s;
+        }
+
+        // Starsze świeże/zalegające poza wybranymi — porzuć puste, zostaw jedną stale.
+        foreach (var s in open)
+        {
+            if (s.Status != "in_progress") continue;
+            if (ReferenceEquals(s, fresh) || ReferenceEquals(s, stale)) continue;
+            if (CountCompletedSets(s) == 0)
+            {
+                s.Status = "abandoned";
+                dirty = true;
+            }
+            else if (stale is null)
+            {
+                stale = s;
+            }
+            // Wiele zalegających z seriami: zostaw najnowszą (OrderByDescending Id), starsze też jako stale nie pokazujemy.
+            else if (s.Id < stale.Id)
+            {
+                // zostaw jako in_progress — klient zobaczy tylko najnowszą; po jej rozstrzygnięciu home weźmie kolejną
+            }
+        }
+
+        if (dirty) await db.SaveChangesAsync();
+        return (fresh, stale);
+    }
+
+    public static async Task<(WorkoutSession? Session, IResult? Error)> AbandonAsync(
+        AppDb db, WorkoutSession session)
+    {
+        if (session.Status != "in_progress")
+            return (null, Results.Conflict(new { message = "Można odrzucić tylko sesję w toku." }));
+        session.Status = "abandoned";
+        await db.SaveChangesAsync();
+        return (session, null);
+    }
+
     public static async Task<(WorkoutSession? Session, IResult? Error)> StartAsync(
         AppDb db, StartSessionInput input, bool requireDayOwnedByClient = false)
     {
         if (!await db.Clients.AnyAsync(c => c.Id == input.ClientId))
             return (null, Results.NotFound());
+
+        var clientToday = input.PerformedOn ?? DateOnly.FromDateTime(DateTime.UtcNow);
+        var (fresh, _) = await ResolveInProgressAsync(db, input.ClientId, clientToday);
+        if (fresh is not null)
+        {
+            // Idempotentny powrót — chyba że to pusta sesja-zombie, a prosimy o dzień z prefillem.
+            var sameDay = input.PlanDayId is null || input.PlanDayId == fresh.PlanDayId;
+            var hasWork = CountTotalSets(fresh) > 0;
+            if (sameDay || hasWork)
+                return (fresh, null);
+            fresh.Status = "abandoned";
+            await db.SaveChangesAsync();
+        }
 
         if (input.AssignmentId is not null)
         {
@@ -205,11 +310,14 @@ public static class Sessions
     }
 
     /// <summary>Upsert ćwiczeń/serii po Id — stabilne klucze UI.</summary>
-    /// <summary>TrueCoach: nie zapisujemy wyników na przyszłą datę.</summary>
+    /// <summary>
+    /// Nie zapisujemy dalekiej przyszłości. Tolerancja +1 dzień względem UTC
+    /// (wieczór w PL może być już „jutro” lokalnie przy UTC still „dziś”).
+    /// </summary>
     public static IResult? ValidatePerformedOn(DateOnly performedOn)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        if (performedOn > today)
+        var utcToday = DateOnly.FromDateTime(DateTime.UtcNow);
+        if (performedOn > utcToday.AddDays(1))
             return Results.BadRequest(new { message = "Nie można zapisać treningu z przyszłą datą." });
         return null;
     }

@@ -1756,10 +1756,14 @@ static async Task<ClientIntake> UpsertIntakeAsync(AppDb db, int clientId, Client
     return row;
 }
 
-app.MapGet("/api/portal/{token}", async (string token, AppDb db) =>
+app.MapGet("/api/portal/{token}", async (string token, string? today, AppDb db) =>
 {
     var access = await ResolvePortalToken(db, token);
     if (access?.Client is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+
+    var clientToday = DateOnly.TryParse(today, out var parsedToday)
+        ? parsedToday
+        : DateOnly.FromDateTime(DateTime.UtcNow);
 
     var assignment = await db.Assignments
         .Include(a => a.Plan!)
@@ -1767,21 +1771,23 @@ app.MapGet("/api/portal/{token}", async (string token, AppDb db) =>
         .OrderByDescending(a => a.CreatedAt)
         .FirstOrDefaultAsync();
 
-    var completedDayIds = assignment is null
-        ? new HashSet<int>()
+    // Licznik ukończeń per dzień — plan zapętla się jako cykl.
+    var completionCounts = assignment is null
+        ? new Dictionary<int, int>()
         : (await db.WorkoutSessions
-            .Where(s => s.ClientId == access.ClientId && s.AssignmentId == assignment.Id && s.Status == "completed" && s.PlanDayId != null)
-            .Select(s => s.PlanDayId!.Value)
-            .ToListAsync()).ToHashSet();
+            .Where(s => s.ClientId == access.ClientId && s.AssignmentId == assignment.Id
+                        && s.Status == "completed" && s.PlanDayId != null)
+            .GroupBy(s => s.PlanDayId!.Value)
+            .Select(g => new { DayId = g.Key, Count = g.Count() })
+            .ToListAsync())
+            .ToDictionary(x => x.DayId, x => x.Count);
 
-    var inProgress = await db.WorkoutSessions
-        .Where(s => s.ClientId == access.ClientId && s.Status == "in_progress")
-        .OrderByDescending(s => s.Id)
-        .Select(s => new { s.Id, s.PlanDayId, s.PerformedOn })
-        .FirstOrDefaultAsync();
+    var (freshSession, staleSessionEntity) = await Sessions.ResolveInProgressAsync(
+        db, access.ClientId, clientToday);
 
-    object? today = null;
+    object? todayDto = null;
     object? week = null;
+    var cycleRestart = false;
     if (assignment?.Plan is not null)
     {
         var days = await db.PlanDays
@@ -1791,11 +1797,27 @@ app.MapGet("/api/portal/{token}", async (string token, AppDb db) =>
             .Select(d => new { d.Id, d.WeekNumber, d.Order, d.Label, d.Notes })
             .ToListAsync();
 
-        var nextMeta = days.FirstOrDefault(d => !completedDayIds.Contains(d.Id)) ?? days.LastOrDefault();
+        var minCompletions = days.Count == 0
+            ? 0
+            : days.Min(d => completionCounts.GetValueOrDefault(d.Id));
+        // Następny dzień = pierwszy w kolejności z najmniejszą liczbą ukończeń.
+        var nextMeta = days.FirstOrDefault(d =>
+            completionCounts.GetValueOrDefault(d.Id) == minCompletions);
+        // Cykl domknięty: każdy dzień ma ≥1 ukończenie i wracamy do pierwszego dnia nowego obiegu.
+        cycleRestart = days.Count > 0
+            && minCompletions > 0
+            && nextMeta != null
+            && nextMeta.Id == days[0].Id
+            && days.All(d => completionCounts.GetValueOrDefault(d.Id) >= minCompletions);
+
+        // Postęp w bieżącym cyklu: ile dni ma ukończeń > minCompletions (już „zrobione" w tej rundzie)
+        // + te z == minCompletions jeszcze do zrobienia. completed = liczba dni powyżej min.
+        var completedInCycle = days.Count(d => completionCounts.GetValueOrDefault(d.Id) > minCompletions);
+
         week = days.Select(d => new
         {
             d.Id, d.WeekNumber, d.Order, d.Label,
-            completed = completedDayIds.Contains(d.Id),
+            completed = completionCounts.GetValueOrDefault(d.Id) > minCompletions,
             isToday = nextMeta != null && d.Id == nextMeta.Id,
         }).ToList();
 
@@ -1806,7 +1828,7 @@ app.MapGet("/api/portal/{token}", async (string token, AppDb db) =>
                 .Include(d => d.Items).ThenInclude(i => i.PrescribedSets)
                 .FirstAsync(d => d.Id == nextMeta.Id);
             var maxes = await PlanLoads.LatestMaxesAsync(db, access.ClientId);
-            today = new
+            todayDto = new
             {
                 assignmentId = assignment.Id,
                 planId = assignment.PlanId,
@@ -1816,21 +1838,47 @@ app.MapGet("/api/portal/{token}", async (string token, AppDb db) =>
                     next.Id, next.WeekNumber, next.Order, next.Label, next.Notes,
                     Items = next.Items.OrderBy(i => i.Order).Select(i => ItemToDto(i, maxes)),
                 },
-                completed = completedDayIds.Count,
+                completed = completedInCycle,
                 total = days.Count,
                 percent = days.Count > 0
-                    ? (int)Math.Round(100.0 * Math.Min(completedDayIds.Count, days.Count) / days.Count)
+                    ? (int)Math.Round(100.0 * completedInCycle / days.Count)
                     : 0,
+                cycleRestart,
             };
         }
     }
 
+    object? inProgressSession = freshSession is null
+        ? null
+        : new
+        {
+            freshSession.Id,
+            freshSession.PlanDayId,
+            freshSession.PerformedOn,
+            dayLabel = freshSession.PlanDay?.Label,
+            completedSets = Sessions.CountCompletedSets(freshSession),
+            totalSets = Sessions.CountTotalSets(freshSession),
+        };
+
+    object? staleSession = staleSessionEntity is null
+        ? null
+        : new
+        {
+            staleSessionEntity.Id,
+            staleSessionEntity.PlanDayId,
+            staleSessionEntity.PerformedOn,
+            dayLabel = staleSessionEntity.PlanDay?.Label,
+            completedSets = Sessions.CountCompletedSets(staleSessionEntity),
+            totalSets = Sessions.CountTotalSets(staleSessionEntity),
+        };
+
     return Results.Ok(new
     {
         client = new { access.Client.Id, access.Client.Name, access.Client.GoalWeightKg },
-        today,
+        today = todayDto,
         week,
-        inProgressSession = inProgress,
+        inProgressSession,
+        staleSession,
     });
 }).RequireRateLimiting("portal");
 
@@ -2228,6 +2276,17 @@ app.MapPatch("/api/portal/{token}/sessions/{id:int}/complete", async (string tok
     if (session is null || session.ClientId != access.ClientId) return Results.NotFound();
     await Sessions.CompleteAsync(db, session);
     return Results.Ok(await Sessions.LoadDto(db, session.Id));
+}).RequireRateLimiting("portal");
+
+app.MapPatch("/api/portal/{token}/sessions/{id:int}/abandon", async (string token, int id, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    var session = await db.WorkoutSessions.FindAsync(id);
+    if (session is null || session.ClientId != access.ClientId) return Results.NotFound();
+    var (abandoned, error) = await Sessions.AbandonAsync(db, session);
+    if (error is not null) return error;
+    return Results.Ok(await Sessions.LoadDto(db, abandoned!.Id));
 }).RequireRateLimiting("portal");
 
 app.MapPost("/api/portal/{token}/sessions/{id:int}/comment", async (string token, int id, SessionCommentInput input, AppDb db) =>
