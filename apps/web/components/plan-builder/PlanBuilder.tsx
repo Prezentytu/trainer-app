@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { api, Exercise, Plan } from "@/lib/api";
 import { DEFAULT_EXERCISE_INPUT, ExerciseInput } from "@/lib/exerciseDraft";
@@ -12,6 +12,7 @@ import {
   ExerciseLibraryProvider,
   NewExerciseRequest,
 } from "./ExerciseLibraryContext";
+import { ItemPanel } from "./ItemPanel";
 import { ListView } from "./ListView";
 import { ExerciseFormDialog } from "@/components/ExerciseFormDialog";
 import { PlanToolbar, AssignedClientInfo } from "./PlanToolbar";
@@ -19,10 +20,12 @@ import { PlanTable } from "./PlanTable";
 import { estimateWeekMinutes, formatDurationApprox } from "./summaryText";
 import { useBuilderDnd } from "./useBuilderDnd";
 import { useExerciseLibrary } from "./useExerciseLibrary";
-import { BuilderDay } from "./types";
+import { BuilderDay, BuilderItem } from "./types";
 import { usePlanDraft } from "./usePlanDraft";
 import { usePlanPersistence } from "./usePlanPersistence";
 import { WeekTabs } from "./WeekTabs";
+
+type ActiveItem = { dayKey: string; itemKey: string };
 
 type ViewMode = "list" | "board" | "table";
 const VIEW_MODE_STORAGE_KEY = "trainer-app:plan-builder-view-mode:v2";
@@ -68,10 +71,12 @@ export default function PlanBuilder({
   onExit?: () => void;
 }) {
   const library = useExerciseLibrary();
+  const panelId = useId();
   const [viewMode, setViewMode] = useState<ViewMode>(loadInitialViewMode);
   const [drawerDayKey, setDrawerDayKey] = useState<string | null>(null);
   const [selectionDayKey, setSelectionDayKey] = useState<string | null>(null);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+  const [activeItem, setActiveItem] = useState<ActiveItem | null>(null);
   const [assigned, setAssigned] = useState<AssignedClientInfo>(null);
   const [dialog, setDialog] = useState<DialogState>({ open: false });
   const [createdToast, setCreatedToast] = useState<Exercise | null>(null);
@@ -198,6 +203,34 @@ export default function PlanBuilder({
     onClearSets: draft.clearSets,
   };
 
+  const activeDay = activeItem
+    ? draft.days.find((d) => d.key === activeItem.dayKey) ?? null
+    : null;
+  const activeBuilderItem: BuilderItem | null =
+    activeDay && activeItem
+      ? activeDay.items.find((i) => i.key === activeItem.itemKey) ?? null
+      : null;
+
+  const handleSelectItem = useCallback((dayKey: string, itemKey: string) => {
+    setActiveItem((prev) =>
+      prev?.dayKey === dayKey && prev.itemKey === itemKey ? null : { dayKey, itemKey },
+    );
+  }, []);
+
+  const handleViewModeChange = useCallback((v: string) => {
+    setActiveItem(null);
+    setViewMode(v as ViewMode);
+  }, []);
+
+  const setActiveWeek = draft.setActiveWeek;
+  const handleWeekSelect = useCallback(
+    (week: number) => {
+      setActiveItem(null);
+      setActiveWeek(week);
+    },
+    [setActiveWeek],
+  );
+
   return (
     <ExerciseLibraryProvider value={libraryActions}>
       <form
@@ -229,7 +262,7 @@ export default function PlanBuilder({
           <WeekTabs
             weeks={draft.weeks}
             activeWeek={draft.activeWeek}
-            onSelect={draft.setActiveWeek}
+            onSelect={handleWeekSelect}
             onAddWeek={draft.addWeek}
             onCopyWeek={draft.copyWeek}
             metaLabel={viewMode === "list" ? undefined : weekMeta}
@@ -241,7 +274,7 @@ export default function PlanBuilder({
                   { value: "table", label: "Arkusz" },
                 ]}
                 value={viewMode}
-                onChange={(v) => setViewMode(v as ViewMode)}
+                onChange={handleViewModeChange}
               />
             }
           />
@@ -276,41 +309,103 @@ export default function PlanBuilder({
             />
           </div>
         ) : viewMode === "board" ? (
-          <div className="min-h-0 flex-1">
-            <DndContext
-              sensors={dnd.sensors}
-              collisionDetection={dnd.collisionDetection}
-              onDragStart={dnd.handleDragStart}
-              onDragOver={dnd.handleDragOver}
-              onDragEnd={dnd.handleDragEnd}
-            >
-              <DayBoard
-                days={draft.visibleDays}
-                exercises={library.exercises}
-                dropTarget={dnd.dropTarget}
-                selectionDayKey={selectionDayKey}
-                selectedKeys={selectedKeys}
-                onSelectionChange={(dayKey, keys) => {
-                  setSelectionDayKey(dayKey);
-                  setSelectedKeys(keys);
-                }}
-                onOpenDrawer={setDrawerDayKey}
-                onLinkSelected={draft.linkSelected}
-                onUnlinkGroup={draft.unlinkGroup}
-                {...boardCallbacks}
-              />
-              <DragOverlay>
-                {dnd.activeDragItem && (
-                  <div className="w-[280px] rounded-[10px] border border-border-strong bg-surface-active px-3 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-faint">⠿</span>
-                      <span className="text-[15px] font-medium">{dnd.activeDragItem.exerciseName}</span>
+          <div className="flex min-h-0 flex-1">
+            <div className="min-h-0 min-w-0 flex-1">
+              <DndContext
+                sensors={dnd.sensors}
+                collisionDetection={dnd.collisionDetection}
+                onDragStart={dnd.handleDragStart}
+                onDragOver={dnd.handleDragOver}
+                onDragEnd={dnd.handleDragEnd}
+              >
+                <DayBoard
+                  days={draft.visibleDays}
+                  exercises={library.exercises}
+                  dropTarget={dnd.dropTarget}
+                  selectionDayKey={selectionDayKey}
+                  selectedKeys={selectedKeys}
+                  activeItemKey={activeItem?.itemKey ?? null}
+                  panelId={panelId}
+                  onSelectionChange={(dayKey, keys) => {
+                    setSelectionDayKey(dayKey);
+                    setSelectedKeys(keys);
+                  }}
+                  onSelectItem={handleSelectItem}
+                  onOpenDrawer={setDrawerDayKey}
+                  onLinkSelected={draft.linkSelected}
+                  onUnlinkGroup={draft.unlinkGroup}
+                  onDuplicateItem={draft.duplicateItem}
+                  onToggleWarmup={draft.toggleWarmup}
+                  onAddDay={boardCallbacks.onAddDay}
+                  onPatchDay={boardCallbacks.onPatchDay}
+                  onRemoveDay={boardCallbacks.onRemoveDay}
+                  onDuplicateDay={boardCallbacks.onDuplicateDay}
+                  onAddItem={boardCallbacks.onAddItem}
+                  onRemoveItem={(dayKey, itemKey) => {
+                    if (activeItem?.dayKey === dayKey && activeItem.itemKey === itemKey) {
+                      setActiveItem(null);
+                    }
+                    boardCallbacks.onRemoveItem(dayKey, itemKey);
+                  }}
+                  onMoveItem={boardCallbacks.onMoveItem}
+                  onToggleLink={boardCallbacks.onToggleLink}
+                />
+                <DragOverlay>
+                  {dnd.activeDragItem && (
+                    <div className="w-[280px] rounded-[10px] border border-border-strong bg-surface-active px-3 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-faint">⠿</span>
+                        <span className="text-[15px] font-medium">{dnd.activeDragItem.exerciseName}</span>
+                      </div>
+                      <p className="mt-1 pl-5 font-mono text-[12px] text-muted">Przenoszenie…</p>
                     </div>
-                    <p className="mt-1 pl-5 font-mono text-[12px] text-muted">Przenoszenie…</p>
-                  </div>
-                )}
-              </DragOverlay>
-            </DndContext>
+                  )}
+                </DragOverlay>
+              </DndContext>
+            </div>
+            <ItemPanel
+              item={activeBuilderItem}
+              dayItems={activeDay?.items ?? []}
+              weekNumber={activeDay?.weekNumber ?? draft.activeWeek}
+              exercise={
+                activeBuilderItem
+                  ? library.getExerciseById(activeBuilderItem.exerciseId)
+                  : undefined
+              }
+              open={activeItem != null && activeBuilderItem != null}
+              panelId={panelId}
+              onClose={() => setActiveItem(null)}
+              onSelectItem={(itemKey) => {
+                if (activeItem) setActiveItem({ dayKey: activeItem.dayKey, itemKey });
+              }}
+              onPatch={(patch) => {
+                if (activeItem) draft.patchItem(activeItem.dayKey, activeItem.itemKey, patch);
+              }}
+              onAddSet={() => {
+                if (activeItem) draft.addSet(activeItem.dayKey, activeItem.itemKey);
+              }}
+              onPatchSet={(setKey, patch) => {
+                if (activeItem) draft.patchSet(activeItem.dayKey, activeItem.itemKey, setKey, patch);
+              }}
+              onRemoveSet={(setKey) => {
+                if (activeItem) draft.removeSet(activeItem.dayKey, activeItem.itemKey, setKey);
+              }}
+              onApplyPreset={(presetId) => {
+                if (activeItem) draft.applyPreset(activeItem.dayKey, activeItem.itemKey, presetId);
+              }}
+              onClearSets={() => {
+                if (activeItem) draft.clearSets(activeItem.dayKey, activeItem.itemKey);
+              }}
+              onDuplicate={() => {
+                if (activeItem) draft.duplicateItem(activeItem.dayKey, activeItem.itemKey);
+              }}
+              onRemove={() => {
+                if (!activeItem) return;
+                const { dayKey, itemKey } = activeItem;
+                setActiveItem(null);
+                draft.removeItem(dayKey, itemKey);
+              }}
+            />
           </div>
         ) : (
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">

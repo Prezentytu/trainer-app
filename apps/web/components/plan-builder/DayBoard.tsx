@@ -2,7 +2,7 @@
 
 import { Exercise } from "@/lib/api";
 import { DayColumn } from "./DayColumn";
-import { BuilderDay, BuilderItem, BuilderSet } from "./types";
+import { BuilderDay, BuilderItem } from "./types";
 import type { DropTarget } from "./useBuilderDnd";
 
 export function DayBoard({
@@ -11,48 +11,46 @@ export function DayBoard({
   dropTarget,
   selectionDayKey,
   selectedKeys,
+  activeItemKey,
+  panelId,
   onSelectionChange,
+  onSelectItem,
   onOpenDrawer,
   onAddDay,
   onPatchDay,
   onRemoveDay,
   onDuplicateDay,
   onAddItem,
-  onPatchItem,
   onRemoveItem,
   onMoveItem,
+  onDuplicateItem,
+  onToggleWarmup,
   onToggleLink,
   onLinkSelected,
   onUnlinkGroup,
-  onAddSet,
-  onPatchSet,
-  onRemoveSet,
-  onApplyPreset,
-  onClearSets,
 }: {
   days: BuilderDay[];
   exercises: Exercise[];
   dropTarget: DropTarget;
   selectionDayKey: string | null;
   selectedKeys: string[];
+  activeItemKey: string | null;
+  panelId: string;
   onSelectionChange: (dayKey: string | null, keys: string[]) => void;
+  onSelectItem: (dayKey: string, itemKey: string) => void;
   onOpenDrawer: (dayKey: string) => void;
   onAddDay: () => void;
   onPatchDay: (dayKey: string, patch: Partial<BuilderDay>) => void;
   onRemoveDay: (dayKey: string) => void;
   onDuplicateDay: (dayKey: string) => void;
   onAddItem: (dayKey: string, exerciseId: number, overrides?: Partial<BuilderItem>) => void;
-  onPatchItem: (dayKey: string, itemKey: string, patch: Partial<BuilderItem>) => void;
   onRemoveItem: (dayKey: string, itemKey: string) => void;
   onMoveItem: (dayKey: string, itemKey: string, dir: -1 | 1) => void;
+  onDuplicateItem: (dayKey: string, itemKey: string) => void;
+  onToggleWarmup: (dayKey: string, itemKey: string) => void;
   onToggleLink: (dayKey: string, itemKey: string) => void;
   onLinkSelected: (dayKey: string, itemKeys: string[]) => void;
   onUnlinkGroup: (dayKey: string, itemKey: string) => void;
-  onAddSet: (dayKey: string, itemKey: string) => void;
-  onPatchSet: (dayKey: string, itemKey: string, setKey: string, patch: Partial<BuilderSet>) => void;
-  onRemoveSet: (dayKey: string, itemKey: string, setKey: string) => void;
-  onApplyPreset: (dayKey: string, itemKey: string, presetId: string) => void;
-  onClearSets: (dayKey: string, itemKey: string) => void;
 }) {
   return (
     // Trello model: board = wysokość viewportu; poziomo kolumny; pionowo wewnątrz dnia.
@@ -66,23 +64,22 @@ export function DayBoard({
             exercises={exercises}
             dropTarget={dropTarget}
             selectedKeys={selectionDayKey === day.key ? selectedKeys : []}
+            activeItemKey={activeItemKey}
+            panelId={panelId}
             onSelectedKeysChange={(keys) => onSelectionChange(keys.length ? day.key : null, keys)}
+            onSelectItem={(itemKey) => onSelectItem(day.key, itemKey)}
             onOpenDrawer={() => onOpenDrawer(day.key)}
             onPatchDay={(patch) => onPatchDay(day.key, patch)}
             onRemoveDay={() => onRemoveDay(day.key)}
             onDuplicateDay={() => onDuplicateDay(day.key)}
             onAddItem={(exerciseId, overrides) => onAddItem(day.key, exerciseId, overrides)}
-            onPatchItem={(itemKey, patch) => onPatchItem(day.key, itemKey, patch)}
             onRemoveItem={(itemKey) => onRemoveItem(day.key, itemKey)}
             onMoveItem={(itemKey, dir) => onMoveItem(day.key, itemKey, dir)}
+            onDuplicateItem={(itemKey) => onDuplicateItem(day.key, itemKey)}
+            onToggleWarmup={(itemKey) => onToggleWarmup(day.key, itemKey)}
             onToggleLink={(itemKey) => onToggleLink(day.key, itemKey)}
             onLinkSelected={(keys) => onLinkSelected(day.key, keys)}
             onUnlinkGroup={(itemKey) => onUnlinkGroup(day.key, itemKey)}
-            onAddSet={(itemKey) => onAddSet(day.key, itemKey)}
-            onPatchSet={(itemKey, setKey, patch) => onPatchSet(day.key, itemKey, setKey, patch)}
-            onRemoveSet={(itemKey, setKey) => onRemoveSet(day.key, itemKey, setKey)}
-            onApplyPreset={(itemKey, presetId) => onApplyPreset(day.key, itemKey, presetId)}
-            onClearSets={(itemKey) => onClearSets(day.key, itemKey)}
           />
         ))}
         <button

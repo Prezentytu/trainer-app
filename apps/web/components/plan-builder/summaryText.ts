@@ -24,6 +24,43 @@ function setLoadShort(s: PlanSetInput): string | null {
 }
 
 /**
+ * Kompaktowa linia na kafelku boardu: tylko cel + liczba serii.
+ * Przerwa, tempo, RIR/RPE i setScheme żyją wyłącznie w panelu.
+ */
+export function cardLine(item: BuilderItem, exercise?: Exercise): string {
+  if (item.prescribedSets.length > 0) {
+    const sets = item.prescribedSets;
+    const anchor =
+      sets.find((s) => (s.role ?? "").toLowerCase() === "top") ??
+      sets.find((s) => {
+        const r = (s.role ?? "").toLowerCase();
+        return r === "ramp" || r === "working";
+      }) ??
+      sets[0];
+    const role = (anchor.role ?? "").toLowerCase();
+    const measure = setMeasure(anchor);
+    const load = setLoadShort(anchor);
+    const target = [measure, load].filter(Boolean).join(" @ ");
+    const primary =
+      role === "ramp"
+        ? target
+          ? `rampa do ${target}`
+          : "rampa"
+        : target
+          ? `top ${target}`
+          : polishSetCount(sets.length);
+    return `${primary} · ${polishSetCount(sets.length)}`;
+  }
+
+  const sets = item.sets ?? exercise?.defaultSets ?? null;
+  const core = formatMeasureCore(item, exercise);
+  const load = item.loadKg;
+  const loadText =
+    load != null ? ` @ ${load} kg` : item.loadPercent != null ? ` @ ${item.loadPercent}%` : "";
+  return sets != null ? `${sets} × ${core}${loadText}` : `${core}${loadText}`;
+}
+
+/**
  * Hierarchia jak w plan-view: cel ćwiczenia mocno, meta wyciszona.
  * Nazwa schematu (`setScheme`) nie trafia na kartę.
  */

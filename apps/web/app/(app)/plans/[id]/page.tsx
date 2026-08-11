@@ -219,22 +219,23 @@ export default function PlanDetailsPage() {
           Dodaj dzień w edycji planu — pojawi się tu jako kolumna boardu.
         </EmptyState>
       ) : (
-        <div className="min-h-0 flex-1">
-          <PlanBoard
-            days={weekDays}
-            selectedItemId={selectedItemId}
+        <div className="flex min-h-0 flex-1">
+          <div className="min-h-0 min-w-0 flex-1">
+            <PlanBoard
+              days={weekDays}
+              selectedItemId={selectedItemId}
+              panelId={panelId}
+              onSelectItem={(id) => setSelectedItemId((prev) => (prev === id ? null : id))}
+            />
+          </div>
+          <PlanItemPanel
+            item={selectedItem}
+            open={selectedItemId != null && selectedItem != null}
             panelId={panelId}
-            onSelectItem={(id) => setSelectedItemId((prev) => (prev === id ? null : id))}
+            onClose={() => setSelectedItemId(null)}
           />
         </div>
       )}
-
-      <PlanItemPanel
-        item={selectedItem}
-        open={selectedItemId != null && selectedItem != null}
-        panelId={panelId}
-        onClose={() => setSelectedItemId(null)}
-      />
     </div>
   );
 }

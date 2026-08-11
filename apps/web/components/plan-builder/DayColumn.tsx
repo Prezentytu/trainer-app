@@ -13,7 +13,7 @@ import { QuickComposer } from "./QuickComposer";
 import { SelectionBar } from "./SelectionBar";
 import { SupersetGroup } from "./SupersetGroup";
 import { dayStatsLine } from "./summaryText";
-import { BuilderDay, BuilderItem, BuilderSet } from "./types";
+import { BuilderDay, BuilderItem } from "./types";
 import type { DropTarget } from "./useBuilderDnd";
 
 export function DayColumn({
@@ -22,49 +22,46 @@ export function DayColumn({
   exercises,
   dropTarget,
   selectedKeys,
+  activeItemKey,
+  panelId,
   onSelectedKeysChange,
+  onSelectItem,
   onOpenDrawer,
   onPatchDay,
   onRemoveDay,
   onDuplicateDay,
   onAddItem,
-  onPatchItem,
   onRemoveItem,
   onMoveItem,
+  onDuplicateItem,
+  onToggleWarmup,
   onToggleLink,
   onLinkSelected,
   onUnlinkGroup,
-  onAddSet,
-  onPatchSet,
-  onRemoveSet,
-  onApplyPreset,
-  onClearSets,
 }: {
   day: BuilderDay;
   dayIndex: number;
   exercises: Exercise[];
   dropTarget: DropTarget;
   selectedKeys: string[];
+  activeItemKey: string | null;
+  panelId: string;
   onSelectedKeysChange: (keys: string[]) => void;
+  onSelectItem: (itemKey: string) => void;
   onOpenDrawer: () => void;
   onPatchDay: (patch: Partial<BuilderDay>) => void;
   onRemoveDay: () => void;
   onDuplicateDay: () => void;
   onAddItem: (exerciseId: number, overrides?: Partial<BuilderItem>) => void;
-  onPatchItem: (itemKey: string, patch: Partial<BuilderItem>) => void;
   onRemoveItem: (itemKey: string) => void;
   onMoveItem: (itemKey: string, dir: -1 | 1) => void;
+  onDuplicateItem: (itemKey: string) => void;
+  onToggleWarmup: (itemKey: string) => void;
   onToggleLink: (itemKey: string) => void;
   onLinkSelected: (itemKeys: string[]) => void;
   onUnlinkGroup: (itemKey: string) => void;
-  onAddSet: (itemKey: string) => void;
-  onPatchSet: (itemKey: string, setKey: string, patch: Partial<BuilderSet>) => void;
-  onRemoveSet: (itemKey: string, setKey: string) => void;
-  onApplyPreset: (itemKey: string, presetId: string) => void;
-  onClearSets: (itemKey: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: dayContainerId(day.key) });
-  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
   const [menuOpen, setMenuOpen] = useState(false);
   const [editingLabel, setEditingLabel] = useState(false);
   const [editingNotes, setEditingNotes] = useState(false);
@@ -78,14 +75,6 @@ export function DayColumn({
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
   }, [menuOpen]);
-
-  const toggleExpand = (key: string) =>
-    setExpandedKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
 
   const toggleSelect = (key: string) => {
     const set = new Set(selectedKeys);
@@ -112,23 +101,19 @@ export function DayColumn({
         ) : null}
         <ExerciseCard
           item={item}
-          weekNumber={day.weekNumber}
           exercise={exercises.find((e) => e.id === item.exerciseId)}
           badge={badge}
           nested={nested}
-          expanded={expandedKeys.has(item.key)}
           selected={selectedKeys.includes(item.key)}
+          active={activeItemKey === item.key}
           showCheckbox={showCheckbox}
-          onToggleExpand={() => toggleExpand(item.key)}
+          panelId={panelId}
+          onSelect={() => onSelectItem(item.key)}
           onToggleSelect={() => toggleSelect(item.key)}
           onMove={(dir) => onMoveItem(item.key, dir)}
           onRemove={() => onRemoveItem(item.key)}
-          onPatch={(patch) => onPatchItem(item.key, patch)}
-          onAddSet={() => onAddSet(item.key)}
-          onPatchSet={(setKey, patch) => onPatchSet(item.key, setKey, patch)}
-          onRemoveSet={(setKey) => onRemoveSet(item.key, setKey)}
-          onApplyPreset={(presetId) => onApplyPreset(item.key, presetId)}
-          onClearSets={() => onClearSets(item.key)}
+          onDuplicate={() => onDuplicateItem(item.key)}
+          onToggleWarmup={() => onToggleWarmup(item.key)}
         />
       </div>
     );
@@ -141,7 +126,6 @@ export function DayColumn({
         isOver ? "border-border-strong" : "border-border"
       }`}
     >
-      {/* DayHeader — pinned; karty scrollują poniżej */}
       <div className="shrink-0 border-b border-border px-3.5 pb-3 pt-3.5">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">

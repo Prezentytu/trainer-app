@@ -15,6 +15,13 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## `opacity-0` nie zwalnia miejsca w flexie
+
+**Kontekst**: Kafelki w Tablicy kreatora planu były nieczytelne mimo tej samej szerokości kolumny (300px) co w podglądzie — nazwy łamały się na 3–4 linie, linia mono sypała się na „kg · 5 serii ·" / „2min".
+**Problem**: Checkbox, uchwyt DnD i `↑↓✕` miały `opacity-0` do hovera, ale nadal zajmowały ~120px w wierszu flex — na treść zostawało ~155px zamiast ~276px. Dodatkowo inline `ExerciseEditor` w kolumnie 300px rozpychał board.
+**Zasada**: Kontrolki hover w wąskich kolumnach kanbanu pozycjonuj `absolute` (albo renderuj tylko gdy potrzebne). Kafelek = nazwa + jedna linia celu; pełna edycja w `SidePanel` (split 380px), nie inline w kolumnie. Cały kafelek jako uchwyt DnD + `activationConstraint.distance`.
+**Dotyczy**: `apps/web/components/plan-builder/ExerciseCard.tsx`, `ItemPanel.tsx`, `SidePanel.tsx`, `DayColumn.tsx`.
+
 ## e1RM: limit powtórzeń, surowe porównanie, tylko odhaczone serie
 
 **Kontekst**: PR liczony samym Epleyem bez limitu powtórzeń; zaokrąglenie do 0,5 kg przed porównaniem; rekordy klienta / dashboard / stats brały prefill bez `Completed`.
