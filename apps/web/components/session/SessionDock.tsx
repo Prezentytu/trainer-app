@@ -47,13 +47,20 @@ function DockBtn({
   return (
     <button
       type="button"
-      onClick={onClick}
-      // Nie zabieraj fokusu z inputu przed clickiem — inaczej iOS bywa kapryśny;
-      // activeCell i tak trzymamy w stanie (pointerdown dock jest wyłączony z clear).
-      onMouseDown={(e) => e.preventDefault()}
+      // pointerdown + preventDefault: na iOS/touch blur inputu potrafi zabić click.
+      // Akcja tu — natychmiastowa; click tylko dla klawiatury (Enter/Space).
+      onPointerDown={(e) => {
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+        e.preventDefault();
+        onClick();
+      }}
+      onClick={(e) => {
+        if (e.detail !== 0) return; // mysz/touch już obsłużone w pointerdown
+        onClick();
+      }}
       title={title}
       aria-label={title}
-      className={`inline-flex h-10 min-w-10 items-center justify-center rounded-[8px] px-2 text-[13px] font-semibold focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] active:scale-[0.96] ${
+      className={`inline-flex h-11 min-w-11 items-center justify-center rounded-[8px] px-2.5 text-[13px] font-semibold focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] active:scale-[0.96] ${
         primary
           ? "bg-accent text-accent-foreground"
           : "border border-border-strong bg-surface text-foreground-secondary hover:border-accent-border hover:text-foreground"
@@ -146,20 +153,20 @@ export function SessionDock({
 
         {showSince && sinceLastSetAt != null ? (
           <div
-            className="flex items-center gap-2.5 px-0.5"
+            className="flex h-10 items-center gap-2 px-0.5"
             role="status"
             aria-label="Czas od ostatniej serii"
           >
             <Icon name="timer" size={16} className="shrink-0 text-muted" decorative />
             <SinceLastSetClock
               sinceAt={sinceLastSetAt}
-              className="font-mono text-[20px] font-semibold leading-none tabular-nums text-foreground"
+              className="shrink-0 font-mono text-[20px] font-semibold leading-none tabular-nums text-foreground"
             />
             {nextLabel ? (
-              <p className="ml-auto flex min-w-0 max-w-[55%] items-center gap-0.5 text-[12px] text-muted">
-                <Icon name="forward" size={14} className="shrink-0" decorative />
-                <span className="truncate">{nextLabel}</span>
-              </p>
+              <div className="ml-auto flex min-w-0 max-w-[60%] items-center justify-end gap-1">
+                <Icon name="forward" size={14} className="shrink-0 text-muted" decorative />
+                <span className="truncate text-[13px] leading-none text-muted">{nextLabel}</span>
+              </div>
             ) : null}
           </div>
         ) : null}

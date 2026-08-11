@@ -259,7 +259,7 @@ public static class Sessions
             {
                 ExerciseId = item.ExerciseId,
                 Order = order++,
-                Note = item.Notes,
+                // Wskazówka trenera żyje w planNote (enrichment) — nie duplikuj do notatki klienta
             };
             if (item.PrescribedSets.Count > 0)
             {

@@ -43,11 +43,17 @@ import { PlateCalculator } from "@/components/session/PlateCalculator";
 import { formatKg } from "@/lib/plates";
 import { Icon } from "@/components/Icon";
 
-/** SERIA | POPRZ | KG | POWT | [RIR] | ✓ | ⋯ */
+/**
+ * # | POPRZ | KG | POWT | [RIR] | PR+✓ | ⋯
+ * Minima ≤ ~320px content — na 360px telefonie nic nie wypycha ⋯ poza ekran.
+ * PR + check to jedna komórka: slot PR ma stałą szerokość (pusty gdy brak),
+ * więc kółka zaliczenia stoją w jednej osi niezależnie od rekordów.
+ * KG === POWT (równe 1fr).
+ */
 const SET_GRID =
-  "grid grid-cols-[2rem_minmax(3.25rem,0.85fr)_minmax(4.5rem,1fr)_minmax(3.75rem,0.85fr)_2.75rem_2rem] gap-x-2 items-center";
+  "grid grid-cols-[1.25rem_minmax(0,1.05fr)_minmax(3.5rem,1fr)_minmax(3.5rem,1fr)_4.25rem_1.75rem] gap-x-1 items-center";
 const SET_GRID_RIR =
-  "grid grid-cols-[2rem_minmax(2.5rem,0.65fr)_minmax(3.5rem,0.9fr)_minmax(3rem,0.7fr)_minmax(2.5rem,0.55fr)_2.5rem_1.75rem] gap-x-1.5 items-center";
+  "grid grid-cols-[1.25rem_minmax(0,0.85fr)_minmax(3rem,1fr)_minmax(3rem,1fr)_2.25rem_4.25rem_1.5rem] gap-x-1 items-center";
 
 function isBodyweightExercise(ex: { equipment?: string[] | null }): boolean {
   return Boolean(ex.equipment?.includes("bodyweight"));
@@ -395,18 +401,23 @@ export function SessionLogger({
     setIdx: number;
     message: string;
   } | null>(null);
-  const [videoId, setVideoId] = useState<string | null>(null);
-  const [videoTitle, setVideoTitle] = useState("");
+  const [videoExIdx, setVideoExIdx] = useState<number | null>(null);
   const [prCelebrate, setPrCelebrate] = useState<string | null>(null);
   const [activeCell, setActiveCell] = useState<ActiveCell | null>(null);
   const [platesOpen, setPlatesOpen] = useState(false);
-  const [sessionNote, setSessionNote] = useState("");
+  const [sessionNote, setSessionNote] = useState(() => initial.draft.note ?? "");
+  const [sessionNoteOpen, setSessionNoteOpen] = useState(() => Boolean(initial.draft.note));
   const [progressReport, setProgressReport] = useState<ProgressReport | null>(null);
   const [trainerComment, setTrainerComment] = useState("");
   const [clientReply, setClientReply] = useState("");
   const [collapsedEx, setCollapsedEx] = useState<Set<number>>(() => new Set());
   const [noteOpenEx, setNoteOpenEx] = useState<Set<number>>(() => new Set());
   const [restOverrideByEx, setRestOverrideByEx] = useState<Record<number, number>>({});
+  const [inAppHint, setInAppHint] = useState(() => {
+    if (typeof navigator === "undefined") return false;
+    return /Discord|Instagram|FBAN|FBAV/i.test(navigator.userAgent);
+  });
+  const didScrollToNext = useRef(false);
   /** Timestamp ostatniej zaliczonej serii — dock pokazuje count-up. */
   const [lastSetAt, setLastSetAt] = useState<number | null>(() => {
     if (resolvedMode !== "client") return null;
@@ -432,17 +443,18 @@ export function SessionLogger({
   const statusRef = useRef(session.status);
 
   const restContext = useMemo(() => {
-    const all = draft.exercises.flatMap((ex) => ex.sets);
-    const setsDone = all.filter((s) => s.completed).length;
-    const setsTotal = all.length;
     const idx = draft.exercises.findIndex((ex) => ex.sets.some((s) => !s.completed));
-    const ex = draft.exercises[idx >= 0 ? idx : 0];
-    let nextLabel: string | null = null;
-    if (ex) {
-      const nextSet = ex.sets.find((s) => !s.completed);
-      nextLabel = nextSet ? `${ex.exerciseName} · ${nextSet.setNumber}` : ex.exerciseName;
-    }
-    return { nextLabel, setsDone, setsTotal };
+    const ex = idx >= 0 ? draft.exercises[idx] : null;
+    const nextSet = ex?.sets.find((s) => !s.completed);
+    return {
+      nextLabel: ex?.exerciseName ?? null,
+      nextExerciseName: ex?.exerciseName ?? null,
+      nextSetNumber: nextSet?.setNumber ?? null,
+      nextSetsInExercise: ex?.sets.length ?? null,
+      // Lock Screen / keep-alive: seria w ćwiczeniu, nie globalnie w treningu
+      setsDone: nextSet?.setNumber ?? 0,
+      setsTotal: ex?.sets.length ?? 0,
+    };
   }, [draft.exercises]);
 
   const { rest, startRest, adjustRest, dismissRest, setExpanded } = useRestTimer(
@@ -628,6 +640,30 @@ export function SessionLogger({
     const t = setTimeout(() => setRestoredBanner(false), 4000);
     return () => clearTimeout(t);
   }, [scheduleSave]);
+
+  // Po „Kontynuuj" — przewiń do pierwszej niewykonanej serii
+  useEffect(() => {
+    if (didScrollToNext.current) return;
+    if (session.status !== "in_progress") return;
+    let targetUid: string | null = null;
+    for (const ex of draft.exercises) {
+      for (const s of ex.sets) {
+        if (!s.completed) {
+          targetUid = s.uid;
+          break;
+        }
+      }
+      if (targetUid) break;
+    }
+    if (!targetUid) return;
+    const el = setRowRefs.current.get(targetUid);
+    if (!el) return;
+    didScrollToNext.current = true;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    requestAnimationFrame(() => {
+      el.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
+    });
+  }, [draft.exercises, session.status]);
 
   const updateDraft = (updater: (prev: LocalSession) => LocalSession) => {
     setDraft((prev) => {
@@ -1148,28 +1184,42 @@ export function SessionLogger({
     return { all: filtered, recent: q ? [] : recent };
   }, [libraryExercises, swapSearch]);
 
-  const nextRestLabel = useMemo(() => {
-    const idx = currentExerciseIdx >= 0 ? currentExerciseIdx : 0;
-    const ex = draft.exercises[idx];
-    if (!ex) return null;
-    const nextSet = ex.sets.find((s) => !s.completed);
-    return nextSet ? `${ex.exerciseName} · ${nextSet.setNumber}` : ex.exerciseName;
-  }, [currentExerciseIdx, draft.exercises]);
+  const nextRestDockLabel = useMemo(() => {
+    const { nextExerciseName, nextSetNumber, nextSetsInExercise } = restContext;
+    if (!nextExerciseName || nextSetNumber == null || !nextSetsInExercise) return null;
+    return `Seria ${nextSetNumber} z ${nextSetsInExercise} · ${nextExerciseName}`;
+  }, [restContext]);
 
   const stepActive = (field: "weight" | "reps", delta: number) => {
     if (!activeCell) return;
     const { exIdx, setIdx } = activeCell;
-    const set = draft.exercises[exIdx]?.sets[setIdx];
-    if (!set) return;
-    if (field === "weight") {
-      const base = set.weightKg ?? 0;
-      const next = Math.round((base + delta) * 100) / 100;
-      patchSet(exIdx, setIdx, { weightKg: next < 0 ? 0 : next });
-    } else {
-      const base = set.reps ?? 0;
-      const next = Math.max(0, Math.min(999, base + delta));
-      patchSet(exIdx, setIdx, { reps: next });
-    }
+    // Functional update — szybkie wielokrotne +2,5 nie czyta stale draft z closure.
+    updateDraft((prev) => {
+      const set = prev.exercises[exIdx]?.sets[setIdx];
+      if (!set) return prev;
+      const patch =
+        field === "weight"
+          ? {
+              weightKg: Math.max(
+                0,
+                Math.round(((set.weightKg ?? 0) + delta) * 100) / 100,
+              ),
+            }
+          : {
+              reps: Math.max(0, Math.min(999, (set.reps ?? 0) + delta)),
+            };
+      return {
+        ...prev,
+        exercises: prev.exercises.map((ex, i) =>
+          i !== exIdx
+            ? ex
+            : {
+                ...ex,
+                sets: ex.sets.map((s, j) => (j === setIdx ? { ...s, ...patch } : s)),
+              },
+        ),
+      };
+    });
     setActiveCell({ exIdx, setIdx, field });
   };
 
@@ -1415,6 +1465,24 @@ export function SessionLogger({
           Przywrócono niezapisane zmiany
         </div>
       ) : null}
+      {inAppHint ? (
+        <div
+          role="status"
+          className="flex items-start gap-2 rounded-md border border-border bg-surface-raised px-3 py-2 text-sm text-foreground-secondary"
+        >
+          <p className="min-w-0 flex-1">
+            Otwórz w Safari lub Chrome — zapis w tej przeglądarce bywa zawodny.
+          </p>
+          <button
+            type="button"
+            className="shrink-0 text-muted hover:text-foreground"
+            onClick={() => setInAppHint(false)}
+            aria-label="Zamknij"
+          >
+            <Icon name="x" size={16} decorative />
+          </button>
+        </div>
+      ) : null}
 
       <div className="session-chrome session-chrome-edge relative sticky top-0 z-20 -mx-4 px-4 pb-3 pt-[max(0.5rem,env(safe-area-inset-top))]">
         <div className="flex items-center justify-between gap-3">
@@ -1490,22 +1558,6 @@ export function SessionLogger({
         onCancel={() => setTypoConfirm(null)}
       />
 
-      {videoId ? (
-        <div className="rounded-xl border border-border bg-surface p-3">
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-sm font-semibold">{videoTitle}</p>
-            <button
-              type="button"
-              className="text-xs text-muted hover:text-foreground"
-              onClick={() => setVideoId(null)}
-            >
-              Zamknij
-            </button>
-          </div>
-          <YoutubeLite youtubeId={videoId} title={videoTitle} autoplay />
-        </div>
-      ) : null}
-
       {draft.exercises.map((exercise, exIdx) => {
         const thumb = demoMedia({ media: exercise.media, category: exercise.category });
         const allDone = exercise.sets.every((s) => s.completed);
@@ -1567,7 +1619,7 @@ export function SessionLogger({
                   </p>
                 ) : null}
                 {metaBits.length > 0 || trainerNote ? (
-                  <p className="mt-1 text-[13px] leading-snug text-muted">
+                  <p className="mt-1 text-[13px] leading-snug text-muted break-words">
                     {metaBits.join(" · ")}
                     {trainerNote ? (
                       <>
@@ -1663,12 +1715,11 @@ export function SessionLogger({
                         type="button"
                         className="block w-full px-3 py-2.5 text-left text-[15px] hover:bg-surface-hover"
                         onClick={() => {
-                          setVideoId(thumb.youtubeId!);
-                          setVideoTitle(exercise.exerciseName);
+                          setVideoExIdx((prev) => (prev === exIdx ? null : exIdx));
                           setMenuExIdx(null);
                         }}
                       >
-                        Pokaż film
+                        {videoExIdx === exIdx ? "Ukryj film" : "Pokaż film"}
                       </button>
                     ) : null}
                   </div>
@@ -1695,13 +1746,49 @@ export function SessionLogger({
               </div>
             </div>
 
+            {videoExIdx === exIdx && thumb.youtubeId ? (
+              <div className="rounded-xl border border-border bg-surface p-3">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="min-w-0 break-words text-sm font-semibold">{exercise.exerciseName}</p>
+                  <button
+                    type="button"
+                    className="shrink-0 text-xs text-muted hover:text-foreground"
+                    onClick={() => setVideoExIdx(null)}
+                  >
+                    Zamknij
+                  </button>
+                </div>
+                <YoutubeLite youtubeId={thumb.youtubeId} title={exercise.exerciseName} autoplay />
+              </div>
+            ) : null}
+
             {swapExIdx === exIdx ? (
               <div>
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="text-[13px] font-medium text-foreground-secondary">Podmień ćwiczenie</p>
+                  <button
+                    type="button"
+                    className="text-[13px] text-muted hover:text-foreground"
+                    onClick={() => {
+                      setSwapExIdx(null);
+                      setSwapSearch("");
+                    }}
+                  >
+                    Anuluj
+                  </button>
+                </div>
                 <input
                   className={`${inputClass} mb-2 w-full px-2 py-1.5`}
                   placeholder="Szukaj ćwiczenia…"
                   value={swapSearch}
                   onChange={(e) => setSwapSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      e.preventDefault();
+                      setSwapExIdx(null);
+                      setSwapSearch("");
+                    }
+                  }}
                   autoFocus
                 />
                 <ul className="max-h-56 space-y-1 overflow-y-auto">
@@ -1760,15 +1847,17 @@ export function SessionLogger({
               <div
                 className={`${setGridClass(logRir && !isTime)} pb-2 text-[11px] font-medium uppercase tracking-caps text-muted`}
               >
-                <div>Seria</div>
-                <div className="truncate" title={prevHeader || "Poprzedni trening"}>
+                <div className="overflow-hidden text-center" title="Seria">
+                  #
+                </div>
+                <div className="min-w-0 truncate" title={prevHeader || "Poprzedni trening"}>
                   {prevHeader || "Poprz."}
                 </div>
                 <div className="text-center">{isTime ? "Sek" : "Kg"}</div>
                 <div className="text-center">{isTime ? "" : "Powt"}</div>
                 {logRir && !isTime ? <div className="text-center">RIR</div> : null}
-                <div />
-                <div />
+                <div aria-hidden />
+                <div aria-hidden />
               </div>
 
               <div className="space-y-1.5">
@@ -1929,23 +2018,69 @@ export function SessionLogger({
             </div>
 
             {noteOpen ? (
-              <input
-                className="w-full rounded-lg border border-border bg-surface-active px-3 py-3 text-[15px] text-foreground outline-none placeholder:text-muted-faint focus:border-border-strong"
+              <textarea
+                rows={1}
+                className="w-full resize-none overflow-hidden rounded-lg border border-border bg-surface-active px-3 py-3 text-[15px] leading-snug text-foreground outline-none placeholder:text-muted-faint focus:border-border-strong"
                 placeholder="Notatka…"
                 value={exercise.note ?? ""}
-                onChange={(e) => patchNote(exIdx, e.target.value)}
+                onChange={(e) => {
+                  const t = e.currentTarget;
+                  t.style.height = "auto";
+                  t.style.height = `${t.scrollHeight}px`;
+                  patchNote(exIdx, e.target.value);
+                }}
+                ref={(el) => {
+                  if (!el) return;
+                  el.style.height = "auto";
+                  el.style.height = `${el.scrollHeight}px`;
+                }}
               />
             ) : null}
           </section>
         );
       })}
 
+      {sessionNoteOpen || draft.note ? (
+        <div className="border-t border-border pt-4">
+          <label className="mb-1.5 block text-[13px] font-medium text-foreground-secondary">
+            Notatka do treningu
+          </label>
+          <textarea
+            rows={2}
+            className="w-full resize-none overflow-hidden rounded-lg border border-border bg-surface-active px-3 py-3 text-[15px] leading-snug text-foreground outline-none placeholder:text-muted-faint focus:border-border-strong"
+            placeholder="Wiadomość do trenera…"
+            value={draft.note ?? ""}
+            onChange={(e) => {
+              const t = e.currentTarget;
+              t.style.height = "auto";
+              t.style.height = `${t.scrollHeight}px`;
+              const value = e.target.value;
+              updateDraft((prev) => ({ ...prev, note: value || null }));
+            }}
+            ref={(el) => {
+              if (!el) return;
+              el.style.height = "auto";
+              el.style.height = `${el.scrollHeight}px`;
+            }}
+          />
+        </div>
+      ) : (
+        <button
+          type="button"
+          className={iconBtn}
+          onClick={() => setSessionNoteOpen(true)}
+          aria-label="Dodaj notatkę do treningu"
+        >
+          Notatka do treningu
+        </button>
+      )}
+
       {rest?.expanded ? (
         <RestTimer
           rest={rest}
-          nextLabel={nextRestLabel}
-          setsDone={restContext.setsDone}
-          setsTotal={restContext.setsTotal}
+          nextExerciseName={restContext.nextExerciseName}
+          nextSetNumber={restContext.nextSetNumber}
+          nextSetsInExercise={restContext.nextSetsInExercise}
           onAdjust={adjustRest}
           onDismiss={dismissRest}
           onExpand={setExpanded}
@@ -1966,7 +2101,7 @@ export function SessionLogger({
           (document.activeElement as HTMLElement | null)?.blur?.();
         }}
         rest={rest}
-        nextLabel={nextRestLabel}
+        nextLabel={nextRestDockLabel}
         onAdjustRest={adjustRest}
         onDismissRest={dismissRest}
         onExpandRest={() => setExpanded(true)}
@@ -2042,25 +2177,24 @@ const SetRow = memo(function SetRow({
     : isNext
       ? "text-foreground"
       : "text-foreground-secondary";
-  const checkColor = completed
-    ? "text-foreground"
-    : isNext
-      ? "text-accent-text"
-      : "text-muted-faint";
   const prevLabel = formatPrev(prev, isBw);
   const weightPlaceholder =
     isBw && (set.weightKg == null || set.weightKg === 0) ? "BW" : "—";
   const sideLabel = set.side === "left" ? "L" : set.side === "right" ? "P" : null;
 
   return (
-    <div className={`relative ${setGridClass(showRir)}`}>
+    <div
+      className={`relative ${setGridClass(showRir)} ${
+        isNext && !completed ? "rounded-lg bg-surface px-0.5" : ""
+      }`}
+    >
       <div
-        className={`flex min-h-12 items-center gap-0.5 font-mono text-sm tabular-nums ${
+        className={`flex min-h-11 items-center gap-0.5 font-mono text-sm tabular-nums ${
           completed || isNext ? "text-foreground-secondary" : "text-muted"
         }`}
         aria-label={`Seria ${set.setNumber}${set.isWarmup ? ", rozgrzewkowa" : ""}${
-          sideLabel ? `, ${sideLabel === "L" ? "lewa" : "prawa"}` : ""
-        }`}
+          completed && set.isPr ? ", personal best" : ""
+        }${sideLabel ? `, ${sideLabel === "L" ? "lewa" : "prawa"}` : ""}`}
       >
         {set.setNumber}
         {set.isWarmup ? <span className="text-[11px] text-muted">W</span> : null}
@@ -2091,11 +2225,11 @@ const SetRow = memo(function SetRow({
         ) : null}
       </div>
 
-      <div className="flex min-w-0 items-center gap-1.5">
+      <div className="min-w-0">
         {prev ? (
           <button
             type="button"
-            className={`min-h-12 min-w-0 truncate text-left font-mono text-sm tabular-nums hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${
+            className={`flex min-h-11 w-full min-w-0 items-center truncate text-left font-mono text-sm tabular-nums hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${
               completed ? "text-muted-faint" : "text-muted"
             }`}
             onClick={onCopyPrev}
@@ -2105,17 +2239,10 @@ const SetRow = memo(function SetRow({
             {prevLabel}
           </button>
         ) : (
-          <span className="font-mono text-sm tabular-nums text-muted-faint">—</span>
-        )}
-        {completed && set.isPr ? <Badge tone="pr">PR</Badge> : null}
-        {below && targetLabel ? (
-          <span
-            className="shrink-0 text-xs font-semibold text-danger-hover"
-            title="Poniżej celu — trener to zobaczy"
-          >
-            ▾
+          <span className="flex min-h-11 items-center font-mono text-sm tabular-nums text-muted-faint">
+            —
           </span>
-        ) : null}
+        )}
       </div>
 
       {isTime ? (
@@ -2167,23 +2294,56 @@ const SetRow = memo(function SetRow({
         />
       ) : null}
 
-      <button
-        type="button"
-        onClick={onToggle}
-        className={`flex min-h-12 min-w-11 items-center justify-center rounded-lg transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] active:scale-[0.94] ${checkColor}`}
-        aria-label={completed ? "Cofnij zaliczenie" : "Zalicz serię"}
-      >
-        <Icon name="check" size={24} decorative />
-      </button>
+      <div className="flex min-h-11 items-center justify-end">
+        <div className="flex w-6 shrink-0 items-center justify-center">
+          {completed && set.isPr ? (
+            <span className="inline-flex h-[18px] items-center rounded-[var(--r-pill)] bg-pr-dim px-1 font-mono text-[10px] font-semibold tabular-nums text-pr">
+              PR
+            </span>
+          ) : below && targetLabel ? (
+            <span
+              className="text-xs font-semibold text-danger-hover"
+              title="Poniżej celu — trener to zobaczy"
+            >
+              ▾
+            </span>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          onClick={onToggle}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] active:scale-[0.94]"
+          aria-label={
+            completed
+              ? set.isPr
+                ? "Cofnij zaliczenie (personal best)"
+                : "Cofnij zaliczenie"
+              : "Zalicz serię"
+          }
+          aria-pressed={completed}
+        >
+          <span
+            className={`flex h-[26px] w-[26px] items-center justify-center rounded-full border transition-colors duration-[var(--dur-fast)] ${
+              completed
+                ? "border-invert-bg bg-invert-bg text-invert-fg"
+                : isNext
+                  ? "border-foreground text-transparent"
+                  : "border-border-strong text-transparent"
+            }`}
+          >
+            <Icon name="check" size={15} decorative />
+          </span>
+        </button>
+      </div>
 
       <button
         type="button"
         onClick={onRowMenu}
-        className="flex min-h-12 min-w-8 items-center justify-center text-muted hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+        className="flex h-11 w-full items-center justify-center text-muted hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
         aria-label="Więcej opcji serii"
         title="Więcej"
       >
-        <Icon name="more" size={16} decorative />
+        <Icon name="more" size={18} decorative />
       </button>
     </div>
   );

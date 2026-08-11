@@ -83,10 +83,11 @@ function applyMediaSession(state: RestKeepAliveState) {
   // kontekst w artist/album. True Live Activity wymaga natywnej apki — w PWA
   // Now Playing + cichy keep-alive to jedyna droga na Lock Screen.
   const title = left > 0 ? mmss(left) : "Koniec";
-  const artist = next ? `Dalej · ${next}` : "Przerwa";
+  const artist = next ? `Następna: ${next}` : "Przerwa";
+  // setsDone/setsTotal = numer serii w ćwiczeniu (nie globalnie w treningu)
   const album =
     state.setsTotal > 0
-      ? `Seria ${state.setsDone} / ${state.setsTotal}`
+      ? `Seria ${state.setsDone} z ${state.setsTotal}`
       : "RepMaxer";
 
   try {

@@ -391,8 +391,15 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 **Kontekst**: Przyciski +2,5 / Talerze „zamykały się” zamiast działać.
 **Problem**: Globalny `pointerdown` blur+`setActiveCell(null)` odpalał się przed `click` na DockBtn — `platesOpen && activeCell` było już fałszywe.
-**Zasada**: Elementy doku / sheetów oznaczaj `data-session-dock` / `data-session-plates` i wyłączaj je z clear. `onMouseDown.preventDefault` na przyciskach doku chroni fokus inputu.
+**Zasada**: Elementy doku / sheetów oznaczaj `data-session-dock` / `data-session-plates` i wyłączaj je z clear. `onPointerDown.preventDefault` na przyciskach doku chroni fokus inputu (lepiej niż samo `mousedown` na iOS).
 **Dotyczy**: `SessionLogger.tsx`, `SessionDock.tsx`, `PlateCalculator.tsx`.
+
+## Dock +2,5: sync `SetValueInput` przy zewnętrznej zmianie wartości
+
+**Kontekst**: +2,5 / Talerze często „nie działały” przy otwartej klawiaturze.
+**Problem**: `SetValueInput` przy fokusie ignorował nowy `value` z props; dock aktualizował draft, ale `raw` zostawał stary, a `onBlur` nadpisywał commit starą liczbą. Na iOS sam `click` bywał gubiony po blurze.
+**Zasada**: Trzymaj `lastCommitted` i przy fokusie synchronizuj `raw` tylko gdy props zmienił się z zewnątrz (≠ lastCommitted). Akcję DockBtn odpalaj na `pointerdown` (click tylko dla klawiatury, `detail === 0`).
+**Dotyczy**: `SetValueInput.tsx`, `SessionDock.tsx`.
 
 ## Bodyweight = `equipment`, nie `category`
 

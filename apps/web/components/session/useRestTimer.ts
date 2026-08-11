@@ -14,8 +14,11 @@ type StoredRest = {
 };
 
 export type RestTimerContext = {
+  /** Nazwa następnego ćwiczenia (Lock Screen / dock). */
   nextLabel?: string | null;
+  /** Numer następnej serii w ćwiczeniu (nie globalnie w treningu). */
   setsDone: number;
+  /** Liczba serii w tym ćwiczeniu. */
   setsTotal: number;
 };
 
@@ -245,8 +248,8 @@ export function useRestTimer(sessionId: number, context: RestTimerContext) {
       alarmedRef.current = false;
       const endsAt = Date.now() + seconds * 1000;
       writeStored({ endsAt, totalSeconds: seconds, sessionId });
-      // Mini-dock na start — fullscreen dopiero po tapnięciu w pasek.
-      setRest({ endsAt, totalSeconds: seconds, leftSeconds: seconds, expanded: false });
+      // Pełny ekran od razu po zaliczeniu serii — Zwiń → mini-dock, tap → z powrotem.
+      setRest({ endsAt, totalSeconds: seconds, leftSeconds: seconds, expanded: true });
       scheduleEnd(endsAt);
 
       if (readRestLockScreen()) {

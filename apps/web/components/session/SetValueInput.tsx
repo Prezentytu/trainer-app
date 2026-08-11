@@ -49,9 +49,20 @@ export const SetValueInput = memo(function SetValueInput({
 }: Props) {
   const [raw, setRaw] = useState(() => formatDisplay(value));
   const focused = useRef(false);
+  /** Ostatnia wartość wypchnięta z tego inputu — odróżnia wpisywanie od +2,5 z doku. */
+  const lastCommitted = useRef<number | null>(value);
 
   useEffect(() => {
-    if (!focused.current) setRaw(formatDisplay(value));
+    if (!focused.current) {
+      setRaw(formatDisplay(value));
+      lastCommitted.current = value;
+      return;
+    }
+    // Dock / Talerze zmieniły props, a my jeszcze trzymamy stary draft w `raw`
+    if (value !== lastCommitted.current) {
+      setRaw(formatDisplay(value));
+      lastCommitted.current = value;
+    }
   }, [value]);
 
   const empty = raw === "";
@@ -59,8 +70,9 @@ export const SetValueInput = memo(function SetValueInput({
   return (
     <input
       className={[
-        "min-h-12 min-w-0 w-full rounded-lg border border-transparent bg-surface-active",
-        "px-2 py-2.5 text-center font-mono text-lg font-semibold tabular-nums outline-none",
+        "min-h-11 min-w-0 w-full rounded-lg border border-transparent bg-surface-active",
+        // 16px = próg, poniżej którego iOS zoomuje pole przy focusie
+        "px-1.5 py-2 text-center font-mono text-base font-semibold tabular-nums outline-none",
         "transition-[background-color,border-color,color] duration-[var(--dur-fast)]",
         "placeholder:font-medium",
         emphasizeEmpty && empty
@@ -82,12 +94,15 @@ export const SetValueInput = memo(function SetValueInput({
         if (!isValidDraft(kind, next)) return;
         setRaw(next);
         if (next === "" || !/[.,]$/.test(next)) {
-          onCommit(parseNum(next));
+          const parsed = parseNum(next);
+          lastCommitted.current = parsed;
+          onCommit(parsed);
         }
       }}
       onBlur={() => {
         focused.current = false;
         const parsed = parseNum(raw);
+        lastCommitted.current = parsed;
         setRaw(formatDisplay(parsed));
         onCommit(parsed);
       }}
