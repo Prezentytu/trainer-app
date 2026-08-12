@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import {
   api,
+  ClientCheckIn,
   ClientDetails,
   ClientIntake,
   ClientIntakeInput,
@@ -50,6 +51,7 @@ import {
   Field,
   inputClass,
   ProgressRing,
+  SegmentedControl,
   StatBlock,
   Tabs,
   useUndoToast,
@@ -92,16 +94,24 @@ export default function ClientDetailsPage() {
   const clientId = Number(params.id);
 
   const [tab, setTab] = useState<string | null>(null);
+  const [notesSegment, setNotesSegment] = useState<"mine" | "client">("mine");
   const [client, setClient] = useState<ClientDetails | null>(null);
   const [plans, setPlans] = useState<PlanSummary[]>([]);
+  const [plansForClient, setPlansForClient] = useState<number | null>(null);
   const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [exercisesForClient, setExercisesForClient] = useState<number | null>(null);
   const [maxes, setMaxes] = useState<ClientMax[]>([]);
   const [measurements, setMeasurements] = useState<ClientMeasurement[]>([]);
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [records, setRecords] = useState<ClientRecord[]>([]);
+  const [checkIns, setCheckIns] = useState<ClientCheckIn[]>([]);
+  const [checkInsForClient, setCheckInsForClient] = useState<number | null>(null);
   const [progress, setProgress] = useState<ClientProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { showUndoToast, toastNode } = useUndoToast();
+  const plansLoaded = plansForClient === clientId;
+  const exercisesLoaded = exercisesForClient === clientId;
+  const checkInsLoaded = checkInsForClient === clientId;
 
   const [planId, setPlanId] = useState<number | "">("");
   const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -132,41 +142,36 @@ export default function ClientDetailsPage() {
   const [logBehalfDate, setLogBehalfDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [logBehalfStarting, setLogBehalfStarting] = useState(false);
   const [intake, setIntake] = useState<ClientIntake | null>(null);
+  const [intakeForClient, setIntakeForClient] = useState<number | null>(null);
   const [intakeEditing, setIntakeEditing] = useState(false);
   const [muscleVolume, setMuscleVolume] = useState<MuscleVolumeResponse | null>(null);
   const [trends, setTrends] = useState<ClientTrendsResponse | null>(null);
   const [stagnation, setStagnation] = useState<StagnationResponse | null>(null);
   const [trainerNotes, setTrainerNotes] = useState<TrainerNote[]>([]);
   const [clientNotes, setClientNotes] = useState<ClientNoteGroup[]>([]);
+  const [notesForClient, setNotesForClient] = useState<number | null>(null);
+  const intakeLoaded = intakeForClient === clientId;
+  const notesLoaded = notesForClient === clientId;
 
   const load = useCallback(() => {
+    // Eager: hero (profil, postęp, sesje, rekordy). Reszta lazy per zakładka.
     Promise.all([
       api.clients.get(clientId),
-      api.plans.list(),
-      api.exercises.list(),
       api.clients.sessions(clientId),
       api.clients.progress(clientId),
-      api.clients.getIntake(clientId),
       api.clients.records(clientId),
-      api.clients.notes(clientId),
-      api.clients.clientNotes(clientId),
     ])
-      .then(([c, p, ex, s, prog, intk, r, notes, cNotes]) => {
+      .then(([c, s, prog, r]) => {
         setClient(c);
         setGoalWeightDraft(c.goalWeightKg != null ? String(c.goalWeightKg).replace(".", ",") : "");
-        const assignable = p.filter((plan) => !plan.isTemplate);
-        setPlans(assignable);
-        setExercises(ex);
         setSessions(s);
         setProgress(prog);
-        setIntake(intk);
         setRecords(r);
-        setTrainerNotes(notes);
-        setClientNotes(cNotes);
-        setPlanId((prev) => (prev === "" && assignable.length > 0 ? assignable[0].id : prev));
-        // Nie otwieraj automatycznie ściany kafelków — CTA „Przypisz plan" na żądanie.
         setAssignOpen(false);
-        setTab((prev) => prev ?? (s.length > 0 ? "history" : "plans"));
+        setTab((prev) => {
+          if (prev === "client-notes") return "notes";
+          return prev ?? (s.length > 0 ? "history" : "plans");
+        });
 
         const active =
           c.assignments.find((a) => a.status === "active" && a.id === prog?.assignmentId) ??
@@ -203,6 +208,87 @@ export default function ClientDetailsPage() {
 
   useEffect(load, [load]);
 
+  // Plany: zakładka lub dialog przypisania.
+  useEffect(() => {
+    if (tab !== "plans" && !assignOpen) return;
+    if (plansLoaded) return;
+    let cancelled = false;
+    api.plans
+      .list()
+      .then((p) => {
+        if (cancelled) return;
+        const assignable = p.filter((plan) => !plan.isTemplate);
+        setPlans(assignable);
+        setPlansForClient(clientId);
+        setPlanId((prev) => (prev === "" && assignable.length > 0 ? assignable[0].id : prev));
+      })
+      .catch((e: Error) => {
+        if (!cancelled) setError(e.message);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [tab, assignOpen, plansLoaded, clientId]);
+
+  // Historia: check-iny.
+  useEffect(() => {
+    if (tab !== "history" || checkInsLoaded) return;
+    let cancelled = false;
+    api.clients
+      .checkIns(clientId)
+      .then((rows) => {
+        if (!cancelled) {
+          setCheckIns(rows);
+          setCheckInsForClient(clientId);
+        }
+      })
+      .catch((e: Error) => {
+        if (!cancelled) setError(e.message);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [tab, clientId, checkInsLoaded]);
+
+  // Notatki.
+  useEffect(() => {
+    if (tab !== "notes" || notesLoaded) return;
+    let cancelled = false;
+    Promise.all([api.clients.notes(clientId), api.clients.clientNotes(clientId)])
+      .then(([notes, cNotes]) => {
+        if (cancelled) return;
+        setTrainerNotes(notes);
+        setClientNotes(cNotes);
+        setNotesForClient(clientId);
+      })
+      .catch((e: Error) => {
+        if (!cancelled) setError(e.message);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [tab, clientId, notesLoaded]);
+
+  // Wywiad.
+  useEffect(() => {
+    if (tab !== "intake" || intakeLoaded) return;
+    let cancelled = false;
+    api.clients
+      .getIntake(clientId)
+      .then((intk) => {
+        if (!cancelled) {
+          setIntake(intk);
+          setIntakeForClient(clientId);
+        }
+      })
+      .catch((e: Error) => {
+        if (!cancelled) setError(e.message);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [tab, clientId, intakeLoaded]);
+
   const activeAssignment = useMemo(
     () =>
       client?.assignments.find((a) => a.status === "active" && a.id === progress?.assignmentId) ??
@@ -211,24 +297,38 @@ export default function ClientDetailsPage() {
     [client, progress],
   );
 
-  // Wyniki: lazy — nie blokuj pierwszego malowania 6 zbędnymi endpointami.
+  // Wyniki (+ biblioteka ćwiczeń do formularza maxów).
   useEffect(() => {
     if (tab !== "results") return;
     let cancelled = false;
-    Promise.all([
+    const tasks: Promise<unknown>[] = [
       api.clients.maxes(clientId),
       api.clients.measurements(clientId),
       api.clients.muscleVolume(clientId, 4),
       api.clients.trends(clientId, 12),
       api.clients.stagnation(clientId),
-    ])
-      .then(([m, meas, mv, tr, st]) => {
+    ];
+    if (!exercisesLoaded) tasks.push(api.exercises.list());
+    Promise.all(tasks)
+      .then((rows) => {
         if (cancelled) return;
+        const [m, meas, mv, tr, st, ex] = rows as [
+          ClientMax[],
+          ClientMeasurement[],
+          MuscleVolumeResponse,
+          ClientTrendsResponse,
+          StagnationResponse,
+          Exercise[] | undefined,
+        ];
         setMaxes(m);
         setMeasurements(meas);
         setMuscleVolume(mv);
         setTrends(tr);
         setStagnation(st);
+        if (ex) {
+          setExercises(ex);
+          setExercisesForClient(clientId);
+        }
       })
       .catch((e: Error) => {
         if (!cancelled) setError(e.message);
@@ -236,7 +336,7 @@ export default function ClientDetailsPage() {
     return () => {
       cancelled = true;
     };
-  }, [tab, clientId]);
+  }, [tab, clientId, exercisesLoaded]);
 
   const nextDayLabel =
     activeAssignment && nextDay?.assignmentId === activeAssignment.id ? nextDay.label : null;
@@ -691,8 +791,11 @@ export default function ClientDetailsPage() {
           { value: "plans", label: "Plany", count: client.assignments.length },
           { value: "history", label: "Historia", count: sessions.length },
           { value: "results", label: "Wyniki", count: records.length + latestMaxes.length + measurements.length },
-          { value: "notes", label: "Moje notatki", count: trainerNotes.length },
-          { value: "client-notes", label: "Notatki klienta", count: countClientNotes(clientNotes) },
+          {
+            value: "notes",
+            label: "Notatki",
+            count: notesLoaded ? trainerNotes.length + countClientNotes(clientNotes) : undefined,
+          },
           { value: "intake", label: "Wywiad" },
         ]}
         value={activeTab}
@@ -837,34 +940,81 @@ export default function ClientDetailsPage() {
               </EmptyState>
             ) : (
               <div className="grid gap-2">
-                {sessions.map((s) => (
-                  <Link key={s.id} href={`/clients/${clientId}/sessions/${s.id}`}>
-                    <Card className="flex flex-wrap items-center justify-between gap-3 transition-colors hover:border-border-strong">
-                      <div className="flex min-w-0 items-start gap-3">
-                        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-hover text-foreground-secondary">
-                          <Icon name="dumbbell" size={16} decorative />
-                        </span>
-                        <div className="min-w-0">
-                          <p className="break-words text-base font-medium">
-                            {s.dayLabel ?? s.planName ?? "Trening"}
-                          </p>
-                          <p className="mt-0.5 text-sm text-muted">
-                            {s.status === "completed" ? relativeDayLabel(s.performedOn) : formatDayShort(s.performedOn)}
-                            {` · ${s.exerciseCount} ćw.`}
-                            {formatDurationMinutes(s.durationSeconds)
-                              ? ` · ${formatDurationMinutes(s.durationSeconds)}`
-                              : ""}
-                          </p>
+                {sessions.map((s) => {
+                  const wellness = [
+                    s.feelingScore != null ? `samopoczucie ${s.feelingScore}/5` : null,
+                    s.energyScore != null ? `energia ${s.energyScore}/5` : null,
+                    s.sleepScore != null ? `sen ${s.sleepScore}/5` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ");
+                  return (
+                    <Link key={s.id} href={`/clients/${clientId}/sessions/${s.id}`}>
+                      <Card className="flex flex-wrap items-center justify-between gap-3 transition-colors hover:border-border-strong">
+                        <div className="flex min-w-0 items-start gap-3">
+                          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-hover text-foreground-secondary">
+                            <Icon name="dumbbell" size={16} decorative />
+                          </span>
+                          <div className="min-w-0">
+                            <p className="break-words text-base font-medium">
+                              {s.dayLabel ?? s.planName ?? "Trening"}
+                            </p>
+                            <p className="mt-0.5 text-sm text-muted">
+                              {s.status === "completed" ? relativeDayLabel(s.performedOn) : formatDayShort(s.performedOn)}
+                              {` · ${s.exerciseCount} ćw.`}
+                              {formatDurationMinutes(s.durationSeconds)
+                                ? ` · ${formatDurationMinutes(s.durationSeconds)}`
+                                : ""}
+                              {wellness ? ` · ${wellness}` : ""}
+                            </p>
+                            {s.note?.trim() ? (
+                              <p className="mt-1 break-words text-sm text-foreground-secondary">
+                                {s.note.trim()}
+                              </p>
+                            ) : null}
+                            {s.hasUnreadClientReply ? (
+                              <p className="mt-1 text-xs font-medium text-foreground">Nowa odpowiedź</p>
+                            ) : null}
+                          </div>
                         </div>
-                      </div>
-                      <Badge tone={s.status === "completed" ? "positive" : "accent"}>
-                        {s.status === "completed" ? "ukończony" : "w trakcie"}
-                      </Badge>
-                    </Card>
-                  </Link>
-                ))}
+                        <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+                          {s.outOfOrder ? <Badge tone="accent">Poza kolejką</Badge> : null}
+                          <Badge tone={s.status === "completed" ? "positive" : "accent"}>
+                            {s.status === "completed" ? "ukończony" : "w trakcie"}
+                          </Badge>
+                        </div>
+                      </Card>
+                    </Link>
+                  );
+                })}
               </div>
             )}
+
+            {checkInsLoaded && checkIns.length > 0 ? (
+              <section className="mt-8">
+                <h2 className="mb-3 font-display text-lg font-semibold">Check-iny</h2>
+                <ul className="divide-y divide-border rounded-[var(--r-card)] border border-border bg-surface">
+                  {checkIns.map((c) => (
+                    <li key={c.id} className="flex flex-col gap-1 px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">{relativeDayLabel(c.date)}</p>
+                        <p className="mt-0.5 font-mono text-xs tabular-nums text-muted">
+                          {[
+                            c.moodScore != null ? `samopoczucie ${c.moodScore}/5` : null,
+                            c.sleepScore != null ? `sen ${c.sleepScore}/5` : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ") || "bez ocen"}
+                        </p>
+                        {c.note?.trim() ? (
+                          <p className="mt-1 break-words text-sm text-foreground-secondary">{c.note.trim()}</p>
+                        ) : null}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
           </>
         )}
 
@@ -1269,16 +1419,31 @@ export default function ClientDetailsPage() {
         )}
 
         {activeTab === "notes" && (
-          <TrainerNotesTab
-            clientId={clientId}
-            notes={trainerNotes}
-            onChange={setTrainerNotes}
-            onUndoToast={showUndoToast}
-          />
-        )}
-
-        {activeTab === "client-notes" && (
-          <ClientNotesTab clientId={clientId} groups={clientNotes} />
+          <div className="space-y-4">
+            <SegmentedControl
+              full
+              items={[
+                { value: "mine", label: "Moje", count: notesLoaded ? trainerNotes.length : undefined },
+                {
+                  value: "client",
+                  label: "Klienta",
+                  count: notesLoaded ? countClientNotes(clientNotes) : undefined,
+                },
+              ]}
+              value={notesSegment}
+              onChange={(v) => setNotesSegment(v as "mine" | "client")}
+            />
+            {notesSegment === "mine" ? (
+              <TrainerNotesTab
+                clientId={clientId}
+                notes={trainerNotes}
+                onChange={setTrainerNotes}
+                onUndoToast={showUndoToast}
+              />
+            ) : (
+              <ClientNotesTab clientId={clientId} groups={clientNotes} />
+            )}
+          </div>
         )}
 
         {activeTab === "intake" && intake && (

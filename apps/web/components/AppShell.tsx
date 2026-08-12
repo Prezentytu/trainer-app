@@ -12,12 +12,12 @@ import { Wordmark } from "@/components/Wordmark";
 
 const NAV_SHELL_SSR = { clients: null, plans: null, trainerName: "Trener" } as const;
 
-const NAV: { href: string; label: string; icon: IconName; countKey: "clients" | "plans" | null }[] = [
-  { href: "/", label: "Panel", icon: "home", countKey: null },
-  { href: "/clients", label: "Klienci", icon: "clients", countKey: "clients" },
-  { href: "/exercises", label: "Ćwiczenia", icon: "dumbbell", countKey: null },
-  { href: "/plans", label: "Plany", icon: "plans", countKey: "plans" },
-  { href: "/settings", label: "Ustawienia", icon: "settings", countKey: null },
+const NAV: { href: string; label: string; icon: IconName }[] = [
+  { href: "/", label: "Panel", icon: "home" },
+  { href: "/clients", label: "Klienci", icon: "clients" },
+  { href: "/plans", label: "Plany", icon: "plans" },
+  { href: "/exercises", label: "Ćwiczenia", icon: "dumbbell" },
+  { href: "/settings", label: "Ustawienia", icon: "settings" },
 ];
 
 const FOCUS = "focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]";
@@ -25,11 +25,9 @@ const PRESS = "active:[transform:var(--press)]";
 
 function SideNavLinks({
   onNavigate,
-  counts,
   compact,
 }: {
   onNavigate?: () => void;
-  counts: { clients: number | null; plans: number | null };
   compact?: boolean;
 }) {
   const pathname = usePathname();
@@ -37,7 +35,6 @@ function SideNavLinks({
     <nav className="flex flex-col gap-0.5" aria-label="Główna nawigacja">
       {NAV.map((item) => {
         const active = item.href === "/" ? pathname === "/" : pathname?.startsWith(item.href);
-        const count = item.countKey ? counts[item.countKey] : null;
         return (
           <Link
             key={item.href}
@@ -53,20 +50,7 @@ function SideNavLinks({
             } ${compact ? "justify-center px-0" : "gap-3 px-3"}`}
           >
             <Icon name={item.icon} size={20} decorative />
-            {!compact ? (
-              <>
-                <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                {count != null ? (
-                  <span
-                    className={`shrink-0 font-mono text-[12px] tabular-nums ${
-                      active ? "opacity-70" : "text-fg-ghost"
-                    }`}
-                  >
-                    {count}
-                  </span>
-                ) : null}
-              </>
-            ) : null}
+            {!compact ? <span className="min-w-0 flex-1 truncate">{item.label}</span> : null}
           </Link>
         );
       })}
@@ -337,7 +321,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { mounted: drawerMounted, entered: drawerEntered } = usePresence(drawerOpen);
   const [railExpanded, setRailExpanded] = useState(false);
   const shell = useSyncExternalStore(subscribeNavShell, getNavShell, () => NAV_SHELL_SSR);
-  const counts = { clients: shell.clients, plans: shell.plans };
   const trainerName = shell.trainerName;
   const pathname = usePathname();
   // Board/kreator: viewport lock + wąski rail. /plans/import to długi formularz — normalny scroll strony.
@@ -379,7 +362,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className={`mb-6 ${showRail ? "flex justify-center" : "px-3 pt-1"}`}>
           <Wordmark compact={showRail} />
         </div>
-        <SideNavLinks counts={counts} compact={showRail} />
+        <SideNavLinks compact={showRail} />
         <TrainerFooter compact={showRail} name={trainerName} />
       </aside>
 
@@ -412,7 +395,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Icon name="close" size={20} decorative />
               </button>
             </div>
-            <SideNavLinks counts={counts} onNavigate={() => setDrawerOpen(false)} />
+            <SideNavLinks onNavigate={() => setDrawerOpen(false)} />
             <TrainerFooter name={trainerName} />
           </aside>
         </div>

@@ -746,6 +746,7 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
                 s.PlanId,
                 PlanName = s.Plan != null ? s.Plan.Name : null,
                 DayLabel = s.PlanDay != null ? s.PlanDay.Label : null,
+                s.OutOfOrder,
                 s.PerformedOn,
                 s.DurationSeconds,
                 s.Note,
@@ -848,6 +849,130 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
 
         var attention = await ChurnRadar.BuildAttentionAsync(db, trainerId);
 
+        // Skrzynka „Od klientów": nieprzeczytane odpowiedzi, notatki bez odpowiedzi, niskie check-iny.
+        static string ClipPreview(string text, int max = 120)
+        {
+            var t = text.Trim().Replace('\n', ' ');
+            return t.Length <= max ? t : t[..(max - 1)] + "…";
+        }
+
+        var fromClientRows = new List<(string Kind, int ClientId, string ClientName, int? SessionId, int? CheckInId, string Preview, DateTime At)>();
+
+        var unreadReplies = await db.WorkoutSessions
+            .Where(s =>
+                s.Client!.TrainerId == trainerId
+                && s.ClientReply != null
+                && s.ClientReply != ""
+                && s.ClientReplyReadAt == null)
+            .OrderByDescending(s => s.ClientReplyAt ?? s.CreatedAt)
+            .Take(8)
+            .Select(s => new
+            {
+                s.ClientId,
+                ClientName = s.Client!.Name,
+                s.Id,
+                Preview = s.ClientReply!,
+                At = s.ClientReplyAt ?? s.CreatedAt,
+            })
+            .ToListAsync();
+        foreach (var r in unreadReplies)
+            fromClientRows.Add(("session_reply", r.ClientId, r.ClientName, r.Id, null, ClipPreview(r.Preview), r.At));
+
+        var unansweredNotes = await db.WorkoutSessions
+            .Where(s =>
+                s.Client!.TrainerId == trainerId
+                && s.Status == "completed"
+                && s.Note != null
+                && s.Note != ""
+                && s.TrainerComment == null
+                && s.PerformedOn >= weekStart
+                && s.PerformedOn <= today)
+            .OrderByDescending(s => s.PerformedOn)
+            .ThenByDescending(s => s.Id)
+            .Take(8)
+            .Select(s => new
+            {
+                s.ClientId,
+                ClientName = s.Client!.Name,
+                s.Id,
+                Preview = s.Note!,
+                s.CreatedAt,
+            })
+            .ToListAsync();
+        foreach (var n in unansweredNotes)
+            fromClientRows.Add(("session_note", n.ClientId, n.ClientName, n.Id, null, ClipPreview(n.Preview), n.CreatedAt));
+
+        var lowCheckIns = await db.ClientCheckIns
+            .Where(c =>
+                c.Client!.TrainerId == trainerId
+                && c.Date >= weekStart
+                && c.Date <= today
+                && c.MoodScore != null
+                && c.MoodScore <= 2)
+            .OrderByDescending(c => c.Date)
+            .ThenByDescending(c => c.Id)
+            .Take(8)
+            .Select(c => new
+            {
+                c.ClientId,
+                ClientName = c.Client!.Name,
+                c.Id,
+                c.MoodScore,
+                c.SleepScore,
+                c.Note,
+                c.CreatedAt,
+            })
+            .ToListAsync();
+        foreach (var c in lowCheckIns)
+        {
+            var preview = $"Samopoczucie {c.MoodScore}/5";
+            if (c.SleepScore != null) preview += $" · sen {c.SleepScore}/5";
+            if (!string.IsNullOrWhiteSpace(c.Note)) preview += $" — {c.Note}";
+            fromClientRows.Add(("low_checkin", c.ClientId, c.ClientName, null, c.Id, ClipPreview(preview), c.CreatedAt));
+        }
+
+        var outOfOrderSessions = await db.WorkoutSessions
+            .Where(s =>
+                s.Client!.TrainerId == trainerId
+                && s.OutOfOrder
+                && s.Status == "completed"
+                && s.PerformedOn >= weekStart
+                && s.PerformedOn <= today)
+            .OrderByDescending(s => s.PerformedOn)
+            .ThenByDescending(s => s.Id)
+            .Take(8)
+            .Select(s => new
+            {
+                s.ClientId,
+                ClientName = s.Client!.Name,
+                s.Id,
+                DayLabel = s.PlanDay != null ? s.PlanDay.Label : null,
+                s.PerformedOn,
+                s.CreatedAt,
+            })
+            .ToListAsync();
+        foreach (var s in outOfOrderSessions)
+        {
+            var label = string.IsNullOrWhiteSpace(s.DayLabel) ? "trening" : s.DayLabel!;
+            var preview = $"Zrobił {label} poza kolejką — {s.PerformedOn:yyyy-MM-dd}";
+            fromClientRows.Add(("out_of_order", s.ClientId, s.ClientName, s.Id, null, ClipPreview(preview), s.CreatedAt));
+        }
+
+        var fromClients = fromClientRows
+            .OrderByDescending(x => x.At)
+            .Take(8)
+            .Select(x => new
+            {
+                kind = x.Kind,
+                clientId = x.ClientId,
+                clientName = x.ClientName,
+                sessionId = x.SessionId,
+                checkInId = x.CheckInId,
+                preview = x.Preview,
+                at = x.At,
+            })
+            .ToList();
+
         return Results.Ok(new
         {
             clients,
@@ -856,6 +981,7 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
             recentSessions,
             recentPrs,
             attention,
+            fromClients,
             clientActivity,
             sessionsLast7Days,
             sessionsPrev7Days,
@@ -1143,6 +1269,7 @@ app.MapGet("/api/clients/{clientId:int}/sessions", async (int clientId, HttpCont
                 s.PlanId,
                 PlanName = s.Plan != null ? s.Plan.Name : null,
                 DayLabel = s.PlanDay != null ? s.PlanDay.Label : null,
+                s.OutOfOrder,
                 s.PerformedOn,
                 s.DurationSeconds,
                 s.Note,
@@ -1151,6 +1278,9 @@ app.MapGet("/api/clients/{clientId:int}/sessions", async (int clientId, HttpCont
                 s.EnergyScore,
                 s.Status,
                 s.CreatedAt,
+                s.TrainerComment,
+                s.ClientReply,
+                HasUnreadClientReply = s.ClientReply != null && s.ClientReply != "" && s.ClientReplyReadAt == null,
                 TotalSets = s.Exercises.SelectMany(e => e.Sets).Count(x => !x.IsWarmup),
                 TotalVolumeKg = s.Exercises.SelectMany(e => e.Sets)
                     .Where(x => !x.IsWarmup && x.Completed && x.WeightKg != null && x.Reps != null)
@@ -1771,17 +1901,6 @@ app.MapGet("/api/portal/{token}", async (string token, string? today, AppDb db) 
         .OrderByDescending(a => a.CreatedAt)
         .FirstOrDefaultAsync();
 
-    // Licznik ukończeń per dzień — plan zapętla się jako cykl.
-    var completionCounts = assignment is null
-        ? new Dictionary<int, int>()
-        : (await db.WorkoutSessions
-            .Where(s => s.ClientId == access.ClientId && s.AssignmentId == assignment.Id
-                        && s.Status == "completed" && s.PlanDayId != null)
-            .GroupBy(s => s.PlanDayId!.Value)
-            .Select(g => new { DayId = g.Key, Count = g.Count() })
-            .ToListAsync())
-            .ToDictionary(x => x.DayId, x => x.Count);
-
     var (freshSession, staleSessionEntity) = await Sessions.ResolveInProgressAsync(
         db, access.ClientId, clientToday);
 
@@ -1797,12 +1916,13 @@ app.MapGet("/api/portal/{token}", async (string token, string? today, AppDb db) 
             .Select(d => new { d.Id, d.WeekNumber, d.Order, d.Label, d.Notes })
             .ToListAsync();
 
+        var (nextDueDayId, completionCounts) = await Sessions.NextDueDayAsync(
+            db, access.ClientId, assignment.Id, assignment.PlanId);
+
         var minCompletions = days.Count == 0
             ? 0
             : days.Min(d => completionCounts.GetValueOrDefault(d.Id));
-        // Następny dzień = pierwszy w kolejności z najmniejszą liczbą ukończeń.
-        var nextMeta = days.FirstOrDefault(d =>
-            completionCounts.GetValueOrDefault(d.Id) == minCompletions);
+        var nextMeta = days.FirstOrDefault(d => d.Id == nextDueDayId);
         // Cykl domknięty: każdy dzień ma ≥1 ukończenie i wracamy do pierwszego dnia nowego obiegu.
         cycleRestart = days.Count > 0
             && minCompletions > 0
@@ -1810,15 +1930,37 @@ app.MapGet("/api/portal/{token}", async (string token, string? today, AppDb db) 
             && nextMeta.Id == days[0].Id
             && days.All(d => completionCounts.GetValueOrDefault(d.Id) >= minCompletions);
 
-        // Postęp w bieżącym cyklu: ile dni ma ukończeń > minCompletions (już „zrobione" w tej rundzie)
-        // + te z == minCompletions jeszcze do zrobienia. completed = liczba dni powyżej min.
+        // Postęp w bieżącym cyklu: ile dni ma ukończeń > minCompletions (już „zrobione" w tej rundzie).
         var completedInCycle = days.Count(d => completionCounts.GetValueOrDefault(d.Id) > minCompletions);
+
+        // Ostatnia ukończona sesja per dzień (prefill „Powtórz” z podglądu dnia).
+        var lastCompletedByDay = days.Count == 0
+            ? new Dictionary<int, int>()
+            : (await db.WorkoutSessions
+                .Where(s => s.ClientId == access.ClientId
+                            && s.AssignmentId == assignment.Id
+                            && s.Status == "completed"
+                            && s.PlanDayId != null)
+                .GroupBy(s => s.PlanDayId!.Value)
+                .Select(g => new
+                {
+                    DayId = g.Key,
+                    SessionId = g.OrderByDescending(x => x.PerformedOn)
+                        .ThenByDescending(x => x.Id)
+                        .Select(x => x.Id)
+                        .First(),
+                })
+                .ToListAsync())
+                .ToDictionary(x => x.DayId, x => x.SessionId);
 
         week = days.Select(d => new
         {
             d.Id, d.WeekNumber, d.Order, d.Label,
             completed = completionCounts.GetValueOrDefault(d.Id) > minCompletions,
             isToday = nextMeta != null && d.Id == nextMeta.Id,
+            lastCompletedSessionId = lastCompletedByDay.TryGetValue(d.Id, out var sid)
+                ? (int?)sid
+                : null,
         }).ToList();
 
         if (nextMeta is not null)
@@ -1882,6 +2024,62 @@ app.MapGet("/api/portal/{token}", async (string token, string? today, AppDb db) 
     });
 }).RequireRateLimiting("portal");
 
+app.MapGet("/api/portal/{token}/days/{dayId:int}", async (string token, int dayId, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+
+    var day = await db.PlanDays
+        .Include(d => d.Items).ThenInclude(i => i.Exercise)
+        .Include(d => d.Items).ThenInclude(i => i.PrescribedSets)
+        .Include(d => d.Plan)
+        .FirstOrDefaultAsync(d => d.Id == dayId);
+    if (day is null) return Results.NotFound();
+
+    var assignment = await db.Assignments
+        .Where(a => a.ClientId == access.ClientId && a.PlanId == day.PlanId && a.Status == "active")
+        .OrderByDescending(a => a.CreatedAt)
+        .FirstOrDefaultAsync();
+    if (assignment is null) return Results.NotFound();
+
+    var (dueDayId, completionCounts) = await Sessions.NextDueDayAsync(
+        db, access.ClientId, assignment.Id, assignment.PlanId);
+    var days = await db.PlanDays
+        .Where(d => d.PlanId == assignment.PlanId)
+        .Select(d => d.Id)
+        .ToListAsync();
+    var minCompletions = days.Count == 0
+        ? 0
+        : days.Min(id => completionCounts.GetValueOrDefault(id));
+    var completedInCycle = completionCounts.GetValueOrDefault(day.Id) > minCompletions;
+
+    var lastCompletedSessionId = await db.WorkoutSessions
+        .Where(s => s.ClientId == access.ClientId
+                    && s.AssignmentId == assignment.Id
+                    && s.PlanDayId == day.Id
+                    && s.Status == "completed")
+        .OrderByDescending(s => s.PerformedOn)
+        .ThenByDescending(s => s.Id)
+        .Select(s => (int?)s.Id)
+        .FirstOrDefaultAsync();
+
+    var maxes = await PlanLoads.LatestMaxesAsync(db, access.ClientId);
+    return Results.Ok(new
+    {
+        assignmentId = assignment.Id,
+        planId = assignment.PlanId,
+        planName = day.Plan?.Name ?? "",
+        day = new
+        {
+            day.Id, day.WeekNumber, day.Order, day.Label, day.Notes,
+            Items = day.Items.OrderBy(i => i.Order).Select(i => ItemToDto(i, maxes)),
+        },
+        completed = completedInCycle,
+        isDue = dueDayId == day.Id,
+        lastCompletedSessionId,
+    });
+}).RequireRateLimiting("portal");
+
 app.MapGet("/api/portal/{token}/sessions", async (string token, AppDb db) =>
 {
     var access = await ResolvePortalToken(db, token);
@@ -1900,6 +2098,7 @@ app.MapGet("/api/portal/{token}/sessions", async (string token, AppDb db) =>
             s.PlanId,
             PlanName = s.Plan != null ? s.Plan.Name : null,
             DayLabel = s.PlanDay != null ? s.PlanDay.Label : null,
+            s.OutOfOrder,
             s.PerformedOn,
             s.DurationSeconds,
             s.Note,

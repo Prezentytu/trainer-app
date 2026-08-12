@@ -41,15 +41,19 @@ export function ExerciseDetailSkeleton() {
 
 export function PlanWizardSkeleton() {
   return (
-    <div aria-busy aria-label="Wczytuję kreator" className="skeleton-defer mx-auto max-w-2xl space-y-4">
+    <div aria-busy aria-label="Wczytuję kreator" className="skeleton-defer mx-auto w-full max-w-2xl space-y-4 lg:max-w-5xl">
       <div className="space-y-2">
         <Skeleton className="h-7 w-40" />
         <Skeleton className="h-4 w-64" />
       </div>
       <Skeleton className="h-1.5 w-full rounded-full" />
-      <Skeleton className="h-28 w-full rounded-xl" />
-      <Skeleton className="h-40 w-full rounded-xl" />
-      <Skeleton className="h-24 w-full rounded-xl" />
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="space-y-4">
+          <Skeleton className="h-52 w-full rounded-xl" />
+          <Skeleton className="h-24 w-full rounded-xl" />
+        </div>
+        <Skeleton className="hidden h-full min-h-72 w-full rounded-xl lg:block" />
+      </div>
     </div>
   );
 }

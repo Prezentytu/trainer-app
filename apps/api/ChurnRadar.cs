@@ -63,7 +63,8 @@ public static class ChurnRadar
             {
                 items.Add((1, 0, AttentionRow(
                     c.Id, c.Name, "no_plan", "Brak aktywnego planu",
-                    null, compliancePct, c.PortalToken, "assign_plan")));
+                    null, compliancePct, c.PortalToken, "assign_plan",
+                    c.CompletedInWindow, expectedInWindow)));
                 continue;
             }
 
@@ -72,7 +73,8 @@ public static class ChurnRadar
                 items.Add((2, NoSessionWindowDays, AttentionRow(
                     c.Id, c.Name, "never_trained",
                     $"Aktywny plan, 0 treningów (okno {NoSessionWindowDays} dni)",
-                    null, compliancePct, c.PortalToken, "copy_portal_link")));
+                    null, compliancePct, c.PortalToken, "copy_portal_link",
+                    c.CompletedInWindow, expectedInWindow)));
                 continue;
             }
 
@@ -82,7 +84,8 @@ public static class ChurnRadar
                 items.Add((3, days, AttentionRow(
                     c.Id, c.Name, "silent",
                     $"{days} dni bez treningu",
-                    days, compliancePct, c.PortalToken, "copy_portal_link")));
+                    days, compliancePct, c.PortalToken, "copy_portal_link",
+                    c.CompletedInWindow, expectedInWindow)));
                 continue;
             }
 
@@ -91,7 +94,8 @@ public static class ChurnRadar
                 items.Add((4, (int)Math.Round((2.5 - feeling) * 10), AttentionRow(
                     c.Id, c.Name, "low_wellness",
                     $"Niskie samopoczucie po treningach (śr. {feeling:0.#}/5)",
-                    null, compliancePct, c.PortalToken, "copy_portal_link")));
+                    null, compliancePct, c.PortalToken, "copy_portal_link",
+                    c.CompletedInWindow, expectedInWindow)));
                 continue;
             }
 
@@ -109,7 +113,8 @@ public static class ChurnRadar
                         items.Add((5, checkInDays.Value, AttentionRow(
                             c.Id, c.Name, "no_checkin",
                             $"{checkInDays} dni bez check-inu",
-                            checkInDays, compliancePct, c.PortalToken, "copy_portal_link")));
+                            checkInDays, compliancePct, c.PortalToken, "copy_portal_link",
+                            c.CompletedInWindow, expectedInWindow)));
                     }
                 }
             }
@@ -119,8 +124,9 @@ public static class ChurnRadar
             {
                 items.Add((6, 100 - pct, AttentionRow(
                     c.Id, c.Name, "low_compliance",
-                    $"Compliance {pct}% (ostatnie {ComplianceWindowDays} dni)",
-                    days, compliancePct, c.PortalToken, "copy_portal_link")));
+                    $"{c.CompletedInWindow} z {expectedInWindow} treningów (ostatnie {ComplianceWindowDays} dni)",
+                    days, compliancePct, c.PortalToken, "copy_portal_link",
+                    c.CompletedInWindow, expectedInWindow)));
             }
 
             // Zastój siłowy — tylko gdy klient nadal trenuje (nie dubluj ciszy)
@@ -135,7 +141,8 @@ public static class ChurnRadar
                         : $"Zastój: {top.ExerciseName} (brak progresu e1RM)";
                     items.Add((7, stagnations.Count, AttentionRow(
                         c.Id, c.Name, "stagnation", msg,
-                        days, compliancePct, c.PortalToken, "copy_portal_link")));
+                        days, compliancePct, c.PortalToken, "copy_portal_link",
+                        c.CompletedInWindow, expectedInWindow)));
                 }
             }
         }
@@ -150,7 +157,8 @@ public static class ChurnRadar
 
     static object AttentionRow(
         int clientId, string clientName, string reason, string message,
-        int? daysSilent, int? compliancePct, string? portalToken, string action) => new
+        int? daysSilent, int? compliancePct, string? portalToken, string action,
+        int completedInWindow = 0, int expectedInWindow = 0) => new
     {
         clientId,
         clientName,
@@ -158,6 +166,8 @@ public static class ChurnRadar
         message,
         daysSilent,
         compliancePct,
+        completedInWindow = expectedInWindow > 0 ? completedInWindow : (int?)null,
+        expectedInWindow = expectedInWindow > 0 ? expectedInWindow : (int?)null,
         portalToken,
         action,
     };

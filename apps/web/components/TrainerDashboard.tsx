@@ -7,6 +7,7 @@ import {
   AttentionItem,
   ClientActivityItem,
   DashboardData,
+  DashboardFromClientItem,
   SESSION_EXPIRED_MESSAGE,
 } from "@/lib/api";
 import {
@@ -28,6 +29,7 @@ import {
   subscribePortalLinkSent,
 } from "@/lib/portalLinkSent";
 import { formatKg } from "@/lib/plates";
+import { formatTrainingsFraction } from "@/lib/plural";
 
 type RowStatus = {
   kind: "no_plan" | "attention" | "ok";
@@ -227,16 +229,16 @@ export function TrainerDashboard() {
       )}
 
       {!showOnboarding && (
-        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <StatCard
             label="Trenowało (7 dni)"
             value={`${trainedCount} z ${clientActivity.length}`}
-            href="/clients"
+            href="#klienci-tygodnia"
           />
           <StatCard
             label="Sesje (7 dni)"
             value={sessionsThisWeek}
-            href="/clients"
+            href="#ostatnie-sesje"
             delta={
               sessionsDelta === 0
                 ? "bez zmian vs poprz. tydz."
@@ -246,20 +248,35 @@ export function TrainerDashboard() {
           <StatCard
             label="Nowe rekordy (7 dni)"
             value={prsLast7Days > 0 ? `★ ${prsLast7Days}` : prsLast7Days}
-            href="/clients"
+            href="#nowe-rekordy"
             valueClassName={prsLast7Days > 0 ? "text-pr" : undefined}
           />
         </div>
       )}
 
+      {(dash?.fromClients ?? []).length > 0 ? (
+        <Card
+          className="mb-6"
+          title="Od klientów"
+          headerAction={
+            <span className="font-mono text-xs tabular-nums text-muted">
+              {dash!.fromClients!.length}
+            </span>
+          }
+        >
+          <ul className="divide-y divide-border">
+            {dash!.fromClients!.map((item) => (
+              <FromClientRow key={fromClientKey(item)} item={item} />
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
       {needsAttention.length > 0 ? (
         <Card
           className="mb-6"
-          eyebrow="Wymagają uwagi"
-          eyebrowMark
+          title="Wymagają uwagi"
           pending
-          icon={<Icon name="warning" size={16} decorative />}
-          iconTone="danger"
           headerAction={
             <span className="font-mono text-xs tabular-nums text-muted">
               {needsAttention.length}
@@ -276,25 +293,31 @@ export function TrainerDashboard() {
                     <span className="block text-xs text-muted">{status.label}</span>
                   </span>
                 </Link>
-                <div className="flex flex-wrap items-center gap-2">
-                  {status.attention?.compliancePct != null ? (
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+                  {formatCompliance(status.attention) ? (
                     <span className="font-mono text-xs tabular-nums text-muted-strong">
-                      zgodność {status.attention.compliancePct}%
+                      {formatCompliance(status.attention)}
                     </span>
                   ) : null}
-                  <Link href={`/clients/${client.clientId}`}>
-                    <Button size="sm" variant="ghost">
+                  <Link href={`/clients/${client.clientId}`} className="w-full sm:w-auto">
+                    <Button size="sm" variant="ghost" className="w-full sm:w-auto">
                       Przejdź do klienta
                     </Button>
                   </Link>
                   {status.action === "copy_portal_link" && status.portalToken ? (
                     <>
-                      <Button size="sm" variant="secondary" onClick={() => void copyPortalLink(client.clientId, status.portalToken)}>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="w-full sm:w-auto"
+                        onClick={() => void copyPortalLink(client.clientId, status.portalToken)}
+                      >
                         Skopiuj link
                       </Button>
                       <Button
                         size="sm"
                         variant="secondary"
+                        className="w-full sm:w-auto"
                         onClick={() => setReminder(status.attention ?? null)}
                       >
                         Wyślij przypomnienie
@@ -309,25 +332,8 @@ export function TrainerDashboard() {
       ) : null}
 
       {!showOnboarding && (
-        <Card
-          className="mb-6"
-          eyebrow="Ten tydzień"
-          eyebrowMark
-          title="Klienci w tym tygodniu"
-          icon={<Icon name="clients" size={16} decorative />}
-          headerAction={
-            needsAttention.length === 0 ? (
-              <span className="inline-flex items-center gap-1.5 text-sm text-gain">
-                <span aria-hidden>▲</span>
-                Wszyscy trenują zgodnie z planem
-              </span>
-            ) : (
-              <span className="font-mono text-xs tabular-nums text-muted">
-                {needsAttention.length} wymaga uwagi
-              </span>
-            )
-          }
-        >
+        <div id="klienci-tygodnia" className="mb-6 scroll-mt-20">
+        <Card title="Klienci w tym tygodniu">
           {rows.length === 0 ? (
             <EmptyState
               title="Dodaj pierwszego klienta"
@@ -368,9 +374,9 @@ export function TrainerDashboard() {
                       <span className="text-muted"> · </span>
                       {formatRelativeDate(client.lastSessionOn)}
                     </span>
-                    {status.attention?.compliancePct != null ? (
+                    {formatCompliance(status.attention) ? (
                       <span className="font-mono text-xs tabular-nums text-muted">
-                        zgodność {status.attention.compliancePct}%
+                        {formatCompliance(status.attention)}
                       </span>
                     ) : null}
                     {status.kind === "no_plan" ? (
@@ -395,15 +401,12 @@ export function TrainerDashboard() {
             </ul>
           )}
         </Card>
+        </div>
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card
-          eyebrow="Historia"
-          eyebrowMark
-          title="Ostatnie sesje"
-          icon={<Icon name="history" size={16} decorative />}
-        >
+        <div id="ostatnie-sesje" className="scroll-mt-20">
+        <Card title="Ostatnie sesje">
           {recentSessions.length === 0 ? (
             <EmptyState
               title="Tu zobaczysz ostatnie treningi"
@@ -428,6 +431,7 @@ export function TrainerDashboard() {
                       <span className="font-medium">{s.clientName}</span>
                       <span className="mt-0.5 block font-mono text-xs tabular-nums text-muted">
                         {s.dayLabel ?? "Trening"} · {formatRelativeDate(s.performedOn)}
+                        {s.outOfOrder ? " · poza kolejką" : ""}
                       </span>
                     </span>
                   </Link>
@@ -439,14 +443,10 @@ export function TrainerDashboard() {
             </ul>
           )}
         </Card>
+        </div>
 
-        <Card
-          eyebrow="Rekordy"
-          eyebrowMark
-          title="Nowe rekordy"
-          icon={<Icon name="trophy" size={16} decorative />}
-          iconTone="pr"
-        >
+        <div id="nowe-rekordy" className="scroll-mt-20">
+        <Card title="Nowe rekordy">
           {recentPrs.length === 0 ? (
             <EmptyState
               title="Dodaj pierwszą serię z ciężarem"
@@ -471,11 +471,11 @@ export function TrainerDashboard() {
                   >
                     <Avatar name={r.clientName} size="sm" />
                     <span className="min-w-0">
-                      <span className="font-medium">{r.clientName}</span>
-                      <span className="mt-0.5 block break-words text-xs text-muted">{r.exerciseName}</span>
+                      <span className="block break-words font-medium">{r.exerciseName}</span>
+                      <span className="mt-0.5 block text-xs text-muted">{r.clientName}</span>
                     </span>
                   </Link>
-                  <span className="shrink-0 rounded-[var(--radius-pill)] border border-pr-border bg-pr-dim px-2.5 py-0.5 font-mono text-sm font-semibold tabular-nums text-pr">
+                  <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-pr">
                     ★ {formatKg(r.estimated1Rm)} kg
                   </span>
                 </li>
@@ -483,6 +483,7 @@ export function TrainerDashboard() {
             </ul>
           )}
         </Card>
+        </div>
       </div>
       <Dialog
         open={Boolean(reminder)}
@@ -493,6 +494,49 @@ export function TrainerDashboard() {
         onCancel={() => setReminder(null)}
       />
     </div>
+  );
+}
+
+function formatCompliance(att?: AttentionItem | null): string | null {
+  if (!att) return null;
+  return formatTrainingsFraction(att.completedInWindow ?? 0, att.expectedInWindow ?? 0);
+}
+
+function fromClientKey(item: DashboardFromClientItem): string {
+  return `${item.kind}-${item.clientId}-${item.sessionId ?? item.checkInId ?? item.at}`;
+}
+
+function FromClientRow({ item }: { item: DashboardFromClientItem }) {
+  const href =
+    item.sessionId != null
+      ? `/clients/${item.clientId}/sessions/${item.sessionId}`
+      : `/clients/${item.clientId}`;
+  const kindLabel =
+    item.kind === "session_reply"
+      ? "Odpowiedź"
+      : item.kind === "session_note"
+        ? "Wiadomość"
+        : item.kind === "out_of_order"
+          ? "Poza kolejką"
+          : "Check-in";
+  return (
+    <li>
+      <Link
+        href={href}
+        className="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 rounded-md focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+      >
+        <span className="flex min-w-0 items-center gap-2.5">
+          <Avatar name={item.clientName} size="sm" />
+          <span className="min-w-0">
+            <span className="block break-words text-sm font-medium">{item.clientName}</span>
+            <span className="mt-0.5 block break-words text-xs text-muted-strong">{item.preview}</span>
+          </span>
+        </span>
+        <span className="shrink-0 pl-8 font-mono text-[11px] uppercase tracking-[var(--track-label)] text-muted sm:pl-0">
+          {kindLabel}
+        </span>
+      </Link>
+    </li>
   );
 }
 
@@ -509,37 +553,33 @@ function OnboardingStep({ done, children }: { done: boolean; children: ReactNode
   );
 }
 
+/** KPI bez boxa — liczby stoją na tle strony, ramki zostają dla treści. */
 function StatCard({
   label,
   value,
   href,
   delta,
   valueClassName,
-  icon,
 }: {
   label: string;
   value: string | number;
   href: string;
   delta?: string;
   valueClassName?: string;
-  icon?: ReactNode;
 }) {
   return (
     <Link
       href={href}
-      className="block h-full rounded-xl focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+      className="-mx-2 block rounded-lg px-2 py-1.5 transition-colors duration-[var(--dur-fast)] hover:bg-surface focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
     >
-      <Card className="relative h-full transition-colors hover:border-border-strong">
-        {icon ? <span className="absolute top-5 right-5 sm:top-6 sm:right-6">{icon}</span> : null}
-        <StatBlock
-          label={label}
-          value={value}
-          size="lg"
-          delta={delta}
-          reserveDelta
-          valueClassName={valueClassName}
-        />
-      </Card>
+      <StatBlock
+        label={label}
+        value={value}
+        size="lg"
+        delta={delta}
+        reserveDelta
+        valueClassName={valueClassName}
+      />
     </Link>
   );
 }
@@ -580,8 +620,19 @@ function resolveStatus(client: ClientActivityItem, att?: AttentionItem): RowStat
 }
 
 function formatSessions(sessions7d: number, weeklyTarget: number | null): string {
-  if (weeklyTarget != null && weeklyTarget > 0) return `${sessions7d}/${weeklyTarget} sesji`;
-  return `${sessions7d} sesji`;
+  // Ułamek tylko w drodze do celu; „3/1 sesji" po przekroczeniu wygląda jak błąd.
+  if (weeklyTarget != null && weeklyTarget > 0 && sessions7d < weeklyTarget) {
+    return `${sessions7d}/${weeklyTarget} sesji`;
+  }
+  return sessionsLabel(sessions7d);
+}
+
+function sessionsLabel(n: number): string {
+  if (n === 1) return "1 sesja";
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} sesje`;
+  return `${n} sesji`;
 }
 
 /** Daty ISO YYYY-MM-DD → dziś / wczoraj / N dni temu / brak sesji. */

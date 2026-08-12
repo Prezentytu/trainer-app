@@ -695,6 +695,8 @@ export type SessionSummary = {
   planId: number | null;
   planName: string | null;
   dayLabel: string | null;
+  /** Trening wystartowany poza aktualną kolejką planu. */
+  outOfOrder?: boolean;
   performedOn: string;
   durationSeconds: number | null;
   note: string | null;
@@ -783,6 +785,19 @@ export type PortalWeekDay = {
   label: string;
   completed: boolean;
   isToday: boolean;
+  /** Ostatnia ukończona sesja tego dnia — prefill „Powtórz”. */
+  lastCompletedSessionId?: number | null;
+};
+
+/** Podgląd dnia planu z portalu (GET /days/{dayId}). */
+export type PortalDayPreview = {
+  assignmentId: number;
+  planId: number;
+  planName: string;
+  day: PlanDay;
+  completed: boolean;
+  isDue: boolean;
+  lastCompletedSessionId: number | null;
 };
 
 /** Sesja w toku (świeża lub zalegająca) zwracana z home portalu. */
@@ -827,8 +842,22 @@ export type AttentionItem = {
   message: string;
   daysSilent: number | null;
   compliancePct?: number | null;
+  /** Ukończone treningi w oknie compliance (14 dni) — do copy „N z M”. */
+  completedInWindow?: number | null;
+  expectedInWindow?: number | null;
   portalToken: string | null;
   action: "assign_plan" | "copy_portal_link" | string;
+};
+
+/** Sygnały od klientów na Panelu (wiadomości + niskie check-iny). */
+export type DashboardFromClientItem = {
+  kind: "session_reply" | "session_note" | "low_checkin" | "out_of_order";
+  clientId: number;
+  clientName: string;
+  sessionId?: number | null;
+  checkInId?: number | null;
+  preview: string;
+  at: string;
 };
 
 export type MuscleVolumeGroup = {
@@ -886,6 +915,8 @@ export type DashboardData = {
   recentSessions: (SessionSummary & { clientName: string })[];
   recentPrs: (ClientRecord & { clientId: number; clientName: string })[];
   attention: AttentionItem[];
+  /** Nieprzeczytane wiadomości z sesji + niskie check-iny (7 dni). */
+  fromClients?: DashboardFromClientItem[];
   clientActivity: ClientActivityItem[];
   sessionsLast7Days: number;
   sessionsPrev7Days: number;
@@ -1295,6 +1326,8 @@ export const api = {
       request<PortalHome>(
         `/api/portal/${token}${today ? `?today=${encodeURIComponent(today)}` : ""}`,
       ),
+    day: (token: string, dayId: number) =>
+      request<PortalDayPreview>(`/api/portal/${token}/days/${dayId}`),
     sessions: (token: string) => request<PortalSessionSummary[]>(`/api/portal/${token}/sessions`),
     records: (token: string) => request<ClientRecord[]>(`/api/portal/${token}/records`),
     mostImproved: (token: string, days = 90) =>

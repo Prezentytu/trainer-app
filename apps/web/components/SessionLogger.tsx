@@ -2170,9 +2170,11 @@ export function SessionLogger({
         />
       ) : null}
 
+      {/* Toast u góry, pod sticky nagłówkiem — nie koliduje z dockiem (timer przerwy)
+          ani klawiaturą; pointer-events-none: nigdy nie blokuje dotknięć. */}
       {prCelebrate ? (
         <div
-          className="pr-celebrate-in fixed bottom-28 left-1/2 z-[55] w-[min(100%-2rem,24rem)] -translate-x-1/2 rounded-xl border border-border-strong bg-surface-raised px-4 py-3.5"
+          className="pr-celebrate-in pointer-events-none fixed left-1/2 top-[calc(max(0.5rem,env(safe-area-inset-top))_+_5.25rem)] z-[55] w-[min(100%-2rem,24rem)] -translate-x-1/2 rounded-xl border border-border-strong bg-surface-raised px-4 py-3.5"
           role="status"
         >
           <p className="font-mono text-xs font-medium uppercase tracking-caps text-pr">
@@ -2369,8 +2371,11 @@ const SetRow = memo(function SetRow({
       <div className="flex min-h-11 items-center justify-end">
         <div className="flex w-6 shrink-0 items-center justify-center">
           {completed && set.isPr ? (
-            <span className="inline-flex h-[18px] items-center rounded-[var(--r-pill)] bg-pr-dim px-1 font-mono text-xs font-semibold tabular-nums text-pr">
-              ★ PR
+            <span
+              className="inline-flex h-[18px] shrink-0 items-center whitespace-nowrap rounded-[var(--r-pill)] bg-pr-dim px-1 font-mono text-[11px] font-semibold leading-none text-pr"
+              title="Rekord osobisty (PR)"
+            >
+              PR
             </span>
           ) : below && targetLabel ? (
             <span

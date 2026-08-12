@@ -38,6 +38,16 @@ public class MvpRetentionTests : IClassFixture<TestWebAppFactory>
     }
 
     [Fact]
+    public async Task Dashboard_IncludesFromClients()
+    {
+        var res = await _client.GetAsync("/api/dashboard");
+        res.EnsureSuccessStatusCode();
+        var json = await res.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(json.TryGetProperty("fromClients", out var fromClients));
+        Assert.Equal(JsonValueKind.Array, fromClients.ValueKind);
+    }
+
+    [Fact]
     public async Task Dashboard_IncludesClientActivityAndWeeklyStats()
     {
         var res = await _client.GetAsync("/api/dashboard");

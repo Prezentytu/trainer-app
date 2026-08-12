@@ -313,6 +313,11 @@ public class WorkoutSession
     public DateTime? ClientReplyReadAt { get; set; }
     // "in_progress" | "completed" | "abandoned"
     public string Status { get; set; } = "in_progress";
+    /// <summary>
+    /// Sesja wystartowana na innym dniu planu niż aktualnie należny (trening do przodu / poza kolejką).
+    /// Ustawiane raz przy starcie — nie przeliczane post-hoc.
+    /// </summary>
+    public bool OutOfOrder { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public List<LoggedExercise> Exercises { get; set; } = [];

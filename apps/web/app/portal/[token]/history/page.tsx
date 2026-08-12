@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, PortalSessionSummary } from "@/lib/api";
-import { EmptyState, ErrorBanner } from "@/components/ui";
+import { Button, EmptyState, ErrorBanner } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { PortalPageSkeleton } from "@/components/skeletons";
 import { formatDurationMinutes } from "@/lib/estimateDuration";
@@ -54,18 +54,48 @@ function sessionMeta(s: PortalSessionSummary): string {
 export default function PortalHistoryPage() {
   const params = useParams<{ token: string }>();
   const token = params.token;
+  const router = useRouter();
   const [history, setHistory] = useState<PortalSessionSummary[] | null>(null);
+  const [clientId, setClientId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [repeatingId, setRepeatingId] = useState<number | null>(null);
   const todayIso = useMemo(() => todayIsoLocal(), []);
 
   const load = useCallback(() => {
-    api.portal
-      .sessions(token)
-      .then(setHistory)
+    Promise.all([
+      api.portal.sessions(token),
+      api.portal.home(token, todayIso).catch(() => null),
+    ])
+      .then(([sessions, home]) => {
+        setHistory(sessions);
+        setClientId(home?.client.id ?? sessions[0]?.clientId ?? null);
+      })
       .catch((e: Error) => setError(e.message));
-  }, [token]);
+  }, [token, todayIso]);
 
   useEffect(load, [load]);
+
+  const repeat = useCallback(
+    async (s: PortalSessionSummary) => {
+      if (clientId == null) return;
+      setRepeatingId(s.id);
+      setError(null);
+      try {
+        const session = await api.portal.startSession(token, {
+          clientId,
+          repeatSessionId: s.id,
+          assignmentId: s.assignmentId,
+          planId: s.planId,
+          performedOn: todayIso,
+        });
+        router.push(`/portal/${token}/session/${session.id}`);
+      } catch (e) {
+        setError((e as Error).message);
+        setRepeatingId(null);
+      }
+    },
+    [clientId, router, todayIso, token],
+  );
 
   const thisMonthIso = todayIso.slice(0, 7);
   const monthSessions = (history ?? []).filter((s) => monthKey(s.performedOn) === thisMonthIso);
@@ -144,35 +174,48 @@ export default function PortalHistoryPage() {
                 {sessions.map((s) => {
                   const prCount = (s.prs ?? []).length;
                   const meta = sessionMeta(s);
+                  const busy = repeatingId === s.id;
                   return (
-                    <li key={s.id}>
-                      <Link
-                        href={`/portal/${token}/session/${s.id}?from=history`}
-                        className="flex min-h-14 items-center gap-3 py-3.5 transition-colors duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:bg-surface-raised/50 focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:bg-surface-hover active:scale-[0.995]"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-baseline gap-2">
-                            <p className="text-[15px] font-semibold tracking-tight text-foreground">
-                              {formatWhen(s.performedOn, todayIso)}
+                    <li key={s.id} className="py-3.5">
+                      <div className="flex items-start gap-3">
+                        <Link
+                          href={`/portal/${token}/session/${s.id}?from=history`}
+                          className="flex min-h-11 min-w-0 flex-1 items-center gap-3 transition-colors duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:bg-surface-raised/50 focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:bg-surface-hover active:scale-[0.995]"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-baseline gap-2">
+                              <p className="text-[15px] font-semibold tracking-tight text-foreground">
+                                {formatWhen(s.performedOn, todayIso)}
+                              </p>
+                              {prCount > 0 ? (
+                                <span className="font-mono text-xs font-medium tracking-caps text-pr">
+                                  {prCount === 1 ? "★ PR" : `★ ${prCount}× PR`}
+                                </span>
+                              ) : null}
+                            </div>
+                            <p className="mt-0.5 break-words text-sm text-foreground-secondary">
+                              {sessionTitle(s)}
+                              {s.planName && s.dayLabel && s.planName !== s.dayLabel ? (
+                                <span className="text-muted"> · {s.planName}</span>
+                              ) : null}
                             </p>
-                            {prCount > 0 ? (
-                              <span className="font-mono text-xs font-medium tracking-caps text-pr">
-                                {prCount === 1 ? "★ PR" : `★ ${prCount}× PR`}
-                              </span>
+                            {meta ? (
+                              <p className="mt-1 font-mono text-sm tabular-nums text-muted">{meta}</p>
                             ) : null}
                           </div>
-                          <p className="mt-0.5 break-words text-sm text-foreground-secondary">
-                            {sessionTitle(s)}
-                            {s.planName && s.dayLabel && s.planName !== s.dayLabel ? (
-                              <span className="text-muted"> · {s.planName}</span>
-                            ) : null}
-                          </p>
-                          {meta ? (
-                            <p className="mt-1 font-mono text-sm tabular-nums text-muted">{meta}</p>
-                          ) : null}
-                        </div>
-                        <Icon name="caret-right" size={18} className="shrink-0 text-muted-faint" decorative />
-                      </Link>
+                          <Icon name="caret-right" size={18} className="shrink-0 text-muted-faint" decorative />
+                        </Link>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          disabled={repeatingId != null || clientId == null}
+                          loading={busy}
+                          onClick={() => void repeat(s)}
+                          className="shrink-0"
+                        >
+                          {busy ? "…" : "Powtórz"}
+                        </Button>
+                      </div>
                     </li>
                   );
                 })}

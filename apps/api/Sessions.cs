@@ -139,6 +139,38 @@ public static class Sessions
         return (session, null);
     }
 
+    /// <summary>
+    /// Następny dzień planu w cyklu ukończeń: pierwszy w kolejności (WeekNumber, Order)
+    /// z najmniejszą liczbą ukończonych sesji w danym przypisaniu.
+    /// </summary>
+    public static async Task<(int? DayId, Dictionary<int, int> CompletionCounts)> NextDueDayAsync(
+        AppDb db, int clientId, int assignmentId, int planId)
+    {
+        var days = await db.PlanDays
+            .Where(d => d.PlanId == planId)
+            .OrderBy(d => d.WeekNumber)
+            .ThenBy(d => d.Order)
+            .Select(d => new { d.Id })
+            .ToListAsync();
+
+        var completionCounts = days.Count == 0
+            ? new Dictionary<int, int>()
+            : (await db.WorkoutSessions
+                .Where(s => s.ClientId == clientId && s.AssignmentId == assignmentId
+                            && s.Status == "completed" && s.PlanDayId != null)
+                .GroupBy(s => s.PlanDayId!.Value)
+                .Select(g => new { DayId = g.Key, Count = g.Count() })
+                .ToListAsync())
+                .ToDictionary(x => x.DayId, x => x.Count);
+
+        if (days.Count == 0) return (null, completionCounts);
+
+        var minCompletions = days.Min(d => completionCounts.GetValueOrDefault(d.Id));
+        var next = days.FirstOrDefault(d =>
+            completionCounts.GetValueOrDefault(d.Id) == minCompletions);
+        return (next?.Id, completionCounts);
+    }
+
     public static async Task<(WorkoutSession? Session, IResult? Error)> StartAsync(
         AppDb db, StartSessionInput input, bool requireDayOwnedByClient = false)
     {
@@ -165,13 +197,17 @@ public static class Sessions
                 return (null, Results.NotFound());
         }
 
+        // Powtórka = osobna sesja bez PlanDayId (nie zalicza dnia w cyklu).
+        var isRepeat = input.RepeatSessionId is not null;
+        var planDayId = isRepeat ? null : input.PlanDayId;
+
         PlanDay? day = null;
-        if (input.PlanDayId is not null)
+        if (planDayId is not null)
         {
             day = await db.PlanDays
                 .Include(d => d.Items).ThenInclude(i => i.Exercise)
                 .Include(d => d.Items).ThenInclude(i => i.PrescribedSets)
-                .FirstOrDefaultAsync(d => d.Id == input.PlanDayId);
+                .FirstOrDefaultAsync(d => d.Id == planDayId);
             if (day is null) return (null, Results.NotFound());
 
             if (requireDayOwnedByClient)
@@ -186,15 +222,30 @@ public static class Sessions
         var dateErr = ValidatePerformedOn(performedOn);
         if (dateErr is not null) return (null, dateErr);
 
+        var outOfOrder = false;
+        if (!isRepeat && planDayId is int startedDayId && input.AssignmentId is int asgId)
+        {
+            var assignment = await db.Assignments.AsNoTracking()
+                .FirstOrDefaultAsync(a => a.Id == asgId);
+            if (assignment is not null)
+            {
+                var (dueDayId, _) = await NextDueDayAsync(
+                    db, input.ClientId, asgId, assignment.PlanId);
+                if (dueDayId is int due && due != startedDayId)
+                    outOfOrder = true;
+            }
+        }
+
         var maxes = await PlanLoads.LatestMaxesAsync(db, input.ClientId);
         var session = new WorkoutSession
         {
             ClientId = input.ClientId,
             AssignmentId = input.AssignmentId,
-            PlanDayId = input.PlanDayId,
+            PlanDayId = planDayId,
             PlanId = input.PlanId ?? day?.PlanId,
             PerformedOn = performedOn,
             Status = "in_progress",
+            OutOfOrder = outOfOrder,
         };
 
         if (input.RepeatSessionId is int repeatId)
@@ -207,6 +258,8 @@ public static class Sessions
             PrefillFromSession(session, source);
             if (session.PlanId is null)
                 session.PlanId = source.PlanId;
+            if (session.AssignmentId is null)
+                session.AssignmentId = source.AssignmentId;
         }
         else if (day is not null)
             PrefillFromDay(session, day, maxes);

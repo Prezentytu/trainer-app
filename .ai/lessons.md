@@ -513,4 +513,11 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: Każdy wybór z listy encji (ćwiczenie, dzień planu, klient) idzie przez `SearchPicker` (`components/SearchPicker.tsx`) albo `ExerciseCombobox` — trigger jak pole, po otwarciu input z filtrowaniem (`foldDiacritics`), klawiatura ↑ ↓ Enter Esc, wiersze ≥ 44px. Natywny `<select>` dopuszczalny tylko dla krótkich, stałych enumów — a i tam preferuj `SegmentedControl`/`Pill`.
 **Dotyczy**: `components/SearchPicker.tsx`, `portal/[token]/calculator`, `clients/[id]` (dialog „Wpisz trening za klienta”), każdy przyszły wybór z listy.
 
+## Toasty/overlaye fixed: nigdy nad dockiem sesji, zawsze pointer-events-none
+
+**Kontekst**: Baner celebracji PR („★ Rekord osobisty") był `fixed bottom-28 z-[55]` — pojawiał się dokładnie w momencie startu auto-przerwy i przez ~3 s zasłaniał timer przerwy oraz przyciski −15/+15/Pomiń w docku (`z-50`), a przy otwartej klawiaturze dock podjeżdżał pod baner jeszcze mocniej.
+**Problem**: (1) Dolna krawędź ekranu w sesji jest zajęta przez dock (timer przerwy, count-up „od serii", stepper wartości) — każdy dodatkowy fixed element na dole koliduje z nim czasowo lub przestrzennie. (2) Toast bez `pointer-events-none` blokuje kliknięcia w to, co zasłania.
+**Zasada**: Nienaruszalna strefa dolna w sesji należy do `SessionDock` + klawiatury. Pasywne toasty/celebracje (bez przycisków) idą na górę, pod sticky nagłówek (`top-[calc(max(0.5rem,env(safe-area-inset-top))_+_5.25rem)]`), zawsze z `pointer-events-none`. Elementy interaktywne na dole mogą żyć wyłącznie wewnątrz docka.
+**Dotyczy**: `SessionLogger.tsx` (prCelebrate), każdy przyszły toast/banner w widoku sesji.
+
 ---

@@ -24,3 +24,13 @@ export function polishExerciseCount(n: number): string {
 export function polishSetCount(n: number): string {
   return polishPlural(n, "seria", "serie", "serii");
 }
+
+export function polishTrainingCount(n: number): string {
+  return polishPlural(n, "trening", "treningi", "treningów");
+}
+
+/** „3 z 4 treningów" — gdy expected ≤ 0, zwraca null. */
+export function formatTrainingsFraction(completed: number, expected: number): string | null {
+  if (expected <= 0) return null;
+  return `${completed} z ${polishTrainingCount(expected)}`;
+}
