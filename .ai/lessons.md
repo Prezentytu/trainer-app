@@ -499,6 +499,13 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: Na ekranach zamykających flow (podsumowanie, finisz) główne CTA żyje w sticky barze (`.session-chrome`, `fixed bottom-0`, safe-area) — zawsze w thumb zone; treść dostaje `pb` i przewija się pod chrome. Etykieta nazywa rezultat/cel („Wróć do ekranu głównego”), nie stan („Gotowe”). Akcje korekcyjne (edytuj/popraw) idą do kontekstu danych, których dotyczą, nie do stosu CTA.
 **Dotyczy**: `SessionSummaryView.tsx`, każdy przyszły ekran końcowy / confirm z listą powyżej CTA.
 
+## Copy w UI: język użytkownika, zero nazw technicznych i tłumaczenia się z konfiguracji
+
+**Kontekst**: Profil portalu miał dopisek „Przerwa na blokadzie pojawia się w Now Playing przeglądarki" oraz hint „Push wymaga konfiguracji. Przypomnienia e-mail ustawia trener" przy wyłączonym na stałe switchu.
+**Problem**: (1) „Now Playing", „VAPID", „push wymaga konfiguracji" to nazwy komponentów/wewnętrznego stanu systemu — klient ich nie zna i nie musi znać. (2) Permanentnie wyłączona kontrolka z technicznym usprawiedliwieniem to szum: użytkownik nie może nic z nią zrobić (łamie test odejmowania i zasadę autonomii). (3) Objaśnienie działającego poprawnie ficzera („pojawia się w…") to dokumentacja, nie UI.
+**Zasada**: Copy pisze się słowami użytkownika: co ma zrobić albo co zyskuje — nigdy jak system działa w środku. Nazwy techniczne (Now Playing, service worker, push/VAPID, cache) nie występują w UI. Ficzer niedostępny przez brak konfiguracji = ukryj kontrolkę, zamiast pokazywać disabled + wymówkę. Hint zostaje tylko, gdy jest akcjonowalny („Najpierw dodaj apkę do ekranu głównego…").
+**Dotyczy**: `portal/[token]/profile`, wszystkie hinty/dopiski w portalu i panelu, przyszłe stany „wymaga konfiguracji".
+
 ## Wybór encji: picker z wyszukiwaniem, nigdy natywny `<select>`
 
 **Kontekst**: Kalkulator %1RM w portalu miał natywny `<select>` z listą ćwiczeń — na iOS renderuje się jako systemowy dropdown (niebieski highlight, obcy krój), bez możliwości wpisania frazy.

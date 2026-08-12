@@ -2,9 +2,20 @@
 
 import { useState } from "react";
 import { api } from "@/lib/api";
+import { Icon } from "@/components/Icon";
 import { Button, ErrorBanner, inputClass } from "@/components/ui";
 
-export function CheckInCard({ token, onSaved }: { token: string; onSaved?: () => void }) {
+export function CheckInCard({
+  token,
+  onSaved,
+  defaultCollapsed = false,
+}: {
+  token: string;
+  onSaved?: () => void;
+  /** Na ekranie Dziś: zwinięty wiersz; tap rozwija formularz. */
+  defaultCollapsed?: boolean;
+}) {
+  const [open, setOpen] = useState(!defaultCollapsed);
   const [moodScore, setMoodScore] = useState<number | null>(null);
   const [sleepScore, setSleepScore] = useState<number | null>(null);
   const [note, setNote] = useState("");
@@ -25,10 +36,55 @@ export function CheckInCard({ token, onSaved }: { token: string; onSaved?: () =>
     }
   };
 
+  if (defaultCollapsed && !open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-expanded={false}
+        className="flex min-h-11 w-full items-center gap-3 rounded-xl border border-border bg-surface-raised px-4 py-3 text-left transition-[background-color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.98]"
+      >
+        <div className="min-w-0 flex-1">
+          <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
+            Jak się masz
+          </p>
+          <p className="mt-1 text-sm text-muted">Samopoczucie i sen — 10 sekund</p>
+        </div>
+        <Icon name="caret-down" size={18} className="shrink-0 text-muted" decorative />
+      </button>
+    );
+  }
+
   return (
     <section className="rounded-xl border border-border bg-surface-raised px-4 py-4">
-      <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">Jak się masz</p>
-      <p className="mt-1 text-sm text-muted">Dwie liczby pomagają trenerowi dopasować plan.</p>
+      {defaultCollapsed ? (
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          aria-expanded={true}
+          className="flex min-h-11 w-full items-center gap-3 text-left focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
+        >
+          <div className="min-w-0 flex-1">
+            <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
+              Jak się masz
+            </p>
+            <p className="mt-1 text-sm text-muted">Dwie liczby pomagają trenerowi dopasować plan.</p>
+          </div>
+          <Icon
+            name="caret-down"
+            size={18}
+            className="shrink-0 rotate-180 text-muted transition-transform duration-[var(--dur-med)] ease-[var(--ease-out)]"
+            decorative
+          />
+        </button>
+      ) : (
+        <>
+          <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
+            Jak się masz
+          </p>
+          <p className="mt-1 text-sm text-muted">Dwie liczby pomagają trenerowi dopasować plan.</p>
+        </>
+      )}
       <ErrorBanner message={error} />
       <div className="mt-4 space-y-4">
         <Score label="Samopoczucie" value={moodScore} onChange={setMoodScore} />

@@ -161,11 +161,10 @@ export default function PortalProfilePage() {
     );
   }
 
-  const pushHint = !vapidKey
-    ? "Push wymaga konfiguracji. Przypomnienia e-mail ustawia trener."
-    : pushNeedsInstall
-      ? "Najpierw dodaj apkę do ekranu głównego — na iPhonie push działa tylko z ikony."
-      : undefined;
+  // Bez klucza VAPID wiersz push w ogóle się nie pokazuje — nie tłumaczymy się z konfiguracji.
+  const pushHint = pushNeedsInstall
+    ? "Najpierw dodaj apkę do ekranu głównego — na iPhonie push działa tylko z ikony."
+    : undefined;
 
   return (
     <div className="mx-auto max-w-lg space-y-8 pb-24">
@@ -182,7 +181,7 @@ export default function PortalProfilePage() {
 
       <section aria-label="Trening">
         <SectionHeader title="Trening" />
-        <ul className="divide-y divide-border border-y border-border">
+        <ul className="divide-y divide-border">
           <SettingsRow
             title="Auto-timer przerwy"
             right={
@@ -220,14 +219,11 @@ export default function PortalProfilePage() {
             }
           />
         </ul>
-        <p className="mt-2 text-xs text-muted">
-          Przerwa na blokadzie pojawia się w Now Playing przeglądarki.
-        </p>
       </section>
 
       <section aria-label="Aplikacja">
         <SectionHeader title="Aplikacja" />
-        <ul className="divide-y divide-border border-y border-border">
+        <ul className="divide-y divide-border">
           <SettingsRow
             title="Jasny motyw"
             right={
@@ -237,17 +233,19 @@ export default function PortalProfilePage() {
               />
             }
           />
-          <SettingsRow
-            title="Przypomnienia push"
-            hint={pushHint}
-            right={
-              <Switch
-                checked={pushEnabled}
-                disabled={!vapidKey || pushSaving || pushNeedsInstall}
-                onChange={(v) => void togglePush(v)}
-              />
-            }
-          />
+          {vapidKey ? (
+            <SettingsRow
+              title="Przypomnienia push"
+              hint={pushHint}
+              right={
+                <Switch
+                  checked={pushEnabled}
+                  disabled={pushSaving || pushNeedsInstall}
+                  onChange={(v) => void togglePush(v)}
+                />
+              }
+            />
+          ) : null}
           <SettingsRow
             title="Jednostki"
             right={<span className="font-mono text-sm tabular-nums text-muted">kg</span>}
@@ -264,7 +262,7 @@ export default function PortalProfilePage() {
 
       <section aria-label="Więcej">
         <SectionHeader title="Więcej" />
-        <ul className="divide-y divide-border border-y border-border">
+        <ul className="divide-y divide-border">
           <NavRow
             href={`/portal/${token}/intake`}
             icon="clipboard-text"

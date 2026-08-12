@@ -10,19 +10,23 @@ Dokument researchowy (bez implementacji) — źródło prawdy pod roadmapę prod
 2. Trenerzy najgłośniej narzekają na **ceny/ukryte opłaty**, **data lock-in**, **wolne programowanie** i **fragmentację** (WhatsApp + Excel + osobna apka płatności).
 3. Klienci rezygnują głównie przez **brak widocznego progresu** (okno 8–16 tygodni) i **tarcie logowania** (68% porzuceń logowania = „za długo / za dużo kroków"). Reguła: **20 dni ciszy ≈ +68% ryzyka churnu**.
 4. Nasze atuty vs rynek: magic-link **bez konta**, PWA + offline, composer „3x8 rir2", Gravitus-owy logger, maxy/%1RM, zalążek „Wymaga uwagi".
-5. Największa niewykorzystana wartość (kolejność rekomendowana): **radar churnu** → **auto-raport postępów dla klienta** → **podmiana ćwiczenia w sesji** → check-iny między sesjami → komunikacja in-app (MVP notatki) → eksport danych.
+5. Największa niewykorzystana wartość (stan 30.07): radar churnu → auto-raport → swap → check-iny → komunikacja → eksport. **Aktualizacja 12.08:** większość wdrożona — patrz gap w [`2026-08-12-research-rynkowy-i-strategia-launchu.md`](2026-08-12-research-rynkowy-i-strategia-launchu.md); kolejny fokus = GTM / design partnerzy / cennik, nie kolejna fala ficzerów.
 6. Świadomie **nie** budujemy: karzącej gamifikacji (streaki-kara), social feedu, feature-bloated all-in-one na start.
 7. Biznes (kalendarz / pakiety / płatności) = osobna ścieżka w [`2026-07-30-roadmap-auth-i-biznes.md`](2026-07-30-roadmap-auth-i-biznes.md) — tu skupiamy się na coaching loop (program → log → progres → retencja).
 
-> Nie kodować z tego pliku. Każdy killer feature dostanie własny spec implementacyjny po rozstrzygnięciu Open Questions.
+> Nie kodować z tego pliku. Strategia launchu i zaktualizowany research: [`2026-08-12-research-rynkowy-i-strategia-launchu.md`](2026-08-12-research-rynkowy-i-strategia-launchu.md).
 
-## Open Questions (bramka przed kolejnymi specami)
+## Open Questions — status (aktualizacja 2026-08-12)
 
-- Q1: Które 2–3 killer features wchodzą do najbliższego cyklu (MVP retencji)?
-- Q2: Radar churnu — tylko sygnały z sesji (dni bez treningu / spadek compliance), czy od razu też check-iny?
-- Q3: Auto-raport — push do klienta (email / PWA notification) czy tylko widok w portalu „Twój miesiąc"?
-- Q4: Komunikacja — notatki przy sesji wystarczą na MVP, czy wątek chat-like per klient?
-- Q5: Eksport danych — priorytet marketingowy (anti lock-in) czy odłożyć do post-auth?
+Większość Q1–Q5 rozstrzygnięta wdrożeniem (radar, check-iny, komentarze/notatki, eksport, auth). **Strategia launchu, cennik i GTM** → [`2026-08-12-research-rynkowy-i-strategia-launchu.md`](2026-08-12-research-rynkowy-i-strategia-launchu.md) (Open Questions Q1–Q4: model cenowy, billing, design partnerzy, brand).
+
+| # | Pytanie (oryg.) | Status |
+|---|---|---|
+| Q1 | Które 2–3 killer features do cyklu retencji? | **Done** — radar, check-iny, swap, eksport, push/trends (patrz gap w dok. 08-12) |
+| Q2 | Radar — sesje czy też check-iny? | **Done** — sesje + compliance + stagnation + wellness |
+| Q3 | Auto-raport — push czy tylko portal? | **Częściowo** — trends/progres w portalu; Peak-End narracja = L5 w strategii launchu |
+| Q4 | Komunikacja — notatki vs chat? | **MVP notatki/komentarze** — pełny czat później |
+| Q5 | Eksport — teraz czy post-auth? | **Done** — JSON + CSV po auth |
 
 ---
 
@@ -110,27 +114,29 @@ flowchart LR
 
 Legenda statusu: **OK** rozwiązane · **~** częściowo · **—** brak · **biz** w roadmapie biznesowej
 
-| Pain | Stan WA dziś | Spec / obszar | Gap |
+> **Aktualizacja 12.08:** pełna tabela ze statusami „wdrożone" → [`2026-08-12-research-rynkowy-i-strategia-launchu.md`](2026-08-12-research-rynkowy-i-strategia-launchu.md) §1.7. Poniżej oryginalna tabela 30.07 + kolumna status.
+
+| Pain | Stan WA 30.07 | Spec / obszar | Status 12.08 |
 |---|---|---|---|
-| T1 Ceny / ukryte opłaty | Brak billing | `roadmap-auth-i-biznes` Grupa 3 | Pozycjonowanie przy wejściu w SaaS |
-| T2 Data lock-in | Brak eksportu | — | Nowy spec: eksport JSON/CSV |
-| T3 Wolne programowanie | Composer, inline exercise, RIR, list/sheet | `quick-entry-composer`, `rir-support`, `method-templates` (oczekujące) | Szablony metod = kolejny skok |
-| T4 Fragmentacja | Coaching w jednym miejscu | auth-i-biznes + komunikacja (ten dok.) | Chat/notatki + cash |
-| T5 Churn visibility | „Wymaga uwagi" (brak planu) | `trainer-portal-v2-friction-audit` | Rozszerzyć o dni bez treningu / compliance |
-| T6 Skala personalizacji | Ręczne | — | Radar + check-iny |
-| T7 Mobile coach | Responsive web | — | Wystarczy na MVP |
-| T8 Admin / cash | Brak | `roadmap-auth-i-biznes` | **biz** — nie dublować tu |
-| K1 Widoczny progres | PR, maxy, e1RM, sparkline (głównie trener) | `workout-logging-stats`, `portal-session-preview-client-view` | Auto-raport **dla klienta** |
-| K2 Komunikacja | Brak | — | Notatki sesji → wątek |
-| K3 Adaptacja planu | Sztywny dzień w sesji | — | Swap ćwiczenia + zamienniki |
-| K4 Między sesjami | Brak | — | Check-iny / habits |
-| K5 Lifecycle celów | Pole „cel" tekstowe | — | Później (cele mierzalne) |
-| A1 Friction loggera | Gravitus path w toku | `gravitus-logger-bottlenecks` | Utrzymać jakość; mierzyć czas logowania |
-| A2 Swap w sesji | Brak | — | Killer feature |
-| A3 Utrata danych | Autosave + offline queue | `client-portal-pwa`, gravitus | Non-negotiable regression tests |
+| T1 Ceny / ukryte opłaty | Brak billing | strategia launchu Q1/Q2 | Decyzja cennika / billing |
+| T2 Data lock-in | Brak eksportu | `paid-mvp-retention`, `pre-launch-hardening` | **OK** JSON + CSV |
+| T3 Wolne programowanie | Composer, inline exercise, RIR | + `ai-plan-import`; `method-templates` = L4 | **~** method templates next |
+| T4 Fragmentacja | Coaching w jednym miejscu | notatki, komentarze; cash = Grupa 3 | **~** |
+| T5 Churn visibility | „Wymaga uwagi" (brak planu) | `analiza-konkurencji` Fala 1 | **OK** radar + stagnation |
+| T6 Skala personalizacji | Ręczne | `measurements-checkins-swap` | **OK** check-iny |
+| T7 Mobile coach | Responsive web | audyt L3 w strategii launchu | **~** |
+| T8 Admin / cash | Brak | `roadmap-auth-i-biznes` | **biz** |
+| K1 Widoczny progres | PR, maxy (głównie trener) | trends, portal progres; Peak-End = L5 | **~** |
+| K2 Komunikacja | Brak | komentarze, notatki, push, e-mail | **~** MVP |
+| K3 Adaptacja planu | Sztywny dzień | `measurements-checkins-swap` | **OK** swap |
+| K4 Między sesjami | Brak | check-iny + pomiary | **OK** |
+| K5 Lifecycle celów | Pole „cel" tekstowe | — | Później |
+| A1 Friction loggera | Gravitus path w toku | hardening + Styrka parity | **OK** — nie regresować |
+| A2 Swap w sesji | Brak | `measurements-checkins-swap` | **OK** |
+| A3 Utrata danych | Autosave + offline | + lokalny Phosphor / SW | **OK** |
 | A4 Guilt gamification | Brak (dobrze) | anty-scope | Nie dodawać |
-| A5 Onboarding | Magic-link bez konta | `client-portal-pwa` | OK — chronić |
-| A6 Sens logowania | Session summary | `portal-session-preview-client-view` | Połączyć z tygodniowym raportem |
+| A5 Onboarding | Magic-link bez konta | portal PWA | **OK** — chronić |
+| A6 Sens logowania | Session summary | Peak-End L5 | **~** |
 
 ### Nasze mocne karty (nie psuć)
 
@@ -204,31 +210,27 @@ Priorytetyzacja: **wartość** (retencja trenera × retencja klienta) vs **wysi�
 
 ```mermaid
 flowchart TD
-  thisDoc["pain-pointy-i-killer-features"] --> p0a["Spec: radar churnu"]
-  thisDoc --> p0b["Spec: auto-raport klienta"]
-  thisDoc --> p1a["Spec: swap w sesji"]
-  thisDoc --> p1b["Spec: check-iny"]
+  thisDoc["pain-pointy-i-killer-features"] --> launch["research-rynkowy-i-strategia-launchu 08-12"]
+  thisDoc --> p0a["Radar churnu — wdrozone"]
+  thisDoc --> p0b["Auto-raport / progres — czesciowo"]
+  thisDoc --> p1a["Swap w sesji — wdrozone"]
+  thisDoc --> p1b["Check-iny — wdrozone"]
   gravitus["gravitus-logger-bottlenecks"] --> p1a
   portal["client-portal-pwa + session-preview"] --> p0b
   v2["trainer-portal-v2 Wymaga uwagi"] --> p0a
   biz["roadmap-auth-i-biznes"] -.->|"nie dublowac"| thisDoc
-  methods["method-templates"] -.->|"P3 programowanie"| thisDoc
+  methods["method-templates"] -.->|"L4 w strategii launchu"| launch
 ```
 
-Ten dokument **nie zastępuje** roadmapy auth/biznes ani master roadmapy plan→trening. Uzupełnia je o warstwę **retencji i wartości coachingowej**.
+Ten dokument **nie zastępuje** roadmapy auth/biznes ani master roadmapy plan→trening. Uzupełnia je o warstwę **retencji i wartości coachingowej**. Kolejność GTM i priorytety L0–L7: [`2026-08-12-research-rynkowy-i-strategia-launchu.md`](2026-08-12-research-rynkowy-i-strategia-launchu.md).
 
 ---
 
-## Rekomendowana kolejność (gdy Q1 rozstrzygnięte)
+## Rekomendowana kolejność
 
-1. Domknąć jakość loggera / offline (regresje = utrata zaufania A3).
-2. **Radar churnu** na dashboardzie (szybki win z istniejących danych sesji).
-3. **Auto-raport** w portalu klienta (atak na K1).
-4. **Swap ćwiczenia** w loggerze.
-5. Check-iny → wzmocnienie radaru.
-6. Notatki przy sesji → ewent. wątek.
-7. Eksport danych (równolegle, niski koszt, mocny marketing).
-8. Biznes (kalendarz/pakiety) wg osobnej roadmapy — nie blokuje P0.
+**Historyczna (30.07 — w większości wykonana):** logger/offline → radar churnu → auto-raport → swap → check-iny → notatki → eksport → biznes.
+
+**Aktualna (12.08):** patrz Część 2–3 w [`2026-08-12-research-rynkowy-i-strategia-launchu.md`](2026-08-12-research-rynkowy-i-strategia-launchu.md) — Faza A design partnerzy, freemium cennik, onboarding <10 min, method templates (L4), Peak-End (L5), potem billing founding.
 
 ---
 
@@ -247,3 +249,4 @@ Ten dokument **nie zastępuje** roadmapy auth/biznes ani master roadmapy plan→
 | Data | Zmiana |
 |---|---|
 | 2026-07-30 | Pierwsza wersja: research pain pointów trenerów i klientów, gap analysis vs WA, priorytetyzacja killer features, anty-scope, open questions. |
+| 2026-08-12 | Q1–Q5 oznaczone statusami (wdrożone / częściowo); odnośnik do [`2026-08-12-research-rynkowy-i-strategia-launchu.md`](2026-08-12-research-rynkowy-i-strategia-launchu.md) (research v2 + GTM); zaktualizowano diagram relacji i rekomendowaną kolejność. |

@@ -8,10 +8,12 @@ import {
   ClientIntake,
   ClientCheckIn,
   hasEssentialIntake,
+  LoggedExercise,
   PortalExercise,
   PortalHome,
   PortalSessionSummary,
   ProgressReport,
+  SessionDetail,
 } from "@/lib/api";
 import { Button, ErrorBanner } from "@/components/ui";
 import { PortalHomeSkeleton } from "@/components/skeletons";
@@ -41,10 +43,50 @@ function schemeLine(
     : `${item.sets} × ${item.reps}`;
 }
 
+function schemeFromLogged(
+  ex: LoggedExercise,
+  exerciseMeta?: Pick<PortalExercise, "equipment" | "isUnilateral"> | null,
+): string {
+  const working = ex.sets.filter((s) => !s.isWarmup);
+  const sets = working.length > 0 ? working : ex.sets;
+  const n = sets.length;
+  if (n === 0) return "—";
+  const sample = sets.find((s) => s.targetReps != null || s.targetDurationSeconds != null) ?? sets[0];
+  if (sample.targetDurationSeconds != null) {
+    return `${n} × ${sample.targetDurationSeconds} s`;
+  }
+  if (sample.targetReps != null) {
+    const load = sample.targetWeightKg;
+    return load != null
+      ? `${n} × ${sample.targetReps} @ ${formatLoadDisplay(load, exerciseMeta)}`
+      : `${n} × ${sample.targetReps}`;
+  }
+  return `${n} serii`;
+}
+
 function setsProgressLabel(completed: number, total: number): string {
   if (total <= 0) return `${completed} serii`;
   return `${completed}/${total} serii`;
 }
+
+function exerciseCountLabel(n: number): string {
+  if (n === 1) return "1 ćwiczenie";
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+    return `${n} ćwiczenia`;
+  }
+  return `${n} ćwiczeń`;
+}
+
+type HeroRow = {
+  key: string | number;
+  name: string;
+  detail: string;
+  done: boolean;
+  partial: boolean;
+  exerciseId?: number;
+};
 
 export default function PortalTodayPage() {
   const params = useParams<{ token: string }>();
@@ -56,6 +98,7 @@ export default function PortalTodayPage() {
   const [intake, setIntake] = useState<ClientIntake | null>(null);
   const [checkIns, setCheckIns] = useState<ClientCheckIn[]>([]);
   const [exercises, setExercises] = useState<PortalExercise[]>([]);
+  const [liveSession, setLiveSession] = useState<SessionDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [repeating, setRepeating] = useState(false);
@@ -90,6 +133,25 @@ export default function PortalTodayPage() {
   }, [token, todayIso]);
 
   useEffect(load, [load]);
+
+  // Szczegóły sesji w toku — markery postępu na liście ćwiczeń.
+  // Stary liveSession jest ignorowany, dopóki id nie zgadza się z fresh (heroRows).
+  useEffect(() => {
+    const id = home?.inProgressSession?.id;
+    if (id == null) return;
+    let cancelled = false;
+    api.portal
+      .getSession(token, id)
+      .then((detail) => {
+        if (!cancelled) setLiveSession(detail);
+      })
+      .catch(() => {
+        /* fallback: heroRows używa listy z planu */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [home?.inProgressSession?.id, token]);
 
   const weekStrip = useMemo(
     () => buildWeekStrip(history.map((s) => s.performedOn)),
@@ -225,6 +287,46 @@ export default function PortalTodayPage() {
     token,
   ]);
 
+  const today = home?.today ?? null;
+  const fresh = home?.inProgressSession ?? null;
+  const stale = home?.staleSession ?? null;
+
+  const heroRows: HeroRow[] = useMemo(() => {
+    if (fresh && liveSession && liveSession.id === fresh.id) {
+      return liveSession.exercises.map((ex) => {
+        const doneCount = ex.sets.filter((s) => s.completed).length;
+        const total = ex.sets.length;
+        const done = total > 0 && doneCount === total;
+        const partial = doneCount > 0 && !done;
+        const meta = exerciseById.get(ex.exerciseId);
+        const detail = done
+          ? "✓"
+          : partial
+            ? `${doneCount}/${total}`
+            : schemeFromLogged(ex, meta);
+        return {
+          key: ex.id,
+          name: ex.exerciseName,
+          detail,
+          done,
+          partial,
+          exerciseId: ex.exerciseId,
+        };
+      });
+    }
+    if (today) {
+      return today.day.items.map((item) => ({
+        key: item.id,
+        name: item.exerciseName,
+        detail: schemeLine(item, exerciseById.get(item.exerciseId)),
+        done: false,
+        partial: false,
+        exerciseId: item.exerciseId,
+      }));
+    }
+    return [];
+  }, [fresh, liveSession, today, exerciseById]);
+
   if (!home) {
     return (
       <div>
@@ -234,9 +336,6 @@ export default function PortalTodayPage() {
     );
   }
 
-  const today = home.today;
-  const fresh = home.inProgressSession;
-  const stale = home.staleSession;
   const firstName = home.client.name.split(" ")[0];
   const tip = progress?.facts[0]?.text;
   const estMin = today ? estimateDayMinutes(today.day.items) : null;
@@ -250,6 +349,21 @@ export default function PortalTodayPage() {
   const cardSubtitle = today
     ? `${today.planName}${weekMeta ? ` · ${weekMeta}` : ""}`
     : null;
+
+  const exerciseCount = heroRows.length;
+  const metaRight = fresh
+    ? setsProgressLabel(fresh.completedSets, fresh.totalSets)
+    : estMin != null && exerciseCount > 0
+      ? `${exerciseCountLabel(exerciseCount)} · ${formatDurationApprox(estMin)}`
+      : exerciseCount > 0
+        ? exerciseCountLabel(exerciseCount)
+        : estMin != null
+          ? formatDurationApprox(estMin)
+          : null;
+
+  const goToLiveSession = () => {
+    if (fresh) router.push(`/portal/${token}/session/${fresh.id}`);
+  };
 
   return (
     <div className={`mx-auto max-w-lg space-y-8 ${showSticky ? "pb-36" : "pb-24"}`}>
@@ -343,14 +457,8 @@ export default function PortalTodayPage() {
             <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
               {fresh ? "Trening w toku" : "Dzisiejszy trening"}
             </p>
-            {fresh ? (
-              <p className="shrink-0 font-mono text-xs tabular-nums text-muted">
-                {setsProgressLabel(fresh.completedSets, fresh.totalSets)}
-              </p>
-            ) : estMin != null ? (
-              <p className="shrink-0 font-mono text-xs tabular-nums text-muted">
-                {formatDurationApprox(estMin)}
-              </p>
+            {metaRight ? (
+              <p className="shrink-0 font-mono text-xs tabular-nums text-muted">{metaRight}</p>
             ) : null}
           </div>
           {cardTitle ? (
@@ -368,16 +476,37 @@ export default function PortalTodayPage() {
             </p>
           ) : null}
 
-          {today && !fresh ? (
-            <ul className="mt-6 divide-y divide-border border-y border-border">
-              {today.day.items.map((item) => (
-                <li key={item.id} className="py-4">
-                  <p className="break-words text-[15px] font-semibold leading-snug text-foreground">
-                    {item.exerciseName}
-                  </p>
-                  <p className="mt-1 font-mono text-[15px] tabular-nums text-muted">
-                    {schemeLine(item, exerciseById.get(item.exerciseId))}
-                  </p>
+          {heroRows.length > 0 ? (
+            <ul className="mt-6 divide-y divide-border">
+              {heroRows.map((row) => (
+                <li key={row.key}>
+                  {fresh ? (
+                    <button
+                      type="button"
+                      onClick={goToLiveSession}
+                      className="flex min-h-11 w-full items-start justify-between gap-3 py-4 text-left transition-colors duration-[var(--dur-fast)] hover:bg-surface-hover/40 focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.99]"
+                    >
+                      <p
+                        className={`min-w-0 flex-1 break-words text-[15px] font-semibold leading-snug ${
+                          row.done ? "text-muted" : "text-foreground"
+                        }`}
+                      >
+                        {row.name}
+                      </p>
+                      <p className="shrink-0 font-mono text-[15px] tabular-nums text-muted">
+                        {row.detail}
+                      </p>
+                    </button>
+                  ) : (
+                    <div className="flex min-h-11 items-start justify-between gap-3 py-4">
+                      <p className="min-w-0 flex-1 break-words text-[15px] font-semibold leading-snug text-foreground">
+                        {row.name}
+                      </p>
+                      <p className="shrink-0 font-mono text-[15px] tabular-nums text-muted">
+                        {row.detail}
+                      </p>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
@@ -403,10 +532,11 @@ export default function PortalTodayPage() {
       )}
 
       {/* Poniżej foldu — nie konkurują z CTA „Rozpocznij trening". */}
-      <div className="space-y-6 border-t border-border pt-8">
+      <div className="space-y-6 pt-10">
         {!hasTodayCheckIn ? (
           <CheckInCard
             token={token}
+            defaultCollapsed
             onSaved={() => {
               void api.portal
                 .checkIns(token)
