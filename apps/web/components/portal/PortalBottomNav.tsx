@@ -61,7 +61,13 @@ export function PortalBottomNav({ token }: { token: string }) {
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex flex-col items-center gap-2.5 px-5 pb-[max(20px,env(safe-area-inset-bottom))]">
       {stickyCta ? (
         <div className="pointer-events-auto w-full max-w-lg">
-          <Button full size="lg" disabled={stickyCta.disabled} onClick={stickyCta.onClick}>
+          <Button
+            full
+            size="lg"
+            disabled={stickyCta.disabled}
+            loading={stickyCta.loading}
+            onClick={stickyCta.onClick}
+          >
             {stickyCta.label}
           </Button>
         </div>

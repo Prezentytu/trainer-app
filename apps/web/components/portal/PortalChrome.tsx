@@ -12,6 +12,8 @@ import {
 export type PortalStickyCta = {
   label: string;
   disabled?: boolean;
+  /** Spinner w Button — bez przygaszenia (perceived performance przy starcie sesji). */
+  loading?: boolean;
   onClick: () => void;
 };
 

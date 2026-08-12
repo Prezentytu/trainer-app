@@ -3,6 +3,7 @@
 import { Exercise, rirFromRpe } from "@/lib/api";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { Badge, IconButton, inputClass } from "@/components/ui";
+import { isDumbbellPair } from "@/lib/weight";
 import { demoMedia } from "@/lib/youtube";
 import { NumInput } from "./NumInput";
 import { SetSchemeEditor } from "./SetSchemeEditor";
@@ -195,6 +196,8 @@ export function TableExerciseRow({
           step={0.5}
           onChange={(v) => onPatch({ loadKg: v })}
           placeholder="dom."
+          title={isDumbbellPair(exercise ?? {}) ? "Ciężar jednej hantli (klient zobaczy 2×)" : "Ciężar (kg)"}
+          aria-label={isDumbbellPair(exercise ?? {}) ? "Ciężar na hantlę" : "Ciężar"}
         />
 
         <input

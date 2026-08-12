@@ -10,6 +10,8 @@ type ActiveField = "weight" | "reps";
 
 type Props = {
   activeField: ActiveField | null;
+  /** Fokus w polu notatki (ćwiczenie / trening / seria) — pokaż „Gotowe”. */
+  noteActive?: boolean;
   isTime?: boolean;
   onStepWeight: (delta: number) => void;
   onStepReps: (delta: number) => void;
@@ -74,6 +76,7 @@ function DockBtn({
 /** Przyklejony dok: [przerwa | czas od serii] + [pasek narzędzi]. */
 export function SessionDock({
   activeField,
+  noteActive = false,
   isTime = false,
   onStepWeight,
   onStepReps,
@@ -93,10 +96,11 @@ export function SessionDock({
   if (rest?.expanded) return null;
 
   const showTools = activeField != null;
+  const showNoteDone = noteActive && !showTools;
   const showRest = rest != null;
   const showSince = !showRest && sinceLastSetAt != null;
 
-  if (!showTools && !showRest && !showSince) return null;
+  if (!showTools && !showNoteDone && !showRest && !showSince) return null;
 
   const progress =
     rest && rest.totalSeconds > 0
@@ -205,6 +209,14 @@ export function SessionDock({
                 Gotowe
               </DockBtn>
             </div>
+          </div>
+        ) : null}
+
+        {showNoteDone ? (
+          <div className="flex justify-end">
+            <DockBtn primary onClick={onDone} title="Zamknij notatkę">
+              Gotowe
+            </DockBtn>
           </div>
         ) : null}
       </div>

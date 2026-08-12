@@ -4,6 +4,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { api, SessionDetail } from "@/lib/api";
 import { Button, SegmentedControl, Sheet, StatBlock } from "@/components/ui";
 import { formatKg } from "@/lib/plates";
+import { formatSetLoadReps } from "@/lib/weight";
 import { parseShareVariant, type ShareVariant } from "@/lib/shareCard";
 
 function formatDay(iso: string): string {
@@ -166,13 +167,17 @@ export function SessionSummaryView({
             {prHeadline(session.prs.length)}
           </p>
           <ul className="mt-3 space-y-4">
-            {session.prs.map((p) => (
+            {session.prs.map((p) => {
+              const ex = session.exercises.find((e) => e.exerciseId === p.exerciseId);
+              const loadReps =
+                p.weightKg != null && p.reps != null
+                  ? formatSetLoadReps(p.weightKg, p.reps, ex)
+                  : "—";
+              return (
               <li key={`${p.exerciseId}-${p.setNumber}`}>
                 <p className="break-words text-base font-semibold text-foreground">{p.exerciseName}</p>
                 <p className="mt-0.5 font-mono text-xl font-semibold tabular-nums tracking-tight text-foreground">
-                  {p.weightKg != null && p.reps != null
-                    ? `${formatKg(p.weightKg)}×${p.reps}`
-                    : "—"}
+                  {loadReps}
                   {p.estimated1Rm != null ? (
                     <span className="text-base font-medium text-muted">
                       {" "}
@@ -184,7 +189,8 @@ export function SessionSummaryView({
                   ) : null}
                 </p>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </section>
       ) : null}

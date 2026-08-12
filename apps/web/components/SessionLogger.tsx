@@ -40,7 +40,9 @@ import { SessionDock } from "@/components/session/SessionDock";
 import { useRestTimer } from "@/components/session/useRestTimer";
 import { useWakeLock } from "@/components/session/useWakeLock";
 import { PlateCalculator } from "@/components/session/PlateCalculator";
+import { useKeyboardInset } from "@/components/session/useKeyboardInset";
 import { formatKg } from "@/lib/plates";
+import { formatLoadDisplay, isDumbbellPair } from "@/lib/weight";
 import { Icon } from "@/components/Icon";
 
 /**
@@ -404,9 +406,11 @@ export function SessionLogger({
   const [videoExIdx, setVideoExIdx] = useState<number | null>(null);
   const [prCelebrate, setPrCelebrate] = useState<string | null>(null);
   const [activeCell, setActiveCell] = useState<ActiveCell | null>(null);
+  const [noteActive, setNoteActive] = useState(false);
   const [platesOpen, setPlatesOpen] = useState(false);
   const [sessionNote, setSessionNote] = useState(() => initial.draft.note ?? "");
   const [sessionNoteOpen, setSessionNoteOpen] = useState(() => Boolean(initial.draft.note));
+  const keyboardInset = useKeyboardInset();
   const [progressReport, setProgressReport] = useState<ProgressReport | null>(null);
   const [trainerComment, setTrainerComment] = useState("");
   const [clientReply, setClientReply] = useState("");
@@ -492,6 +496,7 @@ export function SessionLogger({
         if (tag === "INPUT" || tag === "TEXTAREA") {
           document.activeElement.blur();
           setActiveCell(null);
+          setNoteActive(false);
           setPlatesOpen(false);
         }
       }
@@ -1018,13 +1023,23 @@ export function SessionLogger({
     void finish();
   };
 
+  const scrollElIntoView = useCallback((el: HTMLElement | null | undefined) => {
+    if (!el) return;
+    const reduce =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // iOS otwiera klawiaturę asynchronicznie — poczekaj na visualViewport + padding
+    requestAnimationFrame(() => {
+      window.setTimeout(() => {
+        el.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
+      }, 80);
+    });
+  }, []);
+
   const focusCell = (exIdx: number, setIdx: number, field: "weight" | "reps") => {
     setActiveCell({ exIdx, setIdx, field });
     const uid = draft.exercises[exIdx]?.sets[setIdx]?.uid;
-    if (uid) {
-      const el = setRowRefs.current.get(uid);
-      el?.scrollIntoView({ block: "center", behavior: "smooth" });
-    }
+    if (uid) scrollElIntoView(setRowRefs.current.get(uid));
     // Fokus na input — po re-renderze
     queueMicrotask(() => {
       const row = uid ? setRowRefs.current.get(uid) : null;
@@ -1439,14 +1454,16 @@ export function SessionLogger({
       ? draft.exercises[activeCell.exIdx]?.exerciseType === "time"
       : false;
 
+  const dockVisible =
+    activeCell != null ||
+    noteActive ||
+    (rest != null && !rest.expanded) ||
+    (liveClock && lastSetAt != null);
+  // baza na wysokość docka + inset klawiatury (visualViewport), żeby ostatnie wiersze nie chowały się pod OSK
+  const contentPadBottom = (dockVisible ? 160 : 96) + keyboardInset;
+
   return (
-    <div
-      className={`space-y-4 ${
-        activeCell || (rest && !rest.expanded) || (liveClock && lastSetAt != null)
-          ? "pb-40"
-          : "pb-24"
-      }`}
-    >
+    <div className="space-y-4" style={{ paddingBottom: contentPadBottom }}>
       <ErrorBanner message={error} />
       {isBehalf ? (
         <div
@@ -1596,9 +1613,15 @@ export function SessionLogger({
 
         const hasVideo = Boolean(thumb.youtubeId);
         const restPickerOpen = restPickerEx === exIdx;
+        const pairDb = isDumbbellPair(exercise);
+        const targetKg =
+          exercise.sets.find((s) => !s.isWarmup && s.targetWeightKg != null)?.targetWeightKg ??
+          exercise.sets.find((s) => s.targetWeightKg != null)?.targetWeightKg ??
+          null;
         const metaBits = [
           exercise.targetRir != null ? `RIR ${exercise.targetRir}` : null,
           `Przerwa ${restPillLabel(restSec)}`,
+          targetKg != null && pairDb ? formatLoadDisplay(targetKg, exercise) : null,
         ].filter(Boolean);
 
         return (
@@ -1894,8 +1917,16 @@ export function SessionLogger({
                         }
                         onRir={(v) => patchSet(exIdx, setIdx, { rir: v })}
                         onSide={(side) => patchSet(exIdx, setIdx, { side })}
-                        onFocusWeight={() => setActiveCell({ exIdx, setIdx, field: "weight" })}
-                        onFocusReps={() => setActiveCell({ exIdx, setIdx, field: "reps" })}
+                        onFocusWeight={() => {
+                          setNoteActive(false);
+                          setActiveCell({ exIdx, setIdx, field: "weight" });
+                          scrollElIntoView(setRowRefs.current.get(s.uid));
+                        }}
+                        onFocusReps={() => {
+                          setNoteActive(false);
+                          setActiveCell({ exIdx, setIdx, field: "reps" });
+                          scrollElIntoView(setRowRefs.current.get(s.uid));
+                        }}
                         onToggle={() => toggleComplete(exIdx, setIdx)}
                         onCopyPrev={() => copyPrevSet(exIdx, setIdx)}
                         onRowMenu={() => {
@@ -1915,10 +1946,19 @@ export function SessionLogger({
                             onChange={(e) =>
                               patchSet(exIdx, setIdx, { note: e.target.value || null })
                             }
-                            onBlur={() => setSetNoteEdit(null)}
+                            onFocus={(e) => {
+                              setActiveCell(null);
+                              setNoteActive(true);
+                              scrollElIntoView(e.currentTarget);
+                            }}
+                            onBlur={() => {
+                              setNoteActive(false);
+                              setSetNoteEdit(null);
+                            }}
                             onKeyDown={(e) => {
                               if (e.key === "Enter") {
                                 e.preventDefault();
+                                setNoteActive(false);
                                 setSetNoteEdit(null);
                               }
                             }}
@@ -2023,6 +2063,12 @@ export function SessionLogger({
                 className="w-full resize-none overflow-hidden rounded-lg border border-border bg-surface-active px-3 py-3 text-[15px] leading-snug text-foreground outline-none placeholder:text-muted-faint focus:border-border-strong"
                 placeholder="Notatka…"
                 value={exercise.note ?? ""}
+                onFocus={(e) => {
+                  setActiveCell(null);
+                  setNoteActive(true);
+                  scrollElIntoView(e.currentTarget);
+                }}
+                onBlur={() => setNoteActive(false)}
                 onChange={(e) => {
                   const t = e.currentTarget;
                   t.style.height = "auto";
@@ -2050,6 +2096,12 @@ export function SessionLogger({
             className="w-full resize-none overflow-hidden rounded-lg border border-border bg-surface-active px-3 py-3 text-[15px] leading-snug text-foreground outline-none placeholder:text-muted-faint focus:border-border-strong"
             placeholder="Wiadomość do trenera…"
             value={draft.note ?? ""}
+            onFocus={(e) => {
+              setActiveCell(null);
+              setNoteActive(true);
+              scrollElIntoView(e.currentTarget);
+            }}
+            onBlur={() => setNoteActive(false)}
             onChange={(e) => {
               const t = e.currentTarget;
               t.style.height = "auto";
@@ -2089,6 +2141,7 @@ export function SessionLogger({
 
       <SessionDock
         activeField={activeCell?.field ?? null}
+        noteActive={noteActive}
         isTime={activeIsTime}
         onStepWeight={(d) => stepActive("weight", d)}
         onStepReps={(d) => stepActive("reps", d)}
@@ -2097,6 +2150,8 @@ export function SessionLogger({
         onNext={() => navigateCell(1)}
         onDone={() => {
           setActiveCell(null);
+          setNoteActive(false);
+          setSetNoteEdit(null);
           setPlatesOpen(false);
           (document.activeElement as HTMLElement | null)?.blur?.();
         }}

@@ -309,7 +309,9 @@ export function Button({
       aria-busy={busy || undefined}
       title={title}
       className={[
-        "inline-flex items-center justify-center gap-2 rounded-[var(--r-pill)] transition-[background-color,transform,color,border-color] duration-[var(--dur-fast)] ease-[var(--ease-out)] disabled:pointer-events-none disabled:opacity-45",
+        // loading: pełna nieprzezroczystość — spinner komunikuje stan; opacity tylko przy zwykłym disabled
+        "inline-flex items-center justify-center gap-2 rounded-[var(--r-pill)] transition-[background-color,transform,color,border-color] duration-[var(--dur-fast)] ease-[var(--ease-out)] disabled:pointer-events-none",
+        busy ? "" : "disabled:opacity-45",
         FOCUS,
         PRESS,
         styles[variant],

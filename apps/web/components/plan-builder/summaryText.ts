@@ -2,6 +2,7 @@ import { Exercise, PlanSetInput } from "@/lib/api";
 import { formatMeasureCore } from "@/lib/measure";
 import { formatRest } from "@/components/ui";
 import { polishExerciseCount, polishSetCount } from "@/lib/plural";
+import { formatLoadDisplay } from "@/lib/weight";
 import { BuilderDay, BuilderItem } from "./types";
 
 export type SchemeParts = {
@@ -17,8 +18,8 @@ function setMeasure(s: PlanSetInput): string | null {
   return null;
 }
 
-function setLoadShort(s: PlanSetInput): string | null {
-  if (s.loadKg != null) return `${s.loadKg} kg`;
+function setLoadShort(s: PlanSetInput, exercise?: Exercise): string | null {
+  if (s.loadKg != null) return formatLoadDisplay(s.loadKg, exercise);
   if (s.loadPercent != null) return `${s.loadPercent}%`;
   return null;
 }
@@ -39,7 +40,7 @@ export function cardLine(item: BuilderItem, exercise?: Exercise): string {
       sets[0];
     const role = (anchor.role ?? "").toLowerCase();
     const measure = setMeasure(anchor);
-    const load = setLoadShort(anchor);
+    const load = setLoadShort(anchor, exercise);
     const target = [measure, load].filter(Boolean).join(" @ ");
     const primary =
       role === "ramp"
@@ -56,7 +57,11 @@ export function cardLine(item: BuilderItem, exercise?: Exercise): string {
   const core = formatMeasureCore(item, exercise);
   const load = item.loadKg;
   const loadText =
-    load != null ? ` @ ${load} kg` : item.loadPercent != null ? ` @ ${item.loadPercent}%` : "";
+    load != null
+      ? ` @ ${formatLoadDisplay(load, exercise)}`
+      : item.loadPercent != null
+        ? ` @ ${item.loadPercent}%`
+        : "";
   return sets != null ? `${sets} × ${core}${loadText}` : `${core}${loadText}`;
 }
 
@@ -79,7 +84,7 @@ export function schemeParts(item: BuilderItem, exercise?: Exercise): SchemeParts
       sets[0];
     const role = (anchor.role ?? "").toLowerCase();
     const measure = setMeasure(anchor);
-    const load = setLoadShort(anchor);
+    const load = setLoadShort(anchor, exercise);
     const target = [measure, load].filter(Boolean).join(" @ ");
     const primary =
       role === "ramp"
@@ -99,7 +104,11 @@ export function schemeParts(item: BuilderItem, exercise?: Exercise): SchemeParts
   const core = formatMeasureCore(item, exercise);
   const load = item.loadKg;
   const loadText =
-    load != null ? ` @ ${load} kg` : item.loadPercent != null ? ` @ ${item.loadPercent}%` : "";
+    load != null
+      ? ` @ ${formatLoadDisplay(load, exercise)}`
+      : item.loadPercent != null
+        ? ` @ ${item.loadPercent}%`
+        : "";
   const primary = sets != null ? `${sets} × ${core}${loadText}` : `${core}${loadText}`;
 
   const metaParts: string[] = [];

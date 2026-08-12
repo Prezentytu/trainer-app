@@ -6,6 +6,7 @@ import { Exercise, RIR_HELP, rirFromRpe } from "@/lib/api";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { formatMeasureCore } from "@/lib/measure";
 import { Badge, Field, IconButton, formatRest, inputClass } from "@/components/ui";
+import { formatLoadDisplay, isDumbbellPair } from "@/lib/weight";
 import { demoMedia } from "@/lib/youtube";
 import { NumInput } from "./NumInput";
 import { SetSchemeEditor } from "./SetSchemeEditor";
@@ -18,7 +19,7 @@ function summaryText(item: BuilderItem, exercise?: Exercise): string {
   const rest = item.restBetweenSetsSeconds ?? exercise?.defaultRestBetweenSetsSeconds ?? null;
   const parts = [sets ? `${sets} × ${core}` : core];
   if (rest != null) parts.push(formatRest(rest));
-  if (item.loadKg != null) parts.push(`${item.loadKg} kg`);
+  if (item.loadKg != null) parts.push(formatLoadDisplay(item.loadKg, exercise));
   if (item.tempo) parts.push(`tempo ${item.tempo}`);
   if (item.targetRir != null) parts.push(`RIR ${item.targetRir}`);
   else if (item.targetRpe != null) parts.push(`RPE ${item.targetRpe}`);
@@ -177,7 +178,7 @@ export function ExerciseRow({
                 </Field>
               </>
             )}
-            <Field label="Ciężar (kg)">
+            <Field label={isDumbbellPair(exercise ?? {}) ? "Ciężar (kg · na hantlę)" : "Ciężar (kg)"}>
               <NumInput value={item.loadKg} min={0} step={0.5} onChange={(v) => onPatch({ loadKg: v })} placeholder="dom." />
             </Field>
             <Field label="RIR celu" title={RIR_HELP}>

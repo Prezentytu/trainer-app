@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Exercise, ExerciseType, RIR_HELP, rirFromRpe } from "@/lib/api";
 import { MEASURE_SHORT, measurePatch } from "@/lib/measure";
 import { Field, Switch, inputClass } from "@/components/ui";
+import { isDumbbellPair } from "@/lib/weight";
 import { NumInput } from "./NumInput";
 import { SetSchemeEditor } from "./SetSchemeEditor";
 import {
@@ -367,7 +368,7 @@ export function ListEntryEditor({
         {moreOpen && (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-              <Field label="Ciężar (kg)">
+              <Field label={isDumbbellPair(exercise ?? {}) ? "Ciężar (kg · na hantlę)" : "Ciężar (kg)"}>
                 <NumInput
                   value={item.loadKg}
                   min={0}

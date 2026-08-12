@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { api, SessionDetail, WorkoutSessionInput } from "@/lib/api";
 import { Badge, Button, Card, ErrorBanner, Field, formatRest, inputClass } from "@/components/ui";
 import { formatKg } from "@/lib/plates";
+import { formatSetLoadReps, isDumbbellPair } from "@/lib/weight";
 
 function toSessionInput(session: SessionDetail, performedOn: string): WorkoutSessionInput {
   return {
@@ -59,11 +60,18 @@ function formatSet(
   reps: number | null | undefined,
   durationSeconds: number | null | undefined,
   isTime: boolean,
+  pairDb = false,
 ): string {
   if (isTime && durationSeconds != null) return `${durationSeconds} s`;
-  if (weightKg != null && reps != null) return `${formatKg(weightKg)}×${reps}`;
+  if (weightKg != null && reps != null) {
+    return pairDb
+      ? formatSetLoadReps(weightKg, reps, { equipment: ["dumbbell"], isUnilateral: false })
+      : `${formatKg(weightKg)}×${reps}`;
+  }
   if (reps != null) return `${reps}`;
-  if (weightKg != null) return `${formatKg(weightKg)} kg`;
+  if (weightKg != null) {
+    return pairDb ? `2×${formatKg(weightKg)} kg` : `${formatKg(weightKg)} kg`;
+  }
   return "—";
 }
 
@@ -226,6 +234,7 @@ export function SessionReview({
       <div className="space-y-3">
         {session.exercises.map((ex) => {
           const isTime = ex.exerciseType === "time";
+          const pairDb = isDumbbellPair(ex);
           const done = ex.sets.filter((s) => s.completed).length;
           const hasPr =
             ex.sets.some((s) => s.isPr && s.completed) ||
@@ -258,9 +267,10 @@ export function SessionReview({
                   s.targetReps,
                   s.targetDurationSeconds,
                   isTime,
+                  pairDb,
                 );
                 const actual = s.completed
-                  ? formatSet(s.weightKg, s.reps, s.durationSeconds, isTime)
+                  ? formatSet(s.weightKg, s.reps, s.durationSeconds, isTime, pairDb)
                   : "—";
                 const setNote = s.note?.trim() || null;
                 return (

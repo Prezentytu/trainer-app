@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Exercise, RIR_HELP, rirFromRpe } from "@/lib/api";
 import { Field, Switch, inputClass } from "@/components/ui";
+import { isDumbbellPair } from "@/lib/weight";
 import { NumInput } from "./NumInput";
 import { SetSchemeEditor } from "./SetSchemeEditor";
 import { BuilderItem, BuilderSet } from "./types";
@@ -77,7 +78,10 @@ export function ExerciseEditor({
             </div>
           </Field>
         )}
-        <Field label="Ciężar (kg)">
+        <Field
+          label={isDumbbellPair(exercise ?? {}) ? "Ciężar (kg · na hantlę)" : "Ciężar (kg)"}
+          hint={isDumbbellPair(exercise ?? {}) ? "Wpisz wagę jednej hantli — klient zobaczy 2×" : undefined}
+        >
           <NumInput
             value={item.loadKg}
             min={0}

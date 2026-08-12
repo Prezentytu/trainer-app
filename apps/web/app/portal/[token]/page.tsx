@@ -8,6 +8,7 @@ import {
   ClientIntake,
   ClientCheckIn,
   hasEssentialIntake,
+  PortalExercise,
   PortalHome,
   PortalSessionSummary,
   ProgressReport,
@@ -20,8 +21,12 @@ import { buildWeekStrip } from "@/lib/portalWeekStrip";
 import { CheckInCard } from "@/components/portal/CheckInCard";
 import { PwaInstallPrompt } from "@/components/portal/PwaInstallPrompt";
 import { relativeDayFromLabel, todayIsoLocal } from "@/lib/dates";
+import { formatLoadDisplay } from "@/lib/weight";
 
-function schemeLine(item: NonNullable<PortalHome["today"]>["day"]["items"][number]): string {
+function schemeLine(
+  item: NonNullable<PortalHome["today"]>["day"]["items"][number],
+  exerciseMeta?: Pick<PortalExercise, "equipment" | "isUnilateral"> | null,
+): string {
   const measure = item.measureType ?? "reps";
   if (measure === "time") {
     const sec = item.repDurationSeconds ?? 0;
@@ -32,7 +37,7 @@ function schemeLine(item: NonNullable<PortalHome["today"]>["day"]["items"][numbe
   }
   const load = item.computedLoadKg ?? item.loadKg ?? null;
   return load != null
-    ? `${item.sets} × ${item.reps} @ ${load} kg`
+    ? `${item.sets} × ${item.reps} @ ${formatLoadDisplay(load, exerciseMeta)}`
     : `${item.sets} × ${item.reps}`;
 }
 
@@ -50,12 +55,19 @@ export default function PortalTodayPage() {
   const [progress, setProgress] = useState<ProgressReport | null>(null);
   const [intake, setIntake] = useState<ClientIntake | null>(null);
   const [checkIns, setCheckIns] = useState<ClientCheckIn[]>([]);
+  const [exercises, setExercises] = useState<PortalExercise[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [repeating, setRepeating] = useState(false);
   const [staleBusy, setStaleBusy] = useState<"save" | "discard" | null>(null);
   const { setStickyCta } = usePortalStickyCta();
   const todayIso = useMemo(() => todayIsoLocal(), []);
+
+  const exerciseById = useMemo(() => {
+    const map = new Map<number, PortalExercise>();
+    for (const ex of exercises) map.set(ex.id, ex);
+    return map;
+  }, [exercises]);
 
   const load = useCallback(() => {
     Promise.all([
@@ -64,13 +76,15 @@ export default function PortalTodayPage() {
       api.portal.progressReport(token).catch(() => null),
       api.portal.getIntake(token).catch(() => null),
       api.portal.checkIns(token).catch(() => [] as ClientCheckIn[]),
+      api.portal.exercises(token).catch(() => [] as PortalExercise[]),
     ])
-      .then(([h, s, p, intk, checkinRows]) => {
+      .then(([h, s, p, intk, checkinRows, exs]) => {
         setHome(h);
         setHistory(s);
         setProgress(p);
         setIntake(intk);
         setCheckIns(checkinRows);
+        setExercises(exs);
       })
       .catch((e: Error) => setError(e.message));
   }, [token, todayIso]);
@@ -102,9 +116,9 @@ export default function PortalTodayPage() {
         performedOn: todayIso,
       });
       router.push(`/portal/${token}/session/${session.id}`);
+      // starting zostaje true do odmontowania — unikamy migania „Rozpocznij” przed nawigacją
     } catch (e) {
       setError((e as Error).message);
-    } finally {
       setStarting(false);
     }
   }, [home, router, token, todayIso]);
@@ -128,7 +142,6 @@ export default function PortalTodayPage() {
       router.push(`/portal/${token}/session/${session.id}`);
     } catch (e) {
       setError((e as Error).message);
-    } finally {
       setRepeating(false);
     }
   }, [home, lastCompleted, router, token, todayIso]);
@@ -184,6 +197,7 @@ export default function PortalTodayPage() {
       setStickyCta({
         label: starting ? "Startuję…" : "Rozpocznij trening",
         disabled: starting,
+        loading: starting,
         onClick: () => void start(),
       });
       return () => setStickyCta(null);
@@ -192,6 +206,7 @@ export default function PortalTodayPage() {
       setStickyCta({
         label: repeating ? "Startuję…" : "Powtórz ostatni trening",
         disabled: repeating,
+        loading: repeating,
         onClick: () => void repeatLast(),
       });
       return () => setStickyCta(null);
@@ -361,7 +376,7 @@ export default function PortalTodayPage() {
                     {item.exerciseName}
                   </p>
                   <p className="mt-1 font-mono text-[15px] tabular-nums text-muted">
-                    {schemeLine(item)}
+                    {schemeLine(item, exerciseById.get(item.exerciseId))}
                   </p>
                 </li>
               ))}
@@ -376,6 +391,7 @@ export default function PortalTodayPage() {
                 variant="secondary"
                 full
                 disabled={repeating}
+                loading={repeating}
                 onClick={() => void repeatLast()}
               >
                 {repeating ? "Startuję…" : "Powtórz ostatni trening"}
