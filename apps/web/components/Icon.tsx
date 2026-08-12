@@ -8,6 +8,7 @@ export type IconName =
   | "plus"
   | "caret-left"
   | "caret-right"
+  | "caret-down"
   | "trash"
   | "x-circle"
   | "x"
@@ -46,6 +47,7 @@ export type IconName =
   | "push-pin-slash"
   | "note-blank"
   | "chat-text"
+  | "calculator"
   // English aliases
   | "copy"
   | "lock"

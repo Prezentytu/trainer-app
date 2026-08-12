@@ -404,7 +404,11 @@ export function SessionLogger({
     message: string;
   } | null>(null);
   const [videoExIdx, setVideoExIdx] = useState<number | null>(null);
-  const [prCelebrate, setPrCelebrate] = useState<string | null>(null);
+  const [prCelebrate, setPrCelebrate] = useState<{
+    exerciseName: string;
+    estimated1Rm: number | null;
+    previousBest1Rm: number | null;
+  } | null>(null);
   const [activeCell, setActiveCell] = useState<ActiveCell | null>(null);
   const [noteActive, setNoteActive] = useState(false);
   const [platesOpen, setPlatesOpen] = useState(false);
@@ -414,7 +418,6 @@ export function SessionLogger({
   const [progressReport, setProgressReport] = useState<ProgressReport | null>(null);
   const [trainerComment, setTrainerComment] = useState("");
   const [clientReply, setClientReply] = useState("");
-  const [collapsedEx, setCollapsedEx] = useState<Set<number>>(() => new Set());
   const [noteOpenEx, setNoteOpenEx] = useState<Set<number>>(() => new Set());
   const [restOverrideByEx, setRestOverrideByEx] = useState<Record<number, number>>({});
   const [inAppHint, setInAppHint] = useState(() => {
@@ -510,11 +513,14 @@ export function SessionLogger({
     api.portal.progressReport(portalToken).then(setProgressReport).catch(() => setProgressReport(null));
   }, [portalToken, summary]);
 
-  const flashPr = useCallback((label: string) => {
-    if (prFlashTimer.current) clearTimeout(prFlashTimer.current);
-    setPrCelebrate(label);
-    prFlashTimer.current = setTimeout(() => setPrCelebrate(null), 2800);
-  }, []);
+  const flashPr = useCallback(
+    (pr: { exerciseName: string; estimated1Rm: number | null; previousBest1Rm: number | null }) => {
+      if (prFlashTimer.current) clearTimeout(prFlashTimer.current);
+      setPrCelebrate(pr);
+      prFlashTimer.current = setTimeout(() => setPrCelebrate(null), 3200);
+    },
+    [],
+  );
 
   const persistLocalDraft = useCallback(
     (next: LocalSession) => {
@@ -764,15 +770,6 @@ export function SessionLogger({
         (document.activeElement as HTMLElement | null)?.blur?.();
         startRest(seconds);
       }
-      // Zwiń tylko ukończone ćwiczenie — bez scrollIntoView (skok na górę / do następnej
-      // serii rozprasza przy szybkim odhaczaniu na siłowni).
-      queueMicrotask(() => {
-        const next = draftRef.current;
-        const exDone = next.exercises[exIdx]?.sets.every((s) => s.completed);
-        if (exDone) {
-          setCollapsedEx((prev) => new Set(prev).add(exIdx));
-        }
-      });
     } else {
       // Przypadkowe zaliczenie — wyłącz przerwę; zegar znika tylko gdy nie ma już zaliczonych.
       dismissRest();
@@ -798,17 +795,11 @@ export function SessionLogger({
             );
           });
         if (logged?.s.isPr && logged.s.completed) {
-          const e1 = logged.s.estimated1Rm;
-          const prev = logged.s.previousBest1Rm;
-          if (e1 != null && prev != null) {
-            flashPr(
-              `PR! ${logged.ex.exerciseName} · max ${formatKg(e1)} kg (poprz. ${formatKg(prev)} kg)`,
-            );
-          } else if (e1 != null) {
-            flashPr(`PR! ${logged.ex.exerciseName} · max ${formatKg(e1)} kg`);
-          } else {
-            flashPr(`PR! ${logged.ex.exerciseName}`);
-          }
+          flashPr({
+            exerciseName: logged.ex.exerciseName,
+            estimated1Rm: logged.s.estimated1Rm ?? null,
+            previousBest1Rm: logged.s.previousBest1Rm ?? null,
+          });
         }
       })
       .catch(() => {
@@ -1577,39 +1568,12 @@ export function SessionLogger({
 
       {draft.exercises.map((exercise, exIdx) => {
         const thumb = demoMedia({ media: exercise.media, category: exercise.category });
-        const allDone = exercise.sets.every((s) => s.completed);
         const isTime = exercise.exerciseType === "time";
         const trainerNote = exercise.planNote || null;
         const menuOpen = menuExIdx === exIdx;
-        const doneCount = exercise.sets.filter((s) => s.completed).length;
-        const isCollapsed = allDone && collapsedEx.has(exIdx);
         const restSec = restOverrideByEx[exIdx] ?? exercise.restSeconds ?? 90;
         const noteOpen = noteOpenEx.has(exIdx) || Boolean(exercise.note);
         const prevHeader = formatPrevDate(exercise.prevPerformedOn);
-
-        if (isCollapsed) {
-          return (
-            <button
-              key={exercise.id > 0 ? exercise.id : `ex-${exIdx}`}
-              type="button"
-              className="flex w-full items-center gap-3 border-t border-border py-4 text-left opacity-70 hover:opacity-100 first:border-t-0"
-              onClick={() =>
-                setCollapsedEx((prev) => {
-                  const next = new Set(prev);
-                  next.delete(exIdx);
-                  return next;
-                })
-              }
-            >
-              <h2 className="min-w-0 flex-1 break-words text-[15px] font-semibold leading-snug text-foreground">
-                {exercise.exerciseName}
-              </h2>
-              <span className="shrink-0 font-mono text-sm tabular-nums text-muted">
-                {doneCount}/{exercise.sets.length}
-              </span>
-            </button>
-          );
-        }
 
         const hasVideo = Boolean(thumb.youtubeId);
         const restPickerOpen = restPickerEx === exIdx;
@@ -1627,9 +1591,7 @@ export function SessionLogger({
         return (
           <section
             key={exercise.id > 0 ? exercise.id : `ex-${exIdx}`}
-            className={`relative space-y-4 border-t border-border pt-6 first:border-t-0 first:pt-2 ${
-              allDone ? "opacity-70" : ""
-            }`}
+            className="relative space-y-4 border-t border-border pt-6 first:border-t-0 first:pt-2"
           >
             <div className="flex items-start gap-2">
               <div className="min-w-0 flex-1">
@@ -1683,18 +1645,6 @@ export function SessionLogger({
                         onClick={() => moveExercise(exIdx, 1)}
                       >
                         W dół
-                      </button>
-                    ) : null}
-                    {allDone ? (
-                      <button
-                        type="button"
-                        className="block w-full px-3 py-2.5 text-left text-[15px] hover:bg-surface-hover"
-                        onClick={() => {
-                          setCollapsedEx((prev) => new Set(prev).add(exIdx));
-                          setMenuExIdx(null);
-                        }}
-                      >
-                        Zwiń ćwiczenie
                       </button>
                     ) : null}
                     {exercise.prevSets.length > 0 ? (
@@ -2175,13 +2125,33 @@ export function SessionLogger({
 
       {prCelebrate ? (
         <div
-          className="pr-celebrate-in fixed bottom-28 left-1/2 z-[55] w-[min(100%-2rem,24rem)] -translate-x-1/2 rounded-[10px] border border-pr-border bg-pr-dim px-4 py-3 text-center"
+          className="pr-celebrate-in fixed bottom-28 left-1/2 z-[55] w-[min(100%-2rem,24rem)] -translate-x-1/2 rounded-xl border border-border-strong bg-surface-raised px-4 py-3.5 shadow-[var(--shadow-raised)]"
           role="status"
         >
-          <div className="font-mono text-xs font-medium uppercase tracking-caps text-pr">
-            ★ Personal best
-          </div>
-          <div className="mt-1 font-display text-sm font-bold text-foreground">{prCelebrate}</div>
+          <p className="font-mono text-xs font-medium uppercase tracking-caps text-pr">
+            ★ Rekord osobisty
+          </p>
+          <p className="mt-1 break-words text-[15px] font-semibold leading-snug text-foreground">
+            {prCelebrate.exerciseName}
+          </p>
+          {prCelebrate.estimated1Rm != null ? (
+            <p className="mt-0.5 font-mono text-sm tabular-nums text-muted">
+              Szacowany max{" "}
+              <span className="font-semibold text-foreground">
+                {formatKg(prCelebrate.estimated1Rm)} kg
+              </span>
+              {prCelebrate.previousBest1Rm != null &&
+              prCelebrate.estimated1Rm > prCelebrate.previousBest1Rm ? (
+                <span className="text-gain">
+                  {" "}
+                  ▲ +
+                  {formatKg(
+                    Math.round((prCelebrate.estimated1Rm - prCelebrate.previousBest1Rm) * 10) / 10,
+                  )}
+                </span>
+              ) : null}
+            </p>
+          ) : null}
         </div>
       ) : null}
       {toastNode}

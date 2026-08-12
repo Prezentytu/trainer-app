@@ -32,10 +32,13 @@ function workoutsLabel(n: number): string {
 export function WeeklyActivityBar({
   dates,
   weeks = 8,
+  showHeader = true,
 }: {
   /** Daty ukończonych sesji (ISO YYYY-MM-DD). */
   dates: string[];
   weeks?: number;
+  /** Gdy false — tylko słupki (nagłówek renderuje rodzic). */
+  showHeader?: boolean;
 }) {
   const today = new Date();
   today.setHours(12, 0, 0, 0);
@@ -60,12 +63,14 @@ export function WeeklyActivityBar({
 
   return (
     <div className="min-w-0">
-      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="font-display text-sm font-semibold text-foreground">Aktywność</h3>
-        <span className="text-sm text-muted">
-          {workoutsLabel(thisWeek)} w tym tygodniu
-        </span>
-      </div>
+      {showHeader ? (
+        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+          <h3 className="font-display text-sm font-semibold text-foreground">Aktywność</h3>
+          <span className="text-sm text-muted">
+            {workoutsLabel(thisWeek)} w tym tygodniu
+          </span>
+        </div>
+      ) : null}
 
       <div className="flex h-28 items-end gap-1.5 sm:gap-2">
         {weekCounts.map((w) => {

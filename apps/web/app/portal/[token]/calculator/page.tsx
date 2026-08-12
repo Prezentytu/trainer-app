@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api, ClientRecord } from "@/lib/api";
 import { EmptyState, ErrorBanner } from "@/components/ui";
+import { SearchPicker } from "@/components/SearchPicker";
 import { PortalPageSkeleton } from "@/components/skeletons";
 import { DEFAULT_PLATE_CONFIG, formatKg, solvePlates } from "@/lib/plates";
 
@@ -91,22 +92,25 @@ export default function PortalCalculatorPage() {
         </EmptyState>
       ) : (
         <>
-          <label className="block">
-            <span className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
+          <div>
+            <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
               Ćwiczenie
-            </span>
-            <select
-              className="mt-2 w-full min-h-11 rounded-lg border border-border bg-surface-raised px-3 text-[15px] text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
-              value={exerciseId === "" ? "" : String(exerciseId)}
-              onChange={(e) => setExerciseId(Number(e.target.value))}
-            >
-              {records.map((r) => (
-                <option key={r.exerciseId} value={r.exerciseId}>
-                  {r.exerciseName} · {formatKg(r.estimated1Rm)} kg
-                </option>
-              ))}
-            </select>
-          </label>
+            </p>
+            <div className="mt-2">
+              <SearchPicker
+                ariaLabel="Ćwiczenie"
+                searchPlaceholder="Szukaj ćwiczenia…"
+                emptyHint="Brak ćwiczenia o tej nazwie."
+                value={exerciseId === "" ? "" : String(exerciseId)}
+                onChange={(v) => setExerciseId(Number(v))}
+                items={records.map((r) => ({
+                  value: String(r.exerciseId),
+                  label: r.exerciseName,
+                  meta: `${formatKg(r.estimated1Rm)} kg`,
+                }))}
+              />
+            </div>
+          </div>
 
           {selected ? (
             <section aria-label="Strefy">

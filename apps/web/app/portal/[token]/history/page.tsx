@@ -146,7 +146,7 @@ export default function PortalHistoryPage() {
                   return (
                     <li key={s.id}>
                       <Link
-                        href={`/portal/${token}/session/${s.id}`}
+                        href={`/portal/${token}/session/${s.id}?from=history`}
                         className="flex min-h-14 items-center gap-3 py-3.5 transition-colors duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:bg-surface-raised/50 focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:bg-surface-hover active:scale-[0.995]"
                       >
                         <div className="min-w-0 flex-1">

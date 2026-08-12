@@ -27,6 +27,7 @@ import {
 import { ClientNotesTab, countClientNotes } from "@/components/client/ClientNotesTab";
 import { TrainerNotesTab } from "@/components/client/TrainerNotesTab";
 import { ExerciseCombobox } from "@/components/ExerciseCombobox";
+import { SearchPicker } from "@/components/SearchPicker";
 import { daysAgo, formatDayShort, relativeDayLabel, withinLastDays } from "@/lib/dates";
 import { DEFAULT_EXERCISE_INPUT } from "@/lib/exerciseDraft";
 import { createOrReuseExercise } from "@/lib/exerciseLibrary";
@@ -1303,17 +1304,19 @@ export default function ClientDetailsPage() {
       >
         <div className="space-y-3">
           <Field label="Dzień planu">
-            <select
-              className={inputClass}
+            <SearchPicker
+              size="sm"
+              ariaLabel="Dzień planu"
+              searchPlaceholder="Szukaj dnia…"
+              emptyHint="Brak dnia o tej nazwie."
               value={logBehalfDayId === "" ? "" : String(logBehalfDayId)}
-              onChange={(e) => setLogBehalfDayId(e.target.value ? Number(e.target.value) : "")}
-            >
-              {logBehalfDays.map((d) => (
-                <option key={d.id} value={d.id}>
-                  Tydz. {d.weekNumber} · {d.label}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setLogBehalfDayId(v ? Number(v) : "")}
+              items={logBehalfDays.map((d) => ({
+                value: String(d.id),
+                label: d.label,
+                meta: `Tydz. ${d.weekNumber}`,
+              }))}
+            />
           </Field>
           <Field label="Data treningu">
             <input

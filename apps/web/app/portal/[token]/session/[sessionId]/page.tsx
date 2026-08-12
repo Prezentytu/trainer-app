@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { api, PortalExercise, SessionDetail, WorkoutSessionInput } from "@/lib/api";
 import { SessionLogger } from "@/components/SessionLogger";
 import { SessionSummaryView } from "@/components/SessionSummaryView";
@@ -18,6 +18,8 @@ export default function PortalSessionPage() {
   const token = params.token;
   const sessionId = Number(params.sessionId);
   const router = useRouter();
+  // Kontekst wejścia (wayfinding): z historii wracamy do historii, nie na ekran główny.
+  const fromHistory = useSearchParams().get("from") === "history";
   const [session, setSession] = useState<SessionDetail | null>(null);
   const [exercises, setExercises] = useState<PortalExercise[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +73,10 @@ export default function PortalSessionPage() {
         <ErrorBanner message={error} />
         <SessionSummaryView
           session={session}
-          onBack={() => router.push(`/portal/${token}`)}
+          fromHistory={fromHistory}
+          onBack={() =>
+            router.push(fromHistory ? `/portal/${token}/history` : `/portal/${token}`)
+          }
           onEdit={() => setEditingCompleted(true)}
           shareImageUrl={`/portal/${token}/session/${session.id}/share-image`}
         />
@@ -96,7 +101,16 @@ export default function PortalSessionPage() {
             complete,
           });
         }}
-        onCompleted={() => router.push(`/portal/${token}`)}
+        onCompleted={() => {
+          if (editingCompleted) {
+            // „Popraw wyniki” → zapis wraca do podsumowania (zachowany kontekst),
+            // nie wyrzuca na ekran główny.
+            setEditingCompleted(false);
+            window.scrollTo(0, 0);
+          } else {
+            router.push(`/portal/${token}`);
+          }
+        }}
       />
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -13,7 +13,8 @@ import {
   PortalSessionSummary,
   StagnationResponse,
 } from "@/lib/api";
-import { EmptyState, ErrorBanner, StatBlock } from "@/components/ui";
+import { Card, EmptyState, ErrorBanner, SegmentedControl, StatBlock } from "@/components/ui";
+import { Icon } from "@/components/Icon";
 import { PortalPageSkeleton } from "@/components/skeletons";
 import { WeeklyActivityBar } from "@/components/WeeklyActivityBar";
 import { MuscleVolumeBars } from "@/components/MuscleVolumeBars";
@@ -54,6 +55,29 @@ function formatAvgDuration(seconds: number | null): { value: string; unit: strin
   return m === 0 ? { value: String(h), unit: "h" } : { value: `${h}:${String(m).padStart(2, "0")}`, unit: "h" };
 }
 
+function SectionHeader({
+  title,
+  window,
+  action,
+}: {
+  title: string;
+  /** Sufiks okna czasowego, np. „12 TYG." — mono caps po prawej. */
+  window?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="mb-3 flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-2">
+      <h2 className="font-display text-sm font-semibold text-foreground">{title}</h2>
+      {action ??
+        (window ? (
+          <span className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
+            {window}
+          </span>
+        ) : null)}
+    </div>
+  );
+}
+
 const WEEKDAY_LABELS = ["Pn", "Wt", "Śr", "Cz", "Pt", "So", "Nd"] as const;
 
 function MonthCalendar({ dates, year, month }: { dates: string[]; year: number; month: number }) {
@@ -73,13 +97,13 @@ function MonthCalendar({ dates, year, month }: { dates: string[]; year: number; 
   return (
     <div>
       <p className="mb-3 font-mono text-xs font-medium uppercase tracking-caps text-muted">
-        Kalendarz · {title}
+        {title}
       </p>
       <div className="grid grid-cols-7 gap-1" role="grid" aria-label={`Dni treningowe · ${title}`}>
         {WEEKDAY_LABELS.map((d) => (
           <div
             key={d}
-            className="pb-1 text-center font-mono text-[10px] font-medium uppercase tracking-caps text-muted-faint"
+            className="pb-1 text-center font-mono text-xs font-medium uppercase tracking-caps text-muted-faint"
           >
             {d}
           </div>
@@ -126,6 +150,7 @@ export default function PortalProgressPage() {
   const [error, setError] = useState<string | null>(null);
   const [expandedRecordId, setExpandedRecordId] = useState<number | null>(null);
   const [statsCache, setStatsCache] = useState<Record<number, ExerciseStats | "loading" | "error">>({});
+  const [consistencyView, setConsistencyView] = useState<"weeks" | "calendar">("weeks");
 
   const load = useCallback(() => {
     Promise.all([
@@ -258,21 +283,12 @@ export default function PortalProgressPage() {
         <PortalPageSkeleton label="Wczytuję progres…" />
       ) : (
         <>
-          <section className="flex flex-wrap gap-4">
-            <Link
-              href={`/portal/${token}/calculator`}
-              className="inline-flex min-h-11 items-center text-sm font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
-            >
-              Kalkulator %1RM
-            </Link>
-          </section>
-
           <section
             aria-label="Podsumowanie"
             className="grid grid-cols-2 gap-3 border-y border-border py-5 sm:grid-cols-4"
           >
             <StatBlock label="Ten tydzień" value={String(stats.weekCount)} unit="tren." />
-            <StatBlock label="Seria" value={String(stats.streak)} unit="tyg." />
+            <StatBlock label="Seria tygodni" value={String(stats.streak)} unit="tyg." />
             <StatBlock
               label="Objętość"
               value={Math.round(stats.monthVol).toLocaleString("pl-PL")}
@@ -282,12 +298,31 @@ export default function PortalProgressPage() {
             <StatBlock label="Śr. czas" value={avgDur.value} unit={avgDur.unit || undefined} />
           </section>
 
+          {mostImproved && mostImproved.percentGain > 0 ? (
+            <section aria-label="Największy progres">
+              <Card
+                eyebrow={`Największy progres · ${mostImproved.days} dni`}
+                title={mostImproved.exerciseName}
+              >
+                <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <p className="font-mono text-2xl font-semibold tabular-nums tracking-tight text-gain">
+                    ▲ +{String(mostImproved.percentGain).replace(".", ",")}%
+                  </p>
+                  <p className="font-mono text-sm tabular-nums text-muted">
+                    {formatKg(mostImproved.startE1Rm)} → {formatKg(mostImproved.endE1Rm)} kg
+                    {mostImproved.deltaKg > 0
+                      ? ` (+${formatKg(mostImproved.deltaKg)} kg)`
+                      : ""}
+                  </p>
+                </div>
+              </Card>
+            </section>
+          ) : null}
+
           {stagnation && stagnation.items.length > 0 ? (
             <section aria-label="Warto ruszyć" className="border-y border-border py-5">
-              <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
-                Warto ruszyć
-              </p>
-              <ul className="mt-3 space-y-2">
+              <SectionHeader title="Warto ruszyć" />
+              <ul className="space-y-2">
                 {stagnation.items.slice(0, 3).map((item) => (
                   <li key={item.exerciseId} className="text-[15px] text-foreground-secondary">
                     <span className="font-medium text-foreground">{item.exerciseName}</span>
@@ -304,50 +339,33 @@ export default function PortalProgressPage() {
             </section>
           ) : null}
 
-          {mostImproved && mostImproved.percentGain > 0 ? (
-            <section
-              aria-label="Największy progres"
-              className="border-y border-border py-5"
-            >
-              <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
-                Największy progres · {mostImproved.days} dni
-              </p>
-              <p className="mt-2 break-words text-[15px] font-medium leading-snug text-foreground">
-                {mostImproved.exerciseName}
-              </p>
-              <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <p className="font-mono text-2xl font-semibold tabular-nums tracking-tight text-gain">
-                  ▲ +{String(mostImproved.percentGain).replace(".", ",")}%
-                </p>
-                <p className="font-mono text-sm tabular-nums text-muted">
-                  {formatKg(mostImproved.startE1Rm)} → {formatKg(mostImproved.endE1Rm)} kg
-                  {mostImproved.deltaKg > 0
-                    ? ` (+${formatKg(mostImproved.deltaKg)} kg)`
-                    : ""}
-                </p>
-              </div>
-            </section>
-          ) : null}
-
-          <section aria-label="Aktywność tygodniowa">
-            <p className="mb-3 font-mono text-xs font-medium uppercase tracking-caps text-muted">
-              Aktywność · 8 tyg.
-            </p>
-            <WeeklyActivityBar dates={stats.dates} weeks={8} />
-          </section>
-
-          <section aria-label="Kalendarz miesiąca">
-            <MonthCalendar
-              dates={stats.dates}
-              year={stats.calendarYear}
-              month={stats.calendarMonth}
+          <section aria-label="Spójność">
+            <SectionHeader
+              title="Spójność"
+              action={
+                <SegmentedControl
+                  value={consistencyView}
+                  onChange={(v) => setConsistencyView(v as "weeks" | "calendar")}
+                  items={[
+                    { value: "weeks", label: "Tygodnie" },
+                    { value: "calendar", label: "Kalendarz" },
+                  ]}
+                />
+              }
             />
+            {consistencyView === "weeks" ? (
+              <WeeklyActivityBar dates={stats.dates} weeks={8} showHeader={false} />
+            ) : (
+              <MonthCalendar
+                dates={stats.dates}
+                year={stats.calendarYear}
+                month={stats.calendarMonth}
+              />
+            )}
           </section>
 
           <section aria-label="Tonaż">
-            <p className="mb-3 font-mono text-xs font-medium uppercase tracking-caps text-muted">
-              Tonaż · 12 tyg.
-            </p>
+            <SectionHeader title="Tonaż" window="12 tyg." />
             <LineChart
               points={(trends?.weeks ?? []).map((w) => ({
                 label: formatDayShort(w.weekStart),
@@ -360,9 +378,7 @@ export default function PortalProgressPage() {
           </section>
 
           <section aria-label="Objętość mięśniowa">
-            <p className="mb-3 font-mono text-xs font-medium uppercase tracking-caps text-muted">
-              Objętość mięśniowa · 4 tyg.
-            </p>
+            <SectionHeader title="Objętość mięśniowa" window="4 tyg." />
             <MuscleVolumeBars
               groups={muscleVolume?.groups ?? []}
               mode="sets"
@@ -371,11 +387,9 @@ export default function PortalProgressPage() {
           </section>
 
           <section aria-label="Rekordy">
-            <p className="mb-1 font-mono text-xs font-medium uppercase tracking-caps text-muted">
-              Rekordy · est. 1RM
-            </p>
+            <SectionHeader title="Rekordy" window="est. 1RM" />
             {records.length === 0 ? (
-              <div className="pt-3">
+              <div className="pt-1">
                 <EmptyState
                   title="Jeszcze bez rekordów"
                   action={
@@ -391,7 +405,7 @@ export default function PortalProgressPage() {
                 </EmptyState>
               </div>
             ) : (
-              <ul className="mt-2 divide-y divide-border border-y border-border">
+              <ul className="divide-y divide-border border-y border-border">
                 {records.map((r) => {
                   const open = expandedRecordId === r.exerciseId;
                   const exStats = statsCache[r.exerciseId];
@@ -444,6 +458,27 @@ export default function PortalProgressPage() {
                 })}
               </ul>
             )}
+          </section>
+
+          <section aria-label="Narzędzia">
+            <SectionHeader title="Narzędzia" />
+            <Link
+              href={`/portal/${token}/calculator`}
+              className="flex min-h-11 w-full items-center gap-3 rounded-[var(--r-card)] border border-border bg-surface px-3 py-3 text-left transition-[background-color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:bg-surface-hover active:scale-[0.98] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+            >
+              <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-md bg-surface-raised text-foreground">
+                <Icon name="calculator" size={18} decorative />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] font-medium text-foreground">
+                  Kalkulator %1RM
+                </span>
+                <span className="mt-0.5 block text-sm text-muted">
+                  Strefy ciężaru z twojego rekordu
+                </span>
+              </span>
+              <Icon name="caret-right" size={16} className="shrink-0 text-muted" decorative />
+            </Link>
           </section>
         </>
       )}

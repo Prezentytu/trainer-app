@@ -75,3 +75,10 @@ Bez zmian endpointów. Home portalu może dodatkowo pobrać `api.portal.exercise
 ## Changelog
 
 - 2026-08-12 — utworzono spec i wdrożono: CTA loading, Gotowe przy notatkach, `2×15 kg` dla hantli, dynamiczny padding + scroll pod klawiaturą.
+- 2026-08-12 — follow-up po feedbacku: podsumowanie sesji dostało sticky bar (`.session-chrome`) z „Wróć do ekranu głównego” (primary) i „Udostępnij trening” (secondary) zamiast stosu przycisków pod foldem; „Popraw wyniki” przeniesione pod listę ćwiczeń (kontekst wyników). Wzorzec Hevy/Strong: akcje po treningu zawsze widoczne bez scrolla.
+- 2026-08-12 — redesign celebracji PR: flash w loggerze i sekcja w podsumowaniu na mono card (złoto tylko na ★ i etykiecie), polski copy „Szacowany max … kg ▲ +x · poprzednio … kg” zamiast „est./Personal best”; struktura etykieta → nazwa → duża liczba → subline.
+- 2026-08-12 — iteracja 2 (Styrka: odejmowanie): sekcja PR w podsumowaniu bez boxa — sama typografia; usunięte „poprzednio … kg” (delta ▲ wystarcza), liczba `45×11` na text-3xl, metric „Szacowany max 61,5 kg ▲ +1,5” w jednej linii przy liczbie.
+- 2026-08-12 — `SessionSummaryView`: lista serii z wynikami (`ciężar×powt` / czas), ★ PR per seria, dopisek celu przy seriach poniżej planu, notatki ćwiczenia/serii; licznik `done/total` tylko przy niekompletnych.
+- 2026-08-12 — `SessionLogger`: usunięto zwijanie ukończonych ćwiczeń (auto i ręczne z menu) oraz wygaszanie `opacity-70` — serie i PR zostają widoczne do końca sesji. Research: Gravitus, Hevy i Strong nie zwijają ćwiczeń w trakcie treningu; wzorzec występuje tylko w aplikacjach hobbystycznych (LiftTrace, ExerSci, rep-mate).
+- 2026-08-12 — iteracja 3 celebracji PR: wynik rekordu w podsumowaniu na `text-pr` text-4xl (spójnie z `SessionReview` / kartą klienta / dashboardem), „Szacowany max … ▲ +x” w osobnej linii pod bohaterem, wejście sekcji z `pr-celebrate-in`.
+- 2026-08-12 — nawigacja z historii: linki historii z `?from=history`; podsumowanie w tym kontekście ma górny back „‹ Historia”, CTA „Wróć do historii” i bez animacji celebracji; po „Popraw wyniki” zapis wraca do podsumowania (nie na ekran główny).

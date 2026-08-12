@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { api, SessionDetail } from "@/lib/api";
 import { Button, SegmentedControl, Sheet, StatBlock } from "@/components/ui";
+import { Icon } from "@/components/Icon";
 import { formatKg } from "@/lib/plates";
 import { formatSetLoadReps } from "@/lib/weight";
 import { parseShareVariant, type ShareVariant } from "@/lib/shareCard";
@@ -22,10 +23,10 @@ function formatDurationClock(seconds: number | null): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-function isBelowTarget(
-  set: SessionDetail["exercises"][0]["sets"][0],
-  isTime: boolean,
-): boolean {
+type SummarySet = SessionDetail["exercises"][0]["sets"][0];
+type SummaryExercise = SessionDetail["exercises"][0];
+
+function isBelowTarget(set: SummarySet, isTime: boolean): boolean {
   if (!set.completed) return false;
   if (isTime) {
     const t = set.targetDurationSeconds;
@@ -34,6 +35,45 @@ function isBelowTarget(
   if (set.targetReps != null && (set.reps ?? 0) < set.targetReps) return true;
   if (set.targetWeightKg != null && (set.weightKg ?? 0) < set.targetWeightKg) return true;
   return false;
+}
+
+function formatSetResult(
+  set: SummarySet,
+  ex: SummaryExercise,
+  isTime: boolean,
+): string {
+  if (!set.completed) return "—";
+  if (isTime) {
+    const sec = set.durationSeconds ?? set.reps;
+    return sec != null ? `${sec} s` : "—";
+  }
+  if (set.weightKg != null && set.reps != null) {
+    return formatSetLoadReps(set.weightKg, set.reps, ex);
+  }
+  if (set.reps != null) return `${set.reps}`;
+  if (set.weightKg != null) return `${formatKg(set.weightKg)} kg`;
+  if (set.distanceMeters != null) return `${set.distanceMeters} m`;
+  return "—";
+}
+
+function formatSetTarget(set: SummarySet, ex: SummaryExercise, isTime: boolean): string | null {
+  if (isTime && set.targetDurationSeconds != null) {
+    return `${set.targetDurationSeconds} s`;
+  }
+  if (set.targetWeightKg != null && set.targetReps != null) {
+    return formatSetLoadReps(set.targetWeightKg, set.targetReps, ex);
+  }
+  if (set.targetReps != null) return `${set.targetReps}`;
+  if (set.targetWeightKg != null) return `${formatKg(set.targetWeightKg)} kg`;
+  return null;
+}
+
+function setIndexLabel(set: SummarySet): string {
+  if (set.isWarmup) return "W";
+  const side =
+    set.side === "left" ? "L" : set.side === "right" ? "P" : null;
+  const num = String(set.setNumber);
+  return side ? `${num}${side}` : num;
 }
 
 function prHeadline(count: number): string {
@@ -73,12 +113,15 @@ export function SessionSummaryView({
   onBack,
   onEdit,
   shareImageUrl,
+  fromHistory = false,
 }: {
   session: SessionDetail;
   onBack: () => void;
   onEdit: () => void;
   /** Relative path do PNG (bez ujawniania tokenu przez share URL). */
   shareImageUrl?: string | null;
+  /** Wejście z zakładki historii — górny back „Historia”, CTA wraca do listy. */
+  fromHistory?: boolean;
 }) {
   const hasPrs = session.prs.length > 0;
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -146,8 +189,20 @@ export function SessionSummaryView({
   const aspectClass = variant === "story" ? "aspect-[9/16]" : "aspect-[4/5]";
 
   return (
-    <div className="mx-auto max-w-lg space-y-8 pb-10">
+    // pb pod sticky bar (CTA + share + safe area) — treść przewija się pod chrome, nic nie ginie
+    <div className="mx-auto max-w-lg space-y-8 pb-44">
       <header>
+        {fromHistory ? (
+          // Drill-in z listy (Jakob's Law): back u góry-lewej, tap ≥44px, wyjście tą samą drogą
+          <button
+            type="button"
+            onClick={onBack}
+            className="-ml-2 mb-3 inline-flex min-h-11 items-center gap-1 rounded-[10px] px-2 text-sm font-medium text-muted transition-colors duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+          >
+            <Icon name="caret-left" size={16} decorative />
+            Historia
+          </button>
+        ) : null}
         <p className="text-xs font-medium uppercase tracking-caps text-muted">Trening ukończony</p>
         <h1 className="mt-2 break-words font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
           {session.dayLabel ?? "Trening"}
@@ -159,36 +214,45 @@ export function SessionSummaryView({
       </header>
 
       {hasPrs ? (
+        // Celebracja samą typografią (Styrka: odejmowanie) — bez boxa. Złoto na danych:
+        // wynik rekordu w text-pr (spójnie z SessionReview / kartą klienta), jedna dominanta
+        // na widoku (Peak-End). Szacowany max w osobnej linii — nie konkuruje z bohaterem.
+        // Animacja wejścia tylko przy świeżym ukończeniu — przegląd archiwum bez celebracji
         <section
           aria-label={prHeadline(session.prs.length)}
-          className="rounded-xl border border-pr-border bg-pr-dim px-4 py-4"
+          className={fromHistory ? undefined : "pr-celebrate-in"}
         >
           <p className="font-mono text-xs font-medium uppercase tracking-caps text-pr">
-            {prHeadline(session.prs.length)}
+            ★ {prHeadline(session.prs.length)}
           </p>
-          <ul className="mt-3 space-y-4">
+          <ul className="mt-3 space-y-6">
             {session.prs.map((p) => {
               const ex = session.exercises.find((e) => e.exerciseId === p.exerciseId);
               const loadReps =
                 p.weightKg != null && p.reps != null
                   ? formatSetLoadReps(p.weightKg, p.reps, ex)
                   : "—";
+              const delta =
+                p.estimated1Rm != null && p.previousBest1Rm != null
+                  ? Math.round((p.estimated1Rm - p.previousBest1Rm) * 10) / 10
+                  : null;
               return (
-              <li key={`${p.exerciseId}-${p.setNumber}`}>
-                <p className="break-words text-base font-semibold text-foreground">{p.exerciseName}</p>
-                <p className="mt-0.5 font-mono text-xl font-semibold tabular-nums tracking-tight text-foreground">
-                  {loadReps}
+                <li key={`${p.exerciseId}-${p.setNumber}`}>
+                  <p className="break-words text-[15px] font-medium leading-snug text-foreground">
+                    {p.exerciseName}
+                  </p>
+                  <p className="mt-1 font-mono text-4xl font-semibold tabular-nums tracking-tight text-pr">
+                    {loadReps}
+                  </p>
                   {p.estimated1Rm != null ? (
-                    <span className="text-base font-medium text-muted">
-                      {" "}
-                      · est. {formatKg(p.estimated1Rm)}
-                      {p.previousBest1Rm != null
-                        ? ` (poprz. ${formatKg(p.previousBest1Rm)})`
-                        : ""}
-                    </span>
+                    <p className="mt-1.5 font-mono text-sm tabular-nums text-muted">
+                      Szacowany max {formatKg(p.estimated1Rm)} kg
+                      {delta != null && delta > 0 ? (
+                        <span className="text-gain"> ▲ +{formatKg(delta)}</span>
+                      ) : null}
+                    </p>
                   ) : null}
-                </p>
-              </li>
+                </li>
               );
             })}
           </ul>
@@ -211,36 +275,76 @@ export function SessionSummaryView({
         <ul className="divide-y divide-border">
           {session.exercises.map((ex) => {
             const done = ex.sets.filter((s) => s.completed).length;
+            const incomplete = done < ex.sets.length;
             const isTime = ex.exerciseType === "time";
-            const below = ex.sets.some((s) => isBelowTarget(s, isTime));
-            const hasPr =
-              ex.sets.some((s) => s.isPr && s.completed) ||
-              session.prs.some((p) => p.exerciseId === ex.exerciseId);
-            const complete = done === ex.sets.length && !below;
+            const exerciseNote = ex.note?.trim() || null;
             return (
-              <li key={ex.id} className="flex min-h-12 items-start justify-between gap-3 py-3.5">
-                <div className="min-w-0 flex-1">
-                  <p className="break-words text-[15px] font-medium leading-snug text-foreground">
+              <li key={ex.id} className="py-3.5">
+                <div className="flex min-h-7 items-start justify-between gap-3">
+                  <p className="min-w-0 flex-1 break-words text-[15px] font-medium leading-snug text-foreground">
                     {ex.exerciseName}
                   </p>
-                  {hasPr ? (
-                    <p className="mt-0.5 font-mono text-xs font-medium tracking-caps text-pr">PR</p>
+                  {incomplete ? (
+                    <span className="shrink-0 pt-0.5 font-mono text-sm tabular-nums text-muted">
+                      {done}/{ex.sets.length}
+                    </span>
                   ) : null}
                 </div>
-                <div
-                  className={`shrink-0 pt-0.5 text-right font-mono text-sm tabular-nums ${
-                    complete ? "text-foreground-secondary" : "text-muted"
-                  }`}
-                >
-                  {done}/{ex.sets.length}
-                  {below ? (
-                    <span className="mt-0.5 block text-xs text-muted-faint">poniżej celu</span>
-                  ) : null}
-                </div>
+                {exerciseNote ? (
+                  <p className="mt-1 whitespace-pre-wrap text-[13px] leading-snug text-muted">
+                    {exerciseNote}
+                  </p>
+                ) : null}
+                <ul className="mt-2 space-y-1.5">
+                  {ex.sets.map((s) => {
+                    const isPr = s.isPr && s.completed;
+                    const below = !isPr && isBelowTarget(s, isTime);
+                    const result = formatSetResult(s, ex, isTime);
+                    const target = below ? formatSetTarget(s, ex, isTime) : null;
+                    const setNote = s.note?.trim() || null;
+                    return (
+                      <li key={s.id}>
+                        <div className="flex min-h-7 items-baseline gap-3">
+                          <span className="w-8 shrink-0 font-mono text-[13px] tabular-nums text-muted">
+                            {setIndexLabel(s)}
+                          </span>
+                          <span
+                            className={`min-w-0 flex-1 font-mono text-[15px] tabular-nums tracking-tight ${
+                              s.completed ? "text-foreground" : "text-muted-faint"
+                            }`}
+                          >
+                            {result}
+                            {isPr ? (
+                              <span className="ml-2 font-mono text-xs font-medium tracking-caps text-pr">
+                                ★ PR
+                              </span>
+                            ) : null}
+                            {target ? (
+                              <span className="ml-2 text-[13px] text-muted-faint">
+                                cel {target}
+                              </span>
+                            ) : null}
+                          </span>
+                        </div>
+                        {setNote ? (
+                          <p className="ml-11 mt-0.5 whitespace-pre-wrap text-[13px] leading-snug text-muted">
+                            {setNote}
+                          </p>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ul>
               </li>
             );
           })}
         </ul>
+        {/* Korekta w kontekście wyników (grouping & mapping) — nie konkuruje z głównym CTA */}
+        <div className="mt-2">
+          <Button variant="ghost" onClick={onEdit}>
+            Popraw wyniki
+          </Button>
+        </div>
       </section>
 
       {session.note ? (
@@ -254,28 +358,32 @@ export function SessionSummaryView({
         </section>
       ) : null}
 
-      {shareError && !sheetOpen ? <p className="text-sm text-danger">{shareError}</p> : null}
-
-      <div className="flex flex-col gap-2 pt-1">
-        <Button full onClick={onBack}>
-          Gotowe
-        </Button>
-        {shareImageUrl ? (
-          <Button
-            variant="secondary"
-            full
-            onClick={() => {
-              setShareError(null);
-              setVariant(parseShareVariant(hasPrs ? "pr" : "stats", hasPrs));
-              setSheetOpen(true);
-            }}
-          >
-            Udostępnij
+      {/* Sticky CTA — zawsze w thumb zone; user nie musi wiedzieć, że trzeba scrollować */}
+      <div
+        className="session-chrome fixed inset-x-0 bottom-0 z-40 border-t border-border px-5 pt-3"
+        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+      >
+        <div className="mx-auto flex w-full max-w-lg flex-col gap-2">
+          {shareError && !sheetOpen ? (
+            <p className="text-sm text-danger">{shareError}</p>
+          ) : null}
+          {shareImageUrl ? (
+            <Button
+              variant="secondary"
+              full
+              onClick={() => {
+                setShareError(null);
+                setVariant(parseShareVariant(hasPrs ? "pr" : "stats", hasPrs));
+                setSheetOpen(true);
+              }}
+            >
+              Udostępnij trening
+            </Button>
+          ) : null}
+          <Button full size="lg" onClick={onBack}>
+            {fromHistory ? "Wróć do historii" : "Wróć do ekranu głównego"}
           </Button>
-        ) : null}
-        <Button variant="ghost" full onClick={onEdit}>
-          Popraw wyniki
-        </Button>
+        </div>
       </div>
 
       <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Udostępnij trening">

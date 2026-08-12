@@ -471,4 +471,32 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: Snapshot zwracający obiekt musi mieć cache: porównaj pola z poprzednią wartością i zwróć **starą referencję**, gdy nic się nie zmieniło. Prymitywy (`boolean`, `string`) są bezpieczne. Przy review nowego `useSyncExternalStore` zawsze sprawdź, czy getSnapshot nie tworzy obiektu/tablicy.
 **Dotyczy**: `lib/navCounts.ts`, `lib/pwa.ts`, każdy nowy store oparty o `useSyncExternalStore`.
 
+## Nie chowaj wyniku: zero auto-zwijania w loggerze, licznik to nie wynik
+
+**Kontekst**: Podsumowanie sesji pokazywało per ćwiczenie tylko `0/3`, a logger zwijał ćwiczenie zaraz po odhaczeniu ostatniej serii — do wiersza `nazwa + 3/3`. Klient robił PR i go nie widział.
+**Problem**: (1) Licznik to etykieta, nie wynik — koniec sesji (peak-end) bez dowodu pracy. (2) Flaga `isPr` wraca **z serwera** po `persist()`, a zwinięcie leciało natychmiast w `queueMicrotask` — rekord lądował w zwiniętej sekcji i zostawał tylko znikający toast. (3) Auto-zwijanie to wzorzec z aplikacji hobbystycznych: Gravitus, Hevy i Strong trzymają wszystkie serie widoczne przez cały trening (w Hevy zwijanie to od lat niezrealizowana prośba użytkowników).
+**Zasada**: Serie zostają widoczne — brak auto-zwijania i brak wygaszania (`opacity`) ukończonego ćwiczenia; stan „zrobione” niosą checki przy seriach. Każdy skrócony widok (podsumowanie, historia) pokazuje wynik (`45×10 · 45×10 · 50×8`), nie sam licznik; `done/total` tylko gdy coś jest nieukończone. Przed wdrożeniem wzorca „z innych apek” sprawdź, czy benchmarki (Gravitus / Hevy / Strong / Styrka) faktycznie go mają.
+**Dotyczy**: `SessionSummaryView.tsx`, `SessionLogger.tsx`, każde przyszłe „collapse po ukończeniu”.
+
+## Celebracja PR: mono card + glif, nie złota wylewka; zero żargonu „est.”
+
+**Kontekst**: Baner PR (flash w loggerze i sekcja w podsumowaniu) był złotym boxem (`bg-pr-dim` + `border-pr-border`) z copy `est. 61,5 (poprz. 60)` i angielskim „Personal best”.
+**Problem**: (1) Data accent użyty jako fill całej karty łamie mono v2 („kolor tylko na danych”, nie na chrome) i wygląda tanio. (2) Skrót „est.” to żargon — klient nie wie, że to szacowany max. (3) Angielski string w UI. (4) Jeden sklejony string zamiast hierarchii (etykieta / nazwa / liczba / delta).
+**Zasada**: Celebracja = spokojna powierzchnia (`bg-surface`/`bg-surface-raised` + hairline), złoto wyłącznie na glifie ★ i etykiecie caps, delta jako `▲ +x` w `text-gain`. Liczby zawsze z polskim kontekstem („Szacowany max 61,5 kg · poprzednio 60 kg”) — nie skróty. Struktura: etykieta → nazwa → duża liczba → subline.
+**Dotyczy**: `SessionLogger.tsx` (prCelebrate), `SessionSummaryView.tsx`, karta share, każdy przyszły baner PR/celebracji.
+
+## Końcowe CTA na mobile: sticky bar, nie stos przycisków pod foldem
+
+**Kontekst**: Podsumowanie sesji miało „Gotowe / Udostępnij / Popraw wyniki” na samym dole, pod długą listą ćwiczeń. Użytkownik nie wiedział, że trzeba scrollować, a „Gotowe” nie mówiło, co robi.
+**Problem**: (1) Kluczowe akcje poniżej foldu = niewidoczne (brak affordance do scrolla). (2) Etykieta „Gotowe/OK/Zapisz” nie nazywa rezultatu (transactional copy — gotcha z `senior-ux-cro`). (3) Trzy CTA w jednym stosie łamią zasadę jednej dominanty.
+**Zasada**: Na ekranach zamykających flow (podsumowanie, finisz) główne CTA żyje w sticky barze (`.session-chrome`, `fixed bottom-0`, safe-area) — zawsze w thumb zone; treść dostaje `pb` i przewija się pod chrome. Etykieta nazywa rezultat/cel („Wróć do ekranu głównego”), nie stan („Gotowe”). Akcje korekcyjne (edytuj/popraw) idą do kontekstu danych, których dotyczą, nie do stosu CTA.
+**Dotyczy**: `SessionSummaryView.tsx`, każdy przyszły ekran końcowy / confirm z listą powyżej CTA.
+
+## Wybór encji: picker z wyszukiwaniem, nigdy natywny `<select>`
+
+**Kontekst**: Kalkulator %1RM w portalu miał natywny `<select>` z listą ćwiczeń — na iOS renderuje się jako systemowy dropdown (niebieski highlight, obcy krój), bez możliwości wpisania frazy.
+**Problem**: (1) Natywny `<select>` nie przyjmuje tokenów mono v2 — łamie spójność wizualną. (2) Przy kilkunastu pozycjach jedyną nawigacją jest scroll (wysoki koszt interakcji). (3) W repo istniał już wzorzec typeahead (`ExerciseCombobox`) — powielanie „szybkiego selecta” to dryf, nie prostota.
+**Zasada**: Każdy wybór z listy encji (ćwiczenie, dzień planu, klient) idzie przez `SearchPicker` (`components/SearchPicker.tsx`) albo `ExerciseCombobox` — trigger jak pole, po otwarciu input z filtrowaniem (`foldDiacritics`), klawiatura ↑ ↓ Enter Esc, wiersze ≥ 44px. Natywny `<select>` dopuszczalny tylko dla krótkich, stałych enumów — a i tam preferuj `SegmentedControl`/`Pill`.
+**Dotyczy**: `components/SearchPicker.tsx`, `portal/[token]/calculator`, `clients/[id]` (dialog „Wpisz trening za klienta”), każdy przyszły wybór z listy.
+
 ---
