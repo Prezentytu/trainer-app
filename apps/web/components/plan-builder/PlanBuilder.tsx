@@ -435,7 +435,7 @@ export default function PlanBuilder({
         {draft.toastNode}
 
         {createdToast && (
-          <div className="fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-[10px] border border-border-strong bg-surface px-4 py-3 text-sm shadow-raised">
+          <div className="fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-[10px] border border-border-strong bg-surface px-4 py-3 text-sm">
             <span className="text-foreground-secondary">
               Nowe ćwiczenie „{createdToast.name}” w bibliotece
             </span>

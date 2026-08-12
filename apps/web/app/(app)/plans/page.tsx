@@ -263,14 +263,14 @@ function PlansEmptyState({
   if (q) {
     return (
       <EmptyState
-        title={`Brak planów dla „${q}"`}
+        title={`Nic nie pasuje do „${q}"`}
         action={
           <Button variant="ghost" size="sm" onClick={onClearQuery}>
             Wyczyść szukanie
           </Button>
         }
       >
-        Spróbuj innej nazwy albo wyczyść filtr.
+        Spróbuj innej nazwy albo wyczyść filtr — albo utwórz nowy plan.
       </EmptyState>
     );
   }
@@ -290,7 +290,7 @@ function PlansEmptyState({
   }
   if (kind === "clients") {
     return (
-      <EmptyState title="Żaden plan nie jest jeszcze przypisany">
+      <EmptyState title="Żaden plan nie jest jeszcze przypisany" action={null}>
         Skopiuj plan z biblioteki → „Utwórz plan klienta”, albo utwórz nowy bez oznaczenia wielokrotnego użytku.
       </EmptyState>
     );
@@ -385,7 +385,7 @@ function PlanRow({
                 </span>
               ))}
             </div>
-            <span className="min-w-0 truncate text-[12px] text-fg-muted">
+            <span className="min-w-0 break-words text-[12px] text-fg-muted">
               {visibleClients.join(", ")}
               {extraClients > 0 ? ` +${extraClients}` : ""}
             </span>
@@ -402,10 +402,10 @@ function PlanRow({
 
       {/* Akcje — stała szerokość, zawsze te same 2 ikony */}
       <div className="relative z-10 flex w-full shrink-0 items-center justify-end gap-0.5 lg:w-auto">
-        <IconButton title={`Duplikuj „${plan.name}"`} size="xs" onClick={onDuplicate}>
+        <IconButton title={`Duplikuj „${plan.name}"`} size="sm" onClick={onDuplicate}>
           <DuplicateIcon />
         </IconButton>
-        <IconButton title={`Usuń „${plan.name}"`} size="xs" variant="danger" onClick={onDelete}>
+        <IconButton title={`Usuń „${plan.name}"`} size="sm" variant="danger" onClick={onDelete}>
           <TrashIcon />
         </IconButton>
       </div>

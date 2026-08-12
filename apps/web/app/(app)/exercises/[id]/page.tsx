@@ -94,10 +94,14 @@ export default function ExerciseDetailPage() {
           }
         />
         <ErrorBanner message="Nieprawidłowe ID ćwiczenia." />
-        <EmptyState>
-          <Button variant="secondary" onClick={() => router.push("/exercises")}>
-            Wróć do biblioteki
-          </Button>
+        <EmptyState
+          action={
+            <Button variant="secondary" onClick={() => router.push("/exercises")}>
+              Wróć do biblioteki
+            </Button>
+          }
+        >
+          Nie znaleziono ćwiczenia.
         </EmptyState>
       </div>
     );
@@ -115,10 +119,14 @@ export default function ExerciseDetailPage() {
           }
         />
         <ErrorBanner message={error} />
-        <EmptyState>
-          <Button variant="secondary" onClick={() => router.push("/exercises")}>
-            Wróć do biblioteki
-          </Button>
+        <EmptyState
+          action={
+            <Button variant="secondary" onClick={() => router.push("/exercises")}>
+              Wróć do biblioteki
+            </Button>
+          }
+        >
+          Nie udało się wczytać ćwiczenia.
         </EmptyState>
       </div>
     );
@@ -185,7 +193,7 @@ export default function ExerciseDetailPage() {
             </Card>
           ) : (
             <Card>
-              <EmptyState>Brak filmów dla tego ćwiczenia.</EmptyState>
+              <EmptyState action={null}>Brak filmów dla tego ćwiczenia.</EmptyState>
             </Card>
           )}
 
@@ -211,7 +219,7 @@ export default function ExerciseDetailPage() {
                   />
                   <div className="px-2 py-1.5">
                     <p className="truncate text-xs font-medium">{m.title || "Wideo"}</p>
-                    <p className="text-[10px] uppercase tracking-[0.08em] text-muted">
+                    <p className="text-xs uppercase tracking-[0.08em] text-muted">
                       {MEDIA_KIND_LABELS[m.kind as ExerciseMediaKind] ?? m.kind}
                     </p>
                   </div>

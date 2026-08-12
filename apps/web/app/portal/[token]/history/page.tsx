@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api, PortalSessionSummary } from "@/lib/api";
 import { EmptyState, ErrorBanner } from "@/components/ui";
+import { Icon } from "@/components/Icon";
 import { PortalPageSkeleton } from "@/components/skeletons";
 import { formatDurationMinutes } from "@/lib/estimateDuration";
 import { todayIsoLocal } from "@/lib/dates";
@@ -156,7 +157,7 @@ export default function PortalHistoryPage() {
                             </p>
                             {prCount > 0 ? (
                               <span className="font-mono text-xs font-medium tracking-caps text-pr">
-                                {prCount === 1 ? "PR" : `${prCount}× PR`}
+                                {prCount === 1 ? "★ PR" : `★ ${prCount}× PR`}
                               </span>
                             ) : null}
                           </div>
@@ -170,9 +171,7 @@ export default function PortalHistoryPage() {
                             <p className="mt-1 font-mono text-sm tabular-nums text-muted">{meta}</p>
                           ) : null}
                         </div>
-                        <span className="shrink-0 text-lg text-muted-faint" aria-hidden>
-                          ›
-                        </span>
+                        <Icon name="caret-right" size={18} className="shrink-0 text-muted-faint" decorative />
                       </Link>
                     </li>
                   );

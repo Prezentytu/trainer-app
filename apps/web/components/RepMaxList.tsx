@@ -23,7 +23,7 @@ export function RepMaxList({
           <p className="font-mono text-base font-semibold tabular-nums text-foreground">
             {formatKg(r.weightKg)}
           </p>
-          <p className="mt-0.5 font-mono text-[11px] font-medium uppercase tracking-caps text-muted">
+          <p className="mt-0.5 font-mono text-xs font-medium uppercase tracking-caps text-muted">
             {r.reps}RM
           </p>
         </li>

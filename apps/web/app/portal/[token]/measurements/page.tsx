@@ -4,7 +4,16 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api, ClientMeasurement } from "@/lib/api";
-import { Button, EmptyState, ErrorBanner, Field, inputClass, inputNumericClass } from "@/components/ui";
+import {
+  Button,
+  EmptyState,
+  ErrorBanner,
+  Field,
+  inputClass,
+  inputNumericClass,
+  ListRow,
+} from "@/components/ui";
+import { Icon } from "@/components/Icon";
 import { PortalPageSkeleton } from "@/components/skeletons";
 import { WeightTrendSparkline } from "@/components/WeightTrendSparkline";
 import { formatKg } from "@/lib/plates";
@@ -83,20 +92,21 @@ export default function PortalMeasurementsPage() {
   };
 
   return (
-    <div className="space-y-4 pb-8">
+    <div className="mx-auto max-w-lg space-y-8 pb-24">
       <header>
         <Link
           href={`/portal/${token}/profile`}
-          className="text-[13px] font-semibold text-muted hover:text-accent"
+          className="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-muted transition-[color,transform] duration-[var(--dur-fast)] hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] active:scale-[0.97]"
         >
-          ‹ Profil
+          <Icon name="caret-left" size={16} decorative />
+          Profil
         </Link>
-        <h1 className="mt-1 font-display text-3xl font-bold">Pomiary</h1>
-        <p className="mt-0.5 text-[13px] text-muted">Waga i obwody — trener je widzi w Twoim profilu.</p>
+        <h1 className="t-title mt-2">Pomiary</h1>
+        <p className="t-small mt-1">Waga i obwody — trener je widzi w Twoim profilu.</p>
       </header>
       <ErrorBanner message={error} />
 
-      <div className="space-y-3 rounded-2xl border border-border bg-surface p-4 shadow-card">
+      <div className="space-y-3 rounded-[var(--r-card)] border border-border bg-surface p-4">
         <Field label="Waga (kg)">
           <input
             className={inputNumericClass}
@@ -134,17 +144,24 @@ export default function PortalMeasurementsPage() {
       {!rows ? (
         <PortalPageSkeleton label="Wczytuję pomiary…" />
       ) : rows.length === 0 ? (
-        <EmptyState title="Pierwszy pomiar">
+        <EmptyState
+          title="Zacznij od pierwszego pomiaru"
+          action={
+            <Link href={`/portal/${token}`}>
+              <Button variant="secondary" size="sm">
+                Wróć do treningów
+              </Button>
+            </Link>
+          }
+        >
           Zapisz wagę lub obwód powyżej — zobaczysz trend i postęp do celu.
         </EmptyState>
       ) : (
         <>
           {goalWeightKg != null ? (
-            <section aria-label="Cel wagi" className="border-y border-border py-4">
-              <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
-                Cel wagi
-              </p>
-              <p className="mt-2 font-mono text-lg font-semibold tabular-nums text-foreground">
+            <section aria-label="Cel wagi" className="border-y border-border py-5">
+              <p className="t-label text-muted">Cel wagi</p>
+              <p className="t-num mt-2 text-lg text-foreground">
                 Cel: {formatKg(goalWeightKg)} kg
                 {goalDelta != null ? (
                   <>
@@ -153,8 +170,8 @@ export default function PortalMeasurementsPage() {
                       {goalDelta === 0
                         ? "na celu"
                         : goalDelta < 0
-                          ? `zostało ${formatKg(Math.abs(goalDelta))} kg`
-                          : `+${formatKg(goalDelta)} kg do celu`}
+                          ? `▲ zostało ${formatKg(Math.abs(goalDelta))} kg`
+                          : `▼ +${formatKg(goalDelta)} kg do celu`}
                     </span>
                   </>
                 ) : null}
@@ -162,28 +179,30 @@ export default function PortalMeasurementsPage() {
             </section>
           ) : null}
           {weightTrend.length >= 2 ? (
-            <section aria-label="Trend wagi" className="border-y border-border py-4">
-              <p className="mb-3 font-mono text-xs font-medium uppercase tracking-caps text-muted">
-                Trend wagi
-              </p>
+            <section aria-label="Trend wagi" className="border-y border-border py-5">
+              <p className="t-label mb-3 text-muted">Trend wagi</p>
               <WeightTrendSparkline points={weightTrend} />
             </section>
           ) : null}
-          <ul className="space-y-2">
+          <div className="divide-y divide-border border-y border-border">
             {rows.map((r) => (
-              <li
+              <ListRow
                 key={r.id}
-                className="rounded-2xl border border-border bg-surface px-4 py-3 shadow-card"
-              >
-                <p className="font-mono text-[13px] tabular-nums text-muted">{formatDay(r.measuredOn)}</p>
-                <p className="mt-1 font-mono text-[15px] tabular-nums">
-                  {r.weightKg != null ? `${r.weightKg} kg` : "—"}
-                  {r.waistCm != null ? ` · talia ${r.waistCm} cm` : ""}
-                </p>
-                {r.note ? <p className="mt-1 text-[13px] text-muted">{r.note}</p> : null}
-              </li>
+                title={
+                  <span className="t-num text-[15px] font-semibold">
+                    {r.weightKg != null ? `${r.weightKg} kg` : "—"}
+                    {r.waistCm != null ? ` · talia ${r.waistCm} cm` : ""}
+                  </span>
+                }
+                sub={
+                  <>
+                    {formatDay(r.measuredOn)}
+                    {r.note ? ` · ${r.note}` : ""}
+                  </>
+                }
+              />
             ))}
-          </ul>
+          </div>
         </>
       )}
     </div>

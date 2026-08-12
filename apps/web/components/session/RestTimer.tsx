@@ -102,12 +102,12 @@ export function RestTimer({
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-background px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] isolate">
       <div className="flex items-center justify-between">
-        <p className="font-mono text-[11px] font-medium uppercase tracking-caps text-muted">
+        <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
           Przerwa
         </p>
         <button
           type="button"
-          className="inline-flex h-11 items-center justify-center rounded-[10px] px-3 text-[13px] font-semibold text-muted-strong hover:bg-surface-hover hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+          className="inline-flex h-11 items-center justify-center rounded-[10px] px-3 text-[13px] font-semibold text-muted-strong transition-[background-color,color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:bg-surface-hover hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] active:scale-[0.98]"
           onClick={() => onExpand(false)}
           aria-label="Zminimalizuj timer — pokaż ćwiczenia"
         >
@@ -119,7 +119,7 @@ export function RestTimer({
         <RestRing progress={progress} label={mmss(rest.leftSeconds)} />
         {hasNext ? (
           <div className="flex max-w-[32ch] flex-col items-center gap-1.5 px-4 text-center">
-            <p className="font-mono text-[11px] font-medium uppercase tracking-caps text-muted">
+            <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
               Następna seria
             </p>
             <p className="break-words text-[17px] font-semibold leading-snug tracking-tight text-foreground">

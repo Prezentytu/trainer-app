@@ -15,15 +15,15 @@ export function SupersetGroup({
   return (
     <div className="overflow-hidden rounded-[10px] border border-border-strong">
       <div className="flex items-baseline justify-between gap-2 border-b border-border bg-surface-raised px-3 py-1.5">
-        <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
+        <span className="font-mono text-xs font-semibold uppercase tracking-[0.08em] text-muted">
           Superseria {letter}
         </span>
         <div className="flex shrink-0 items-center gap-2">
-          <span className="text-[11px] text-muted-faint">bez przerwy</span>
+          <span className="text-xs text-muted-faint">bez przerwy</span>
           <button
             type="button"
             onClick={onUnlink}
-            className="text-[11px] font-medium text-muted hover:text-foreground"
+            className="text-xs font-medium text-muted hover:text-foreground"
           >
             Rozłącz
           </button>

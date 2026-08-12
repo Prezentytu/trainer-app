@@ -59,7 +59,7 @@ export function WeekTabs({
       <div className="flex shrink-0 items-center gap-2">
         {right}
         {metaLabel ? (
-          <span className="hidden font-mono text-[11px] tabular-nums text-muted-faint sm:inline">
+          <span className="hidden font-mono text-xs tabular-nums text-muted-faint sm:inline">
             {metaLabel}
           </span>
         ) : null}

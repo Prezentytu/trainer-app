@@ -1,12 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api, PortalHome } from "@/lib/api";
 import { Avatar, ErrorBanner, Switch } from "@/components/ui";
+import { Icon, type IconName } from "@/components/Icon";
 import { PortalPageSkeleton } from "@/components/skeletons";
 import { PwaInstallPrompt } from "@/components/portal/PwaInstallPrompt";
+import { SectionHeader } from "@/components/portal/SectionHeader";
 import {
   readAutoRest,
   readLogRir,
@@ -17,6 +19,56 @@ import {
 } from "@/lib/portalPrefs";
 import { isIosDevice, isStandaloneDisplay, useIsIos, useIsStandalone } from "@/lib/pwa";
 import { useTheme } from "@/lib/theme";
+
+function SettingsRow({
+  title,
+  right,
+  hint,
+}: {
+  title: string;
+  right: ReactNode;
+  hint?: string;
+}) {
+  return (
+    <li className="flex min-h-11 items-center gap-3 py-2.5">
+      <div className="min-w-0 flex-1">
+        <p className="text-[15px] font-medium text-foreground">{title}</p>
+        {hint ? <p className="mt-0.5 text-xs text-muted">{hint}</p> : null}
+      </div>
+      <div className="shrink-0">{right}</div>
+    </li>
+  );
+}
+
+function NavRow({
+  href,
+  icon,
+  title,
+  sub,
+}: {
+  href: string;
+  icon: IconName;
+  title: string;
+  sub?: string;
+}) {
+  return (
+    <li>
+      <Link
+        href={href}
+        className="flex min-h-11 w-full items-center gap-3 py-2.5 text-left transition-colors duration-[var(--dur-fast)] hover:bg-surface focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] active:scale-[0.98]"
+      >
+        <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-md bg-surface-raised text-foreground">
+          <Icon name={icon} size={18} decorative />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-medium text-foreground">{title}</span>
+          {sub ? <span className="mt-0.5 block text-sm text-muted">{sub}</span> : null}
+        </span>
+        <Icon name="caret-right" size={16} className="shrink-0 text-muted" decorative />
+      </Link>
+    </li>
+  );
+}
 
 export default function PortalProfilePage() {
   const params = useParams<{ token: string }>();
@@ -109,7 +161,11 @@ export default function PortalProfilePage() {
     );
   }
 
-  const today = home.today;
+  const pushHint = !vapidKey
+    ? "Push wymaga konfiguracji. Przypomnienia e-mail ustawia trener."
+    : pushNeedsInstall
+      ? "Najpierw dodaj apkę do ekranu głównego — na iPhonie push działa tylko z ikony."
+      : undefined;
 
   return (
     <div className="mx-auto max-w-lg space-y-8 pb-24">
@@ -118,184 +174,116 @@ export default function PortalProfilePage() {
       <header className="flex items-center gap-3.5">
         <Avatar name={home.client.name} size="lg" />
         <div className="min-w-0">
-          <p className="text-xs font-medium uppercase tracking-caps text-muted">Profil</p>
-          <h1 className="mt-1 break-words text-[1.75rem] font-semibold leading-tight tracking-tight text-foreground">
+          <h1 className="break-words text-[1.75rem] font-semibold leading-tight tracking-tight text-foreground">
             {home.client.name}
           </h1>
         </div>
       </header>
 
-      {today ? (
-        <section aria-label="Aktualny plan">
-          <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
-            Aktualny plan
-          </p>
-          <p className="mt-2 break-words text-lg font-semibold tracking-tight text-foreground">
-            {today.planName}
-          </p>
-          <p className="mt-0.5 text-sm text-muted">
-            Tydzień {today.day.weekNumber} · {today.day.label}
-          </p>
-          <div className="mt-4 h-1 overflow-hidden rounded-full bg-surface-active">
-            <div
-              className="h-full rounded-full bg-invert-bg transition-[width] duration-[var(--dur-med)] ease-[var(--ease-out)]"
-              style={{ width: `${Math.min(100, today.percent)}%` }}
-            />
-          </div>
-          <p className="mt-2 font-mono text-sm tabular-nums text-muted">
-            {today.completed}/{today.total} sesji · {today.percent}%
-          </p>
-        </section>
-      ) : (
-        <section>
-          <p className="text-sm text-muted">Brak aktywnego planu. Poproś trenera o przypisanie.</p>
-        </section>
-      )}
-
-      <section aria-label="Ustawienia">
-        <p className="mb-1 font-mono text-xs font-medium uppercase tracking-caps text-muted">
-          Ustawienia
-        </p>
+      <section aria-label="Trening">
+        <SectionHeader title="Trening" />
         <ul className="divide-y divide-border border-y border-border">
-          <li className="flex min-h-14 items-center gap-3 py-2">
-            <div className="min-w-0 flex-1">
-              <p className="text-[15px] text-foreground-secondary">Jasny motyw</p>
-              <p className="mt-0.5 text-xs text-muted">
-                Wyłączony = ciemny interfejs. Zapisuje się w tej przeglądarce.
-              </p>
-            </div>
-            <Switch
-              checked={theme === "light"}
-              onChange={(light) => setTheme(light ? "light" : "dark")}
-            />
-          </li>
-          <li className="flex min-h-14 items-center gap-3 py-2">
-            <div className="min-w-0 flex-1 text-[15px] text-foreground-secondary">
-              Auto-timer odpoczynku
-            </div>
-            <Switch
-              checked={autoRest}
-              onChange={(v) => {
-                setAutoRest(v);
-                writeAutoRest(v);
-              }}
-            />
-          </li>
-          <li className="flex min-h-14 items-center gap-3 py-2">
-            <div className="min-w-0 flex-1">
-              <p className="text-[15px] text-foreground-secondary">Przerwa na ekranie blokady</p>
-              <p className="mt-0.5 text-xs text-muted">
-                Odliczanie na Lock Screen (jak widget). W przeglądarce pojawia się w Now
-                Playing — to jedyna droga bez natywnej apki.
-              </p>
-            </div>
-            <Switch
-              checked={restLockScreen}
-              onChange={(v) => {
-                setRestLockScreen(v);
-                writeRestLockScreen(v);
-              }}
-            />
-          </li>
-          <li className="flex min-h-14 items-center gap-3 py-2">
-            <div className="min-w-0 flex-1">
-              <p className="text-[15px] text-foreground-secondary">Zapisuj RIR</p>
-              <p className="mt-0.5 text-xs text-muted">
-                Kolumna wysiłku przy każdej serii — domyślnie wyłączona.
-              </p>
-            </div>
-            <Switch
-              checked={logRir}
-              onChange={(v) => {
-                setLogRir(v);
-                writeLogRir(v);
-              }}
-            />
-          </li>
-          <li className="flex min-h-14 items-center gap-3 py-2">
-            <div className="min-w-0 flex-1 text-[15px] text-foreground-secondary">Jednostki</div>
-            <span className="font-mono text-sm tabular-nums text-muted">kg</span>
-          </li>
-          <li className="flex min-h-14 items-center gap-3 py-2">
-            <div className="min-w-0 flex-1">
-              <p className="text-[15px] text-foreground-secondary">Przypomnienia push</p>
-              {!vapidKey ? (
-                <p className="mt-0.5 text-xs text-muted">
-                  Push wymaga konfiguracji. Przypomnienia e-mail ustawia trener.
-                </p>
-              ) : pushNeedsInstall ? (
-                <p className="mt-0.5 text-xs text-muted">
-                  Najpierw dodaj apkę do ekranu głównego — na iPhonie push działa tylko z ikony.
-                </p>
-              ) : null}
-            </div>
-            <Switch
-              checked={pushEnabled}
-              disabled={!vapidKey || pushSaving || pushNeedsInstall}
-              onChange={(v) => void togglePush(v)}
-            />
-          </li>
+          <SettingsRow
+            title="Auto-timer przerwy"
+            right={
+              <Switch
+                checked={autoRest}
+                onChange={(v) => {
+                  setAutoRest(v);
+                  writeAutoRest(v);
+                }}
+              />
+            }
+          />
+          <SettingsRow
+            title="Przerwa na ekranie blokady"
+            right={
+              <Switch
+                checked={restLockScreen}
+                onChange={(v) => {
+                  setRestLockScreen(v);
+                  writeRestLockScreen(v);
+                }}
+              />
+            }
+          />
+          <SettingsRow
+            title="Zapisuj RIR"
+            right={
+              <Switch
+                checked={logRir}
+                onChange={(v) => {
+                  setLogRir(v);
+                  writeLogRir(v);
+                }}
+              />
+            }
+          />
+        </ul>
+        <p className="mt-2 text-xs text-muted">
+          Przerwa na blokadzie pojawia się w Now Playing przeglądarki.
+        </p>
+      </section>
+
+      <section aria-label="Aplikacja">
+        <SectionHeader title="Aplikacja" />
+        <ul className="divide-y divide-border border-y border-border">
+          <SettingsRow
+            title="Jasny motyw"
+            right={
+              <Switch
+                checked={theme === "light"}
+                onChange={(light) => setTheme(light ? "light" : "dark")}
+              />
+            }
+          />
+          <SettingsRow
+            title="Przypomnienia push"
+            hint={pushHint}
+            right={
+              <Switch
+                checked={pushEnabled}
+                disabled={!vapidKey || pushSaving || pushNeedsInstall}
+                onChange={(v) => void togglePush(v)}
+              />
+            }
+          />
+          <SettingsRow
+            title="Jednostki"
+            right={<span className="font-mono text-sm tabular-nums text-muted">kg</span>}
+          />
         </ul>
       </section>
 
       {!standalone ? (
-        <section aria-label="Aplikacja">
-          <p className="mb-3 font-mono text-xs font-medium uppercase tracking-caps text-muted">
-            Aplikacja
-          </p>
+        <section aria-label="Zainstaluj aplikację">
+          <SectionHeader title="Zainstaluj aplikację" />
           <PwaInstallPrompt token={token} requireCompletedSession={false} persistent />
         </section>
       ) : null}
 
       <section aria-label="Więcej">
-        <p className="mb-1 font-mono text-xs font-medium uppercase tracking-caps text-muted">
-          Więcej
-        </p>
+        <SectionHeader title="Więcej" />
         <ul className="divide-y divide-border border-y border-border">
-          <li>
-            <Link
-              href={`/portal/${token}/intake`}
-              className="flex min-h-14 items-center justify-between gap-3 py-2 text-[15px] font-medium text-foreground transition-colors duration-[var(--dur-fast)] hover:text-foreground-secondary focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
-            >
-              Ankieta startowa
-              <span className="text-muted-faint" aria-hidden>
-                ›
-              </span>
-            </Link>
-          </li>
-          <li>
-            <Link
-              href={`/portal/${token}/measurements`}
-              className="flex min-h-14 items-center justify-between gap-3 py-2 text-[15px] font-medium text-foreground transition-colors duration-[var(--dur-fast)] hover:text-foreground-secondary focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
-            >
-              Pomiary
-              <span className="text-muted-faint" aria-hidden>
-                ›
-              </span>
-            </Link>
-          </li>
-          <li>
-            <Link
-              href={`/portal/${token}/calculator`}
-              className="flex min-h-14 items-center justify-between gap-3 py-2 text-[15px] font-medium text-foreground transition-colors duration-[var(--dur-fast)] hover:text-foreground-secondary focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
-            >
-              Kalkulator %1RM
-              <span className="text-muted-faint" aria-hidden>
-                ›
-              </span>
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/prywatnosc"
-              className="flex min-h-14 items-center justify-between gap-3 py-2 text-[15px] font-medium text-foreground transition-colors duration-[var(--dur-fast)] hover:text-foreground-secondary focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)]"
-            >
-              Polityka prywatności
-              <span className="text-muted-faint" aria-hidden>
-                ›
-              </span>
-            </Link>
-          </li>
+          <NavRow
+            href={`/portal/${token}/intake`}
+            icon="clipboard-text"
+            title="Ankieta startowa"
+            sub="Dane dla trenera na start"
+          />
+          <NavRow
+            href={`/portal/${token}/measurements`}
+            icon="ruler"
+            title="Pomiary"
+            sub="Waga i obwody"
+          />
+          <NavRow
+            href={`/portal/${token}/calculator`}
+            icon="calculator"
+            title="Kalkulator %1RM"
+            sub="Strefy ciężaru z rekordu"
+          />
+          <NavRow href="/prywatnosc" icon="lock-simple" title="Polityka prywatności" />
         </ul>
       </section>
     </div>

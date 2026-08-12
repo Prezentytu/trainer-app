@@ -291,7 +291,7 @@ export function QuickComposer({
                 </div>
                 <span className="min-w-0 break-words">{exercise.name}</span>
               </div>
-              <span className="shrink-0 font-mono text-[11px] tabular-nums text-muted">
+              <span className="shrink-0 font-mono text-xs tabular-nums text-muted">
                 {previewSummary(exercise, measureOverridesFromParsed(parsed, exercise.type))}
               </span>
             </button>
@@ -340,7 +340,7 @@ export function QuickComposer({
             onBlur={() => setFocused(false)}
           />
           {focused && value.trim() ? (
-            <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 font-mono text-[11px] text-muted-faint">
+            <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 font-mono text-xs text-muted-faint">
               ↵
             </span>
           ) : null}

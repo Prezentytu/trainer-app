@@ -69,7 +69,7 @@ function PlanPickerCard({ plan, selected, onSelect }: { plan: PlanSummary; selec
       }`}
     >
       <span
-        className={`mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] ${
+        className={`mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-xs ${
           selected ? "border-accent bg-accent text-accent-foreground" : "border-border-strong"
         }`}
         aria-hidden
@@ -628,7 +628,7 @@ export default function ClientDetailsPage() {
                 <Link href={`/plans/${activeAssignment.planId}`}>
                   <Button>Otwórz plan</Button>
                 </Link>
-                <Button variant="secondary" onClick={() => void openLogBehalf(activeAssignment)}>
+                <Button variant="ghost" onClick={() => void openLogBehalf(activeAssignment)}>
                   Wpisz trening za klienta
                 </Button>
                 <Button variant="ghost" onClick={() => { setTab("plans"); setAssignOpen(true); }}>
@@ -637,9 +637,10 @@ export default function ClientDetailsPage() {
               </div>
             </>
           ) : (
-            <EmptyState>
-              <p className="mb-3">Przypisz plan, żeby klient mógł zacząć trenować.</p>
-              <Button onClick={openAssignTab}>Przypisz plan</Button>
+            <EmptyState
+              action={<Button onClick={openAssignTab}>Przypisz plan</Button>}
+            >
+              Przypisz plan, żeby klient mógł zacząć trenować.
             </EmptyState>
           )}
         </Card>
@@ -654,12 +655,12 @@ export default function ClientDetailsPage() {
               value={lastSession ? relativeDayLabel(lastSession.performedOn) : "—"}
               delta={
                 lastAgo != null && lastAgo > 7
-                  ? `${lastAgo} dni przerwy`
+                  ? `−${lastAgo} dni przerwy`
                   : lastSession
                     ? formatDayShort(lastSession.performedOn)
                     : undefined
               }
-              valueClassName={lastAgo != null && lastAgo > 7 ? "text-danger" : undefined}
+              valueClassName={lastAgo != null && lastAgo > 7 ? "text-loss" : undefined}
             />
           </div>
           <div className="flex items-start gap-3">
@@ -676,7 +677,11 @@ export default function ClientDetailsPage() {
             >
               <Icon name="trophy" size={16} decorative />
             </span>
-            <StatBlock label="Nowe PR (30 dni)" value={prs30} valueClassName={prs30 > 0 ? "text-pr" : undefined} />
+            <StatBlock
+              label="Nowe PR (30 dni)"
+              value={prs30 > 0 ? `★ ${prs30}` : prs30}
+              valueClassName={prs30 > 0 ? "text-pr" : undefined}
+            />
           </div>
         </Card>
       </div>
@@ -712,12 +717,14 @@ export default function ClientDetailsPage() {
             {assignOpen ? (
               <Card className="mb-6" eyebrow="Akcja" title="Przypisz plan">
                 {plans.length === 0 ? (
-                  <EmptyState>
-                    Nie masz jeszcze planów klienta.{" "}
-                    <Link href="/plans/new" className="text-accent underline">
-                      Stwórz plan
-                    </Link>
-                    .
+                  <EmptyState
+                    action={
+                      <Link href="/plans/new">
+                        <Button variant="secondary">Stwórz plan</Button>
+                      </Link>
+                    }
+                  >
+                    Nie masz jeszcze planów klienta.
                   </EmptyState>
                 ) : (
                   <form onSubmit={handleAssign}>
@@ -762,7 +769,14 @@ export default function ClientDetailsPage() {
             ) : null}
 
             {client.assignments.length === 0 ? (
-              <EmptyState>Ten klient nie ma jeszcze żadnych przypisań.</EmptyState>
+              <EmptyState
+                title="Jeszcze bez przypisanego planu"
+                action={
+                  <Button onClick={() => setAssignOpen(true)}>Przypisz plan</Button>
+                }
+              >
+                Przypisz plan z biblioteki — klient zobaczy dzień treningowy w portalu.
+              </EmptyState>
             ) : (
               <div className="grid gap-2">
                 {client.assignments.map((a) => (
@@ -808,10 +822,10 @@ export default function ClientDetailsPage() {
 
             {sessions.length === 0 ? (
               <EmptyState
-                title="Brak treningów"
+                title="Tu pojawią się treningi klienta"
                 action={
                   activeAssignment ? (
-                    <Button variant="secondary" onClick={() => void openLogBehalf(activeAssignment)}>
+                    <Button onClick={() => void openLogBehalf(activeAssignment)}>
                       Wpisz trening za klienta
                     </Button>
                   ) : (
@@ -819,7 +833,7 @@ export default function ClientDetailsPage() {
                   )
                 }
               >
-                Klient loguje treningi w portalu. Możesz też wpisać wynik za niego — np. po sesji na sali.
+                Klient loguje sesje w portalu. Możesz też wpisać wynik za niego — np. po treningu na sali.
               </EmptyState>
             ) : (
               <div className="grid gap-2">
@@ -925,7 +939,26 @@ export default function ClientDetailsPage() {
                 Rekordy
               </h2>
               {records.length === 0 ? (
-                <EmptyState>Rekordy pojawią się po zapisaniu treningów z ciężarem i powtórzeniami.</EmptyState>
+                <EmptyState
+                  title="Jeszcze bez rekordów siłowych"
+                  action={
+                    activeAssignment ? (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => void openLogBehalf(activeAssignment)}
+                      >
+                        Wpisz trening za klienta
+                      </Button>
+                    ) : (
+                      <Button size="sm" onClick={openAssignTab}>
+                        Przypisz plan
+                      </Button>
+                    )
+                  }
+                >
+                  Rekordy (est. 1RM) pojawią się po seriach z ciężarem i powtórzeniami.
+                </EmptyState>
               ) : (
                 <div className="grid gap-2">
                   {records.map((r) => {
@@ -951,14 +984,14 @@ export default function ClientDetailsPage() {
                           <div className="flex items-center gap-3">
                             <div className="text-right">
                               <p className="font-mono text-lg font-semibold tabular-nums text-pr">
-                                {formatKg(r.estimated1Rm)} kg
+                                ★ {formatKg(r.estimated1Rm)} kg
                               </p>
                               <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">
                                 Szacowany max
                               </p>
                             </div>
                             <span
-                              className={`text-muted transition-transform duration-150 ${open ? "rotate-180" : ""}`}
+                              className={`text-muted transition-transform duration-[var(--dur-fast)] ${open ? "rotate-180" : ""}`}
                               aria-hidden
                             >
                               ▾
@@ -1074,7 +1107,16 @@ export default function ClientDetailsPage() {
               ) : null}
 
               {latestMaxes.length === 0 ? (
-                <EmptyState>Brak maxów — dodaj 1RM, żeby plany procentowe wyliczały kg.</EmptyState>
+                <EmptyState
+                  title="Dodaj 1RM do planów procentowych"
+                  action={
+                    <Button size="sm" onClick={() => setShowMaxForm(true)}>
+                      Dodaj max
+                    </Button>
+                  }
+                >
+                  Bez maxów plany oparte o %1RM nie wyliczą kilogramów na serie.
+                </EmptyState>
               ) : (
                 <div className="grid gap-2">
                   {latestMaxes.map((m) => (
@@ -1187,7 +1229,16 @@ export default function ClientDetailsPage() {
               ) : null}
 
               {measurements.length === 0 ? (
-                <EmptyState>Brak pomiarów — dodaj wagę lub obwód talii.</EmptyState>
+                <EmptyState
+                  title="Zacznij od pierwszego pomiaru"
+                  action={
+                    <Button size="sm" onClick={() => setShowMeasureForm(true)}>
+                      Dodaj pomiar
+                    </Button>
+                  }
+                >
+                  Waga lub obwód talii — klient też może dopisywać pomiary w portalu.
+                </EmptyState>
               ) : (
                 <div className="grid gap-2">
                   {measurements.map((m) => (
@@ -1233,22 +1284,23 @@ export default function ClientDetailsPage() {
         {activeTab === "intake" && intake && (
           <>
             {isIntakeBlank(intake) && !intakeEditing ? (
-              <EmptyState>
-                <p className="mb-1 font-medium text-foreground">Wywiad jeszcze pusty</p>
-                <p className="mb-4 max-w-[40ch] text-sm text-muted">
-                  Zapisz cele, zdrowie i styl życia — albo wyślij link, żeby klient uzupełnił ankietę u siebie.
-                </p>
-                <div className="flex flex-wrap justify-center gap-2">
-                  <Button onClick={() => setIntakeEditing(true)}>Przeprowadź wywiad</Button>
-                  <Button
-                    variant="ghost"
-                    onClick={() =>
-                      void copyPortalLink("Skopiowano link — klient uzupełni ankietę w portalu")
-                    }
-                  >
-                    Wyślij klientowi do wypełnienia
-                  </Button>
-                </div>
+              <EmptyState
+                title="Wywiad jeszcze pusty"
+                action={
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <Button onClick={() => setIntakeEditing(true)}>Przeprowadź wywiad</Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() =>
+                        void copyPortalLink("Skopiowano link — klient uzupełni ankietę w portalu")
+                      }
+                    >
+                      Wyślij klientowi do wypełnienia
+                    </Button>
+                  </div>
+                }
+              >
+                Zapisz cele, zdrowie i styl życia — albo wyślij link, żeby klient uzupełnił ankietę u siebie.
               </EmptyState>
             ) : intakeEditing ? (
               <ClientIntakeForm

@@ -18,7 +18,6 @@ import {
 } from "@/lib/api";
 import { YoutubeLite } from "@/components/YoutubeLite";
 import {
-  Badge,
   Button,
   Card,
   Dialog,
@@ -27,6 +26,7 @@ import {
   formatRest,
   IconButton,
   inputClass,
+  Marker,
   useUndoToast,
 } from "@/components/ui";
 import { demoMedia } from "@/lib/youtube";
@@ -1230,6 +1230,8 @@ export function SessionLogger({
   };
 
   if (summary) {
+    // Portal live: lekki check-in → SessionSummaryView (Peak-End). Behalf/edit: pełniejszy zapis.
+    const lightCheckin = Boolean(portalToken) && !isCompletedEdit && !isBehalf;
     const celebrationFacts = progressReport?.facts.slice(0, 5) ?? [];
     const doneTotal = summary.exercises.reduce(
       (acc, ex) => {
@@ -1247,6 +1249,49 @@ export function SessionLogger({
         ? `${durH}:${String(durM).padStart(2, "0")}:${String(durS).padStart(2, "0")}`
         : `${durM}:${String(durS).padStart(2, "0")}`;
     const hasPrs = summary.prs.length > 0;
+    const prCount = summary.prs.length;
+
+    if (lightCheckin) {
+      return (
+        <div className="mx-auto max-w-lg space-y-8 pb-28">
+          <ErrorBanner message={error} />
+          <div>
+            <p className="t-label text-muted">Trening ukończony</p>
+            <h1 className="t-title mt-1">Jak minął trening?</h1>
+            <p className="t-small mt-1">
+              {summary.dayLabel ?? "Trening"}
+              {summary.planName ? ` · ${summary.planName}` : ""}
+              {prCount > 0 ? ` · ★ ${prCount} PR` : ""}
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <ScorePicker label="Samopoczucie" value={feelingScore} onChange={setFeelingScore} />
+            <ScorePicker label="Sen (ostatnia noc)" value={sleepScore} onChange={setSleepScore} />
+            <ScorePicker label="Energia" value={energyScore} onChange={setEnergyScore} />
+          </div>
+
+          <div>
+            <p className="t-label mb-2">Wiadomość do trenera</p>
+            <textarea
+              className={`${inputClass} min-h-[88px] resize-none py-3`}
+              placeholder="Opcjonalnie — np. biodra ciasne przy przysiadzie."
+              value={sessionNote}
+              onChange={(e) => setSessionNote(e.target.value)}
+              rows={3}
+            />
+          </div>
+
+          <div className="session-chrome fixed inset-x-0 bottom-0 z-30 border-t border-border px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3">
+            <div className="mx-auto max-w-lg">
+              <Button className="w-full" size="lg" disabled={saving} onClick={() => void sendSummaryAndClose()}>
+                {saving ? "Zapisuję…" : "Zobacz podsumowanie"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="space-y-4 pb-28">
@@ -1285,7 +1330,9 @@ export function SessionLogger({
                   key={`${fact.kind}-${index}`}
                   className={`text-sm ${fact.kind === "pr" ? "font-medium text-pr" : "text-foreground-secondary"}`}
                 >
-                  {fact.text}
+                  {fact.kind === "pr" && !String(fact.text).includes("★")
+                    ? `★ ${fact.text}`
+                    : fact.text}
                 </li>
               ))}
             </ul>
@@ -1319,10 +1366,10 @@ export function SessionLogger({
                     </p>
                   ) : null}
                 </div>
-                {hasPr ? <Badge tone="pr">PR</Badge> : null}
+                {hasPr ? <Marker tone="pr">PR</Marker> : null}
                 <div
                   className={`shrink-0 font-mono text-[13px] tabular-nums ${
-                    done < ex.sets.length || below ? "text-muted" : "text-gain"
+                    done < ex.sets.length || below ? "text-muted" : "text-foreground"
                   }`}
                 >
                   {done}/{ex.sets.length}
@@ -1403,7 +1450,7 @@ export function SessionLogger({
     return (
       <div>
         <ErrorBanner message={error} />
-        <EmptyState title="Brak ćwiczeń w tej sesji">
+        <EmptyState title="Brak ćwiczeń w tej sesji" action={null}>
           Sesja nie ma pozycji do zalogowania — wróć i wybierz dzień z planu.
         </EmptyState>
       </div>
@@ -1521,9 +1568,9 @@ export function SessionLogger({
             </p>
           </div>
           <Button
-            size="sm"
             variant={isBehalf || isCompletedEdit ? "secondary" : "primary"}
             onClick={requestFinish}
+            className="min-h-11"
           >
             {isBehalf || isCompletedEdit ? "Zapisz" : "Zakończ"}
           </Button>
@@ -1628,7 +1675,7 @@ export function SessionLogger({
                   <Icon name="more" size={20} decorative />
                 </IconButton>
                 {menuOpen ? (
-                  <div className="absolute right-0 top-full z-10 mt-1 min-w-[11rem] origin-top-right rounded-[10px] border border-border bg-surface-raised py-1 shadow-[var(--shadow-raised)]">
+                  <div className="absolute right-0 top-full z-10 mt-1 min-w-[11rem] origin-top-right rounded-[10px] border border-border bg-surface-raised py-1">
                     {exIdx > 0 ? (
                       <button
                         type="button"
@@ -1698,7 +1745,7 @@ export function SessionLogger({
                   </div>
                 ) : null}
                 {restPickerOpen ? (
-                  <div className="absolute right-0 top-full z-10 mt-1 min-w-[8rem] origin-top-right rounded-[10px] border border-border bg-surface-raised py-1 shadow-[var(--shadow-raised)]">
+                  <div className="absolute right-0 top-full z-10 mt-1 min-w-[8rem] origin-top-right rounded-[10px] border border-border bg-surface-raised py-1">
                     {REST_OPTIONS_SEC.map((sec) => (
                       <button
                         key={sec}
@@ -1767,7 +1814,7 @@ export function SessionLogger({
                 <ul className="max-h-56 space-y-1 overflow-y-auto">
                   {filteredSwapExercises.recent.length > 0 ? (
                     <>
-                      <li className="px-2 pt-1 font-mono text-[10px] font-medium uppercase tracking-caps text-muted">
+                      <li className="px-2 pt-1 font-mono text-xs font-medium uppercase tracking-caps text-muted">
                         Ostatnio
                       </li>
                       {filteredSwapExercises.recent.map((ex) => (
@@ -1777,14 +1824,14 @@ export function SessionLogger({
                             className="flex w-full items-baseline justify-between gap-2 rounded-[8px] px-2 py-2.5 text-left text-[15px] hover:bg-surface-hover"
                             onClick={() => swapExercise(exIdx, ex)}
                           >
-                            <span className="min-w-0 truncate">{ex.name}</span>
-                            <span className="shrink-0 font-mono text-[11px] tabular-nums text-muted">
+                            <span className="min-w-0 break-words">{ex.name}</span>
+                            <span className="shrink-0 font-mono text-xs tabular-nums text-muted">
                               {formatPrevDate(ex.lastPerformedOn)}
                             </span>
                           </button>
                         </li>
                       ))}
-                      <li className="px-2 pt-2 font-mono text-[10px] font-medium uppercase tracking-caps text-muted">
+                      <li className="px-2 pt-2 font-mono text-xs font-medium uppercase tracking-caps text-muted">
                         Wszystkie
                       </li>
                     </>
@@ -1801,9 +1848,9 @@ export function SessionLogger({
                             className="flex w-full items-baseline justify-between gap-2 rounded-[8px] px-2 py-2.5 text-left text-[15px] hover:bg-surface-hover"
                             onClick={() => swapExercise(exIdx, ex)}
                           >
-                            <span className="min-w-0 truncate">{ex.name}</span>
+                            <span className="min-w-0 break-words">{ex.name}</span>
                             {lastOn ? (
-                              <span className="shrink-0 font-mono text-[11px] tabular-nums text-muted">
+                              <span className="shrink-0 font-mono text-xs tabular-nums text-muted">
                                 {formatPrevDate(lastOn)}
                               </span>
                             ) : null}
@@ -1818,7 +1865,7 @@ export function SessionLogger({
 
             <div>
               <div
-                className={`${setGridClass(logRir && !isTime)} pb-2 text-[11px] font-medium uppercase tracking-caps text-muted`}
+                className={`${setGridClass(logRir && !isTime)} pb-2 text-xs font-medium uppercase tracking-caps text-muted`}
               >
                 <div className="overflow-hidden text-center" title="Seria">
                   #
@@ -1917,7 +1964,7 @@ export function SessionLogger({
                       ) : null}
                       {rowMenuOpen ? (
                         <div
-                          className={`absolute right-0 z-30 min-w-[10.5rem] rounded-[10px] border border-border bg-surface-raised py-1 shadow-[var(--shadow-raised)] ${
+                          className={`absolute right-0 z-30 min-w-[10.5rem] rounded-[10px] border border-border bg-surface-raised py-1 ${
                             menuOpensUp
                               ? "bottom-full mb-1 origin-bottom-right"
                               : "top-full mt-1 origin-top-right"
@@ -2125,7 +2172,7 @@ export function SessionLogger({
 
       {prCelebrate ? (
         <div
-          className="pr-celebrate-in fixed bottom-28 left-1/2 z-[55] w-[min(100%-2rem,24rem)] -translate-x-1/2 rounded-xl border border-border-strong bg-surface-raised px-4 py-3.5 shadow-[var(--shadow-raised)]"
+          className="pr-celebrate-in fixed bottom-28 left-1/2 z-[55] w-[min(100%-2rem,24rem)] -translate-x-1/2 rounded-xl border border-border-strong bg-surface-raised px-4 py-3.5"
           role="status"
         >
           <p className="font-mono text-xs font-medium uppercase tracking-caps text-pr">
@@ -2222,16 +2269,16 @@ const SetRow = memo(function SetRow({
         }${sideLabel ? `, ${sideLabel === "L" ? "lewa" : "prawa"}` : ""}`}
       >
         {set.setNumber}
-        {set.isWarmup ? <span className="text-[11px] text-muted">W</span> : null}
+        {set.isWarmup ? <span className="text-xs text-muted">W</span> : null}
         {set.note ? (
-          <span className="text-[11px] text-muted-faint" title={set.note} aria-label="Ma notatkę">
+          <span className="text-xs text-muted-faint" title={set.note} aria-label="Ma notatkę">
             ·
           </span>
         ) : null}
         {unilateral ? (
           <button
             type="button"
-            className={`ml-0.5 min-h-7 min-w-7 rounded-md border px-1 font-mono text-[11px] font-semibold focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${
+            className={`ml-0.5 inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border px-1 font-mono text-xs font-semibold transition-[transform,background-color,border-color,color] duration-[var(--dur-fast)] ease-[var(--ease-out)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] active:[transform:var(--press)] ${
               sideLabel
                 ? "border-invert-bg bg-invert-bg text-invert-fg"
                 : "border-border-strong text-muted"
@@ -2322,8 +2369,8 @@ const SetRow = memo(function SetRow({
       <div className="flex min-h-11 items-center justify-end">
         <div className="flex w-6 shrink-0 items-center justify-center">
           {completed && set.isPr ? (
-            <span className="inline-flex h-[18px] items-center rounded-[var(--r-pill)] bg-pr-dim px-1 font-mono text-[10px] font-semibold tabular-nums text-pr">
-              PR
+            <span className="inline-flex h-[18px] items-center rounded-[var(--r-pill)] bg-pr-dim px-1 font-mono text-xs font-semibold tabular-nums text-pr">
+              ★ PR
             </span>
           ) : below && targetLabel ? (
             <span
@@ -2395,7 +2442,7 @@ function StatCard({
           highlight ? "text-pr" : "text-foreground"
         }`}
       >
-        {value}
+        {highlight ? `★ ${value}` : value}
       </p>
       <p className="mt-1.5 text-xs font-semibold uppercase tracking-caps text-muted">{label}</p>
     </div>

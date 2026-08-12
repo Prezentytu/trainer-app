@@ -93,7 +93,7 @@ export function SetSchemeEditor({
           </p>
           <div className="overflow-x-auto">
             <div className="grid min-w-[720px] gap-2">
-              <div className="grid grid-cols-[2rem_7rem_5rem_4rem_6rem_5rem_4rem_auto] gap-2 font-mono text-[10px] font-medium uppercase tracking-caps text-muted">
+              <div className="grid grid-cols-[2rem_7rem_5rem_4rem_6rem_5rem_4rem_auto] gap-2 font-mono text-xs font-medium uppercase tracking-caps text-muted">
                 <span>#</span>
                 <span>Rola</span>
                 <span>Powt.</span>
@@ -110,7 +110,7 @@ export function SetSchemeEditor({
                   <div
                     key={s.key}
                     className={`grid grid-cols-[2rem_7rem_5rem_4rem_6rem_5rem_4rem_auto] items-center gap-2 rounded-lg px-1 py-1 ${
-                      isTop ? "bg-surface-active shadow-[inset_3px_0_0_var(--border-strong)]" : ""
+                      isTop ? "border-l-2 border-border-strong bg-surface-active" : ""
                     }`}
                   >
                     <span className="font-mono text-xs tabular-nums text-muted-faint">{idx + 1}</span>

@@ -15,6 +15,13 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Profil ≠ status treningu
+
+**Kontekst**: Redesign Profilu dodał kartę „Aktualny plan” (nazwa, tydzień, pasek, %). User: kafel nie daje wartości.
+**Problem**: Te same dane żyją na „Dziś” z CTA — na Profilu to martwa duplikacja, zabiera pierwszy viewport i łamie test odejmowania (Styrka).
+**Zasada**: Zakładka Profil = preferencje + narzędzia + legal. Status planu/sesji tylko na Dziś (ew. Progres). Nie powielaj treningowych KPI na Profilu.
+**Dotyczy**: `apps/web/app/portal/[token]/profile/page.tsx`, spec `2026-08-12-portal-profil-redesign.md`.
+
 ## `opacity-0` nie zwalnia miejsca w flexie
 
 **Kontekst**: Kafelki w Tablicy kreatora planu były nieczytelne mimo tej samej szerokości kolumny (300px) co w podglądzie — nazwy łamały się na 3–4 linie, linia mono sypała się na „kg · 5 serii ·" / „2min".

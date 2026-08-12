@@ -50,7 +50,7 @@ export function ClientNotesTab({
       </div>
 
       {groups.length === 0 ? (
-        <EmptyState title="Klient nie zostawił jeszcze notatek">
+        <EmptyState title="Klient nie zostawił jeszcze notatek" action={null}>
           Notatki pojawią się tutaj, gdy klient doda je przy serii, przy ćwiczeniu albo jako wiadomość po
           zakończeniu treningu w portalu.
         </EmptyState>
@@ -103,11 +103,11 @@ export function ClientNotesTab({
                             {ex.items.map((item, idx) => (
                               <li key={`${item.exerciseId}-${item.setNumber ?? "ex"}-${idx}`}>
                                 {item.setNumber != null ? (
-                                  <p className="mb-0.5 font-mono text-[11px] tabular-nums text-fg-ghost">
+                                  <p className="mb-0.5 font-mono text-xs tabular-nums text-fg-ghost">
                                     {setContext(item)}
                                   </p>
                                 ) : (
-                                  <p className="mb-0.5 font-mono text-[11px] uppercase tracking-caps text-fg-ghost">
+                                  <p className="mb-0.5 font-mono text-xs uppercase tracking-caps text-fg-ghost">
                                     Ćwiczenie
                                   </p>
                                 )}

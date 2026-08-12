@@ -41,7 +41,7 @@ export function PlanItemCard({
     >
       <div className="flex min-w-0 items-baseline gap-x-2">
         {label ? (
-          <span className="shrink-0 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-faint">
+          <span className="shrink-0 font-mono text-xs font-semibold uppercase tracking-[0.08em] text-muted-faint">
             {label}
           </span>
         ) : null}

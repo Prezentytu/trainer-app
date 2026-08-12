@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Button, Field, inputNumericClass } from "@/components/ui";
+import { Icon } from "@/components/Icon";
 import {
   DEFAULT_PLATE_CONFIG,
   formatKg,
@@ -61,7 +62,7 @@ export function PlateCalculator({ targetKg, onApply, onClose }: Props) {
         role="dialog"
         aria-modal
         aria-labelledby="plates-title"
-        className="relative w-full max-w-md rounded-t-[var(--radius-xl)] border border-border bg-surface-sunken p-5 shadow-modal sm:rounded-[var(--radius-xl)]"
+        className="relative w-full max-w-md rounded-t-[var(--radius-xl)] border border-border bg-surface-sunken p-5 sm:rounded-[var(--radius-xl)]"
       >
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-border-strong sm:hidden" aria-hidden />
         <div className="flex items-start justify-between gap-3">
@@ -73,11 +74,11 @@ export function PlateCalculator({ targetKg, onApply, onClose }: Props) {
           </div>
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-md text-xl text-muted hover:bg-surface-hover hover:text-foreground"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-md text-muted transition-[background-color,color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:bg-surface-hover hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] active:scale-[0.97]"
             onClick={onClose}
             aria-label="Zamknij"
           >
-            ×
+            <Icon name="close" size={20} decorative />
           </button>
         </div>
 

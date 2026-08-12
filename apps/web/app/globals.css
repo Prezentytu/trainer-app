@@ -29,8 +29,9 @@
   --surface-hover: var(--ink-700);
   --surface-active: var(--ink-600);
   --field: var(--ink-700);
-  --line: var(--ink-500);
-  --line-faint: var(--ink-600);
+  /* Hairline ≥3:1 vs bg (#0B0C0D): ink-400 ≈ #454B51 */
+  --line: var(--ink-400);
+  --line-faint: var(--ink-500);
 
   --fg: var(--ink-000);
   --fg-muted: var(--ink-100);
@@ -172,8 +173,9 @@
   --surface-hover: #e7eaed;
   --surface-active: #d7dbe0;
   --field: #edeff2;
-  --line: #adb4bb;
-  --line-faint: #d7dbe0;
+  /* Hairline ≥3:1 vs white: #5b6268 */
+  --line: #5b6268;
+  --line-faint: #adb4bb;
 
   --fg: #0b0c0d;
   --fg-muted: #40464c;
@@ -235,8 +237,8 @@
     --muted-faint: var(--fg-ghost);
   }
   [data-theme="light"] {
-    --line: #5b6268;
-    --line-faint: #adb4bb;
+    --line: #40464c;
+    --line-faint: #5b6268;
     --fg-muted: #0b0c0d;
     --fg-faint: #2c3237;
     --fg-ghost: #5b6268;
@@ -535,46 +537,29 @@ body {
     animation: pr-celebrate-in var(--dur-med) var(--ease-out) both;
   }
 
-  @keyframes acid-scan {
-    from {
-      background-position: 0 0;
-    }
-    to {
-      background-position: 0 48px;
-    }
-  }
-
-  .texture-scan::before {
-    animation: acid-scan 3s linear infinite;
-  }
-
-  @keyframes acid-tick {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.35;
-    }
-  }
-
-  .acid-tick {
-    animation: acid-tick 2s ease-in-out infinite;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .skeleton-defer,
   .skeleton-pulse,
   .stagger-in,
-  .pr-celebrate-in,
-  .texture-scan::before,
-  .acid-tick {
+  .pr-celebrate-in {
     animation: none;
   }
 
   .skeleton-defer {
     opacity: 1;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --scrim: rgba(4, 5, 6, 0.92);
+    --overlay-scrim: var(--scrim);
+  }
+  [data-theme="light"] {
+    --scrim: rgba(11, 12, 13, 0.72);
+    --overlay-scrim: var(--scrim);
   }
 }
 

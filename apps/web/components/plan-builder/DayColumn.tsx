@@ -150,7 +150,7 @@ export function DayColumn({
                 </button>
               )}
             </div>
-            <p className="mt-1 font-mono text-[11px] tabular-nums text-muted">{stats}</p>
+            <p className="mt-1 font-mono text-xs tabular-nums text-muted">{stats}</p>
             {editingNotes ? (
               <input
                 autoFocus
@@ -176,7 +176,7 @@ export function DayColumn({
               ⋯
             </IconButton>
             {menuOpen && (
-              <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-[10px] border border-border bg-surface py-1 shadow-raised">
+              <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-[10px] border border-border bg-surface py-1">
                 <button
                   type="button"
                   className="block w-full px-3 py-2 text-left text-sm hover:bg-surface-hover"

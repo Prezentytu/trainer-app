@@ -66,11 +66,11 @@ export function PlanBuilderLibrarySkeleton() {
 
 export function ClientListSkeleton() {
   return (
-    <div aria-busy aria-label="Wczytuję klientów" className="skeleton-defer grid gap-2">
+    <div aria-busy aria-label="Wczytuję klientów" className="skeleton-defer">
       {Array.from({ length: 5 }).map((_, i) => (
         <div
           key={i}
-          className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between"
+          className="flex flex-col gap-3 border-b border-border px-1 py-4 sm:flex-row sm:items-center sm:justify-between"
         >
           <div className="flex min-w-0 items-start gap-3">
             <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
@@ -160,21 +160,19 @@ export function PlanListSkeleton() {
 
 export function ExerciseListSkeleton() {
   return (
-    <div aria-busy aria-label="Wczytuję ćwiczenia" className="skeleton-defer grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div
+      aria-busy
+      aria-label="Wczytuję ćwiczenia"
+      className="skeleton-defer divide-y divide-border border-y border-border"
+    >
       {Array.from({ length: 8 }).map((_, i) => (
-        <div
-          key={i}
-          className="flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-card"
-        >
-          <Skeleton className="aspect-video w-full rounded-none" />
-          <div className="flex flex-1 flex-col gap-2 p-3">
-            <Skeleton className="h-5 w-4/5" />
-            <Skeleton className="h-3 w-1/2" />
-            <div className="mt-auto flex items-center justify-between gap-2 pt-1">
-              <Skeleton className="h-3 w-24" />
-              <Skeleton className="h-8 w-16" />
-            </div>
+        <div key={i} className="flex min-h-[var(--tap-min)] items-center gap-3 px-2 py-2.5">
+          <Skeleton className="h-12 w-12 shrink-0 rounded-md" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-4 w-3/5" />
+            <Skeleton className="h-3 w-2/5" />
           </div>
+          <Skeleton className="h-8 w-16 shrink-0" />
         </div>
       ))}
     </div>

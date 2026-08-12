@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { clerkEnabled } from "@/lib/api";
 import { getNavShell, refreshNavCounts, subscribeNavShell } from "@/lib/navCounts";
-import { Avatar, useIsClient } from "@/components/ui";
+import { Avatar, useIsClient, usePresence } from "@/components/ui";
 import { Icon, type IconName } from "@/components/Icon";
 import { Wordmark } from "@/components/Wordmark";
 
@@ -21,6 +21,7 @@ const NAV: { href: string; label: string; icon: IconName; countKey: "clients" | 
 ];
 
 const FOCUS = "focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]";
+const PRESS = "active:[transform:var(--press)]";
 
 function SideNavLinks({
   onNavigate,
@@ -45,7 +46,7 @@ function SideNavLinks({
             title={compact ? item.label : undefined}
             aria-current={active ? "page" : undefined}
             aria-label={compact ? item.label : undefined}
-            className={`flex min-h-[44px] items-center rounded-[var(--r-pill)] text-[15px] font-medium transition-colors duration-[var(--dur-fast)] ${FOCUS} ${
+            className={`flex min-h-[44px] items-center rounded-[var(--r-pill)] text-[15px] font-medium transition-[background-color,color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] ${FOCUS} ${PRESS} ${
               active
                 ? "bg-invert-bg text-invert-fg"
                 : "text-fg-faint hover:bg-surface-raised hover:text-foreground"
@@ -128,7 +129,7 @@ function AccountMenu({
             onOpenProfile();
             onClose();
           }}
-          className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-[15px] text-fg-muted transition-colors hover:bg-surface-raised hover:text-foreground"
+          className={`flex w-full min-h-11 items-center gap-3 px-3 py-2.5 text-left text-[15px] text-fg-muted transition-[background-color,color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:bg-surface-raised hover:text-foreground ${FOCUS} ${PRESS}`}
         >
           <Icon name="settings" size={16} decorative />
           Konto
@@ -142,7 +143,7 @@ function AccountMenu({
             onSignOut();
             onClose();
           }}
-          className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-[15px] text-fg-muted transition-colors hover:bg-surface-raised hover:text-foreground"
+          className={`flex w-full min-h-11 items-center gap-3 px-3 py-2.5 text-left text-[15px] text-fg-muted transition-[background-color,color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:bg-surface-raised hover:text-foreground ${FOCUS} ${PRESS}`}
         >
           <Icon name="sign-out" size={16} decorative />
           Wyloguj się
@@ -316,7 +317,7 @@ function FloatingBottomNav() {
               aria-current={active ? "page" : undefined}
               aria-label={item.label}
               title={item.label}
-              className={`flex min-h-[44px] min-w-[48px] items-center justify-center rounded-[var(--r-pill)] px-2 transition-colors duration-[var(--dur-fast)] ${FOCUS} ${
+              className={`flex min-h-[44px] min-w-[48px] items-center justify-center rounded-[var(--r-pill)] px-2 transition-[background-color,color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] ${FOCUS} ${PRESS} ${
                 active
                   ? "bg-invert-bg text-invert-fg"
                   : "text-fg-faint hover:bg-surface hover:text-foreground"
@@ -333,6 +334,7 @@ function FloatingBottomNav() {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const { mounted: drawerMounted, entered: drawerEntered } = usePresence(drawerOpen);
   const [railExpanded, setRailExpanded] = useState(false);
   const shell = useSyncExternalStore(subscribeNavShell, getNavShell, () => NAV_SHELL_SSR);
   const counts = { clients: shell.clients, plans: shell.plans };
@@ -347,6 +349,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     void refreshNavCounts();
   }, [pathname]);
 
+  const drawerEase = drawerEntered ? "ease-[var(--ease-out)]" : "ease-[var(--ease-in)]";
+
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       {/* Mobile top bar */}
@@ -356,7 +360,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           type="button"
           onClick={() => setDrawerOpen(true)}
           aria-label="Otwórz menu"
-          className={`inline-flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[var(--r-pill)] text-fg-muted hover:bg-surface-raised hover:text-foreground ${FOCUS}`}
+          className={`inline-flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[var(--r-pill)] text-fg-muted transition-[background-color,color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:bg-surface-raised hover:text-foreground ${FOCUS} ${PRESS}`}
         >
           <Icon name="menu" size={20} decorative />
         </button>
@@ -366,7 +370,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <aside
         onMouseEnter={() => showRail && setRailExpanded(true)}
         onMouseLeave={() => isPlanEditor && setRailExpanded(false)}
-        className={`hidden shrink-0 flex-col border-r border-border bg-surface transition-[width] duration-150 md:sticky md:top-0 md:flex md:h-screen ${
+        className={`hidden shrink-0 flex-col border-r border-border bg-surface transition-[width] duration-[var(--dur-fast)] md:sticky md:top-0 md:flex md:h-screen ${
           showRail
             ? "md:w-14 md:items-stretch md:overflow-hidden md:px-1.5 md:py-3"
             : "md:w-56 md:overflow-y-auto md:p-3"
@@ -380,22 +384,30 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Mobile drawer */}
-      {drawerOpen ? (
+      {drawerMounted ? (
         <div className="fixed inset-0 z-50 md:hidden">
           <button
             type="button"
             aria-label="Zamknij menu"
             onClick={() => setDrawerOpen(false)}
-            className="absolute inset-0 bg-[var(--scrim)]"
+            className={`absolute inset-0 bg-[var(--scrim)] transition-opacity duration-[var(--dur-med)] motion-reduce:duration-[var(--dur-fast)] ${drawerEase} ${
+              drawerEntered ? "opacity-100" : "opacity-0"
+            }`}
           />
-          <aside className="relative flex h-full w-64 max-w-[80vw] flex-col gap-6 border-r border-border bg-surface p-3">
+          <aside
+            className={`relative flex h-full w-64 max-w-[80vw] flex-col gap-6 border-r border-border bg-surface p-3 transition-[transform,opacity] duration-[var(--dur-med)] motion-reduce:duration-[var(--dur-fast)] motion-reduce:transform-none ${drawerEase} ${
+              drawerEntered
+                ? "opacity-100 motion-safe:translate-x-0"
+                : "opacity-0 motion-safe:-translate-x-3"
+            }`}
+          >
             <div className="flex items-center justify-between px-1">
               <Wordmark />
               <button
                 type="button"
                 onClick={() => setDrawerOpen(false)}
                 aria-label="Zamknij menu"
-                className={`inline-flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[var(--r-pill)] text-fg-muted hover:bg-surface-raised ${FOCUS}`}
+                className={`inline-flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[var(--r-pill)] text-fg-muted transition-[background-color,color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:bg-surface-raised ${FOCUS} ${PRESS}`}
               >
                 <Icon name="close" size={20} decorative />
               </button>

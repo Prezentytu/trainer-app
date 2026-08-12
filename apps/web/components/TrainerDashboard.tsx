@@ -245,9 +245,9 @@ export function TrainerDashboard() {
           />
           <StatCard
             label="Nowe rekordy (7 dni)"
-            value={prsLast7Days}
+            value={prsLast7Days > 0 ? `★ ${prsLast7Days}` : prsLast7Days}
             href="/clients"
-            valueClassName="text-pr"
+            valueClassName={prsLast7Days > 0 ? "text-pr" : undefined}
           />
         </div>
       )}
@@ -318,7 +318,7 @@ export function TrainerDashboard() {
           headerAction={
             needsAttention.length === 0 ? (
               <span className="inline-flex items-center gap-1.5 text-sm text-gain">
-                <Icon name="check-circle" size={16} decorative />
+                <span aria-hidden>▲</span>
                 Wszyscy trenują zgodnie z planem
               </span>
             ) : (
@@ -330,14 +330,14 @@ export function TrainerDashboard() {
         >
           {rows.length === 0 ? (
             <EmptyState
-              title="Brak klientów"
+              title="Dodaj pierwszego klienta"
               action={
                 <Link href="/clients">
-                  <Button size="sm">Dodaj pierwszego klienta</Button>
+                  <Button size="sm">Dodaj klienta</Button>
                 </Link>
               }
             >
-              Dodaj podopiecznego, żeby przypisać plan i śledzić treningi.
+              Podopieczny z planem i treningami pojawi się tutaj — zacznij od profilu klienta.
             </EmptyState>
           ) : weeklyOkRows.length === 0 ? (
             <p className="text-sm text-muted">
@@ -406,14 +406,14 @@ export function TrainerDashboard() {
         >
           {recentSessions.length === 0 ? (
             <EmptyState
-              title="Brak treningów"
+              title="Tu zobaczysz ostatnie treningi"
               action={
                 <Link href="/clients">
                   <Button size="sm">Otwórz klientów</Button>
                 </Link>
               }
             >
-              Wejdź w klienta i dodaj pierwszy trening — pojawi się tutaj.
+              Wejdź w klienta i dodaj pierwszy trening — albo poczekaj, aż klient zaloguje sesję w portalu.
             </EmptyState>
           ) : (
             <ul className="divide-y divide-border">
@@ -476,7 +476,7 @@ export function TrainerDashboard() {
                     </span>
                   </Link>
                   <span className="shrink-0 rounded-[var(--radius-pill)] border border-pr-border bg-pr-dim px-2.5 py-0.5 font-mono text-sm font-semibold tabular-nums text-pr">
-                    {formatKg(r.estimated1Rm)} kg
+                    ★ {formatKg(r.estimated1Rm)} kg
                   </span>
                 </li>
               ))}

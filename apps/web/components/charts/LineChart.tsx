@@ -1,14 +1,12 @@
 "use client";
 
-import { useId } from "react";
-
 export type LineChartPoint = {
   label: string;
   value: number;
 };
 
 /**
- * Wykres liniowy SVG — mono line + miękki gradient pod krzywą.
+ * Wykres liniowy SVG — mono line bez gradientu pod krzywą.
  * Zachowuje proporcje (bez `preserveAspectRatio=none`), żeby kropki i oś nie były „rozjechane”.
  */
 export function LineChart({
@@ -24,8 +22,6 @@ export function LineChart({
   emptyHint?: string;
   ariaLabel?: string;
 }) {
-  const gradId = useId().replace(/:/g, "");
-
   if (points.length < 2) {
     return <p className="py-2 text-sm text-muted">{emptyHint}</p>;
   }
@@ -44,7 +40,6 @@ export function LineChart({
   const w = 360;
   const innerH = height - padTop - padBottom;
   const innerW = w - padL - padR;
-  const baselineY = padTop + innerH;
 
   const coords = points.map((p, i) => {
     const x = padL + (points.length === 1 ? innerW / 2 : (i / (points.length - 1)) * innerW);
@@ -53,12 +48,6 @@ export function LineChart({
   });
 
   const linePoints = coords.map((c) => `${c.x},${c.y}`).join(" ");
-  const areaPath = [
-    `M ${coords[0].x},${baselineY}`,
-    ...coords.map((c) => `L ${c.x},${c.y}`),
-    `L ${coords[coords.length - 1].x},${baselineY}`,
-    "Z",
-  ].join(" ");
 
   const yTicks =
     max - min < 0.01
@@ -94,14 +83,6 @@ export function LineChart({
         }
         preserveAspectRatio="xMidYMid meet"
       >
-        <defs>
-          <linearGradient id={`area-${gradId}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--fg)" stopOpacity="0.28" />
-            <stop offset="55%" stopColor="var(--fg)" stopOpacity="0.08" />
-            <stop offset="100%" stopColor="var(--fg)" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-
         {yTicks.map((v, i) => {
           const y = padTop + innerH - ((v - min) / range) * innerH;
           return (
@@ -120,7 +101,7 @@ export function LineChart({
                 x={w - padR + 6}
                 y={y + 3.5}
                 fill="var(--fg-ghost)"
-                fontSize="10"
+                fontSize="12"
                 fontFamily="var(--font-geist-mono), monospace"
               >
                 {fmt(v)}
@@ -128,8 +109,6 @@ export function LineChart({
             </g>
           );
         })}
-
-        <path d={areaPath} fill={`url(#area-${gradId})`} />
 
         <polyline
           points={linePoints}

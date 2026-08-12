@@ -82,7 +82,7 @@ export function ExerciseCard({
               onToggleSelect();
             }}
             aria-label={selected ? "Odznacz" : "Zaznacz"}
-            className={`mt-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-md border text-[10px] ${
+            className={`mt-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-md border text-xs ${
               selected
                 ? "border-invert-bg bg-invert-bg text-invert-fg"
                 : "border-border-strong bg-surface-sunken"
@@ -109,7 +109,7 @@ export function ExerciseCard({
         >
           <div className="flex min-w-0 items-baseline gap-x-2 pr-7">
             {badge ? (
-              <span className="shrink-0 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-faint">
+              <span className="shrink-0 font-mono text-xs font-semibold uppercase tracking-[0.08em] text-muted-faint">
                 {badge}
               </span>
             ) : null}
@@ -124,7 +124,7 @@ export function ExerciseCard({
               />
             ) : null}
             {item.isWarmup ? (
-              <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.08em] text-muted-faint">
+              <span className="shrink-0 font-mono text-xs uppercase tracking-[0.08em] text-muted-faint">
                 rozg.
               </span>
             ) : null}

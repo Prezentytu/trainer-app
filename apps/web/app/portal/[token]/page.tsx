@@ -266,7 +266,7 @@ export default function PortalTodayPage() {
         {weekStrip.map((d, i) => (
           <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
             <div
-              className={`font-mono text-[10px] font-medium uppercase tracking-caps ${
+              className={`font-mono text-xs font-medium uppercase tracking-caps ${
                 d.today ? "text-foreground-secondary" : "text-muted-faint"
               }`}
             >
@@ -385,7 +385,8 @@ export default function PortalTodayPage() {
 
           {tip && !fresh ? <p className="pt-3 text-sm text-muted">Ostatnio: {tip}</p> : null}
 
-          {lastCompleted && !fresh && !stale ? (
+          {/* Gdy jest dziś — sticky „Rozpocznij” jest dominantą; Powtórz tylko bez today. */}
+          {lastCompleted && !fresh && !stale && !today ? (
             <div className="pt-4">
               <Button
                 variant="secondary"

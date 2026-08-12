@@ -55,7 +55,7 @@ export function ListEntryCard({
       <button
         type="button"
         onClick={onToggleExpand}
-        className={`w-full rounded-xl border px-3.5 py-3 text-left shadow-card transition-colors ${
+        className={`w-full rounded-xl border px-3.5 py-3 text-left transition-colors ${
           expanded
             ? "border-border-strong bg-surface-hover"
             : "border-border bg-surface hover:border-border-strong hover:bg-surface-hover"

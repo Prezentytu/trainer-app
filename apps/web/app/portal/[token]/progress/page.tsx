@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -16,6 +16,7 @@ import {
 import { Card, EmptyState, ErrorBanner, SegmentedControl, StatBlock } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { PortalPageSkeleton } from "@/components/skeletons";
+import { SectionHeader } from "@/components/portal/SectionHeader";
 import { WeeklyActivityBar } from "@/components/WeeklyActivityBar";
 import { MuscleVolumeBars } from "@/components/MuscleVolumeBars";
 import { LineChart } from "@/components/charts/LineChart";
@@ -53,29 +54,6 @@ function formatAvgDuration(seconds: number | null): { value: string; unit: strin
   const h = Math.floor(mins / 60);
   const m = mins % 60;
   return m === 0 ? { value: String(h), unit: "h" } : { value: `${h}:${String(m).padStart(2, "0")}`, unit: "h" };
-}
-
-function SectionHeader({
-  title,
-  window,
-  action,
-}: {
-  title: string;
-  /** Sufiks okna czasowego, np. „12 TYG." — mono caps po prawej. */
-  window?: string;
-  action?: ReactNode;
-}) {
-  return (
-    <div className="mb-3 flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-2">
-      <h2 className="font-display text-sm font-semibold text-foreground">{title}</h2>
-      {action ??
-        (window ? (
-          <span className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
-            {window}
-          </span>
-        ) : null)}
-    </div>
-  );
 }
 
 const WEEKDAY_LABELS = ["Pn", "Wt", "Śr", "Cz", "Pt", "So", "Nd"] as const;
@@ -425,11 +403,11 @@ export default function PortalProgressPage() {
                         </div>
                         <div className="flex shrink-0 items-baseline gap-2">
                           <p className="font-mono text-lg font-semibold tabular-nums tracking-tight text-pr">
-                            {formatKg(r.estimated1Rm)}
+                            ★ {formatKg(r.estimated1Rm)}
                             <span className="ml-1 text-sm font-medium text-muted">kg</span>
                           </p>
                           <span
-                            className={`text-muted transition-transform duration-150 ${open ? "rotate-180" : ""}`}
+                            className={`text-muted transition-transform duration-[var(--dur-fast)] ${open ? "rotate-180" : ""}`}
                             aria-hidden
                           >
                             ▾

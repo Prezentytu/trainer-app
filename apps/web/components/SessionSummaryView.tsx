@@ -197,7 +197,7 @@ export function SessionSummaryView({
           <button
             type="button"
             onClick={onBack}
-            className="-ml-2 mb-3 inline-flex min-h-11 items-center gap-1 rounded-[10px] px-2 text-sm font-medium text-muted transition-colors duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+            className="-ml-2 mb-3 inline-flex min-h-11 items-center gap-1 rounded-[10px] px-2 text-sm font-medium text-muted transition-[color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] active:scale-[0.97]"
           >
             <Icon name="caret-left" size={16} decorative />
             Historia
@@ -398,7 +398,7 @@ export function SessionSummaryView({
             className={`relative mx-auto w-full max-w-[240px] max-h-[46vh] overflow-hidden rounded-xl border border-border bg-background ${aspectClass}`}
           >
             {!previewReady ? (
-              <div className="absolute inset-0 animate-pulse bg-surface" aria-hidden />
+              <div className="absolute inset-0 skeleton-pulse bg-surface" aria-hidden />
             ) : null}
             {previewSrc ? (
               // eslint-disable-next-line @next/next/no-img-element -- same-origin PNG z ImageResponse

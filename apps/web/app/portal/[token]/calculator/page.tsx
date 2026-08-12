@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api, ClientRecord } from "@/lib/api";
-import { EmptyState, ErrorBanner } from "@/components/ui";
+import { Button, EmptyState, ErrorBanner } from "@/components/ui";
+import { Icon } from "@/components/Icon";
 import { SearchPicker } from "@/components/SearchPicker";
 import { PortalPageSkeleton } from "@/components/skeletons";
 import { DEFAULT_PLATE_CONFIG, formatKg, solvePlates } from "@/lib/plates";
@@ -69,15 +70,14 @@ export default function PortalCalculatorPage() {
       <header>
         <Link
           href={`/portal/${token}/progress`}
-          className="text-[13px] font-semibold text-muted hover:text-accent"
+          className="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-muted transition-[color,transform] duration-[var(--dur-fast)] hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] active:scale-[0.97]"
         >
-          ‹ Progres
+          <Icon name="caret-left" size={16} decorative />
+          Progres
         </Link>
-        <p className="mt-2 text-xs font-medium uppercase tracking-caps text-muted">Narzędzia</p>
-        <h1 className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-tight text-foreground sm:text-3xl">
-          Kalkulator %1RM
-        </h1>
-        <p className="mt-1 text-sm text-muted">
+        <p className="t-label mt-2 text-muted">Narzędzia</p>
+        <h1 className="t-title mt-2">Kalkulator %1RM</h1>
+        <p className="t-small mt-1">
           Strefy obciążenia z Twojego szacowanego maxu — zaokrąglone do realnych talerzy.
         </p>
       </header>
@@ -87,8 +87,15 @@ export default function PortalCalculatorPage() {
       {!records ? (
         <PortalPageSkeleton label="Wczytuję rekordy…" />
       ) : records.length === 0 ? (
-        <EmptyState title="Brak szacowanego maxu">
-          Najpierw zalicz serie z ciężarem — wtedy zobaczysz strefy per ćwiczenie.
+        <EmptyState
+          title="Najpierw zalicz serie z ciężarem"
+          action={
+            <Link href={`/portal/${token}`}>
+              <Button size="sm">Rozpocznij trening</Button>
+            </Link>
+          }
+        >
+          Po sesjach z kg zobaczysz tu strefy %1RM per ćwiczenie.
         </EmptyState>
       ) : (
         <>

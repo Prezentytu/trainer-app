@@ -41,6 +41,7 @@ import {
   formatRest,
   IconButton,
   inputClass,
+  ListRow,
   PageHeader,
   Pill,
   Tag,
@@ -206,7 +207,7 @@ export default function ExercisesPage() {
       />
       <ErrorBanner message={error} />
 
-      <div className="mb-4 space-y-3 md:sticky md:top-0 md:z-20 md:-mx-1 md:bg-background/95 md:px-1 md:py-3 md:backdrop-blur-sm">
+      <div className="mb-4 space-y-3 md:sticky md:top-0 md:z-20 md:-mx-1 md:bg-background md:px-1 md:py-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative min-w-0 flex-1">
             <Icon
@@ -390,7 +391,7 @@ export default function ExercisesPage() {
         </EmptyState>
       ) : filtered.length === 0 ? (
         <EmptyState
-          title="Brak ćwiczeń dla filtrów"
+          title="Nic nie pasuje do filtrów"
           action={
             <div className="flex flex-wrap justify-center gap-2">
               {filtersActive ? (
@@ -411,7 +412,7 @@ export default function ExercisesPage() {
           Zmień filtry albo utwórz ćwiczenie o tej nazwie.
         </EmptyState>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="divide-y divide-border border-y border-border">
           {filtered.map((ex) => {
             const media = primaryMedia(ex);
             const cat =
@@ -422,77 +423,69 @@ export default function ExercisesPage() {
               .slice(0, 2)
               .map((e) => equipmentLabel(e))
               .join(" · ");
+            const meta =
+              [cat, eqLabel].filter(Boolean).join(" · ") || EXERCISE_TYPE_LABELS[ex.type];
             return (
-              <div
-                key={ex.id}
-                className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-surface transition-colors duration-[var(--dur-fast)] hover:bg-surface-hover"
-              >
-                <Link
-                  href={`/exercises/${ex.id}`}
-                  className="absolute inset-0 z-0"
-                  aria-label={ex.name}
-                />
-                {media ? (
-                  <button
-                    type="button"
-                    className="relative z-10 block w-full text-left focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
-                    onClick={() => setPreview(ex)}
-                    aria-label={`Podgląd wideo: ${ex.name}`}
-                  >
-                    <ExerciseThumb
-                      youtubeId={media.youtubeId}
-                      category={ex.category}
-                      alt={ex.name}
-                      seconds={media.seconds}
-                      play="hover"
-                      className="rounded-none"
-                    />
-                  </button>
-                ) : (
-                  <div className="relative z-0">
-                    <ExerciseThumb
-                      youtubeId={null}
-                      category={ex.category}
-                      alt={ex.name}
-                      play="none"
-                      className="rounded-none"
-                    />
-                  </div>
-                )}
-                <div className="relative z-10 flex flex-1 flex-col gap-2 p-3 pointer-events-none">
-                  <div className="min-w-0">
-                    <p className="min-h-[2.5rem] break-words text-sm font-medium text-foreground">
+              <div key={ex.id} className="group relative">
+                <ListRow
+                  className="pr-20"
+                  leading={
+                    media ? (
+                      <button
+                        type="button"
+                        className="relative z-10 block w-12 shrink-0 overflow-hidden rounded-md focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] active:scale-[0.97]"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setPreview(ex);
+                        }}
+                        aria-label={`Podgląd wideo: ${ex.name}`}
+                      >
+                        <ExerciseThumb
+                          youtubeId={media.youtubeId}
+                          category={ex.category}
+                          alt={ex.name}
+                          seconds={media.seconds}
+                          play="none"
+                          variant="square"
+                          className="rounded-md"
+                        />
+                      </button>
+                    ) : (
+                      <span className="block w-12 shrink-0 overflow-hidden rounded-md">
+                        <ExerciseThumb
+                          youtubeId={null}
+                          category={ex.category}
+                          alt={ex.name}
+                          play="none"
+                          variant="square"
+                          className="rounded-md"
+                        />
+                      </span>
+                    )
+                  }
+                  title={
+                    <Link
+                      href={`/exercises/${ex.id}`}
+                      className="break-words focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+                    >
                       {ex.name}
-                    </p>
-                    <p className="mt-1 text-xs text-muted">
-                      {[cat, eqLabel].filter(Boolean).join(" · ") || EXERCISE_TYPE_LABELS[ex.type]}
-                      {ex.isUnilateral ? " · 1-str." : ""}
-                    </p>
-                  </div>
-                  <div className="mt-auto flex items-center justify-between gap-2">
-                    <p className="font-mono text-xs font-semibold tabular-nums text-foreground">
-                      {volumeLabel(ex)}
-                      <span className="mx-1.5 text-muted-faint">·</span>
-                      {formatRest(ex.defaultRestBetweenSetsSeconds)}
-                    </p>
-                    <div className="flex shrink-0 gap-0.5 opacity-100 transition-opacity duration-[var(--dur-fast)] pointer-events-auto md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
-                      <IconButton
-                        title="Edytuj"
-                        size="sm"
-                        onClick={() => startEdit(ex)}
-                      >
-                        <Icon name="edit" size={16} decorative />
-                      </IconButton>
-                      <IconButton
-                        title="Usuń"
-                        variant="danger"
-                        size="sm"
-                        onClick={() => void handleDelete(ex)}
-                      >
-                        <Icon name="delete" size={16} decorative />
-                      </IconButton>
-                    </div>
-                  </div>
+                    </Link>
+                  }
+                  sub={`${meta}${ex.isUnilateral ? " · 1-str." : ""} · ${volumeLabel(ex)} · ${formatRest(ex.defaultRestBetweenSetsSeconds)}`}
+                />
+                <div className="absolute top-1/2 right-1 z-10 flex -translate-y-1/2 shrink-0 gap-0.5 opacity-100 transition-opacity duration-[var(--dur-fast)] md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
+                  <IconButton title="Edytuj" size="sm" onClick={() => startEdit(ex)}>
+                    <Icon name="edit" size={16} decorative />
+                  </IconButton>
+                  <IconButton
+                    title="Usuń"
+                    variant="danger"
+                    size="sm"
+                    onClick={() => void handleDelete(ex)}
+                  >
+                    <Icon name="delete" size={16} decorative />
+                  </IconButton>
                 </div>
               </div>
             );

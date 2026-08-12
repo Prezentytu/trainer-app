@@ -83,13 +83,13 @@ export function ExerciseThumb({
               : "bg-background/40"
           }`}
         >
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-background/80 text-foreground shadow-raised">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background/80 text-foreground">
             <Icon name="play" size={16} decorative />
           </span>
         </div>
       ) : null}
       {duration ? (
-        <span className="absolute bottom-1.5 right-1.5 rounded bg-background/85 px-1.5 py-0.5 font-mono text-[10px] font-semibold tabular-nums text-foreground">
+        <span className="absolute bottom-1.5 right-1.5 rounded bg-background/85 px-1.5 py-0.5 font-mono text-xs font-semibold tabular-nums text-foreground">
           {duration}
         </span>
       ) : null}

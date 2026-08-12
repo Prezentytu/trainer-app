@@ -463,7 +463,16 @@ export default function PlanImportPage() {
           ) : null}
 
           {(draft.days ?? []).length === 0 ? (
-            <EmptyState>Brak dni w odpowiedzi AI.</EmptyState>
+            <EmptyState
+              title="AI nie zwróciło dni treningowych"
+              action={
+                <Button variant="secondary" size="sm" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
+                  Popraw prompt i spróbuj ponownie
+                </Button>
+              }
+            >
+              Sprawdź opis planu albo wygeneruj jeszcze raz — bez dni nie zapiszesz importu.
+            </EmptyState>
           ) : (
             (draft.days ?? []).map((day, di) => (
               <Card key={`${day.weekNumber}-${day.order}-${di}`}>

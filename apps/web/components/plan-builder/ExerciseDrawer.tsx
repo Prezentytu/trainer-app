@@ -112,7 +112,7 @@ function DrawerBody({
   };
 
   return (
-    <aside className="relative flex h-full w-full max-w-[380px] flex-col border-l border-border bg-surface shadow-modal">
+    <aside className="relative flex h-full w-full max-w-[380px] flex-col border-l border-border bg-surface">
       <div className="flex items-center justify-between border-b border-border px-5 py-4">
         <h2 className="font-display text-lg font-bold">Dodaj ćwiczenie</h2>
         <button
@@ -167,10 +167,10 @@ function DrawerBody({
               setCategoryFilter("all");
               setHighlight(0);
             }}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
               categoryFilter === "all"
-                ? "bg-accent text-accent-foreground"
-                : "bg-surface-active text-muted hover:text-foreground-secondary"
+                ? "border-border-strong bg-surface-raised text-foreground"
+                : "border-transparent bg-surface-active text-muted hover:text-foreground-secondary"
             }`}
           >
             Wszystkie
@@ -183,10 +183,10 @@ function DrawerBody({
                 setCategoryFilter(c);
                 setHighlight(0);
               }}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                 categoryFilter === c
-                  ? "bg-accent text-accent-foreground"
-                  : "bg-surface-active text-muted hover:text-foreground-secondary"
+                  ? "border-border-strong bg-surface-raised text-foreground"
+                  : "border-transparent bg-surface-active text-muted hover:text-foreground-secondary"
               }`}
             >
               {CATEGORY_LABELS[c]}
@@ -202,10 +202,10 @@ function DrawerBody({
                 setTypeFilter(f.id);
                 setHighlight(0);
               }}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                 typeFilter === f.id
-                  ? "bg-accent text-accent-foreground"
-                  : "bg-surface-active text-muted hover:text-foreground-secondary"
+                  ? "border-border-strong bg-surface-raised text-foreground"
+                  : "border-transparent bg-surface-active text-muted hover:text-foreground-secondary"
               }`}
             >
               {f.label}
@@ -250,7 +250,7 @@ function DrawerBody({
                     </p>
                   </div>
                   {active ? (
-                    <span className="shrink-0 rounded-[10px] bg-accent px-2.5 py-1 text-xs font-semibold text-accent-foreground">
+                    <span className="shrink-0 rounded-[10px] bg-invert-bg px-2.5 py-1 text-xs font-semibold text-invert-fg">
                       Dodaj
                     </span>
                   ) : (

@@ -237,7 +237,7 @@ export function ListComposer({
 
   return (
     <div className="space-y-2">
-      <div className="sticky bottom-4 z-10 overflow-visible rounded-2xl border border-border-strong bg-surface shadow-modal">
+      <div className="sticky bottom-4 z-10 overflow-visible rounded-2xl border border-border-strong bg-surface">
         {value.trim() && optionCount > 0 && (
           <div className="flex max-h-72 flex-col gap-0.5 overflow-y-auto rounded-t-2xl border-b border-border p-1.5">
             {matches.map((exercise, idx) => (

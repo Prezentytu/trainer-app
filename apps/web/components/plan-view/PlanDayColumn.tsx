@@ -40,7 +40,7 @@ function buildBlocks(items: PlanItem[], labels: Array<string | null>): Block[] {
 function SectionCaption({ children }: { children: string }) {
   return (
     <div className="flex items-center gap-2 px-0.5">
-      <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-faint">
+      <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-faint">
         {children}
       </span>
       <span className="h-px flex-1 bg-border" />
@@ -88,7 +88,7 @@ export function PlanDayColumn({
             {day.label}
           </span>
         </div>
-        <p className="mt-1 font-mono text-[11px] tabular-nums text-muted">{stats.line}</p>
+        <p className="mt-1 font-mono text-xs tabular-nums text-muted">{stats.line}</p>
         {day.notes ? (
           <p className="mt-1.5 break-words text-xs text-muted">{day.notes}</p>
         ) : null}
@@ -96,7 +96,9 @@ export function PlanDayColumn({
 
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain p-3">
         {day.items.length === 0 ? (
-          <EmptyState title="Pusty dzień">Brak ćwiczeń w tym dniu.</EmptyState>
+          <EmptyState title="Pusty dzień" action={null}>
+            Brak ćwiczeń w tym dniu.
+          </EmptyState>
         ) : (
           blocks.map((block) => {
             const firstIndex = block.kind === "single" ? block.index : block.indices[0];
@@ -118,10 +120,10 @@ export function PlanDayColumn({
                 ) : (
                   <div className="overflow-hidden rounded-[10px] border border-border-strong">
                     <div className="flex items-baseline justify-between gap-2 border-b border-border bg-surface-raised px-3 py-1.5">
-                      <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
+                      <span className="font-mono text-xs font-semibold uppercase tracking-[0.08em] text-muted">
                         Superseria {block.letter}
                       </span>
-                      <span className="shrink-0 text-[11px] text-muted-faint">bez przerwy</span>
+                      <span className="shrink-0 text-xs text-muted-faint">bez przerwy</span>
                     </div>
                     <div className="divide-y divide-border">
                       {block.indices.map((idx) => (

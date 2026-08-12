@@ -84,14 +84,14 @@ export function PortalBottomNav({ token }: { token: string }) {
               href={tab.href(token)}
               aria-current={active ? "page" : undefined}
               aria-label={tab.label}
-              className={`flex min-h-[42px] min-w-[62px] flex-col items-center justify-center gap-0.5 rounded-[var(--r-pill)] px-2 transition-colors duration-[var(--dur-fast)] ${FOCUS} ${
+              className={`flex min-h-11 min-w-[62px] flex-col items-center justify-center gap-0.5 rounded-[var(--r-pill)] px-2 transition-[background-color,transform,color] duration-[var(--dur-fast)] ease-[var(--ease-out)] active:[transform:var(--press)] ${FOCUS} ${
                 active
                   ? "bg-invert-bg text-invert-fg"
                   : "text-fg-faint hover:bg-surface-raised hover:text-foreground"
               }`}
             >
               <Icon name={tab.icon} size={20} decorative />
-              <span className="text-[10px] font-semibold leading-none tracking-wide">{tab.label}</span>
+              <span className="text-xs font-semibold leading-none tracking-wide">{tab.label}</span>
             </Link>
           );
         })}

@@ -37,7 +37,7 @@ export default function SignUpPage() {
     >
       <Suspense
         fallback={
-          <div className="h-40 animate-pulse rounded-[var(--r-card)] bg-surface" />
+          <div className="h-40 skeleton-pulse rounded-[var(--r-card)] bg-surface" />
         }
       >
         <SignUpBody />

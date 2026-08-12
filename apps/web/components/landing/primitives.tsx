@@ -42,12 +42,12 @@ export function StatTile({
             size === "lg" ? "text-[34px]" : "text-[25px]"
           }`}
         >
-          {value}
+          {tone === "pr" && !String(value).includes("★") ? `★ ${value}` : value}
         </span>
         {unit ? <span className="font-mono text-xs font-medium text-fg-faint">{unit}</span> : null}
         {delta ? (
-          <span className="ml-1.5 inline-flex items-baseline gap-1 font-mono text-[11px] font-medium tabular-nums text-gain">
-            <span className="text-[9px] leading-none" aria-hidden>
+          <span className="ml-1.5 inline-flex items-baseline gap-1 font-mono text-xs font-medium tabular-nums text-gain">
+            <span className="text-xs leading-none" aria-hidden>
               ▲
             </span>
             {delta}

@@ -180,7 +180,7 @@ export function TrainerNotesTab({
       </Card>
 
       {sorted.length === 0 ? (
-        <EmptyState title="Twoje prywatne notatki o kliencie">
+        <EmptyState title="Twoje prywatne notatki o kliencie" action={null}>
           Zapisuj kontuzje, ustalenia, płatności albo to, co działa na tego klienta. Klient nigdy tego nie zobaczy.
         </EmptyState>
       ) : (

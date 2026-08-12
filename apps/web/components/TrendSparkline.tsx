@@ -84,7 +84,7 @@ export function TrendSparkline({
                   x={w - padR + 8}
                   y={y + 3}
                   fill="var(--fg-ghost)"
-                  fontSize="10"
+                  fontSize="12"
                   fontFamily="var(--font-geist-mono), monospace"
                 >
                   {formatKg(v)}
@@ -135,7 +135,7 @@ export function TrendSparkline({
         <span className="font-mono text-xs tabular-nums text-fg-faint">{formatDayShort(last.date)}</span>
       </div>
       <p className={`mt-1 flex items-center gap-1 font-mono text-xs tabular-nums ${deltaTone}`}>
-        <span className="text-[10px] leading-none" aria-hidden>
+        <span className="text-xs leading-none" aria-hidden>
           {glyph}
         </span>
         {deltaLabel}

@@ -232,7 +232,7 @@ export default function ClientsPage() {
         </EmptyState>
       ) : filtered.length === 0 ? (
         <EmptyState
-          title="Brak wyników"
+          title="Żaden klient nie pasuje"
           action={
             <Button variant="secondary" onClick={clearFilters}>
               Wyczyść filtry
@@ -256,7 +256,10 @@ export default function ClientsPage() {
                   <span className="relative shrink-0">
                     <Avatar name={c.name} size="lg" />
                     <span
-                      aria-hidden
+                      role="img"
+                      aria-label={
+                        ago == null ? "Brak treningów" : stale ? "Bez treningu ponad 7 dni" : "Aktywny"
+                      }
                       className={`absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-background ${
                         ago == null
                           ? "bg-fg-ghost"
@@ -264,9 +267,6 @@ export default function ClientsPage() {
                             ? "bg-loss"
                             : "bg-gain"
                       }`}
-                      title={
-                        ago == null ? "Brak treningów" : stale ? "Bez treningu >7 dni" : "Aktywny"
-                      }
                     />
                   </span>
                   <div className="min-w-0">
@@ -278,11 +278,15 @@ export default function ClientsPage() {
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
                   <span
-                    className={`text-sm ${stale ? "text-danger" : "text-muted"}`}
+                    className={`text-sm ${
+                      ago == null ? "text-muted" : stale ? "text-loss" : "text-gain"
+                    }`}
                   >
-                    {c.lastSessionOn
-                      ? `Ostatni trening: ${relativeDayLabel(c.lastSessionOn)}`
-                      : "Brak treningów"}
+                    {ago == null
+                      ? "Brak treningów"
+                      : stale
+                        ? `▼ Nieaktywny · ${relativeDayLabel(c.lastSessionOn!)}`
+                        : `▲ Aktywny · ${relativeDayLabel(c.lastSessionOn!)}`}
                   </span>
                   {c.activePlans > 0 ? (
                     <Badge tone="positive">{activePlansLabel(c.activePlans)}</Badge>

@@ -86,14 +86,14 @@ export function PlanToolbar({
                 type="button"
                 onClick={() => setEditingName(true)}
                 title={name.trim() || "Bez nazwy"}
-                className="min-w-0 truncate text-left text-base font-semibold tracking-tight text-foreground hover:text-foreground-secondary"
+                className="min-w-0 break-words text-left text-base font-semibold tracking-tight text-foreground hover:text-foreground-secondary"
               >
                 {name.trim() || "Bez nazwy"}
               </button>
             )}
             {isTemplate ? <Badge tone="accent">Wielokrotnego użytku</Badge> : null}
             {stepLabel ? (
-              <span className="hidden truncate font-mono text-[11px] text-muted sm:inline">{stepLabel}</span>
+              <span className="hidden font-mono text-xs text-muted sm:inline">{stepLabel}</span>
             ) : null}
             {isDirty ? (
               <span className="hidden text-[12px] text-muted sm:inline">Niezapisane</span>

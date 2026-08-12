@@ -27,7 +27,7 @@ export function CheckInCard({ token, onSaved }: { token: string; onSaved?: () =>
 
   return (
     <section className="rounded-xl border border-border bg-surface-raised px-4 py-4">
-      <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">Check-in</p>
+      <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">Jak się masz</p>
       <p className="mt-1 text-sm text-muted">Dwie liczby pomagają trenerowi dopasować plan.</p>
       <ErrorBanner message={error} />
       <div className="mt-4 space-y-4">

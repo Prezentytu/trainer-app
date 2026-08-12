@@ -122,7 +122,7 @@ export function SessionDock({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                className="flex min-w-0 flex-1 items-center gap-2.5 text-left focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+                className="flex min-h-11 min-w-0 flex-1 items-center gap-2.5 rounded-[8px] text-left transition-transform duration-[var(--dur-fast)] ease-[var(--ease-out)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] active:scale-[0.98]"
                 onClick={onExpandRest}
                 aria-label="Powiększ timer przerwy"
               >
@@ -132,7 +132,7 @@ export function SessionDock({
                     {mmss(rest.leftSeconds)}
                   </p>
                   {nextLabel ? (
-                    <p className="mt-0.5 truncate text-[11px] text-muted">{nextLabel}</p>
+                    <p className="mt-0.5 truncate text-xs text-muted">{nextLabel}</p>
                   ) : null}
                 </div>
               </button>
@@ -200,10 +200,10 @@ export function SessionDock({
             ) : null}
             <div className="ml-auto flex items-center gap-1.5">
               <DockBtn onClick={onPrev} title="Poprzednie pole">
-                ‹
+                <Icon name="caret-left" size={18} decorative />
               </DockBtn>
               <DockBtn onClick={onNext} title="Następne pole">
-                ›
+                <Icon name="caret-right" size={18} decorative />
               </DockBtn>
               <DockBtn primary onClick={onDone}>
                 Gotowe

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api, SessionDetail, WorkoutSessionInput } from "@/lib/api";
-import { Badge, Button, Card, ErrorBanner, Field, formatRest, inputClass } from "@/components/ui";
+import { Button, Card, ErrorBanner, Field, formatRest, inputClass, Marker } from "@/components/ui";
 import { formatKg } from "@/lib/plates";
 import { formatSetLoadReps, isDumbbellPair } from "@/lib/weight";
 
@@ -244,7 +244,7 @@ export function SessionReview({
               key={ex.id}
               title={ex.exerciseName}
               meta={`${done}/${ex.sets.length} serii${ex.restSeconds != null ? ` · ${formatRest(ex.restSeconds)}` : ""}`}
-              headerAction={hasPr ? <Badge tone="pr">PR</Badge> : undefined}
+              headerAction={hasPr ? <Marker tone="pr">PR</Marker> : undefined}
             >
               {ex.substitutedFromName ? (
                 <p className="mb-2 text-xs text-muted">zamieniono z {ex.substitutedFromName}</p>
@@ -253,7 +253,7 @@ export function SessionReview({
                 <p className="mb-2 text-[13px] text-muted">Trener: {ex.planNote}</p>
               ) : null}
 
-              <div className="grid grid-cols-[2rem_1fr_1fr] gap-x-2 gap-y-1 border-b border-border pb-1 font-mono text-[10px] font-medium uppercase tracking-caps text-muted">
+              <div className="grid grid-cols-[2rem_1fr_1fr] gap-x-2 gap-y-1 border-b border-border pb-1 font-mono text-xs font-medium uppercase tracking-caps text-muted">
                 <div>#</div>
                 <div>Cel</div>
                 <div>Wynik</div>
@@ -279,7 +279,7 @@ export function SessionReview({
                       <span className="font-mono text-[13px] tabular-nums text-muted">
                         {String(s.setNumber).padStart(2, "0")}
                         {s.isWarmup ? (
-                          <span className="block text-[10px] text-muted-faint">W</span>
+                          <span className="block text-xs text-muted-faint">W</span>
                         ) : null}
                       </span>
                       <span className="font-mono text-[13px] tabular-nums text-muted-faint">
@@ -297,7 +297,7 @@ export function SessionReview({
                         }`}
                       >
                         {actual}
-                        {isPr ? <Badge tone="pr">PR</Badge> : null}
+                        {isPr ? <Marker tone="pr">PR</Marker> : null}
                         {below ? (
                           <span className="text-xs text-danger-hover" title="Poniżej celu z planu">
                             ▾
@@ -307,7 +307,7 @@ export function SessionReview({
                     </div>
                     {setNote ? (
                       <p className="mt-1 pl-10 whitespace-pre-wrap text-[13px] leading-snug text-foreground-secondary">
-                        <span className="mr-1.5 font-mono text-[10px] font-medium uppercase tracking-caps text-fg-ghost">
+                        <span className="mr-1.5 font-mono text-xs font-medium uppercase tracking-caps text-fg-ghost">
                           Notatka
                         </span>
                         {setNote}
@@ -318,7 +318,7 @@ export function SessionReview({
               })}
               {ex.note?.trim() ? (
                 <p className="mt-2 whitespace-pre-wrap text-[13px] leading-snug text-foreground-secondary">
-                  <span className="mr-1.5 font-mono text-[10px] font-medium uppercase tracking-caps text-fg-ghost">
+                  <span className="mr-1.5 font-mono text-xs font-medium uppercase tracking-caps text-fg-ghost">
                     Notatka do ćwiczenia
                   </span>
                   {ex.note.trim()}
@@ -400,7 +400,7 @@ function StatCard({
 }) {
   return (
     <div
-      className={`rounded-2xl border bg-surface px-4 py-4 shadow-card ${
+      className={`rounded-2xl border bg-surface px-4 py-4 ${
         highlight ? "border-pr" : "border-border"
       }`}
     >
@@ -409,7 +409,7 @@ function StatCard({
           highlight ? "text-pr" : "text-foreground"
         }`}
       >
-        {value}
+        {highlight ? `★ ${value}` : value}
       </p>
       <p className="mt-1.5 text-xs font-semibold uppercase tracking-caps text-muted">{label}</p>
     </div>

@@ -122,7 +122,7 @@ export default function PlanDetailsPage() {
             <>
               <h1
                 title={plan.name}
-                className="min-w-0 truncate text-base font-semibold tracking-tight text-foreground"
+                className="min-w-0 break-words text-base font-semibold tracking-tight text-foreground"
               >
                 {plan.name}
               </h1>
@@ -135,7 +135,7 @@ export default function PlanDetailsPage() {
                     </span>
                   ))}
                   {extraClients > 0 ? (
-                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-surface-raised font-mono text-[10px] font-semibold text-muted ring-2 ring-background">
+                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-surface-raised font-mono text-xs font-semibold text-muted ring-2 ring-background">
                       +{extraClients}
                     </span>
                   ) : null}
@@ -149,7 +149,7 @@ export default function PlanDetailsPage() {
             <>
               <OverflowMenu label="Szczegóły planu" align="right">
                 <div className="max-w-xs space-y-1 px-3 py-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-faint">
+                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-faint">
                     Zasady / opis
                   </p>
                   <p className="text-sm leading-snug text-foreground-secondary">
@@ -197,7 +197,7 @@ export default function PlanDetailsPage() {
           ) : (
             <div className="flex-1" />
           )}
-          <span className="shrink-0 font-mono text-[11px] tabular-nums text-muted-faint">{weekMeta}</span>
+          <span className="shrink-0 font-mono text-xs tabular-nums text-muted-faint">{weekMeta}</span>
         </div>
       </div>
 

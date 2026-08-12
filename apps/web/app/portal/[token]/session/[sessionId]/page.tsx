@@ -24,6 +24,8 @@ export default function PortalSessionPage() {
   const [exercises, setExercises] = useState<PortalExercise[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [editingCompleted, setEditingCompleted] = useState(false);
+  /** Po live complete — najpierw lekki check-in w SessionLogger, potem SessionSummaryView. */
+  const [awaitingCheckin, setAwaitingCheckin] = useState(false);
 
   const flushQueue = useCallback(async () => {
     if (typeof navigator !== "undefined" && !navigator.onLine) return;
@@ -65,7 +67,8 @@ export default function PortalSessionPage() {
     );
   }
 
-  const showSummary = session.status === "completed" && !editingCompleted;
+  const showSummary =
+    session.status === "completed" && !editingCompleted && !awaitingCheckin;
 
   if (showSummary) {
     return (
@@ -92,7 +95,17 @@ export default function PortalSessionPage() {
         portalToken={token}
         libraryExercises={exercises}
         completedEdit={editingCompleted}
-        onUpdated={setSession}
+        onUpdated={(next) => {
+          // Live complete: nie przełączaj od razu na summary — najpierw check-in.
+          if (
+            session.status === "in_progress" &&
+            next.status === "completed" &&
+            !editingCompleted
+          ) {
+            setAwaitingCheckin(true);
+          }
+          setSession(next);
+        }}
         onPersistFailed={(input, complete) => {
           enqueueSessionWrite({
             scope: token,
@@ -103,13 +116,13 @@ export default function PortalSessionPage() {
         }}
         onCompleted={() => {
           if (editingCompleted) {
-            // „Popraw wyniki” → zapis wraca do podsumowania (zachowany kontekst),
-            // nie wyrzuca na ekran główny.
+            // „Popraw wyniki” → zapis wraca do podsumowania (zachowany kontekst).
             setEditingCompleted(false);
-            window.scrollTo(0, 0);
           } else {
-            router.push(`/portal/${token}`);
+            // Peak-End: zostań na /session/… i pokaż SessionSummaryView (celebracja PR).
+            setAwaitingCheckin(false);
           }
+          window.scrollTo(0, 0);
         }}
       />
     </div>

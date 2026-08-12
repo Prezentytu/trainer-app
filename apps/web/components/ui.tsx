@@ -2,7 +2,16 @@
 
 import Link from "next/link";
 import { useClerk } from "@clerk/nextjs";
-import { ReactNode, useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
+import {
+  ReactNode,
+  RefObject,
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { SESSION_EXPIRED_MESSAGE, clerkEnabled } from "@/lib/api";
 
 const subscribeNoop = () => () => {};
@@ -10,7 +19,7 @@ const snapshotClient = () => true;
 const snapshotServer = () => false;
 
 const FOCUS = "focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]";
-const PRESS = "active:scale-[0.97]";
+const PRESS = "active:[transform:var(--press)]";
 
 /** true dopiero po hydracji — getServerSnapshot=false (SSR i pierwszy pass klienta = to samo). */
 export function useIsClient(): boolean {
@@ -415,7 +424,8 @@ export function EmptyState({
 }: {
   children: ReactNode;
   title?: string;
-  action?: ReactNode;
+  /** CTA wymagane — jawne `null` tylko dla stanów informacyjnych bez akcji. */
+  action: ReactNode | null;
 }) {
   return (
     <div className="rounded-[var(--r-card)] border border-border px-6 py-10 text-center">
@@ -455,7 +465,7 @@ export function Badge({ children, tone = "neutral" }: { children: ReactNode; ton
   };
   return (
     <span
-      className={`inline-flex h-5 items-center gap-1 rounded-[var(--r-pill)] px-1.5 font-mono text-[11px] font-semibold tabular-nums ${styles[tone]}`}
+      className={`inline-flex h-5 items-center gap-1 rounded-[var(--r-pill)] px-1.5 font-mono text-xs font-semibold tabular-nums ${styles[tone]}`}
     >
       {children}
     </span>
@@ -495,10 +505,10 @@ export function Marker({
   }[tone];
   return (
     <span
-      className={`inline-flex h-5 items-center gap-1 rounded-[var(--r-pill)] px-1.5 font-mono text-[11px] font-semibold tabular-nums ${styles}`}
+      className={`inline-flex h-5 items-center gap-1 rounded-[var(--r-pill)] px-1.5 font-mono text-xs font-semibold tabular-nums ${styles}`}
     >
       {glyph && mark ? (
-        <span className="text-[10px] leading-none" aria-hidden>
+        <span className="text-xs leading-none" aria-hidden>
           {mark}
         </span>
       ) : null}
@@ -539,7 +549,7 @@ export function ListRow({
       {leading ? <span className="inline-flex shrink-0">{leading}</span> : null}
       <span className="min-w-0 flex-1">
         <span className="block text-[15px] font-medium text-foreground">{title}</span>
-        {sub ? <span className="mt-0.5 block font-mono text-[11px] text-fg-faint">{sub}</span> : null}
+        {sub ? <span className="mt-0.5 block font-mono text-xs text-fg-faint">{sub}</span> : null}
       </span>
       {right ? <span className="shrink-0">{right}</span> : null}
     </Tag>
@@ -564,7 +574,7 @@ export function Pill({
       type="button"
       onClick={onClick}
       aria-pressed={active ?? false}
-      className={`inline-flex h-[var(--h-pill)] shrink-0 items-center rounded-[var(--r-pill)] border px-2.5 font-mono text-[11px] font-medium uppercase tracking-[var(--track-label)] transition-colors duration-[var(--dur-fast)] ${FOCUS} ${
+      className={`inline-flex h-[var(--h-pill)] shrink-0 items-center rounded-[var(--r-pill)] border px-2.5 font-mono text-xs font-medium uppercase tracking-[var(--track-label)] transition-[background-color,transform,color,border-color] duration-[var(--dur-fast)] ${FOCUS} ${PRESS} ${
         active
           ? "border-invert-bg bg-invert-bg text-invert-fg"
           : "border-border-strong bg-surface text-fg-faint hover:border-fg-ghost hover:bg-surface-raised hover:text-foreground"
@@ -675,9 +685,9 @@ export function StatBlock({
       </div>
       <div className="t-label">{label}</div>
       {showDelta ? (
-        <div className={`mt-0.5 flex min-h-[1rem] items-center gap-1 font-mono text-[11px] font-medium tabular-nums ${deltaTone}`}>
+        <div className={`mt-0.5 flex min-h-[1rem] items-center gap-1 font-mono text-xs font-medium tabular-nums ${deltaTone}`}>
           {delta && glyph ? (
-            <span className="text-[10px] leading-none" aria-hidden>
+            <span className="text-xs leading-none" aria-hidden>
               {glyph}
             </span>
           ) : null}
@@ -834,7 +844,9 @@ export function Switch({
         disabled={disabled}
         onClick={() => onChange?.(!checked)}
         className={`relative h-6 w-10 shrink-0 rounded-[var(--r-pill)] border transition-colors duration-[var(--dur-fast)] ${FOCUS} ${
-          checked ? "border-invert-bg bg-invert-bg" : "border-border-strong bg-surface-raised"
+          checked
+            ? "border-invert-bg bg-invert-bg hover:bg-fg-muted"
+            : "border-border-strong bg-surface-raised hover:border-fg-ghost hover:bg-surface-active"
         }`}
       >
         <span
@@ -854,6 +866,95 @@ export function Switch({
     </label>
   );
 }
+
+/**
+ * Opóźniony unmount pod exit transition (--dur-med).
+ * Mount przy otwarciu — adjust podczas renderu (bez setState w body effect).
+ * Entered po rAF; unmount po timeout / reduced-motion w callbacku.
+ */
+export function usePresence(open = false) {
+  const [mounted, setMounted] = useState(open);
+  const [entered, setEntered] = useState(false);
+  const [prevOpen, setPrevOpen] = useState(open);
+
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setMounted(true);
+      setEntered(false);
+    } else {
+      setEntered(false);
+    }
+  }
+
+  useEffect(() => {
+    if (open) {
+      const id = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setEntered(true));
+      });
+      return () => cancelAnimationFrame(id);
+    }
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) {
+      const id = requestAnimationFrame(() => setMounted(false));
+      return () => cancelAnimationFrame(id);
+    }
+    const t = window.setTimeout(() => setMounted(false), 220);
+    return () => window.clearTimeout(t);
+  }, [open]);
+
+  return { mounted, entered };
+}
+
+const FOCUSABLE =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function useFocusTrap(
+  active: boolean,
+  panelRef: RefObject<HTMLElement | null>,
+  onEscape?: () => void,
+) {
+  useEffect(() => {
+    if (!active) return;
+    const panel = panelRef.current;
+    const focusables = () =>
+      panel ? Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE)) : [];
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const first = focusables()[0];
+    first?.focus();
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onEscape?.();
+        return;
+      }
+      if (e.key !== "Tab" || !panel) return;
+      const nodes = focusables();
+      if (nodes.length === 0) return;
+      const firstNode = nodes[0];
+      const lastNode = nodes[nodes.length - 1];
+      if (e.shiftKey && document.activeElement === firstNode) {
+        e.preventDefault();
+        lastNode.focus();
+      } else if (!e.shiftKey && document.activeElement === lastNode) {
+        e.preventDefault();
+        firstNode.focus();
+      }
+    };
+
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      previouslyFocused?.focus?.();
+    };
+  }, [active, panelRef, onEscape]);
+}
+
+const OVERLAY_SCRIM =
+  "absolute inset-0 bg-[var(--scrim)] transition-opacity duration-[var(--dur-med)] motion-reduce:duration-[var(--dur-fast)]";
+const OVERLAY_EASE = (entered: boolean) =>
+  entered ? "ease-[var(--ease-out)]" : "ease-[var(--ease-in)]";
 
 export function Dialog({
   open,
@@ -887,61 +988,29 @@ export function Dialog({
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  const { mounted, entered } = usePresence(!!open);
+  useFocusTrap(!!open && mounted, panelRef, onCancel);
 
-  useEffect(() => {
-    if (!open) return;
-    const panel = panelRef.current;
-    const focusables = () =>
-      panel
-        ? Array.from(
-            panel.querySelectorAll<HTMLElement>(
-              'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-            ),
-          )
-        : [];
-
-    const previouslyFocused = document.activeElement as HTMLElement | null;
-    const first = focusables()[0];
-    first?.focus();
-
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onCancel?.();
-        return;
-      }
-      if (e.key !== "Tab" || !panel) return;
-      const nodes = focusables();
-      if (nodes.length === 0) return;
-      const firstNode = nodes[0];
-      const lastNode = nodes[nodes.length - 1];
-      if (e.shiftKey && document.activeElement === firstNode) {
-        e.preventDefault();
-        lastNode.focus();
-      } else if (!e.shiftKey && document.activeElement === lastNode) {
-        e.preventDefault();
-        firstNode.focus();
-      }
-    };
-
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      previouslyFocused?.focus?.();
-    };
-  }, [open, onCancel]);
-
-  if (!open) return null;
+  if (!mounted) return null;
   const showDefaultFooter = footer === undefined;
+  const ease = OVERLAY_EASE(entered);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Scrim bez onClick — dialog zamyka tylko Anuluj / Escape / potwierdzenie. */}
-      <div className="absolute inset-0 bg-[var(--scrim)]" aria-hidden />
+      <div
+        className={`${OVERLAY_SCRIM} ${ease} ${entered ? "opacity-100" : "opacity-0"}`}
+        aria-hidden
+      />
       <div
         ref={panelRef}
         role="dialog"
         aria-modal
         aria-labelledby={titleId}
-        className={`relative w-full rounded-[var(--r-sheet)] border border-border-strong bg-surface p-[18px] ${className}`}
+        className={`relative w-full rounded-[var(--r-sheet)] border border-border-strong bg-surface p-[18px] transition-[opacity,transform] duration-[var(--dur-med)] motion-reduce:duration-[var(--dur-fast)] motion-reduce:transform-none ${ease} ${
+          entered
+            ? "opacity-100 motion-safe:translate-y-0 motion-safe:scale-100"
+            : "opacity-0 motion-safe:translate-y-1 motion-safe:scale-[0.98]"
+        } ${className}`}
       >
         <h2 id={titleId} className="t-heading">
           {title}
@@ -986,16 +1055,21 @@ export function Sheet({
   children?: ReactNode;
   footer?: ReactNode;
 }) {
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose?.();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const { mounted, entered } = usePresence(!!open);
+  useFocusTrap(!!open && mounted, panelRef, onClose);
 
-  if (!open) return null;
+  if (!mounted) return null;
+  const ease = OVERLAY_EASE(entered);
+  const panelMotion = center
+    ? entered
+      ? "opacity-100 motion-safe:translate-y-0 motion-safe:scale-100"
+      : "opacity-0 motion-safe:translate-y-1 motion-safe:scale-[0.98]"
+    : entered
+      ? "opacity-100 motion-safe:translate-y-0"
+      : "opacity-0 motion-safe:translate-y-3";
+
   return (
     <div
       className={`fixed inset-0 z-50 flex justify-center ${
@@ -1005,19 +1079,25 @@ export function Sheet({
       <button
         type="button"
         aria-label="Zamknij"
-        className="absolute inset-0 bg-[var(--scrim)]"
+        className={`${OVERLAY_SCRIM} ${ease} ${entered ? "opacity-100" : "opacity-0"}`}
         onClick={onClose}
       />
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal
-        className={`relative w-full border border-border-strong bg-surface p-[18px] ${
+        aria-labelledby={title ? titleId : undefined}
+        className={`relative w-full border border-border-strong bg-surface p-[18px] transition-[opacity,transform] duration-[var(--dur-med)] motion-reduce:duration-[var(--dur-fast)] motion-reduce:transform-none ${ease} ${panelMotion} ${
           center
             ? "max-w-sm rounded-[var(--r-sheet)]"
             : "max-w-[430px] rounded-t-[var(--r-sheet)] border-b-0"
         }`}
       >
-        {title ? <p className="t-heading mb-3">{title}</p> : null}
+        {title ? (
+          <h2 id={titleId} className="t-heading mb-3">
+            {title}
+          </h2>
+        ) : null}
         {children}
         {footer ? <div className="mt-5 flex gap-2">{footer}</div> : null}
       </div>
