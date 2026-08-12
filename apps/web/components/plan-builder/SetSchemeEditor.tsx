@@ -1,26 +1,18 @@
 "use client";
 
-import { PercentBase, PERCENT_BASE_LABELS, SET_ROLE_LABELS } from "@/lib/api";
+import { useState } from "react";
 import { PLAN_PRESETS } from "@/lib/planPresets";
-import { IconButton, inputClass } from "@/components/ui";
-import { computeSetKg } from "./computedLoad";
-import { NumInput } from "./NumInput";
+import { SetRow, editorChipOff, editorChipOn } from "./SetRow";
 import { BuilderSet } from "./types";
 
-const ROLE_OPTIONS = ["work", "warmup", "ramp", "top", "backoff"];
+const BO_PERCENT_CHIPS = [60, 70, 80, 90] as const;
 
-function rolePill(role: string | null | undefined) {
-  const r = role ?? "work";
-  const label = SET_ROLE_LABELS[r] ?? r;
-  if (r === "top") return "bg-surface-active text-foreground";
-  if (r === "backoff") return "bg-surface-sunken text-foreground-secondary";
-  if (r === "ramp") return "bg-surface-active text-muted-strong";
-  return "bg-surface-active text-foreground-secondary";
+function loadKindOf(s: BuilderSet): "kg" | "percent" {
+  return s.loadPercent != null && s.loadKg == null ? "percent" : "kg";
 }
 
 export function SetSchemeEditor({
   sets,
-  weekNumber,
   open,
   onAdd,
   onPatch,
@@ -29,7 +21,7 @@ export function SetSchemeEditor({
   onClear,
 }: {
   sets: BuilderSet[];
-  weekNumber: number;
+  weekNumber?: number;
   open?: boolean;
   onAdd: () => void;
   onPatch: (setKey: string, patch: Partial<BuilderSet>) => void;
@@ -37,16 +29,19 @@ export function SetSchemeEditor({
   onApplyPreset: (presetId: string) => void;
   onClear: () => void;
 }) {
+  const [focusKey, setFocusKey] = useState<string | null>(null);
   if (open === false) return null;
+
+  const focused = sets.find((s) => s.key === focusKey) ?? sets[sets.length - 1] ?? null;
+  const showPctChips = focused != null && loadKindOf(focused) === "percent";
 
   const activePresetId =
     PLAN_PRESETS.find((p) => sets.length > 0 && p.label.includes("6-4-2") && sets.some((s) => s.role === "ramp"))
       ?.id ?? null;
 
   return (
-    <div className="rounded-[10px] border border-border bg-surface-sunken p-3">
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <span className="font-mono text-xs font-medium uppercase tracking-caps text-muted">Metoda</span>
+    <div>
+      <div className="mb-2 flex flex-wrap items-center gap-1.5">
         {PLAN_PRESETS.map((p) => {
           const short =
             p.id === "642531" ? "6-4-2-5-3-1" : p.id === "ramp15" ? "15-10-5" : p.id === "ramp10" ? "10" : "5";
@@ -56,11 +51,7 @@ export function SetSchemeEditor({
               key={p.id}
               type="button"
               onClick={() => onApplyPreset(p.id)}
-              className={`rounded-full border px-3 py-1 font-mono text-xs tabular-nums transition-colors ${
-                active
-                  ? "border-border-strong bg-surface-active text-foreground"
-                  : "border-border bg-surface text-muted hover:border-border-strong"
-              }`}
+              className={active ? editorChipOn : editorChipOff}
               title={p.label}
             >
               {short}
@@ -70,7 +61,7 @@ export function SetSchemeEditor({
         <button
           type="button"
           onClick={onAdd}
-          className="ml-auto rounded-[10px] border border-border-strong px-3 py-1 text-xs font-medium text-foreground-secondary hover:bg-surface-hover"
+          className="ml-auto text-sm font-medium text-foreground-secondary hover:text-foreground"
         >
           + Seria
         </button>
@@ -78,7 +69,7 @@ export function SetSchemeEditor({
           <button
             type="button"
             onClick={onClear}
-            className="text-xs text-muted hover:text-foreground-secondary"
+            className="text-sm text-muted hover:text-foreground-secondary"
           >
             Wyczyść
           </button>
@@ -86,113 +77,63 @@ export function SetSchemeEditor({
       </div>
 
       {sets.length > 0 && (
-        <>
-          <p className="mb-3 rounded-[10px] border border-border bg-surface px-3 py-2 text-xs text-muted-strong">
-            Tydzień {weekNumber} generuje serie wg wybranego presetu. Zmiana tygodnia przelicza serie przy kopiowaniu
-            z opcją „Przelicz preset”.
-          </p>
-          <div className="overflow-x-auto">
-            <div className="grid min-w-[720px] gap-2">
-              <div className="grid grid-cols-[2rem_7rem_5rem_4rem_6rem_5rem_4rem_auto] gap-2 font-mono text-xs font-medium uppercase tracking-caps text-muted">
-                <span>#</span>
-                <span>Rola</span>
-                <span>Powt.</span>
-                <span>%</span>
-                <span>Baza</span>
-                <span>Ciężar</span>
-                <span>= kg</span>
-                <span />
-              </div>
-              {sets.map((s, idx) => {
-                const computed = computeSetKg(s, sets);
-                const isTop = s.role === "top";
-                return (
-                  <div
-                    key={s.key}
-                    className={`grid grid-cols-[2rem_7rem_5rem_4rem_6rem_5rem_4rem_auto] items-center gap-2 rounded-lg px-1 py-1 ${
-                      isTop ? "border-l-2 border-border-strong bg-surface-active" : ""
-                    }`}
-                  >
-                    <span className="font-mono text-xs tabular-nums text-muted-faint">{idx + 1}</span>
-                    <select
-                      className={`h-8 rounded-full border-0 px-2 text-xs font-medium ${rolePill(s.role)}`}
-                      value={s.role ?? "work"}
-                      onChange={(e) => onPatch(s.key, { role: e.target.value })}
-                      aria-label="Rola serii"
-                    >
-                      {ROLE_OPTIONS.map((r) => (
-                        <option key={r} value={r}>
-                          {SET_ROLE_LABELS[r]}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="flex items-center gap-0.5">
-                      <NumInput
-                        className="px-2 py-1 text-center"
-                        value={s.reps}
-                        min={0}
-                        onChange={(v) => onPatch(s.key, { reps: v })}
-                        placeholder="—"
-                      />
-                      {s.repsMax != null && (
-                        <NumInput
-                          className="px-2 py-1 text-center"
-                          value={s.repsMax}
-                          min={0}
-                          onChange={(v) => onPatch(s.key, { repsMax: v })}
-                          placeholder="—"
-                        />
-                      )}
-                    </div>
-                    <NumInput
-                      className="px-2 py-1 text-center"
-                      value={s.loadPercent}
-                      min={0}
-                      onChange={(v) => onPatch(s.key, { loadPercent: v })}
-                      placeholder="—"
-                    />
-                    <select
-                      className={`${inputClass} h-8 py-0 text-xs`}
-                      value={s.percentOf ?? ""}
-                      onChange={(e) =>
-                        onPatch(s.key, { percentOf: (e.target.value || null) as PercentBase | null })
-                      }
-                    >
-                      <option value="">—</option>
-                      {(Object.keys(PERCENT_BASE_LABELS) as PercentBase[]).map((b) => (
-                        <option key={b} value={b}>
-                          {PERCENT_BASE_LABELS[b]}
-                        </option>
-                      ))}
-                    </select>
-                    <NumInput
-                      className="px-2 py-1 text-center"
-                      value={s.loadKg}
-                      min={0}
-                      step={0.5}
-                      onChange={(v) => onPatch(s.key, { loadKg: v })}
-                      placeholder="auto"
-                    />
-                    <span
-                      className={`font-mono text-sm font-semibold tabular-nums ${
-                        isTop ? "text-foreground" : "text-foreground-secondary"
-                      }`}
-                    >
-                      {computed != null ? computed : "—"}
-                    </span>
-                    <IconButton title="Usuń serię" size="xs" onClick={() => onRemove(s.key)}>
-                      ✕
-                    </IconButton>
-                  </div>
-                );
-              })}
+        <div>
+          {sets.map((s, idx) => {
+            const kind = loadKindOf(s);
+            return (
+              <SetRow
+                key={s.key}
+                label={String(idx + 1)}
+                reps={s.reps}
+                repsMax={s.repsMax}
+                loadKg={s.loadKg}
+                loadPercent={s.loadPercent}
+                loadKind={kind}
+                role={s.role}
+                onReps={(v) => onPatch(s.key, { reps: v })}
+                onRepsMax={(v) => onPatch(s.key, { repsMax: v })}
+                onLoadKg={(v) => onPatch(s.key, { loadKg: v, loadPercent: v != null ? null : s.loadPercent })}
+                onLoadPercent={(v) =>
+                  onPatch(s.key, {
+                    loadPercent: v,
+                    loadKg: v != null ? null : s.loadKg,
+                    percentOf: v != null ? (s.percentOf ?? "top") : null,
+                  })
+                }
+                onLoadKind={(next) => {
+                  if (next === "percent") {
+                    onPatch(s.key, {
+                      loadKg: null,
+                      loadPercent: s.loadPercent ?? 80,
+                      percentOf: s.percentOf ?? "top",
+                    });
+                  } else {
+                    onPatch(s.key, { loadPercent: null, percentOf: null });
+                  }
+                }}
+                onRole={(role) => onPatch(s.key, { role })}
+                onRemove={() => onRemove(s.key)}
+                onLoadFocus={() => setFocusKey(s.key)}
+              />
+            );
+          })}
+          {showPctChips && focused ? (
+            <div className="flex flex-wrap items-center gap-1.5 pt-2">
+              {BO_PERCENT_CHIPS.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  className={focused.loadPercent === p ? editorChipOn : editorChipOff}
+                  onClick={() =>
+                    onPatch(focused.key, { loadPercent: p, loadKg: null, percentOf: focused.percentOf ?? "top" })
+                  }
+                >
+                  {p}%
+                </button>
+              ))}
             </div>
-            <p className="mt-2 text-xs text-muted">
-              „= kg” liczy się z bazy: np. 80% z topu. Klient widzi gotowe liczby, nie wzory. Baza 1RM wymaga maxów
-              klienta (osobna funkcja).
-            </p>
-          </div>
-        </>
+          ) : null}
+        </div>
       )}
     </div>
   );

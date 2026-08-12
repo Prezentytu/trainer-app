@@ -23,8 +23,8 @@ export type ParsedQuickEntry = {
   loadPercent: number | null;
   /** Cel rampy (xRM), null = brak */
   rampTarget: number | null;
-  /** % topu dla BO, null = rampa bez BO */
-  rampBackoffPercent: number | null;
+  /** % topu dla BO (kolejność = serie), null = rampa bez BO */
+  rampBackoffPercents: number[] | null;
 };
 
 function cut(text: string, match: RegExpMatchArray): string {
@@ -78,18 +78,26 @@ export function parseQuickEntry(raw: string): ParsedQuickEntry {
   }
 
   let rampTarget: number | null = null;
-  let rampBackoffPercent: number | null = null;
-  const rampMatch = text.match(
-    /\brampa\s*(\d+)\s*(?:\+\s*bo\s*(\d+(?:\.\d+)?)\s*%?)?/i
-  );
+  let rampBackoffPercents: number[] | null = null;
+  const rampMatch = text.match(/\brampa\s*(\d+)\s*(?:\+\s*bo\s*([\d./]+)\s*%?)?/i);
   if (rampMatch) {
     rampTarget = Number(rampMatch[1]);
-    if (rampMatch[2]) rampBackoffPercent = Number(rampMatch[2]);
+    if (rampMatch[2]) {
+      const parts = rampMatch[2]
+        .split("/")
+        .map((p) => Number(p.trim()))
+        .filter((n) => Number.isFinite(n) && n > 0);
+      if (parts.length > 0) rampBackoffPercents = parts;
+    }
     text = cut(text, rampMatch);
   } else {
-    const boOnly = text.match(/\bbo\s*(\d+(?:\.\d+)?)\s*%/i);
+    const boOnly = text.match(/\bbo\s*([\d./]+)\s*%/i);
     if (boOnly) {
-      rampBackoffPercent = Number(boOnly[1]);
+      const parts = boOnly[1]
+        .split("/")
+        .map((p) => Number(p.trim()))
+        .filter((n) => Number.isFinite(n) && n > 0);
+      if (parts.length > 0) rampBackoffPercents = parts;
       text = cut(text, boOnly);
     }
   }
@@ -179,7 +187,7 @@ export function parseQuickEntry(raw: string): ParsedQuickEntry {
     loadKg,
     loadPercent,
     rampTarget,
-    rampBackoffPercent,
+    rampBackoffPercents,
   };
 }
 
@@ -214,18 +222,15 @@ export function matchExercises(query: string, exercises: Exercise[]): Exercise[]
 export function rampOverridesFromParsed(parsed: ParsedQuickEntry): Partial<BuilderItem> | null {
   if (parsed.rampTarget == null) return null;
   const targetRm = Math.min(15, Math.max(1, Math.round(parsed.rampTarget)));
-  const boPct = parsed.rampBackoffPercent;
-  if (boPct != null) {
+  const boPcts = parsed.rampBackoffPercents;
+  if (boPcts != null && boPcts.length > 0) {
     const prescribedSets = buildRampPrescribedSets({
       targetRm,
-      backoffCount: 1,
-      backoffPercent: boPct,
-      reps: 5,
-      repsMax: 10,
+      backoffs: boPcts.map((percent) => ({ reps: 5, repsMax: 10, percent })),
     });
     return {
-      setScheme: formatRampScheme(targetRm, boPct),
-      sets: prescribedSets.length,
+      setScheme: formatRampScheme(targetRm, boPcts),
+      sets: parsed.sets,
       reps: null,
       repsMax: null,
       prescribedSets,
@@ -235,7 +240,7 @@ export function rampOverridesFromParsed(parsed: ParsedQuickEntry): Partial<Build
   }
   return {
     setScheme: formatRampScheme(targetRm),
-    sets: parsed.sets ?? 6,
+    sets: parsed.sets,
     reps: null,
     repsMax: null,
     prescribedSets: [],

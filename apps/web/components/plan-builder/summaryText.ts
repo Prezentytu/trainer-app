@@ -3,6 +3,7 @@ import { formatMeasureCore } from "@/lib/measure";
 import { formatRest } from "@/components/ui";
 import { polishExerciseCount, polishSetCount } from "@/lib/plural";
 import { formatLoadDisplay } from "@/lib/weight";
+import { OPEN_RAMP_SET_FALLBACK, formatRampScheme, parseRampSchemeInfo } from "./listGroups";
 import { BuilderDay, BuilderItem } from "./types";
 
 export type SchemeParts = {
@@ -24,11 +25,34 @@ function setLoadShort(s: PlanSetInput, exercise?: Exercise): string | null {
   return null;
 }
 
+function rampMeta(item: BuilderItem, rest: number | null): string | null {
+  const boCount = item.prescribedSets.filter((s) => (s.role ?? "").toLowerCase() === "backoff").length;
+  const metaParts: string[] = [];
+  if (item.sets != null) metaParts.push(`~${item.sets} serii`);
+  if (boCount > 0) metaParts.push(`+ ${boCount} BO`);
+  if (rest != null) metaParts.push(formatRest(rest));
+  return metaParts.length ? metaParts.join(" · ") : null;
+}
+
 /**
  * Kompaktowa linia na kafelku boardu: tylko cel + liczba serii.
  * Przerwa, tempo, RIR/RPE i setScheme żyją wyłącznie w panelu.
  */
 export function cardLine(item: BuilderItem, exercise?: Exercise): string {
+  const ramp = parseRampSchemeInfo(item.setScheme);
+  if (ramp != null) {
+    const boPercents = item.prescribedSets
+      .filter((s) => (s.role ?? "").toLowerCase() === "backoff")
+      .map((s) => s.loadPercent)
+      .filter((p): p is number => p != null);
+    const primary = formatRampScheme(
+      ramp.targetRm,
+      boPercents.length > 0 ? boPercents : ramp.backoffPercents
+    );
+    const meta = rampMeta(item, null);
+    return meta ? `${primary} · ${meta}` : primary;
+  }
+
   if (item.prescribedSets.length > 0) {
     const sets = item.prescribedSets;
     const anchor =
@@ -50,7 +74,9 @@ export function cardLine(item: BuilderItem, exercise?: Exercise): string {
         : target
           ? `top ${target}`
           : polishSetCount(sets.length);
-    return `${primary} · ${polishSetCount(sets.length)}`;
+    const boCount = sets.filter((s) => (s.role ?? "").toLowerCase() === "backoff").length;
+    const meta = boCount > 0 ? `+ ${boCount} BO` : polishSetCount(sets.length);
+    return `${primary} · ${meta}`;
   }
 
   const sets = item.sets ?? exercise?.defaultSets ?? null;
@@ -73,6 +99,21 @@ export function schemeParts(item: BuilderItem, exercise?: Exercise): SchemeParts
   const rest =
     item.restBetweenSetsSeconds ?? exercise?.defaultRestBetweenSetsSeconds ?? null;
 
+  const ramp = parseRampSchemeInfo(item.setScheme);
+  if (ramp != null) {
+    const boPercents = item.prescribedSets
+      .filter((s) => (s.role ?? "").toLowerCase() === "backoff")
+      .map((s) => s.loadPercent)
+      .filter((p): p is number => p != null);
+    return {
+      primary: formatRampScheme(
+        ramp.targetRm,
+        boPercents.length > 0 ? boPercents : ramp.backoffPercents
+      ),
+      meta: rampMeta(item, rest),
+    };
+  }
+
   if (item.prescribedSets.length > 0) {
     const sets = item.prescribedSets;
     const anchor =
@@ -95,7 +136,8 @@ export function schemeParts(item: BuilderItem, exercise?: Exercise): SchemeParts
           ? `top ${target}`
           : polishSetCount(sets.length);
 
-    const metaParts = [polishSetCount(sets.length)];
+    const boCount = sets.filter((s) => (s.role ?? "").toLowerCase() === "backoff").length;
+    const metaParts = [boCount > 0 ? `+ ${boCount} BO` : polishSetCount(sets.length)];
     if (rest != null) metaParts.push(formatRest(rest));
     return { primary, meta: metaParts.join(" · ") };
   }
@@ -125,12 +167,21 @@ export function summaryText(item: BuilderItem, exercise?: Exercise): string {
   return meta ? `${primary} · ${meta}` : primary;
 }
 
+function itemSetCount(item: BuilderItem, exercise?: Exercise): number {
+  const ramp = parseRampSchemeInfo(item.setScheme);
+  if (ramp != null) {
+    const boCount = item.prescribedSets.filter((s) => (s.role ?? "").toLowerCase() === "backoff").length;
+    return (item.sets ?? OPEN_RAMP_SET_FALLBACK) + boCount;
+  }
+  if (item.prescribedSets.length > 0) return item.prescribedSets.length;
+  return item.sets ?? exercise?.defaultSets ?? 0;
+}
+
 export function dayStatsLine(day: BuilderDay, exercises: Exercise[]): string {
   const exerciseCount = day.items.length;
   const setCount = day.items.reduce((sum, item) => {
-    if (item.prescribedSets.length > 0) return sum + item.prescribedSets.length;
     const ex = exercises.find((e) => e.id === item.exerciseId);
-    return sum + (item.sets ?? ex?.defaultSets ?? 0);
+    return sum + itemSetCount(item, ex);
   }, 0);
   const minutes = estimateWeekMinutes(day.items, exercises);
   return [
@@ -145,7 +196,7 @@ export function estimateWeekMinutes(items: BuilderItem[], exercises: Exercise[])
   let seconds = 0;
   for (const item of items) {
     const exercise = exercises.find((e) => e.id === item.exerciseId);
-    const sets = item.prescribedSets.length || item.sets || exercise?.defaultSets || 3;
+    const sets = itemSetCount(item, exercise) || 3;
     const rest = item.restBetweenSetsSeconds ?? exercise?.defaultRestBetweenSetsSeconds ?? 60;
     seconds += sets * (40 + rest);
   }

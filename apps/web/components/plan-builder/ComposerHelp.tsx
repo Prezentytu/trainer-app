@@ -93,6 +93,7 @@ export function ComposerHelp({
                 <li>przysiad 3x8</li>
                 <li>przysiad 3x8-10 60kg 3110 rir2</li>
                 <li>przysiad rampa 4 + bo 80% 47.5kg</li>
+                <li>military rampa 2 + bo 80/60%</li>
                 <li>deska 3x30s · 3x1:30 · 3x2min</li>
                 <li>farmer walk 3x15m</li>
                 <li>1b nazwa · 0 nazwa (rozgrzewka)</li>
@@ -105,7 +106,9 @@ export function ComposerHelp({
                 górę · 0s na górze · <span className="font-mono text-muted">X</span> = dynamicznie.{" "}
                 <span className="text-muted-strong">RIR</span> = powtórzenia w zapasie.{" "}
                 <span className="text-muted-strong">Rampa</span> = serie do docelowego xRM;{" "}
-                <span className="font-mono text-muted">+ bo 80%</span> = backoff % topu.{" "}
+                <span className="font-mono text-muted">+ bo 80%</span> /{" "}
+                <span className="font-mono text-muted">bo 80/60%</span> = backoff % topu
+                (kolejne serie).{" "}
                 <span className="font-mono text-muted">60kg</span> /{" "}
                 <span className="font-mono text-muted">75%</span> = ciężar. Numer{" "}
                 <span className="font-mono text-muted">0</span> = część rozgrzewkowa.

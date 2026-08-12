@@ -19,6 +19,28 @@ function setLoadShort(s: PlanSet): string | null {
   return null;
 }
 
+/** Parsuje lokalnie, bez importu z plan-builder (unikamy cyklu). */
+function parseRamp(setScheme: string | null): { targetRm: number; percents: number[] } | null {
+  if (!setScheme) return null;
+  const m =
+    setScheme.match(/rampa\s*[→\-]+\s*(\d+)\s*RM(?:\s*\+\s*BO\s*([\d./]+)\s*%?)?/i) ||
+    setScheme.match(/rampa\s+(\d+)(?:\s*\+\s*BO\s*([\d./]+)\s*%?)?/i);
+  if (!m) return null;
+  const targetRm = Number(m[1]);
+  if (!Number.isFinite(targetRm) || targetRm < 1) return null;
+  const percents = (m[2] ?? "")
+    .split("/")
+    .map((p) => Number(p.trim()))
+    .filter((n) => Number.isFinite(n) && n > 0);
+  return { targetRm, percents };
+}
+
+function formatRamp(targetRm: number, percents: number[]): string {
+  const base = `rampa → ${targetRm}RM`;
+  if (percents.length === 0) return base;
+  return `${base} + BO ${percents.join("/")}%`;
+}
+
 export type SchemeParts = {
   /** Kluczowe liczby — mocny ton: `4 × 8–10 @ 70 kg` / `rampa do 2 @ 100 kg`. */
   primary: string;
@@ -32,6 +54,21 @@ export type SchemeParts = {
  * do czego zmierza ćwiczenie: top/rampa albo serie × powtórzenia @ ciężar.
  */
 export function schemeParts(item: PlanItem): SchemeParts {
+  const ramp = parseRamp(item.setScheme);
+  if (ramp != null) {
+    const boSets = item.prescribedSets.filter((s) => (s.role ?? "").toLowerCase() === "backoff");
+    const percents =
+      boSets.length > 0
+        ? boSets.map((s) => s.loadPercent).filter((p): p is number => p != null)
+        : ramp.percents;
+    const primary = formatRamp(ramp.targetRm, percents);
+    const metaParts: string[] = [];
+    if (item.sets > 0 && item.prescribedSets.length === 0) metaParts.push(`~${item.sets} serii`);
+    if (boSets.length > 0) metaParts.push(`+ ${boSets.length} BO`);
+    metaParts.push(formatRest(item.restBetweenSetsSeconds));
+    return { primary, meta: metaParts.filter(Boolean).join(" · ") || null };
+  }
+
   if (item.prescribedSets.length > 0) {
     const sets = item.prescribedSets;
     const anchor =
@@ -55,7 +92,13 @@ export function schemeParts(item: PlanItem): SchemeParts {
           ? `top ${target}`
           : polishSetCount(sets.length);
 
-    const meta = [polishSetCount(sets.length), formatRest(item.restBetweenSetsSeconds)].join(" · ");
+    const boCount = sets.filter((s) => (s.role ?? "").toLowerCase() === "backoff").length;
+    const meta = [
+      boCount > 0 ? `+ ${boCount} BO` : polishSetCount(sets.length),
+      formatRest(item.restBetweenSetsSeconds),
+    ]
+      .filter(Boolean)
+      .join(" · ");
     return { primary, meta };
   }
 

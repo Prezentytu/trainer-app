@@ -101,25 +101,44 @@ export function superHintLabel(items: BuilderItem[]): string {
   return `${last.positionNum}${LETTERS.charAt(last.entries.length)}`;
 }
 
-export type RampSchemeInfo = {
-  targetRm: number;
-  /** % topu dla serii backoff; null = bez BO */
-  backoffPercent: number | null;
+export type BackoffRow = {
+  reps: number | null;
+  repsMax: number | null;
+  percent: number;
 };
 
-/** Parsuje `rampa → 4RM` / `rampa → 4RM + BO 80%` (także strzałka ASCII). */
+export type RampSchemeInfo = {
+  targetRm: number;
+  /** % topu dla serii backoff (kolejność = kolejność serii); null/[] = bez BO */
+  backoffPercents: number[] | null;
+};
+
+const DEFAULT_BACKOFF: BackoffRow = { reps: 5, repsMax: 10, percent: 80 };
+
+/** Heurystyka liczby serii przy otwartej rampie (estymata czasu / volume). */
+export const OPEN_RAMP_SET_FALLBACK = 5;
+
+function parseBackoffPercents(raw: string | undefined): number[] | null {
+  if (!raw) return null;
+  const parts = raw
+    .split("/")
+    .map((p) => Number(p.trim()))
+    .filter((n) => Number.isFinite(n) && n > 0);
+  return parts.length > 0 ? parts : null;
+}
+
+/** Parsuje `rampa → 4RM` / `rampa → 4RM + BO 80%` / `rampa → 2RM + BO 80/60%`. */
 export function parseRampSchemeInfo(setScheme: string | null): RampSchemeInfo | null {
   if (!setScheme) return null;
   const m =
-    setScheme.match(/rampa\s*[→\-]+\s*(\d+)\s*RM(?:\s*\+\s*BO\s*(\d+(?:\.\d+)?)\s*%)?/i) ||
-    setScheme.match(/rampa\s+(\d+)(?:\s*\+\s*BO\s*(\d+(?:\.\d+)?)\s*%)?/i);
+    setScheme.match(/rampa\s*[→\-]+\s*(\d+)\s*RM(?:\s*\+\s*BO\s*([\d./]+)\s*%?)?/i) ||
+    setScheme.match(/rampa\s+(\d+)(?:\s*\+\s*BO\s*([\d./]+)\s*%?)?/i);
   if (!m) return null;
   const targetRm = Number(m[1]);
   if (!Number.isFinite(targetRm) || targetRm < 1) return null;
-  const bo = m[2] != null ? Number(m[2]) : null;
   return {
     targetRm,
-    backoffPercent: bo != null && Number.isFinite(bo) ? bo : null,
+    backoffPercents: parseBackoffPercents(m[2]),
   };
 }
 
@@ -128,18 +147,23 @@ export function parseRampScheme(setScheme: string | null): number | null {
   return parseRampSchemeInfo(setScheme)?.targetRm ?? null;
 }
 
-export function formatRampScheme(targetRm: number, backoffPercent?: number | null): string {
+export function formatRampScheme(
+  targetRm: number,
+  backoffPercents?: number | number[] | null
+): string {
   const base = `rampa → ${targetRm}RM`;
-  return backoffPercent != null ? `${base} + BO ${backoffPercent}%` : base;
+  if (backoffPercents == null) return base;
+  const list = (Array.isArray(backoffPercents) ? backoffPercents : [backoffPercents]).filter(
+    (n) => Number.isFinite(n) && n > 0
+  );
+  if (list.length === 0) return base;
+  return `${base} + BO ${list.join("/")}%`;
 }
 
-/** Buduje prescribedSets: 1× ramp (cel xRM) + N× backoff % topu. */
+/** Buduje prescribedSets: 1× ramp (cel xRM) + N× backoff (każdy z własnym %). */
 export function buildRampPrescribedSets(opts: {
   targetRm: number;
-  backoffCount: number;
-  backoffPercent: number;
-  reps?: number | null;
-  repsMax?: number | null;
+  backoffs: BackoffRow[];
 }): BuilderItem["prescribedSets"] {
   const sets: BuilderItem["prescribedSets"] = [
     {
@@ -159,18 +183,16 @@ export function buildRampPrescribedSets(opts: {
       note: `ustal ${opts.targetRm}RM`,
     },
   ];
-  const reps = opts.reps ?? 5;
-  const repsMax = opts.repsMax ?? 10;
-  for (let i = 0; i < opts.backoffCount; i++) {
+  opts.backoffs.forEach((bo, i) => {
     sets.push({
       key: Math.random().toString(36).slice(2),
       order: i + 2,
-      reps,
-      repsMax,
+      reps: bo.reps ?? DEFAULT_BACKOFF.reps,
+      repsMax: bo.repsMax ?? DEFAULT_BACKOFF.repsMax,
       durationSeconds: null,
       distanceMeters: null,
       loadKg: null,
-      loadPercent: opts.backoffPercent,
+      loadPercent: bo.percent,
       percentOf: "top",
       targetRpe: null,
       targetRir: null,
@@ -178,50 +200,40 @@ export function buildRampPrescribedSets(opts: {
       role: "backoff",
       note: i === 0 ? "seria anaboliczna" : null,
     });
-  }
+  });
   return sets;
 }
 
-/** Odczyt stanu BO z prescribedSets + setScheme. */
-export function readRampBackoff(item: BuilderItem): {
-  enabled: boolean;
-  count: number;
-  percent: number;
-  reps: number | null;
-  repsMax: number | null;
-} {
+/** Odczyt wierszy BO z prescribedSets (+ fallback z setScheme). */
+export function readRampBackoffs(item: BuilderItem): BackoffRow[] {
   const info = parseRampSchemeInfo(item.setScheme);
   const boSets = item.prescribedSets.filter((s) => s.role === "backoff");
-  if (boSets.length === 0) {
-    return {
-      enabled: false,
-      count: 1,
-      percent: info?.backoffPercent ?? 80,
-      reps: 5,
-      repsMax: 10,
-    };
+  if (boSets.length > 0) {
+    return boSets.map((s, i) => ({
+      reps: s.reps ?? DEFAULT_BACKOFF.reps,
+      repsMax: s.repsMax ?? DEFAULT_BACKOFF.repsMax,
+      percent: s.loadPercent ?? info?.backoffPercents?.[i] ?? DEFAULT_BACKOFF.percent,
+    }));
   }
-  const first = boSets[0];
-  return {
-    enabled: true,
-    count: boSets.length,
-    percent: first.loadPercent ?? info?.backoffPercent ?? 80,
-    reps: first.reps ?? 5,
-    repsMax: first.repsMax ?? 10,
-  };
+  if (info?.backoffPercents && info.backoffPercents.length > 0) {
+    return info.backoffPercents.map((percent) => ({ ...DEFAULT_BACKOFF, percent }));
+  }
+  return [];
 }
 
 /** Jedna linia podsumowania karty Lista (jak makieta WA). */
 export function listEntrySummary(item: BuilderItem, exercise?: Exercise): string {
   const sets = item.sets ?? exercise?.defaultSets ?? null;
   const ramp = parseRampSchemeInfo(item.setScheme);
-  const boCount = item.prescribedSets.filter((s) => s.role === "backoff").length;
   let schemeText: string;
   if (ramp != null) {
-    const boPct = ramp.backoffPercent ?? (boCount > 0 ? readRampBackoff(item).percent : null);
-    const boPart = boPct != null ? ` + BO ${boPct}%` : "";
-    const setCount = item.prescribedSets.length > 0 ? item.prescribedSets.length : sets;
-    schemeText = `${setCount ?? "?"} serii · rampa → ${ramp.targetRm}RM${boPart}`;
+    const backoffs = readRampBackoffs(item);
+    const percents =
+      backoffs.length > 0
+        ? backoffs.map((b) => b.percent)
+        : ramp.backoffPercents;
+    schemeText = formatRampScheme(ramp.targetRm, percents);
+    if (item.sets != null) schemeText = `~${item.sets} serii · ${schemeText}`;
   } else if (item.setScheme) {
     schemeText = sets ? `${sets} serii · ${item.setScheme}` : item.setScheme;
   } else {
@@ -240,9 +252,20 @@ export function listEntrySummary(item: BuilderItem, exercise?: Exercise): string
   return parts.join(" · ");
 }
 
+function itemSetCount(item: BuilderItem, exercise?: Exercise): number {
+  const ramp = parseRampSchemeInfo(item.setScheme);
+  if (ramp != null) {
+    const boCount = item.prescribedSets.filter((s) => s.role === "backoff").length;
+    const rampSets = item.sets ?? OPEN_RAMP_SET_FALLBACK;
+    return rampSets + boCount;
+  }
+  if (item.prescribedSets.length > 0) return item.prescribedSets.length;
+  return item.sets || exercise?.defaultSets || 0;
+}
+
 export function countDaySets(items: BuilderItem[], exercises: Exercise[]): number {
   return items.reduce((sum, item) => {
     const exercise = exercises.find((e) => e.id === item.exerciseId);
-    return sum + (item.prescribedSets.length || item.sets || exercise?.defaultSets || 0);
+    return sum + itemSetCount(item, exercise);
   }, 0);
 }
