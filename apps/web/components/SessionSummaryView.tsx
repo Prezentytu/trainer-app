@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { api, SessionDetail } from "@/lib/api";
-import { Button, StatBlock } from "@/components/ui";
+import { Button, SegmentedControl, Sheet, StatBlock } from "@/components/ui";
 import { formatKg } from "@/lib/plates";
+import { parseShareVariant, type ShareVariant } from "@/lib/shareCard";
 
 function formatDay(iso: string): string {
   const d = new Date(`${iso}T12:00:00`);
@@ -40,18 +41,24 @@ function prHeadline(count: number): string {
   return `${count} rekordów`;
 }
 
-async function shareSessionCard(shareImageUrl: string, title: string) {
-  const blob = await api.shareSessionCardBlob(shareImageUrl);
+function variantLabel(v: ShareVariant): string {
+  if (v === "pr") return "Rekord";
+  if (v === "story") return "Story";
+  return "Statystyki";
+}
+
+async function shareOrDownload(blob: Blob, title: string, preferShare: boolean) {
   const file = new File([blob], "trening-repmaxer.png", { type: "image/png" });
-  const canFiles =
-    typeof navigator !== "undefined" &&
-    typeof navigator.canShare === "function" &&
-    navigator.canShare({ files: [file] });
-  if (canFiles && typeof navigator.share === "function") {
-    await navigator.share({ files: [file], title, text: title });
-    return;
+  if (preferShare) {
+    const canFiles =
+      typeof navigator !== "undefined" &&
+      typeof navigator.canShare === "function" &&
+      navigator.canShare({ files: [file] });
+    if (canFiles && typeof navigator.share === "function") {
+      await navigator.share({ files: [file], title, text: title });
+      return;
+    }
   }
-  // Fallback: pobranie pliku — nigdy nie udostępniamy URL z tokenem.
   const objectUrl = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = objectUrl;
@@ -72,8 +79,16 @@ export function SessionSummaryView({
   /** Relative path do PNG (bez ujawniania tokenu przez share URL). */
   shareImageUrl?: string | null;
 }) {
+  const hasPrs = session.prs.length > 0;
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [variant, setVariant] = useState<ShareVariant>(() =>
+    parseShareVariant(hasPrs ? "pr" : "stats", hasPrs),
+  );
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
+  const blobCache = useRef<Map<ShareVariant, Blob>>(new Map());
+
   const doneTotal = session.exercises.reduce(
     (acc, ex) => {
       const done = ex.sets.filter((s) => s.completed).length;
@@ -81,9 +96,53 @@ export function SessionSummaryView({
     },
     { done: 0, total: 0 },
   );
-  const hasPrs = session.prs.length > 0;
   const volume = Math.round(session.totalVolumeKg).toLocaleString("pl-PL");
   const shareTitle = `${session.dayLabel ?? "Trening"}${session.planName ? ` · ${session.planName}` : ""}`;
+
+  const previewSrc = useMemo(() => {
+    if (!shareImageUrl) return null;
+    const base = shareImageUrl.split("?")[0];
+    return `${base}?v=${variant}`;
+  }, [shareImageUrl, variant]);
+  const previewReady = loadedSrc === previewSrc;
+
+  const segmentItems = useMemo(() => {
+    const items: { value: ShareVariant; label: string }[] = [
+      { value: "stats", label: "Statystyki" },
+    ];
+    if (hasPrs) items.push({ value: "pr", label: "Rekord" });
+    items.push({ value: "story", label: "Story" });
+    return items;
+  }, [hasPrs]);
+
+  const ensureBlob = useCallback(async (): Promise<Blob> => {
+    if (!previewSrc) throw new Error("Brak karty do udostępnienia.");
+    const cached = blobCache.current.get(variant);
+    if (cached) return cached;
+    const blob = await api.shareSessionCardBlob(previewSrc);
+    blobCache.current.set(variant, blob);
+    return blob;
+  }, [previewSrc, variant]);
+
+  const runShare = useCallback(
+    async (preferShare: boolean) => {
+      setSharing(true);
+      setShareError(null);
+      try {
+        const blob = await ensureBlob();
+        await shareOrDownload(blob, shareTitle, preferShare);
+      } catch (e) {
+        const err = e as Error;
+        if (err.name === "AbortError") return;
+        setShareError(err.message || "Nie udało się udostępnić.");
+      } finally {
+        setSharing(false);
+      }
+    },
+    [ensureBlob, shareTitle],
+  );
+
+  const aspectClass = variant === "story" ? "aspect-[9/16]" : "aspect-[4/5]";
 
   return (
     <div className="mx-auto max-w-lg space-y-8 pb-10">
@@ -189,7 +248,7 @@ export function SessionSummaryView({
         </section>
       ) : null}
 
-      {shareError ? <p className="text-sm text-danger">{shareError}</p> : null}
+      {shareError && !sheetOpen ? <p className="text-sm text-danger">{shareError}</p> : null}
 
       <div className="flex flex-col gap-2 pt-1">
         <Button full onClick={onBack}>
@@ -199,22 +258,74 @@ export function SessionSummaryView({
           <Button
             variant="secondary"
             full
-            disabled={sharing}
             onClick={() => {
-              setSharing(true);
               setShareError(null);
-              void shareSessionCard(shareImageUrl, shareTitle)
-                .catch((e: Error) => setShareError(e.message || "Nie udało się udostępnić."))
-                .finally(() => setSharing(false));
+              setVariant(parseShareVariant(hasPrs ? "pr" : "stats", hasPrs));
+              setSheetOpen(true);
             }}
           >
-            {sharing ? "Przygotowuję…" : "Udostępnij"}
+            Udostępnij
           </Button>
         ) : null}
         <Button variant="ghost" full onClick={onEdit}>
           Popraw wyniki
         </Button>
       </div>
+
+      <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Udostępnij trening">
+        <div className="space-y-4">
+          <SegmentedControl
+            full
+            items={segmentItems}
+            value={variant}
+            onChange={(v) => setVariant(parseShareVariant(v, hasPrs))}
+          />
+          <div
+            className={`relative mx-auto w-full max-w-[240px] max-h-[46vh] overflow-hidden rounded-xl border border-border bg-background ${aspectClass}`}
+          >
+            {!previewReady ? (
+              <div className="absolute inset-0 animate-pulse bg-surface" aria-hidden />
+            ) : null}
+            {previewSrc ? (
+              // eslint-disable-next-line @next/next/no-img-element -- same-origin PNG z ImageResponse
+              <img
+                key={previewSrc}
+                src={previewSrc}
+                alt={`Podgląd karty: ${variantLabel(variant)}`}
+                className={`h-full w-full object-cover transition-opacity duration-[var(--dur-med)] ${
+                  previewReady ? "opacity-100" : "opacity-0"
+                }`}
+                onLoad={() => setLoadedSrc(previewSrc)}
+                onError={() => {
+                  setLoadedSrc(null);
+                  setShareError("Nie udało się załadować podglądu karty.");
+                }}
+              />
+            ) : null}
+          </div>
+          {shareError ? <p className="text-sm text-danger">{shareError}</p> : null}
+          <p className="text-center text-xs text-muted">
+            {variant === "story"
+              ? "Stories — duża objętość i top serie"
+              : variant === "pr"
+                ? "Rekord na pierwszym planie"
+                : "Objętość i najlepsze serie"}
+          </p>
+          <div className="flex flex-col gap-2 pt-1">
+            <Button full disabled={sharing || !previewReady} onClick={() => void runShare(true)}>
+              {sharing ? "Przygotowuję…" : "Udostępnij"}
+            </Button>
+            <Button
+              variant="ghost"
+              full
+              disabled={sharing || !previewReady}
+              onClick={() => void runShare(false)}
+            >
+              Zapisz obraz
+            </Button>
+          </div>
+        </div>
+      </Sheet>
     </div>
   );
 }
