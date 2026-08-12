@@ -11,6 +11,8 @@ export type PreviewItem = {
   setCount?: number;
   done?: boolean;
   partial?: boolean;
+  exerciseId?: number | null;
+  notes?: string | null;
 };
 
 export type PreviewRow = {
@@ -19,6 +21,8 @@ export type PreviewRow = {
   detail: string;
   done: boolean;
   partial: boolean;
+  exerciseId: number | null;
+  notes: string | null;
 };
 
 export function previewRowsFromItems(items: PreviewItem[]): PreviewRow[] {
@@ -32,6 +36,8 @@ export function previewRowsFromItems(items: PreviewItem[]): PreviewRow[] {
         detail: item.detail,
         done: Boolean(item.done),
         partial: Boolean(item.partial),
+        exerciseId: item.exerciseId ?? null,
+        notes: item.notes?.trim() || null,
       };
     }
     const names = g.items
@@ -46,12 +52,16 @@ export function previewRowsFromItems(items: PreviewItem[]): PreviewRow[] {
     ].filter(Boolean);
     const allDone = g.items.every((it) => it.done);
     const anyPartial = g.items.some((it) => it.partial || it.done);
+    const notes = g.items.map((it) => it.notes?.trim()).find((n) => n) ?? null;
+    const exerciseId = g.items.find((it) => it.exerciseId != null)?.exerciseId ?? null;
     return {
       key: `g-${g.positionNum}-${g.items.map((it) => it.id).join("-")}`,
       name: names,
       detail: allDone ? "✓" : detailParts.join(" · ") || g.items[0].detail,
       done: allDone,
       partial: !allDone && anyPartial,
+      exerciseId,
+      notes,
     };
   });
 }

@@ -36,7 +36,7 @@ trainer-app/
 
 - Sprawdź `.ai/specs/` przed nietrywialną zmianą; przy zadaniach 3+ kroków lub decyzjach architektonicznych napisz spec (patrz `.ai/specs/AGENTS.md`).
 - Przy dodawaniu nowego zasobu CRUD **wzoruj się na module referencyjnym `Clients`** — to najprostszy, kompletny przykład end-to-end (API + web). Zobacz skill `add-crud-feature`.
-- Przy KAŻDEJ zmianie UI (nowy ekran, redesign, komponent, formularz) przeczytaj skille `design-system`, `fitness-ui-ux`, `senior-ux-cro` (CRO/psychologia), `responsive-ui` oraz `apple-design` (interakcje, materiały, craft) i przejdź "Senior Excellence Checklist" z `senior-ux-cro` oraz checklistę Apple craft — po to, żeby UI był na poziomie top produktów.
+- Przy KAŻDEJ zmianie UI (nowy ekran, redesign, komponent, formularz) przeczytaj skille `design-system`, `fitness-ui-ux`, `senior-ux-cro` (CRO/psychologia), `responsive-ui`, `apple-design` (interakcje, materiały, craft) oraz `ux-writing` (głos, microcopy, test na głos) i przejdź "Senior Excellence Checklist" z `senior-ux-cro` oraz checklistę Apple craft — po to, żeby UI był na poziomie top produktów.
 - Trzymaj typy TypeScript w `apps/web/lib/api.ts` **lustrzane** do DTO/encji w `apps/api/` (camelCase po stronie JSON).
 - Wszystkie teksty UI pisz po polsku.
 - Uruchom bramkę walidacyjną (`Validation Commands`) przed uznaniem zadania za skończone.
@@ -92,7 +92,7 @@ Dopasuj zadanie do wiersza i przeczytaj wskazany przewodnik. Jedno zadanie może
 
 | Zadanie | Przewodnik |
 |---|---|
-| UI/UX: nowy ekran, redesign, komponent, formularz, empty state, audyt jakości | skille `design-system` + `fitness-ui-ux` + `senior-ux-cro` (CRO/psychologia) + `responsive-ui` + `apple-design` (interakcje, materiały, craft) — przeczytaj wszystkie przed zmianą UI |
+| UI/UX: nowy ekran, redesign, komponent, formularz, empty state, audyt jakości | skille `design-system` + `fitness-ui-ux` + `senior-ux-cro` (CRO/psychologia) + `responsive-ui` + `apple-design` (interakcje, materiały, craft) + `ux-writing` (głos, microcopy) — przeczytaj wszystkie przed zmianą UI |
 | Nowy zasób CRUD end-to-end (encja + API + strony) | skill `add-crud-feature` (`.cursor/skills/add-crud-feature/SKILL.md`) |
 | Praca po stronie API (endpointy, encje, DTO, EF) | `apps/api/AGENTS.md` |
 | Praca po stronie web (strony, komponenty, klient API) | `apps/web/AGENTS.md` |

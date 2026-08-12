@@ -41,9 +41,9 @@ This system is a **deliberate reset**, now in its second pass. The first version
 
 ## CONTENT FUNDAMENTALS
 
-**Language.** Polish. Second person, informal *ty*: "Gotowy na trening?", "Wysyłasz klientowi jeden link". Never *my/we* about the product.
+**Language.** Polish. Second person, informal *ty*: "Wysyłasz klientowi jeden link", "Zacznij z pierwszym klientem". Never *my/we* about the product. Voice and microcopy: skill `ux-writing` — clarity before brevity; no English calques, no telegram fragments.
 
-**Brevity is the house style.** Titles are one to three words: "Progres", "Ustawienia", "Ostatnie treningi", "Aktywny plan". One supporting sentence, maximum. If a sentence can lose a word, lose it.
+**Clarity is the house style.** Titles name the thing: "Progres", "Ustawienia", "Ostatnie treningi", "Do zrobienia". Supporting copy is a complete sentence. Extra words stay if they make the line understandable. Do not strip verbs until the line sounds like a slogan.
 
 **Casing.** Sentence case for everything readable. UPPERCASE only in mono micro-labels — section labels (`CIAŁO`, `PROFIL`), field labels (`WAGA`, `WZROST`), stat labels (`REKORD`, `SESJE`), dates (`ŚRODA, 25 MAR 2026`), and the one commit button (`FINISH`).
 

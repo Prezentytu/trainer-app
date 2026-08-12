@@ -81,7 +81,7 @@ export function ProgressCard() {
         className="landing-stagger mt-6 max-w-[18ch] text-[clamp(1.875rem,4.2vw,3.25rem)] font-semibold leading-[1.08] tracking-[-0.028em] text-balance"
         style={{ ["--i" as string]: 1 }}
       >
-        Progres widać bez pytania o samopoczucie.
+        Widzisz progres w liczbach, nie w samopoczuciu.
       </h2>
 
       <div className="landing-stagger mt-12 md:mt-16" style={{ ["--i" as string]: 2 }}>

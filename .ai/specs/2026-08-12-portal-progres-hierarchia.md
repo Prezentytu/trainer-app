@@ -6,14 +6,14 @@ Reorganizacja zakładki Progres w portalu klienta: odwrócona piramida (KPI → 
 
 ## Problem
 
-Ekran `/portal/[token]/progress` ma płaską hierarchię (wszystkie sekcje hairline + ten sam mono-caps), goły link „Kalkulator %1RM" bez affordance, zdublowane nagłówki aktywności oraz redundancję słupków tygodniowych i kalendarza. Negatyw („Warto ruszyć") pojawia się przed pozytywem („Największy progres").
+Ekran `/portal/[token]/progress` ma płaską hierarchię (wszystkie sekcje hairline + ten sam mono-caps), goły link „Kalkulator %1RM" bez affordance, zdublowane nagłówki aktywności oraz redundancję słupków tygodniowych i kalendarza. Negatyw („Bez progresu") pojawia się przed pozytywem („Największy progres").
 
 ## Proponowane rozwiązanie
 
 Wzorce Gravitus / Hevy / Strong / Styrka + skille `design-system`, `fitness-ui-ux`, `senior-ux-cro`:
 
 1. **KPI strip** — etykieta streaka „Seria tygodni".
-2. **Highlight** — „Największy progres" jako jedyna karta `Card` (surface + hairline) nad „Warto ruszyć".
+2. **Highlight** — „Największy progres" jako jedyna karta `Card` (surface + hairline) nad „Bez progresu".
 3. **Spójność** — jedna sekcja z `SegmentedControl` `Tygodnie | Kalendarz` (progressive disclosure).
 4. **SectionHeader** — lokalny, tytuł + opcjonalny sufiks okna (np. `12 TYG.`).
 5. **Narzędzia** — kalkulator jako `Link`-wiersz z ikoną, podtytułem i chevronem na dole strony.
@@ -34,7 +34,7 @@ Bez zmian — istniejące `sessions`, `records`, `muscleVolume`, `trends`, `most
 - Komponent: `WeeklyActivityBar` (`showHeader`)
 - Ikona: `calculator` w `Icon.tsx` (Phosphor)
 
-Kolejność sekcji: Header → KPI → Największy progres → Warto ruszyć → Spójność → Tonaż → Objętość mięśniowa → Rekordy → Narzędzia.
+Kolejność sekcji: Header → KPI → Największy progres → Bez progresu → Spójność → Tonaż → Objętość mięśniowa → Rekordy → Narzędzia.
 
 ## Fazy implementacji
 

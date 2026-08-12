@@ -24,7 +24,7 @@ Recenzuj zmiany pod kątem reguł z `AGENTS.md` (root + `apps/api/` + `apps/web/
 - [ ] Błędy obsłużone przez `ErrorBanner`; pusty stan przez `EmptyState`.
 - [ ] Użyte prymitywy z `components/ui.tsx`; brak hardkodowanych kolorów spoza palety `zinc`/`yellow`.
 - [ ] Nowy dział dopisany do `NAV` w `layout.tsx`.
-- [ ] Teksty UI po polsku.
+- [ ] Teksty UI po polsku; copy wg `ux-writing` (test na głos, zero kalek i telegrafu).
 
 ### Jakość i bezpieczeństwo
 - [ ] Zmiana schematu encji → odnotowana konieczność resetu `trainer.db` (uwaga `EnsureCreated`).

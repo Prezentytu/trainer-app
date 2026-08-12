@@ -36,6 +36,7 @@ export function PlanToolbar({
   submitLabel,
   stepLabel,
   onExit,
+  onApplyMethod,
 }: {
   name: string;
   onNameChange: (v: string) => void;
@@ -53,6 +54,7 @@ export function PlanToolbar({
   submitLabel: string;
   stepLabel?: string;
   onExit?: () => void;
+  onApplyMethod?: () => void;
 }) {
   const [editingName, setEditingName] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -151,6 +153,16 @@ export function PlanToolbar({
                     >
                       Ustawienia planu
                     </OverflowMenuItem>
+                    {onApplyMethod ? (
+                      <OverflowMenuItem
+                        onClick={() => {
+                          close();
+                          onApplyMethod();
+                        }}
+                      >
+                        Zastosuj szablon metody
+                      </OverflowMenuItem>
+                    ) : null}
                     {planId ? (
                       <OverflowMenuItem
                         href={`/plans/${planId}`}

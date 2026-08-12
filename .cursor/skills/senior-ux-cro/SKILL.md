@@ -1,6 +1,6 @@
 ---
 name: senior-ux-cro
-description: Senior UX/UI + psychologia konwersji (CRO) dla Trainer App — redukcja kosztu interakcji, biasy poznawcze, aktywacja, formularze, perceived performance i etyczna perswazja. Użyj przy KAŻDEJ implementacji lub redesignie UI (strony, komponenty, formularze, kreator planów, logowanie sesji, statystyki, empty states, nawigacja, dashboard). EN triggers — conversion optimization, UX psychology, interaction cost, activation, empty state, form UX, peak-end, perceived performance, ethical persuasion, CTA microcopy. Czytaj razem z `design-system`, `fitness-ui-ux` i `responsive-ui`.
+description: Senior UX/UI + psychologia konwersji (CRO) dla Trainer App — redukcja kosztu interakcji, biasy poznawcze, aktywacja, formularze, perceived performance i etyczna perswazja. Użyj przy KAŻDEJ implementacji lub redesignie UI (strony, komponenty, formularze, kreator planów, logowanie sesji, statystyki, empty states, nawigacja, dashboard). EN triggers — conversion optimization, UX psychology, interaction cost, activation, empty state, form UX, peak-end, perceived performance, ethical persuasion, CTA microcopy. Czytaj razem z `design-system`, `fitness-ui-ux`, `responsive-ui` i `ux-writing`.
 ---
 
 # Senior UX/UI & Conversion (CRO) — Trainer App
@@ -13,6 +13,7 @@ Stosuj ŁĄCZNIE z:
 - `fitness-ui-ux` — domena (kreator = gęstość; logowanie sesji = wielka typografia, minimum tapnięć).
 - `responsive-ui` — mobile-first, nic ucięte, nic poza kontenerem.
 - `apple-design` — response/press feedback, materiały (`.session-chrome`), spójność przestrzenna, typografia optyczna, craft — bez nowej biblioteki motion.
+- `ux-writing` — głos i microcopy; jasność przed zwięzłością; CTA = czasownik + obiekt, nie slogan.
 
 Kontekst: dark-only (RepMaxer), UI po polsku, portal trenera (B2B) + portal klienta. Brak konsumenckiego premium — hooki subskrypcyjne tylko przy realnym billingu.
 
@@ -173,7 +174,7 @@ Zakazane:
 - **Modal potwierdzenia** tam, gdzie wystarczy undo.
 - **Spinner / skeleton < 100 ms** lub skeleton niezgodny z finalnym layoutem (jank).
 - **Range trap**: zakresy kotwiczą na górnej liczbie — podaj konkret.
-- **Transactional copy**: „Zapisz"/"OK" na kluczowej akcji zamiast benefit-driven.
+- **Transactional copy**: samo „OK" na kluczowej akcji. CTA = czasownik + obiekt („Przypisz plan", „Zapisz plan") — nie slogan („Odblokuj progres"). Skill `ux-writing`.
 - **Hidden options / banery**: kluczowa treść za dropdownem lub „Odkryj więcej".
 - **Wiele dominant**: więcej niż 1 primary CTA na widok.
 - **Ściana kafelków** zamiast tabeli przy zadaniu enumeracyjnym.
@@ -223,7 +224,7 @@ Zakazane:
 - [ ] Minimalna liczba pól; single-column na mobile
 - [ ] Walidacja inline na blur; dane nie giną; scroll do błędu
 - [ ] Autofill / inputMode; „po co to pole" przy wrażliwych danych
-- [ ] Microcopy benefit-driven — nie „Zapisz/OK"
+- [ ] CTA = czasownik + obiekt („Przypisz plan", „Zapisz plan") — nie samo „OK" i nie slogan; skill `ux-writing`
 
 **Hierarchia, skanowanie, craft**
 

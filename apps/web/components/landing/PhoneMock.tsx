@@ -16,7 +16,7 @@ const SETS = [
 const POINTS = [
   { n: "04", title: "Jeden link", body: "Bez konta i bez instalacji." },
   { n: "05", title: "Ciężary już wpisane", body: "Poprawia tylko to, co się zmieniło." },
-  { n: "06", title: "Działa bez zasięgu", body: "Dosyła się, gdy wróci internet." },
+  { n: "06", title: "Działa bez zasięgu", body: "Wynik dosyła się, gdy wróci internet." },
 ] as const;
 
 function subscribeReducedMotion(onChange: () => void) {

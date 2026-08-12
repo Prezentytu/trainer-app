@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { arrayMove } from "@dnd-kit/sortable";
 import { Exercise, Plan } from "@/lib/api";
 import { PLAN_PRESETS } from "@/lib/planPresets";
+import { applyMethodTemplate, MethodTemplateId } from "@/lib/methodTemplates";
 import { useUndoToast } from "@/components/ui";
 import { loadInitialDays } from "./loadInitialDays";
 import { BuilderDay, BuilderItem, BuilderSet, newKey } from "./types";
@@ -673,6 +674,11 @@ export function usePlanDraft({
     );
   }, []);
 
+  const applyMethodToDraft = useCallback((id: MethodTemplateId) => {
+    setDays((prev) => applyMethodTemplate(prev, id));
+    setActiveWeek(1);
+  }, []);
+
   const clearSets = useCallback(
     (dayKey: string, itemKey: string) => setItemSets(dayKey, itemKey, []),
     [setItemSets]
@@ -714,6 +720,7 @@ export function usePlanDraft({
     patchSet,
     removeSet,
     applyPreset,
+    applyMethodTemplate: applyMethodToDraft,
     clearSets,
     setItemSets,
   };

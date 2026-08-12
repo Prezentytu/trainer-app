@@ -8,6 +8,7 @@ import {
   PortalWeekDay,
 } from "@/lib/api";
 import { Button, ErrorBanner, Sheet } from "@/components/ui";
+import { DemoThumbButton } from "@/components/portal/DemoThumbButton";
 import { estimateDayMinutes, formatDurationApprox } from "@/lib/estimateDuration";
 import { formatLoadDisplay } from "@/lib/weight";
 import { previewRowsFromItems } from "@/lib/supersetPreview";
@@ -212,20 +213,37 @@ export function DayPreviewSheet({
                 supersetGroup: item.supersetGroup,
                 restSeconds: item.restBetweenSetsSeconds,
                 setCount: item.sets,
+                exerciseId: item.exerciseId,
+                notes: item.notes,
               })),
-            ).map((row) => (
-              <li
-                key={row.key}
-                className="flex min-h-11 items-start justify-between gap-3 py-3"
-              >
-                <p className="min-w-0 flex-1 break-words text-[15px] font-semibold leading-snug text-foreground">
-                  {row.name}
-                </p>
-                <p className="shrink-0 font-mono text-[15px] tabular-nums text-muted">
-                  {row.detail}
-                </p>
-              </li>
-            ))}
+            ).map((row) => {
+              const ex = row.exerciseId != null ? exerciseById.get(row.exerciseId) : undefined;
+              const fallbackYoutubeId =
+                items.find((it) => it.exerciseId === row.exerciseId)?.demoYoutubeId ?? null;
+              return (
+                <li
+                  key={row.key}
+                  className="flex min-h-11 items-start gap-3 py-3"
+                >
+                  <DemoThumbButton
+                    exercise={ex}
+                    fallbackYoutubeId={fallbackYoutubeId}
+                    title={row.name}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="break-words text-[15px] font-semibold leading-snug text-foreground">
+                      {row.name}
+                    </p>
+                    {row.notes ? (
+                      <p className="mt-0.5 text-[13px] leading-snug text-muted">{row.notes}</p>
+                    ) : null}
+                  </div>
+                  <p className="shrink-0 font-mono text-[15px] tabular-nums text-muted">
+                    {row.detail}
+                  </p>
+                </li>
+              );
+            })}
           </ul>
         ) : !error ? (
           <p className="text-sm text-muted">Brak ćwiczeń w tym dniu.</p>

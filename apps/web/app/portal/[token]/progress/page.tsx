@@ -23,7 +23,7 @@ import { MuscleVolumeBars } from "@/components/MuscleVolumeBars";
 import { LineChart } from "@/components/charts/LineChart";
 import { TrendSparkline } from "@/components/TrendSparkline";
 import { RepMaxList } from "@/components/RepMaxList";
-import { formatDayShort } from "@/lib/dates";
+import { daysAgo, formatDayShort } from "@/lib/dates";
 import { formatKg } from "@/lib/plates";
 
 function startOfWeekMonday(d: Date): Date {
@@ -250,6 +250,11 @@ export default function PortalProgressPage() {
 
   const avgDur = formatAvgDuration(stats.avgDurationSec);
 
+  const lastCompletedOn = (sessions ?? []).find((s) => s.status === "completed")?.performedOn
+    ?? (sessions ?? [])[0]?.performedOn
+    ?? null;
+  const returning = lastCompletedOn != null && daysAgo(lastCompletedOn) >= 14;
+
   return (
     <div className="mx-auto max-w-lg space-y-8 pb-24">
       <header>
@@ -266,7 +271,7 @@ export default function PortalProgressPage() {
       ) : (
         <>
           {report && report.facts.length > 0 ? (
-            <section aria-label="Fakty">
+            <section aria-label="Ostatnio">
               <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
                 Ostatnio
               </p>
@@ -325,9 +330,9 @@ export default function PortalProgressPage() {
             </section>
           ) : null}
 
-          {stagnation && stagnation.items.length > 0 ? (
-            <section aria-label="Warto ruszyć" className="border-y border-border py-5">
-              <SectionHeader title="Warto ruszyć" />
+          {stagnation && stagnation.items.length > 0 && !returning ? (
+            <section aria-label="Bez progresu" className="border-y border-border py-5">
+              <SectionHeader title="Bez progresu" />
               <ul className="space-y-2">
                 {stagnation.items.slice(0, 3).map((item) => (
                   <li key={item.exerciseId} className="text-[15px] text-foreground-secondary">

@@ -28,8 +28,9 @@ export default function TermsPage() {
             <h2 className="t-heading text-foreground">1. Usługa</h2>
             <p>
               RepMaxer to narzędzie dla trenerów personalnych: plany treningowe, portal
-              klienta bez konta (link) oraz podgląd postępów. Wczesny dostęp jest darmowy;
-              cennik po premierze: [DO UZUPEŁNIENIA].
+              klienta bez konta (link) oraz podgląd postępów. Wczesny dostęp jest darmowy.
+              Cennik po premierze: 0 zł / do 5 podopiecznych, potem od 39 zł / 15. Podopieczny
+              nie płaci.
             </p>
           </section>
 

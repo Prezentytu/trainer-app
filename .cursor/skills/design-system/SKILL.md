@@ -84,4 +84,4 @@ Focus: `box-shadow: var(--focus-ring)` (2px bg + 4px fg). Press: `scale(0.97)`.
 - [ ] Nic <12px / <400
 - [ ] Karty: fill + hairline; listy: ListRow
 - [ ] Phosphor przez `Icon`
-- [ ] Polskie copy, zdania krótkie, bez wykrzykników
+- [ ] Polskie copy wg `ux-writing`: jasność przed zwięzłością, pełne zdania, test na głos; bez wykrzykników

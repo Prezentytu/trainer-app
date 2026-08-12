@@ -10,7 +10,19 @@ const FAQ_ITEMS = [
   },
   {
     q: "Ile to kosztuje?",
-    a: "Wczesny dostęp 0 zł, bez karty. Potem 149 zł miesięcznie. Klient nie płaci nic.",
+    a: "Do 5 podopiecznych: 0 zł na zawsze, bez karty. Potem Solo 39 zł / 15 osób, Pro 99 zł / 30. Płacisz Ty. Podopieczny zawsze 0 zł. Wczesny dostęp: bez limitu, bez karty.",
+  },
+  {
+    q: "Dla kogo to jest?",
+    a: "Dla trenera personalnego, który układa plany i wysyła je klientom na telefon. Nie do zarządzania klubem i nie do diet.",
+  },
+  {
+    q: "Co z moimi danymi?",
+    a: "Są Twoje. Eksport JSON i CSV z panelu. Klient nie zakłada konta — po współpracy nie zostaje mu aplikacja w sklepie.",
+  },
+  {
+    q: "Skąd wiem, że klient trenuje?",
+    a: "Zakończony trening, serie i rekordy w panelu od razu. Kolejka pokazuje, kto nie trenował. Możesz napisać pierwszy.",
   },
   {
     q: "Co, gdy na siłowni nie ma zasięgu?",
@@ -19,10 +31,6 @@ const FAQ_ITEMS = [
   {
     q: "Czy muszę układać plan od zera dla każdego klienta?",
     a: "Nie. Raz ułożony plan przypisujesz kolejnym klientom.",
-  },
-  {
-    q: "Skąd wiem, że klient trenuje?",
-    a: "Zakończony trening, serie i rekordy widzisz w panelu od razu.",
   },
 ] as const;
 
@@ -46,7 +54,7 @@ export function Faq() {
         className="landing-stagger mt-6 mb-12 text-[clamp(1.875rem,4.2vw,3.25rem)] font-semibold leading-[1.08] tracking-[-0.028em]"
         style={{ ["--i" as string]: 1 }}
       >
-        Zanim zapytasz.
+        Najczęstsze pytania
       </h2>
 
       <div className="border-t border-border">

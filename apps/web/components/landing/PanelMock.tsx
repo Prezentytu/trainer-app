@@ -5,7 +5,7 @@ import { SectionLabel, StatTile } from "./primitives";
 const POINTS = [
   { n: "01", title: "Plan w kilka minut", body: "Układasz raz, przypisujesz kolejnym klientom." },
   { n: "02", title: "Wiesz, kto trenuje", body: "Zakończony trening widzisz od razu." },
-  { n: "03", title: "Rekordy i zastoje", body: "Wychwytujemy je automatycznie." },
+  { n: "03", title: "Rekordy i zastoje", body: "Widzisz je od razu, bez pytania klienta." },
 ] as const;
 
 export function PanelMock() {

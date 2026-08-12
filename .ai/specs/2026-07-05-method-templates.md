@@ -83,9 +83,9 @@ Nie modelujemy tego jako sztywny enum „typ metody" w backendzie — generator 
 
 ## Fazy implementacji (przyszłe — nie rozpoczęte)
 
-- [ ] Faza 1 — `apps/web/lib/methodTemplates.ts`: generator 15-10-5 (N tygodni FBW ×3, per dzień poprawna progresja %, bez zależności od logów w tygodniu 1).
-- [ ] Faza 2 — generator 6-4-2-5-3-1 na poziomie całego planu (dziś istnieje tylko per-pozycja preset `poliquin642531`; ta faza składa go w pełny 6-tygodniowy plan dla wybranych ćwiczeń).
-- [ ] Faza 3 — UI kroku wyboru szablonu w `PlanBuilder` + wstrzyknięcie wygenerowanych `days[]`.
+- [x] Faza 1 — `apps/web/lib/methodTemplates.ts`: generator 15-10-5 (N tygodni FBW ×3, per dzień poprawna progresja %, bez zależności od logów w tygodniu 1).
+- [x] Faza 2 — generator 6-4-2-5-3-1 na poziomie całego planu (dziś istnieje tylko per-pozycja preset `poliquin642531`; ta faza składa go w pełny 6-tygodniowy plan dla wybranych ćwiczeń).
+- [x] Faza 3 — UI kroku wyboru szablonu w `PlanBuilder` + wstrzyknięcie wygenerowanych `days[]`.
 - [ ] Faza 4 (po Spec 3) — automatyczna progresja/regresja między tygodniami na bazie zalogowanych wyników.
 - [ ] Faza 5 (po Spec 2) — automatyczne wypełnianie ciężaru startowego z `ClientMax` i proporcji względem 5RM.
 
@@ -98,3 +98,4 @@ Nie modelujemy tego jako sztywny enum „typ metody" w backendzie — generator 
 ## Changelog
 
 - 2026-07-05 — utworzono spec (wydzielony z korekty błędnej interpretacji metod w `.ai/specs/implemented/2026-07-05-plan-creator-structure.md`).
+- 2026-08-12 — Fazy 1–3: generator klient-side + dialog „Zastosuj szablon metody” w kreatorze (canvas, bez nowej encji). Fazy 4–5 nadal backlog.

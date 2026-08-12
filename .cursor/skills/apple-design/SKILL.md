@@ -1,6 +1,6 @@
 ---
 name: apple-design
-description: Podejście Apple do interfejsu (response, direct manipulation, materiały, typografia, craft) przetłumaczone na Trainer App / Acid — bez nowej biblioteki motion. Użyj ZAWSZE przy każdej implementacji lub redesignie UI (strony, komponenty, formularze, sesja, nawigacja, dialogi, empty states). EN triggers — fluid interfaces, press feedback, materials, translucency, backdrop-filter, spatial consistency, optical sizing, tracking, reduced motion, craft, delight. Czytaj razem z `design-system`, `fitness-ui-ux`, `senior-ux-cro` i `responsive-ui`.
+description: Podejście Apple do interfejsu (response, direct manipulation, materiały, typografia, craft) przetłumaczone na Trainer App / Acid — bez nowej biblioteki motion. Użyj ZAWSZE przy każdej implementacji lub redesignie UI (strony, komponenty, formularze, sesja, nawigacja, dialogi, empty states). EN triggers — fluid interfaces, press feedback, materials, translucency, backdrop-filter, spatial consistency, optical sizing, tracking, reduced motion, craft, delight. Czytaj razem z `design-system`, `fitness-ui-ux`, `senior-ux-cro`, `responsive-ui` i `ux-writing`.
 ---
 
 # Apple Design — craft interakcji (Trainer App)
@@ -12,6 +12,7 @@ Stosuj ŁĄCZNIE z:
 - `design-system` — tokeny, typografia, spacing, motion (`--dur-*`, `--ease-*`, press `scale(0.98)`, bez bounce).
 - `fitness-ui-ux` — dwa tryby: planowanie (gęstość) vs wykonanie/sesja (minimum interakcji).
 - `senior-ux-cro` — friction, perceived performance, etyka (checklista CRO osobno).
+- `ux-writing` — głos, microcopy, test na głos; jasność przed zwięzłością.
 - `responsive-ui` — mobile-first, cele ≥ 44px, nic poza kontenerem.
 
 Źródło prawdy dla timingów i press: `design-system` + `apps/web/app/globals.css`. Ten skill **nie zmienia** tych wartości.

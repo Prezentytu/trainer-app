@@ -22,8 +22,10 @@ import { estimateDayMinutes, formatDurationApprox } from "@/lib/estimateDuration
 import { buildWeekStrip, planDaysMapToWeekdays } from "@/lib/portalWeekStrip";
 import { CheckInCard } from "@/components/portal/CheckInCard";
 import { DayPreviewSheet } from "@/components/portal/DayPreviewSheet";
+import { DemoThumbButton } from "@/components/portal/DemoThumbButton";
 import { PwaInstallPrompt } from "@/components/portal/PwaInstallPrompt";
 import {
+  daysAgo,
   localWeekdayIndex,
   relativeDayFromLabel,
   todayIsoLocal,
@@ -162,7 +164,7 @@ export default function PortalTodayPage() {
   );
 
   /** Historia z API to już tylko ukończone, sortowane od najnowszej. */
-  const lastCompleted = history[0] ?? null;
+  const lastCompleted = history.find((s) => s.status === "completed") ?? history[0] ?? null;
 
   const startDay = useCallback(
     async (planDayId: number) => {
@@ -336,6 +338,8 @@ export default function PortalTodayPage() {
   const today = home?.today ?? null;
   const fresh = home?.inProgressSession ?? null;
   const stale = home?.staleSession ?? null;
+  const silentDays = lastCompleted ? daysAgo(lastCompleted.performedOn) : null;
+  const returning = Boolean(!fresh && silentDays != null && silentDays >= 14);
 
   const heroRows = useMemo(() => {
     if (fresh && liveSession && liveSession.id === fresh.id) {
@@ -360,6 +364,8 @@ export default function PortalTodayPage() {
             setCount: ex.sets.filter((s) => !s.isWarmup).length,
             done,
             partial,
+            exerciseId: ex.exerciseId,
+            notes: ex.planNote ?? ex.note,
           };
         }),
       );
@@ -373,6 +379,8 @@ export default function PortalTodayPage() {
           supersetGroup: item.supersetGroup,
           restSeconds: item.restBetweenSetsSeconds,
           setCount: item.sets,
+          exerciseId: item.exerciseId,
+          notes: item.notes,
         })),
       );
     }
@@ -401,9 +409,11 @@ export default function PortalTodayPage() {
   const dueWeekday = today ? weekdayIndexFromLabel(today.day.label) : null;
   const heroSectionLabel = fresh
     ? "Trening w toku"
-    : dueWeekday != null && dueWeekday !== localWeekdayIndex()
-      ? "Następny trening"
-      : "Dzisiejszy trening";
+    : returning
+      ? "Wracamy"
+      : dueWeekday != null && dueWeekday !== localWeekdayIndex()
+        ? "Następny trening"
+        : "Dzisiejszy trening";
   const sheetBusy = starting || repeating;
 
   const exerciseCount = heroRows.length;
@@ -566,37 +576,57 @@ export default function PortalTodayPage() {
 
           {heroRows.length > 0 ? (
             <ul className="mt-4 divide-y divide-border">
-              {heroRows.map((row) => (
-                <li key={row.key}>
-                  {fresh ? (
-                    <button
-                      type="button"
-                      onClick={goToLiveSession}
-                      className="flex min-h-11 w-full items-start justify-between gap-3 py-4 text-left transition-colors duration-[var(--dur-fast)] hover:bg-surface-hover/40 focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.99]"
+              {heroRows.map((row) => {
+                const ex = row.exerciseId != null ? exerciseById.get(row.exerciseId) : undefined;
+                const nameBlock = (
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className={`break-words text-[15px] font-semibold leading-snug ${
+                        row.done ? "text-muted" : "text-foreground"
+                      }`}
                     >
-                      <p
-                        className={`min-w-0 flex-1 break-words text-[15px] font-semibold leading-snug ${
-                          row.done ? "text-muted" : "text-foreground"
-                        }`}
-                      >
-                        {row.name}
-                      </p>
-                      <p className="shrink-0 font-mono text-[15px] tabular-nums text-muted">
-                        {row.detail}
-                      </p>
-                    </button>
-                  ) : (
-                    <div className="flex min-h-11 items-start justify-between gap-3 py-4">
-                      <p className="min-w-0 flex-1 break-words text-[15px] font-semibold leading-snug text-foreground">
-                        {row.name}
-                      </p>
-                      <p className="shrink-0 font-mono text-[15px] tabular-nums text-muted">
-                        {row.detail}
-                      </p>
-                    </div>
-                  )}
-                </li>
-              ))}
+                      {row.name}
+                    </p>
+                    {row.notes ? (
+                      <p className="mt-0.5 text-[13px] leading-snug text-muted">{row.notes}</p>
+                    ) : null}
+                  </div>
+                );
+                const thumb = (
+                  <DemoThumbButton
+                    exercise={ex}
+                    fallbackYoutubeId={ex ? undefined : null}
+                    title={row.name}
+                  />
+                );
+                return (
+                  <li key={row.key}>
+                    {fresh ? (
+                      <div className="flex min-h-11 items-start gap-3 py-4">
+                        {thumb}
+                        <button
+                          type="button"
+                          onClick={goToLiveSession}
+                          className="flex min-w-0 flex-1 items-start justify-between gap-3 text-left transition-colors duration-[var(--dur-fast)] hover:bg-surface-hover/40 focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.99]"
+                        >
+                          {nameBlock}
+                          <p className="shrink-0 font-mono text-[15px] tabular-nums text-muted">
+                            {row.detail}
+                          </p>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex min-h-11 items-start gap-3 py-4">
+                        {thumb}
+                        {nameBlock}
+                        <p className="shrink-0 font-mono text-[15px] tabular-nums text-muted">
+                          {row.detail}
+                        </p>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           ) : null}
 

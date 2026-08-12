@@ -1005,7 +1005,7 @@ function ClientDetailsPage() {
         {activeTab === "results" && (
           <div className="space-y-8">
             {progressReport && progressReport.facts.length > 0 ? (
-              <section aria-label="Fakty">
+              <section aria-label="Ostatnio">
                 <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
                   Ostatnio
                 </p>

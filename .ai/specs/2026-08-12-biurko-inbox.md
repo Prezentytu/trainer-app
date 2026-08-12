@@ -2,7 +2,7 @@
 
 ## TLDR
 
-Onboarding to jedna guided ścieżka (CTA = następny krok, preset 4×3 nie 6×4, kopiuj link z przyciskiem). Panel po onboardingu: KPI + jedna ranked kolejka „Wymaga Ciebie” (1 CTA na wiersz). Karta klienta: odejmowanie hero; Wyniki zaczynają od 3 faktów.
+Onboarding to jedna guided ścieżka (CTA = następny krok, preset 4×3 nie 6×4, kopiuj link z przyciskiem). Panel po onboardingu: KPI + jedna ranked kolejka „Do zrobienia” (1 CTA na wiersz). Karta klienta: odejmowanie hero; Wyniki zaczynają od 3 faktów.
 
 ## Problem
 
@@ -22,7 +22,7 @@ Onboarding to jedna guided ścieżka (CTA = następny krok, preset 4×3 nie 6×4
 
 ### Panel
 
-- Po onboardingu: KPI strip + **jedna** lista „Wymaga Ciebie” = merge `fromClients` + `attention`, cap 8, sort po pilności (unread reply / low check-in / brak planu / cisza / out_of_order).
+- Po onboardingu: KPI strip + **jedna** lista „Do zrobienia” = merge `fromClients` + `attention`, cap 8, sort po pilności (unread reply / low check-in / brak planu / cisza / out_of_order).
 - „Klienci w tym tygodniu”, „Ostatnie sesje”, „Nowe rekordy” — pod foldem (kotwice KPI zostają).
 - 1 primary CTA na wiersz; reszta w `OverflowMenu`.
 
@@ -70,5 +70,6 @@ Ten sam DTO co `GET /api/portal/{token}/progress-report`.
 ## Changelog
 
 - 2026-08-12 — utworzono spec (guided onboarding, inbox, odejmowanie karty klienta).
-- 2026-08-12 — wdrożono: guided CTA, preset 4×3, kolejka „Wymaga Ciebie”, hero klienta bez StatBlocków (KPI w Wynikach).
+- 2026-08-12 — wdrożono: guided CTA, preset 4×3, kolejka „Do zrobienia”, hero klienta bez StatBlocków (KPI w Wynikach).
+- 2026-08-12 — copy: kolejka „Wymaga Ciebie” → „Do zrobienia” (skill `ux-writing`; kalka *Requires you*).
 - 2026-08-12 — Wyniki: 3 fakty z `GET /api/clients/{id}/progress-report` (ten sam `BuildForClientAsync` co portal) + zastój.

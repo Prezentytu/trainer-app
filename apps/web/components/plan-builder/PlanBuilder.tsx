@@ -14,6 +14,7 @@ import {
 } from "./ExerciseLibraryContext";
 import { ItemPanel } from "./ItemPanel";
 import { ListView } from "./ListView";
+import { MethodTemplateDialog } from "./MethodTemplateDialog";
 import { ExerciseFormDialog } from "@/components/ExerciseFormDialog";
 import { PlanToolbar, AssignedClientInfo } from "./PlanToolbar";
 import { PlanTable } from "./PlanTable";
@@ -83,6 +84,7 @@ export default function PlanBuilder({
   const [assigned, setAssigned] = useState<AssignedClientInfo>(null);
   const [dialog, setDialog] = useState<DialogState>({ open: false });
   const [createdToast, setCreatedToast] = useState<Exercise | null>(null);
+  const [methodOpen, setMethodOpen] = useState(false);
 
   const draft = usePlanDraft({
     plan,
@@ -266,6 +268,7 @@ export default function PlanBuilder({
             submitLabel={submitLabel}
             stepLabel={stepLabel}
             onExit={onExit}
+            onApplyMethod={() => setMethodOpen(true)}
           />
 
           <WeekTabs
@@ -439,6 +442,13 @@ export default function PlanBuilder({
           editExercise={dialog.open ? dialog.editExercise : undefined}
           onClose={() => setDialog({ open: false })}
           onSubmit={handleDialogSubmit}
+        />
+
+        <MethodTemplateDialog
+          open={methodOpen}
+          days={draft.days}
+          onClose={() => setMethodOpen(false)}
+          onApply={draft.applyMethodTemplate}
         />
 
         {draft.toastNode}

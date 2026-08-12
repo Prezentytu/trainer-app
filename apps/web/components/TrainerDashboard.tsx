@@ -144,7 +144,7 @@ export function TrainerDashboard() {
     () => new Set(needsAttention.map((r) => r.client.clientId)),
     [needsAttention],
   );
-  /** Bez duplikacji z kartą „Wymagają uwagi". */
+  /** Bez duplikacji z kolejką „Do zrobienia". */
   const weeklyOkRows = rows.filter((r) => !attentionIds.has(r.client.clientId));
   const trainedCount = clientActivity.filter((c) => c.sessions7d > 0).length;
   const sessionsThisWeek = dash?.sessionsLast7Days ?? 0;
@@ -373,7 +373,7 @@ export function TrainerDashboard() {
       {inbox.length > 0 ? (
         <Card
           className="mb-6"
-          title="Wymaga Ciebie"
+          title="Do zrobienia"
           pending
           headerAction={
             <span className="font-mono text-xs tabular-nums text-muted">{inbox.length}</span>

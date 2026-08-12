@@ -1,6 +1,6 @@
 ---
 name: fitness-ui-ux
-description: Wytyczne UI/UX dla portalu trenera i aplikacji treningowej (kreator planów, tabele serii, periodyzacja, logowanie, statystyki). Użyj przy projektowaniu lub zmianie ekranów planów, ćwiczeń, sesji i wykresów progresu w Trainer App.
+description: Wytyczne UI/UX dla portalu trenera i aplikacji treningowej (kreator planów, tabele serii, periodyzacja, logowanie, statystyki). Użyj przy projektowaniu lub zmianie ekranów planów, ćwiczeń, sesji i wykresów progresu w Trainer App. Czytaj razem z `design-system`, `ux-writing`, `senior-ux-cro`.
 ---
 
 # UI/UX aplikacji treningowej
@@ -60,7 +60,7 @@ Różnica między trybami to ilość **danych** na ekranie, nie ilość dekoracj
 
 - Tylko tokeny semantyczne Acid (`design-system`) + prymitywy `components/ui.tsx` — zero surowych `zinc-*`/`yellow-*`.
 - Żadnego surowego `fetch` w komponentach — wyłącznie `api` z `lib/api.ts`.
-- Wszystkie teksty po polsku.
+- Wszystkie teksty po polsku — skill `ux-writing` (test na głos, zero kalek i telegrafu).
 - Nowe zależności (np. biblioteka wykresów) wymagają zgody — domyślnie wykres jako inline SVG.
 - Zmiany minimalne i skupione; prostota przede wszystkim — test odejmowania z `design-system`.
 

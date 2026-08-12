@@ -31,7 +31,8 @@ export function Hero() {
             className="landing-stagger m-0 mt-8 max-w-[42ch] text-[17px] font-normal leading-[1.6] text-muted text-pretty"
             style={{ ["--i" as string]: 2 }}
           >
-            Klient odhacza serie w telefonie. Bez aplikacji, bez konta.
+            Klient otwiera link w przeglądarce — bez konta. Po treningu
+            widzisz serie i rekordy. Od razu wiesz, kto nie trenował.
           </p>
           <div
             className="landing-stagger mt-10 flex flex-wrap items-center gap-x-6 gap-y-3"

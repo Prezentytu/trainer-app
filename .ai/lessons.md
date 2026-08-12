@@ -534,4 +534,18 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: Nienaruszalna strefa dolna w sesji należy do `SessionDock` + klawiatury. Pasywne toasty/celebracje (bez przycisków) idą na górę, pod sticky nagłówek (`top-[calc(max(0.5rem,env(safe-area-inset-top))_+_5.25rem)]`), zawsze z `pointer-events-none`. Elementy interaktywne na dole mogą żyć wyłącznie wewnątrz docka.
 **Dotyczy**: `SessionLogger.tsx` (prCelebrate), każdy przyszły toast/banner w widoku sesji.
 
+## Copy: jasność przed zwięzłością, zero kalek
+
+**Kontekst**: Landing i panel miały telegraficzne hasła i kalki z angielskiego: „Link bez konta. Fakty po treningu. Widzisz, kto milczy.", „Wymaga Ciebie", „Gotowy na trening?".
+**Problem**: Trener nie mówi tak. „Wymaga Ciebie" to *Requires you*. Urywane hasła bez czasownika brzmią jak tłumaczenie, nie jak produkt. Design system kazał „strać słowo" — to psuło naturalny polski.
+**Zasada**: Jasność > zwięzłość. Pełne zdania albo dosłowna etykieta. Test na głos. Zakaz kalek, telegrafu i wstydu („kto milczy", „zalegasz"). CTA = czasownik + obiekt, nie slogan. Skill `ux-writing`.
+**Dotyczy**: `components/landing/*`, `TrainerDashboard.tsx`, portal Progres, `RepMaxer Design System/readme.md`, każdy nowy tekst UI.
+
+## Copy: zero żargonu z briefu
+
+**Kontekst**: FAQ: „Dla siłowego 1:1, który wysyła plan na telefon. Nie dla studia z recepcją i nie dla coachingu dietetycznego."
+**Problem**: To skrót z researchu (ICP), nie zdanie dla trenera. „Siłowy 1:1” nic nie znaczy bez slajdu. To samo: „tożsamość w sklepie z aplikacjami", „Wychwytujemy".
+**Zasada**: W UI mów kim jest człowiek i co robi. Zakaz skrótów ICP / 1:1 / studio z recepcją. Nigdy *my* o produkcie. Skill `ux-writing`.
+**Dotyczy**: `components/landing/Faq.tsx`, `PanelMock.tsx`, każdy tekst „dla kogo".
+
 ---

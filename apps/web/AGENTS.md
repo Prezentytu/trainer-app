@@ -29,7 +29,7 @@ Next.js 16 (App Router) + React 19 + Tailwind 4. Port 3000. Ciemny motyw, UI po 
 
 ## Always
 
-- Przy tworzeniu/zmianie jakiegokolwiek UI zawsze stosuj skille `design-system` (mono v2 — jedyny dozwolony słownik kolorów), `responsive-ui`, `fitness-ui-ux`, `senior-ux-cro`, `apple-design`.
+- Przy tworzeniu/zmianie jakiegokolwiek UI zawsze stosuj skille `design-system` (mono v2 — jedyny dozwolony słownik kolorów), `responsive-ui`, `fitness-ui-ux`, `senior-ux-cro`, `apple-design`, `ux-writing` (głos i microcopy — test na głos).
 - Strony z danymi to komponenty klienckie: pierwsza linia `"use client"`, dane przez `api.*` w `useEffect` (wzorzec `useCallback` + `load()`).
 - Nowe typy i metody API dodawaj do `lib/api.ts` — typy muszą być lustrzane do backendowych encji/DTO (camelCase).
 - Używaj prymitywów z `components/ui.tsx`: `PageHeader`, `Card`, `ListRow`, `Button`, `Field` + `inputClass`, `ErrorBanner`, `EmptyState`, `Badge`/`Marker`, `formatRest`. Ikony wyłącznie przez `components/Icon.tsx` (Phosphor).
