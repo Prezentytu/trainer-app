@@ -56,6 +56,7 @@ export default function PlanBuilder({
   initialWeekCount,
   initialDays,
   stepLabel,
+  assignTo,
   onExit,
 }: {
   plan?: Plan;
@@ -67,6 +68,8 @@ export default function PlanBuilder({
   initialDays?: BuilderDay[];
   /** np. „Krok 2 z 3 · zbuduj plan ćwiczeniami” — tylko nowy plan */
   stepLabel?: string;
+  /** Po utworzeniu planu automatycznie przypisz do klienta i wróć na jego profil. */
+  assignTo?: { id: number; name: string };
   /** Wyjście z edycji istniejącego planu (menu ··· → Anuluj edycję). */
   onExit?: () => void;
 }) {
@@ -98,6 +101,7 @@ export default function PlanBuilder({
     description: draft.description,
     isTemplate: draft.isTemplate,
     days: draft.days,
+    assignTo,
   });
 
   const dnd = useBuilderDnd({ days: draft.days, setDays: draft.setDays });
@@ -184,7 +188,12 @@ export default function PlanBuilder({
     return `${count} ćwiczeń · ${formatDurationApprox(mins)}`;
   }, [weekItems, library.exercises]);
 
-  const submitLabel = plan ? "Zapisz plan" : "Utwórz plan";
+  const assignFirstName = assignTo?.name.split(/\s+/)[0] ?? null;
+  const submitLabel = plan
+    ? "Zapisz plan"
+    : assignFirstName
+      ? `Zapisz i przypisz do ${assignFirstName}`
+      : "Utwórz plan";
 
   const boardCallbacks = {
     onAddDay: () => draft.addDay(draft.activeWeek),

@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import {
   api,
@@ -88,10 +88,12 @@ function PlanPickerCard({ plan, selected, onSelect }: { plan: PlanSummary; selec
   );
 }
 
-export default function ClientDetailsPage() {
+function ClientDetailsPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const clientId = Number(params.id);
+  const assignedToastShown = useRef(false);
 
   const [tab, setTab] = useState<string | null>(null);
   const [notesSegment, setNotesSegment] = useState<"mine" | "client">("mine");
@@ -207,6 +209,14 @@ export default function ClientDetailsPage() {
   }, [clientId]);
 
   useEffect(load, [load]);
+
+  // Peak-End: toast po zamkniętej pętli kreator → auto-przypisanie.
+  useEffect(() => {
+    if (searchParams.get("assigned") !== "1" || assignedToastShown.current) return;
+    assignedToastShown.current = true;
+    showUndoToast("Plan przypisany — klient widzi go w portalu");
+    router.replace(`/clients/${clientId}`, { scroll: false });
+  }, [searchParams, clientId, router, showUndoToast]);
 
   // Plany: zakładka lub dialog przypisania.
   useEffect(() => {
@@ -822,7 +832,7 @@ export default function ClientDetailsPage() {
                 {plans.length === 0 ? (
                   <EmptyState
                     action={
-                      <Link href="/plans/new">
+                      <Link href={`/plans/new?clientId=${clientId}`}>
                         <Button variant="secondary">Stwórz plan</Button>
                       </Link>
                     }
@@ -841,6 +851,25 @@ export default function ClientDetailsPage() {
                             onSelect={() => setPlanId(p.id)}
                           />
                         ))}
+                        <Link
+                          href={`/plans/new?clientId=${clientId}`}
+                          className="flex min-h-11 items-start gap-2 rounded-[10px] border border-dashed border-border-strong bg-surface p-3 text-left transition-colors duration-[var(--dur-fast)] hover:border-foreground hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+                        >
+                          <span
+                            className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center text-muted"
+                            aria-hidden
+                          >
+                            <Icon name="plus" size={14} decorative />
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block break-words text-sm font-medium text-foreground">
+                              Stwórz nowy plan
+                            </span>
+                            <span className="mt-0.5 block font-mono text-xs text-muted">
+                              Wrócisz tu z przypisanym planem
+                            </span>
+                          </span>
+                        </Link>
                       </div>
                     </Field>
                     <div className="mt-4 grid gap-4 sm:grid-cols-3">
@@ -1549,5 +1578,13 @@ export default function ClientDetailsPage() {
 
       {toastNode}
     </div>
+  );
+}
+
+export default function ClientDetailsPageRoute() {
+  return (
+    <Suspense fallback={<ClientDetailSkeleton />}>
+      <ClientDetailsPage />
+    </Suspense>
   );
 }

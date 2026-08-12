@@ -73,12 +73,15 @@ export function usePlanPersistence({
   description,
   isTemplate,
   days,
+  assignTo,
 }: {
   plan?: Plan;
   name: string;
   description: string;
   isTemplate: boolean;
   days: BuilderDay[];
+  /** Po create — przypisz plan do klienta i wróć na jego profil. */
+  assignTo?: { id: number; name: string };
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -128,7 +131,9 @@ export function usePlanPersistence({
       }
       setSaving(true);
       setError(null);
-      const input = buildPlanInput(name, description, isTemplate, days);
+      // Plan tworzony z profilu klienta jest zawsze przypisywalny (nie szablon).
+      const effectiveIsTemplate = assignTo ? false : isTemplate;
+      const input = buildPlanInput(name, description, effectiveIsTemplate, days);
       try {
         if (plan) {
           await api.plans.update(plan.id, input);
@@ -140,7 +145,23 @@ export function usePlanPersistence({
           void refreshNavCounts();
           lastSavedPayloadRef.current = JSON.stringify(input);
           setIsDirty(false);
-          router.push(`/plans/${created.id}`);
+          if (assignTo) {
+            const startDate = new Date().toISOString().slice(0, 10);
+            try {
+              await api.assignments.create({
+                planId: created.id,
+                clientId: assignTo.id,
+                startDate,
+                note: null,
+              });
+              router.push(`/clients/${assignTo.id}?assigned=1`);
+            } catch {
+              // Plan już istnieje — nie gub danych; trener przypisze ręcznie z widoku planu.
+              router.push(`/plans/${created.id}`);
+            }
+          } else {
+            router.push(`/plans/${created.id}`);
+          }
         }
         router.refresh();
       } catch (err) {
@@ -148,7 +169,7 @@ export function usePlanPersistence({
         setSaving(false);
       }
     },
-    [days, description, isTemplate, name, plan, router]
+    [assignTo, days, description, isTemplate, name, plan, router]
   );
 
   useEffect(() => {

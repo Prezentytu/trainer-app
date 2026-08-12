@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import PlanBuilder from "@/components/plan-builder/PlanBuilder";
+import { api } from "@/lib/api";
 import { consumeImportHandoff, PlanImportHandoff } from "@/lib/planImportHandoff";
 import { Button, Card, ErrorBanner, Field, PageHeader, Pill, inputClass } from "@/components/ui";
 import { Icon } from "@/components/Icon";
@@ -41,11 +44,15 @@ type Boot =
   | { status: "wizard" }
   | { status: "import"; handoff: PlanImportHandoff };
 
-export default function NewPlanPage() {
+type AssignTo = { id: number; name: string };
+
+function NewPlanWizard({ assignTo }: { assignTo: AssignTo | null }) {
   const [boot, setBoot] = useState<Boot>({ status: "loading" });
   const [isTemplate, setIsTemplate] = useState(false);
   const [presetId, setPresetId] = useState<string>("6x4");
-  const [name, setName] = useState(`Nowy plan — ${todayLabel()}`);
+  const [name, setName] = useState(() =>
+    assignTo ? `Plan — ${assignTo.name} — ${todayLabel()}` : `Nowy plan — ${todayLabel()}`,
+  );
   const [started, setStarted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,14 +94,20 @@ export default function NewPlanPage() {
   }
 
   if (started) {
+    const firstName = assignTo?.name.split(/\s+/)[0] ?? null;
     return (
       <div className="flex min-h-0 flex-1 flex-col">
         <PlanBuilder
           initialName={name}
-          initialIsTemplate={isTemplate}
+          initialIsTemplate={assignTo ? false : isTemplate}
           initialDayCount={preset.daysPerWeek}
           initialWeekCount={preset.weeks}
-          stepLabel="Krok 2 z 3 · zbuduj plan ćwiczeniami"
+          stepLabel={
+            firstName
+              ? `Krok 2 z 3 · plan dla ${firstName}`
+              : "Krok 2 z 3 · zbuduj plan ćwiczeniami"
+          }
+          assignTo={assignTo ?? undefined}
         />
       </div>
     );
@@ -110,11 +123,25 @@ export default function NewPlanPage() {
   };
 
   const totalTrainingDays = preset.weeks * preset.daysPerWeek;
+  const firstName = assignTo?.name.split(/\s+/)[0] ?? null;
 
   return (
     <div className="mx-auto w-full max-w-2xl lg:max-w-5xl">
-      <PageHeader title="Nowy plan" subtitle="Wybierz strukturę — poprawisz ją później w kreatorze" />
+      <PageHeader
+        title="Nowy plan"
+        subtitle={
+          firstName
+            ? `Plan dla ${assignTo!.name} — po zapisie wrócisz na profil klienta`
+            : "Wybierz strukturę — poprawisz ją później w kreatorze"
+        }
+      />
       <ErrorBanner message={error} />
+
+      {firstName ? (
+        <p className="mb-4 inline-flex items-center rounded-full border border-border bg-surface-raised px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-[var(--track-label)] text-foreground">
+          Plan dla: {firstName}
+        </p>
+      ) : null}
 
       <div className="mb-6 flex items-center gap-2" aria-hidden>
         <div className="h-1.5 flex-1 rounded-full bg-accent" />
@@ -167,18 +194,24 @@ export default function NewPlanPage() {
             </Card>
 
             <Card>
-              <div className="grid gap-4 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-end">
-                <div>
-                  <p className="t-label mb-1.5">Rodzaj</p>
-                  <div className="inline-flex flex-wrap items-center gap-1 rounded-full bg-surface-hover p-1">
-                    <Pill active={!isTemplate} onClick={() => setIsTemplate(false)}>
-                      Plan klienta
-                    </Pill>
-                    <Pill active={isTemplate} onClick={() => setIsTemplate(true)}>
-                      Do wielokrotnego użytku
-                    </Pill>
+              <div
+                className={`grid gap-4 ${
+                  assignTo ? "" : "sm:grid-cols-[auto_minmax(0,1fr)] sm:items-end"
+                }`}
+              >
+                {assignTo ? null : (
+                  <div>
+                    <p className="t-label mb-1.5">Rodzaj</p>
+                    <div className="inline-flex flex-wrap items-center gap-1 rounded-full bg-surface-hover p-1">
+                      <Pill active={!isTemplate} onClick={() => setIsTemplate(false)}>
+                        Plan klienta
+                      </Pill>
+                      <Pill active={isTemplate} onClick={() => setIsTemplate(true)}>
+                        Do wielokrotnego użytku
+                      </Pill>
+                    </div>
                   </div>
-                </div>
+                )}
                 <Field label="Nazwa planu">
                   <input className={`${inputClass} w-full`} value={name} onChange={(e) => setName(e.target.value)} />
                 </Field>
@@ -215,5 +248,62 @@ export default function NewPlanPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+function NewPlanPageInner() {
+  const searchParams = useSearchParams();
+  const rawClientId = searchParams.get("clientId");
+  const clientId = rawClientId ? Number(rawClientId) : NaN;
+  const hasClientId = Number.isFinite(clientId) && clientId > 0;
+
+  const [assignTo, setAssignTo] = useState<AssignTo | null>(null);
+  const [ready, setReady] = useState(!hasClientId);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!hasClientId) return;
+    let cancelled = false;
+    api.clients
+      .get(clientId)
+      .then((c) => {
+        if (cancelled) return;
+        setAssignTo({ id: c.id, name: c.name });
+        setReady(true);
+      })
+      .catch((e: Error) => {
+        if (cancelled) return;
+        setError(e.message);
+        setReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [hasClientId, clientId]);
+
+  if (!ready) {
+    return <PlanWizardSkeleton />;
+  }
+
+  if (error && hasClientId && !assignTo) {
+    return (
+      <div className="mx-auto w-full max-w-2xl">
+        <PageHeader title="Nowy plan" subtitle="Nie udało się wczytać klienta" />
+        <ErrorBanner message={error} />
+        <Link href="/plans/new">
+          <Button variant="secondary">Kontynuuj bez klienta</Button>
+        </Link>
+      </div>
+    );
+  }
+
+  return <NewPlanWizard assignTo={assignTo} />;
+}
+
+export default function NewPlanPage() {
+  return (
+    <Suspense fallback={<PlanWizardSkeleton />}>
+      <NewPlanPageInner />
+    </Suspense>
   );
 }
