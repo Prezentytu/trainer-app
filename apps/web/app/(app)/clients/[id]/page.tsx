@@ -21,6 +21,7 @@ import {
   isIntakeBlank,
   MuscleVolumeResponse,
   PlanSummary,
+  ProgressReport,
   SessionSummary,
   StagnationResponse,
   TrainerNote,
@@ -50,7 +51,6 @@ import {
   ErrorBanner,
   Field,
   inputClass,
-  ProgressRing,
   SegmentedControl,
   StatBlock,
   Tabs,
@@ -149,6 +149,7 @@ function ClientDetailsPage() {
   const [muscleVolume, setMuscleVolume] = useState<MuscleVolumeResponse | null>(null);
   const [trends, setTrends] = useState<ClientTrendsResponse | null>(null);
   const [stagnation, setStagnation] = useState<StagnationResponse | null>(null);
+  const [progressReport, setProgressReport] = useState<ProgressReport | null>(null);
   const [trainerNotes, setTrainerNotes] = useState<TrainerNote[]>([]);
   const [clientNotes, setClientNotes] = useState<ClientNoteGroup[]>([]);
   const [notesForClient, setNotesForClient] = useState<number | null>(null);
@@ -317,17 +318,19 @@ function ClientDetailsPage() {
       api.clients.muscleVolume(clientId, 4),
       api.clients.trends(clientId, 12),
       api.clients.stagnation(clientId),
+      api.clients.progressReport(clientId).catch(() => null),
     ];
     if (!exercisesLoaded) tasks.push(api.exercises.list());
     Promise.all(tasks)
       .then((rows) => {
         if (cancelled) return;
-        const [m, meas, mv, tr, st, ex] = rows as [
+        const [m, meas, mv, tr, st, report, ex] = rows as [
           ClientMax[],
           ClientMeasurement[],
           MuscleVolumeResponse,
           ClientTrendsResponse,
           StagnationResponse,
+          ProgressReport | null,
           Exercise[] | undefined,
         ];
         setMaxes(m);
@@ -335,6 +338,7 @@ function ClientDetailsPage() {
         setMuscleVolume(mv);
         setTrends(tr);
         setStagnation(st);
+        setProgressReport(report);
         if (ex) {
           setExercises(ex);
           setExercisesForClient(clientId);
@@ -709,92 +713,43 @@ function ClientDetailsPage() {
 
       <ErrorBanner message={error} />
 
-      <div className="mb-6 grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <Card className="flex flex-col gap-4" eyebrow="Aktywny plan" title={activeAssignment?.planName ?? "Brak planu"}>
-          {activeAssignment && progress?.assignmentId === activeAssignment.id ? (
-            <>
-              <div className="flex items-center gap-4">
-                <ProgressRing
-                  value={progress.percent / 100}
-                  size={72}
-                  stroke={6}
-                  label={`${progress.percent}%`}
-                />
-                <div className="min-w-0">
-                  <p className="font-mono text-sm tabular-nums text-foreground">
-                    {progress.completed}/{progress.total} treningów
-                  </p>
-                  {nextDayLabel ? (
-                    <p className="mt-2 flex items-start gap-1.5 text-sm text-muted">
-                      <Icon name="dumbbell" size={14} className="mt-0.5 shrink-0 text-muted" decorative />
-                      <span>
-                        Następny: <span className="font-medium text-foreground">{nextDayLabel}</span>
-                      </span>
-                    </p>
-                  ) : null}
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Link href={`/plans/${activeAssignment.planId}`}>
-                  <Button>Otwórz plan</Button>
-                </Link>
-                <Button variant="ghost" onClick={() => void openLogBehalf(activeAssignment)}>
-                  Wpisz trening za klienta
-                </Button>
-                <Button variant="ghost" onClick={() => { setTab("plans"); setAssignOpen(true); }}>
-                  Przypisz inny
-                </Button>
-              </div>
-            </>
-          ) : (
-            <EmptyState
-              action={<Button onClick={openAssignTab}>Przypisz plan</Button>}
-            >
-              Przypisz plan, żeby klient mógł zacząć trenować.
-            </EmptyState>
-          )}
-        </Card>
-
-        <Card className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-1">
-          <div className="flex items-start gap-3">
-            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-hover text-foreground-secondary">
-              <Icon name="calendar-blank" size={16} decorative />
-            </span>
-            <StatBlock
-              label="Ostatni trening"
-              value={lastSession ? relativeDayLabel(lastSession.performedOn) : "—"}
-              delta={
-                lastAgo != null && lastAgo > 7
-                  ? `−${lastAgo} dni przerwy`
-                  : lastSession
-                    ? formatDayShort(lastSession.performedOn)
-                    : undefined
-              }
-              valueClassName={lastAgo != null && lastAgo > 7 ? "text-loss" : undefined}
-            />
+      {activeAssignment ? (
+        <div className="mb-6 flex flex-col gap-3 border-b border-border pb-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
+              Aktywny plan
+            </p>
+            <p className="mt-1 break-words text-lg font-semibold tracking-tight text-foreground">
+              {activeAssignment.planName}
+            </p>
+            <p className="mt-1 text-sm text-muted">
+              {lastAgo != null && lastAgo > 7
+                ? `${lastAgo} dni ciszy`
+                : lastSession
+                  ? `Ostatni trening ${relativeDayLabel(lastSession.performedOn)}`
+                  : "Jeszcze bez sesji"}
+              {progress?.assignmentId === activeAssignment.id
+                ? ` · ${progress.completed}/${progress.total}`
+                : ""}
+              {nextDayLabel ? ` · dalej: ${nextDayLabel}` : ""}
+            </p>
           </div>
-          <div className="flex items-start gap-3">
-            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-hover text-foreground-secondary">
-              <Icon name="activity" size={16} decorative />
-            </span>
-            <StatBlock label="Treningi (30 dni)" value={sessions30} />
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <Link href={`/plans/${activeAssignment.planId}`}>
+              <Button>Otwórz plan</Button>
+            </Link>
+            <Button variant="ghost" onClick={() => void openLogBehalf(activeAssignment)}>
+              Wpisz trening za klienta
+            </Button>
           </div>
-          <div className="flex items-start gap-3">
-            <span
-              className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] ${
-                prs30 > 0 ? "bg-pr-dim text-pr" : "bg-surface-hover text-foreground-secondary"
-              }`}
-            >
-              <Icon name="trophy" size={16} decorative />
-            </span>
-            <StatBlock
-              label="Nowe PR (30 dni)"
-              value={prs30 > 0 ? `★ ${prs30}` : prs30}
-              valueClassName={prs30 > 0 ? "text-pr" : undefined}
-            />
-          </div>
-        </Card>
-      </div>
+        </div>
+      ) : (
+        <div className="mb-6">
+          <EmptyState action={<Button onClick={openAssignTab}>Przypisz plan</Button>}>
+            Przypisz plan, żeby klient mógł zacząć trenować.
+          </EmptyState>
+        </div>
+      )}
 
       <Tabs
         items={[
@@ -1049,6 +1004,54 @@ function ClientDetailsPage() {
 
         {activeTab === "results" && (
           <div className="space-y-8">
+            {progressReport && progressReport.facts.length > 0 ? (
+              <section aria-label="Fakty">
+                <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
+                  Ostatnio
+                </p>
+                <ul className="mt-3 space-y-2">
+                  {progressReport.facts.slice(0, 3).map((fact, index) => (
+                    <li
+                      key={`${fact.kind}-${index}`}
+                      className={`text-[15px] leading-snug ${
+                        fact.kind === "pr" ? "font-medium text-pr" : "text-foreground-secondary"
+                      }`}
+                    >
+                      {fact.kind === "pr" && !String(fact.text).includes("★")
+                        ? `★ ${fact.text}`
+                        : fact.deltaKg != null && fact.deltaKg > 0
+                          ? `▲ ${fact.text}`
+                          : fact.text}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
+            <section
+              aria-label="Podsumowanie"
+              className="grid grid-cols-2 gap-3 border-y border-border py-5 sm:grid-cols-3"
+            >
+              <StatBlock
+                label="Ostatni trening"
+                value={lastSession ? relativeDayLabel(lastSession.performedOn) : "—"}
+                delta={
+                  lastAgo != null && lastAgo > 7
+                    ? `−${lastAgo} dni ciszy`
+                    : lastSession
+                      ? formatDayShort(lastSession.performedOn)
+                      : undefined
+                }
+                valueClassName={lastAgo != null && lastAgo > 7 ? "text-loss" : undefined}
+              />
+              <StatBlock label="Treningi (30 dni)" value={sessions30} />
+              <StatBlock
+                label="Nowe PR (30 dni)"
+                value={prs30 > 0 ? `★ ${prs30}` : prs30}
+                valueClassName={prs30 > 0 ? "text-pr" : undefined}
+              />
+            </section>
+
             {stagnation && stagnation.items.length > 0 ? (
               <section>
                 <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-semibold">

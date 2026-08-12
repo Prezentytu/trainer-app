@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui";
+import { Icon } from "@/components/Icon";
 import { InstallGuideSheet } from "@/components/portal/InstallGuideSheet";
 import { installBannerCopy } from "@/lib/installEnv";
 import { useInstallEnv } from "@/lib/pwa";
@@ -17,6 +18,8 @@ type Props = {
   requireCompletedSession?: boolean;
   /** Wariant stały (profil) — bez przycisku „Nie teraz” chowającego na zawsze. */
   persistent?: boolean;
+  /** Na Dziś: zwinięty wiersz pod foldem. */
+  defaultCollapsed?: boolean;
 };
 
 function useClientReady(): boolean {
@@ -31,11 +34,13 @@ export function PwaInstallPrompt({
   token,
   requireCompletedSession = true,
   persistent = false,
+  defaultCollapsed = false,
 }: Props) {
   const clientReady = useClientReady();
   const [promptEvent, setPromptEvent] = useState<InstallPromptEvent | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [expanded, setExpanded] = useState(!defaultCollapsed);
   const dismissedKey = `wa-install-dismissed-${token}`;
 
   const env = useInstallEnv(Boolean(promptEvent));
@@ -109,6 +114,33 @@ export function PwaInstallPrompt({
     }
     setSheetOpen(true);
   };
+
+  if (defaultCollapsed && !expanded) {
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          aria-expanded={false}
+          className="flex min-h-11 w-full items-center gap-3 rounded-xl border border-border bg-surface-raised px-4 py-3 text-left transition-[background-color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.98]"
+        >
+          <div className="min-w-0 flex-1">
+            <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
+              Ekran główny
+            </p>
+            <p className="mt-1 text-sm text-muted">{copy.title}</p>
+          </div>
+          <Icon name="caret-down" size={18} className="shrink-0 text-muted" decorative />
+        </button>
+        <InstallGuideSheet
+          open={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          env={env}
+          pageUrl={pageUrl}
+        />
+      </>
+    );
+  }
 
   return (
     <>

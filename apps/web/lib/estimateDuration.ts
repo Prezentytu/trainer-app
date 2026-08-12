@@ -3,41 +3,62 @@ import { groupConsecutiveBySuperset } from "@/lib/supersets";
 
 const OPEN_RAMP_SET_FALLBACK = 5;
 
+export type DurationLike = {
+  setScheme?: string | null;
+  prescribedSets?: { role?: string | null }[];
+  overrides?: { sets?: number | null } | null;
+  sets?: number | null;
+  restBetweenSetsSeconds?: number | null;
+  restAfterExerciseSeconds?: number | null;
+  repDurationSeconds?: number | null;
+};
+
 function isRampScheme(setScheme: string | null | undefined): boolean {
   return !!setScheme && /rampa/i.test(setScheme);
 }
 
-function itemSetCount(item: PlanItem): number {
+function itemSetCount(item: DurationLike): number {
   if (isRampScheme(item.setScheme)) {
-    const boCount = item.prescribedSets.filter(
+    const boCount = (item.prescribedSets ?? []).filter(
       (s) => (s.role ?? "").toLowerCase() === "backoff",
     ).length;
-    const rampSets = item.overrides?.sets ?? OPEN_RAMP_SET_FALLBACK;
+    const rampSets = item.overrides?.sets ?? item.sets ?? OPEN_RAMP_SET_FALLBACK;
     return rampSets + boCount;
   }
-  if (item.prescribedSets.length > 0) return item.prescribedSets.length;
+  if ((item.prescribedSets?.length ?? 0) > 0) return item.prescribedSets!.length;
   return item.sets || 3;
 }
 
-function itemWorkSeconds(item: PlanItem): number {
+function itemWorkSeconds(item: DurationLike): number {
   return item.repDurationSeconds ?? 40;
 }
 
-function itemRestSeconds(item: PlanItem): number {
+function itemRestSeconds(item: DurationLike): number {
   return item.restBetweenSetsSeconds ?? 60;
 }
 
-/** Heurystyka czasu dnia. Superseria: seria pary = suma pracy członków + 1 przerwa (bez restu po ostatniej pracy dnia). */
-export function estimateDayMinutes(items: PlanItem[]): number {
-  const blocks = groupConsecutiveBySuperset(items, (it) => it.supersetGroup);
+function roundMinutes(seconds: number): number {
+  const minutes = Math.round(seconds / 60);
+  if (minutes <= 0) return 5;
+  return Math.max(5, Math.round(minutes / 5) * 5);
+}
+
+/** Heurystyka czasu. Superseria: seria pary = suma pracy członków + 1 przerwa (bez restu po ostatniej pracy). */
+export function estimateItemsMinutes(
+  items: DurationLike[],
+  groupOf: (item: DurationLike, index: number) => number | null,
+): number {
+  const tagged = items.map((item, index) => ({ item, group: groupOf(item, index) }));
+  const blocks = groupConsecutiveBySuperset(tagged, (row) => row.group);
   let seconds = 0;
 
   for (let b = 0; b < blocks.length; b++) {
     const block = blocks[b];
     const isLastBlock = b === blocks.length - 1;
+    const blockItems = block.items.map((row) => row.item);
 
     if (!block.multi) {
-      const item = block.items[0];
+      const item = blockItems[0];
       const rest = itemRestSeconds(item);
       const work = itemWorkSeconds(item);
       const sets = itemSetCount(item);
@@ -47,17 +68,19 @@ export function estimateDayMinutes(items: PlanItem[]): number {
       continue;
     }
 
-    const rounds = Math.max(...block.items.map(itemSetCount), 0);
-    const groupRest = Math.max(...block.items.map(itemRestSeconds), 0);
-    for (const item of block.items) {
+    const rounds = Math.max(...blockItems.map(itemSetCount), 0);
+    const groupRest = Math.max(...blockItems.map(itemRestSeconds), 0);
+    for (const item of blockItems) {
       seconds += itemSetCount(item) * itemWorkSeconds(item);
     }
     const restAfterRounds = isLastBlock ? Math.max(0, rounds - 1) : rounds;
     seconds += groupRest * restAfterRounds;
   }
-  const minutes = Math.round(seconds / 60);
-  if (minutes <= 0) return 5;
-  return Math.max(5, Math.round(minutes / 5) * 5);
+  return roundMinutes(seconds);
+}
+
+export function estimateDayMinutes(items: PlanItem[]): number {
+  return estimateItemsMinutes(items, (_item, index) => items[index]?.supersetGroup ?? null);
 }
 
 export function formatDurationApprox(minutes: number): string {

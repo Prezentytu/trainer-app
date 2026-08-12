@@ -106,4 +106,20 @@ public class MvpRetentionTests : IClassFixture<TestWebAppFactory>
         Assert.True(json.TryGetProperty("facts", out var facts));
         Assert.True(facts.GetArrayLength() >= 1);
     }
+
+    [Fact]
+    public async Task TrainerProgressReport_WorksForDemoClient()
+    {
+        var clients = await _client.GetAsync("/api/clients");
+        clients.EnsureSuccessStatusCode();
+        var list = await clients.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(list.GetArrayLength() >= 1);
+        var clientId = list[0].GetProperty("id").GetInt32();
+
+        var res = await _client.GetAsync($"/api/clients/{clientId}/progress-report");
+        res.EnsureSuccessStatusCode();
+        var json = await res.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(json.TryGetProperty("facts", out var facts));
+        Assert.True(facts.GetArrayLength() >= 1);
+    }
 }

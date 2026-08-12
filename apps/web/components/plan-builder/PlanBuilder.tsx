@@ -17,7 +17,7 @@ import { ListView } from "./ListView";
 import { ExerciseFormDialog } from "@/components/ExerciseFormDialog";
 import { PlanToolbar, AssignedClientInfo } from "./PlanToolbar";
 import { PlanTable } from "./PlanTable";
-import { estimateWeekMinutes, formatDurationApprox } from "./summaryText";
+import { estimateDaysMinutes, formatDurationApprox } from "./summaryText";
 import { useBuilderDnd } from "./useBuilderDnd";
 import { useExerciseLibrary } from "./useExerciseLibrary";
 import { BuilderDay, BuilderItem } from "./types";
@@ -184,9 +184,9 @@ export default function PlanBuilder({
   );
   const weekMeta = useMemo(() => {
     const count = weekItems.length;
-    const mins = estimateWeekMinutes(weekItems, library.exercises);
+    const mins = estimateDaysMinutes(draft.visibleDays, library.exercises);
     return `${count} ćwiczeń · ${formatDurationApprox(mins)}`;
-  }, [weekItems, library.exercises]);
+  }, [weekItems, draft.visibleDays, library.exercises]);
 
   const assignFirstName = assignTo?.name.split(/\s+/)[0] ?? null;
   const submitLabel = plan

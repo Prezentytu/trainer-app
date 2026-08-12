@@ -10,7 +10,6 @@ import {
   LoggedSet,
   PortalExercise,
   PrevLoggedSet,
-  ProgressReport,
   SessionCheckinInput,
   SessionDetail,
   SetSide,
@@ -96,6 +95,8 @@ type Props = {
   clientName?: string;
   onUpdated: (session: SessionDetail) => void;
   onCompleted?: (session: SessionDetail) => void;
+  /** Portal live: wróć na Dziś, sesja zostaje in_progress (draft). */
+  onPause?: () => void;
   /** Wywołane przy nieudanym zapisie (np. offline queue). */
   onPersistFailed?: (input: WorkoutSessionInput, complete: boolean, error: Error) => void;
 };
@@ -388,6 +389,7 @@ export function SessionLogger({
   clientName,
   onUpdated,
   onCompleted,
+  onPause,
   onPersistFailed,
 }: Props) {
   const resolvedMode: SessionLoggerMode =
@@ -439,7 +441,6 @@ export function SessionLogger({
   const [sessionNote, setSessionNote] = useState(() => initial.draft.note ?? "");
   const [sessionNoteOpen, setSessionNoteOpen] = useState(() => Boolean(initial.draft.note));
   const keyboardInset = useKeyboardInset();
-  const [progressReport, setProgressReport] = useState<ProgressReport | null>(null);
   const [trainerComment, setTrainerComment] = useState("");
   const [clientReply, setClientReply] = useState("");
   const [noteOpenEx, setNoteOpenEx] = useState<Set<number>>(() => new Set());
@@ -551,11 +552,6 @@ export function SessionLogger({
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [menusOpen]);
 
-  useEffect(() => {
-    if (!summary || !portalToken) return;
-    api.portal.progressReport(portalToken).then(setProgressReport).catch(() => setProgressReport(null));
-  }, [portalToken, summary]);
-
   const flashPr = useCallback(
     (pr: { exerciseName: string; estimated1Rm: number | null; previousBest1Rm: number | null }) => {
       if (prFlashTimer.current) clearTimeout(prFlashTimer.current);
@@ -614,14 +610,18 @@ export function SessionLogger({
         }
 
         if (complete) {
+          if (portalToken && typeof window !== "undefined") {
+            localStorage.setItem(`wa-completed-session-${portalToken}`, "1");
+          }
+          if (portalToken && !isBehalf && !isCompletedEdit) {
+            onCompleted?.(updated);
+            return merged;
+          }
           setSummary(updated);
           setFeelingScore(updated.feelingScore);
           setSleepScore(updated.sleepScore);
           setEnergyScore(updated.energyScore);
           setSessionNote(updated.note ?? "");
-          if (portalToken && typeof window !== "undefined") {
-            localStorage.setItem(`wa-completed-session-${portalToken}`, "1");
-          }
         }
         return merged;
       } catch (e) {
@@ -633,7 +633,7 @@ export function SessionLogger({
         setSaving(false);
       }
     },
-    [draftScope, onPersistFailed, onUpdated, portalToken],
+    [draftScope, isBehalf, isCompletedEdit, onCompleted, onPersistFailed, onUpdated, portalToken],
   );
 
   const scheduleSave = useCallback(() => {
@@ -1073,6 +1073,21 @@ export function SessionLogger({
     void finish();
   };
 
+  const pause = async () => {
+    if (!onPause) return;
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+    }
+    try {
+      await saveChain.current;
+      await persist(draftRef.current, false);
+    } catch {
+      /* draft zostaje lokalnie */
+    }
+    onPause();
+  };
+
   const scrollElIntoView = useCallback((el: HTMLElement | null | undefined) => {
     if (!el) return;
     const reduce =
@@ -1291,9 +1306,7 @@ export function SessionLogger({
   };
 
   if (summary) {
-    // Portal live: lekki check-in → SessionSummaryView (Peak-End). Behalf/edit: pełniejszy zapis.
-    const lightCheckin = Boolean(portalToken) && !isCompletedEdit && !isBehalf;
-    const celebrationFacts = progressReport?.facts.slice(0, 5) ?? [];
+    // Portal live idzie do SessionSummaryView (Peak-End). Tu: zapis w imieniu / edycja ukończonej.
     const doneTotal = summary.exercises.reduce(
       (acc, ex) => {
         const done = ex.sets.filter((s) => s.completed).length;
@@ -1310,49 +1323,6 @@ export function SessionLogger({
         ? `${durH}:${String(durM).padStart(2, "0")}:${String(durS).padStart(2, "0")}`
         : `${durM}:${String(durS).padStart(2, "0")}`;
     const hasPrs = summary.prs.length > 0;
-    const prCount = summary.prs.length;
-
-    if (lightCheckin) {
-      return (
-        <div className="mx-auto max-w-lg space-y-8 pb-28">
-          <ErrorBanner message={error} />
-          <div>
-            <p className="t-label text-muted">Trening ukończony</p>
-            <h1 className="t-title mt-1">Jak minął trening?</h1>
-            <p className="t-small mt-1">
-              {summary.dayLabel ?? "Trening"}
-              {summary.planName ? ` · ${summary.planName}` : ""}
-              {prCount > 0 ? ` · ★ ${prCount} PR` : ""}
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            <ScorePicker label="Samopoczucie" value={feelingScore} onChange={setFeelingScore} />
-            <ScorePicker label="Sen (ostatnia noc)" value={sleepScore} onChange={setSleepScore} />
-            <ScorePicker label="Energia" value={energyScore} onChange={setEnergyScore} />
-          </div>
-
-          <div>
-            <p className="t-label mb-2">Wiadomość do trenera</p>
-            <textarea
-              className={`${inputClass} min-h-[88px] resize-none py-3`}
-              placeholder="Opcjonalnie — np. biodra ciasne przy przysiadzie."
-              value={sessionNote}
-              onChange={(e) => setSessionNote(e.target.value)}
-              rows={3}
-            />
-          </div>
-
-          <div className="session-chrome fixed inset-x-0 bottom-0 z-30 border-t border-border px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3">
-            <div className="mx-auto max-w-lg">
-              <Button className="w-full" size="lg" disabled={saving} onClick={() => void sendSummaryAndClose()}>
-                {saving ? "Zapisuję…" : "Zobacz podsumowanie"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      );
-    }
 
     return (
       <div className="space-y-4 pb-28">
@@ -1381,24 +1351,6 @@ export function SessionLogger({
             <StatCard label="Rekordy" value={String(summary.prs.length)} highlight />
           ) : null}
         </div>
-
-        {portalToken && celebrationFacts.length > 0 ? (
-          <Card title="Twój progres">
-            <p className="mb-3 text-sm text-muted">Każdy zapis przybliża Cię do celu.</p>
-            <ul className="space-y-2">
-              {celebrationFacts.map((fact, index) => (
-                <li
-                  key={`${fact.kind}-${index}`}
-                  className={`text-sm ${fact.kind === "pr" ? "font-medium text-pr" : "text-foreground-secondary"}`}
-                >
-                  {fact.kind === "pr" && !String(fact.text).includes("★")
-                    ? `★ ${fact.text}`
-                    : fact.text}
-                </li>
-              ))}
-            </ul>
-          </Card>
-        ) : null}
 
         <div className="space-y-3">
           <ScorePicker label="Samopoczucie" value={feelingScore} onChange={setFeelingScore} />
@@ -1621,13 +1573,20 @@ export function SessionLogger({
               </span>
             </p>
           </div>
-          <Button
-            variant={isBehalf || isCompletedEdit ? "secondary" : "primary"}
-            onClick={requestFinish}
-            className="min-h-11"
-          >
-            {isBehalf || isCompletedEdit ? "Zapisz" : "Zakończ"}
-          </Button>
+          <div className="flex shrink-0 items-center gap-2">
+            {liveClock && onPause ? (
+              <Button variant="ghost" onClick={() => void pause()} className="min-h-11">
+                Wstrzymaj
+              </Button>
+            ) : null}
+            <Button
+              variant={isBehalf || isCompletedEdit ? "secondary" : "primary"}
+              onClick={requestFinish}
+              className="min-h-11"
+            >
+              {isBehalf || isCompletedEdit ? "Zapisz" : "Zakończ"}
+            </Button>
+          </div>
         </div>
         <div className="mt-3 h-1 overflow-hidden rounded-full bg-surface-active">
           <div

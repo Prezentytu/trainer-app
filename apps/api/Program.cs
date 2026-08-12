@@ -1609,6 +1609,18 @@ app.MapGet("/api/clients/{clientId:int}/stagnation", async (
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
+app.MapGet("/api/clients/{clientId:int}/progress-report", async (
+    int clientId, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        return Results.Ok(await ProgressReports.BuildForClientAsync(db, clientId));
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
 // ---------- Token dostępu klienta (magic-link) ----------
 
 app.MapGet("/api/clients/{clientId:int}/access-token", async (int clientId, HttpContext http, AppDb db, IConfiguration config) =>

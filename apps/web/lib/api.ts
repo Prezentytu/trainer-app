@@ -1235,6 +1235,8 @@ export const api = {
       request<ClientTrendsResponse>(`/api/clients/${clientId}/trends?weeks=${weeks}`),
     stagnation: (clientId: number) =>
       request<StagnationResponse>(`/api/clients/${clientId}/stagnation`),
+    progressReport: (clientId: number) =>
+      request<ProgressReport>(`/api/clients/${clientId}/progress-report`),
   },
   exercises: {
     list: () => request<Exercise[]>("/api/exercises"),

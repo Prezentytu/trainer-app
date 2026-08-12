@@ -17,8 +17,7 @@ type StructurePreset = {
   daysPerWeek: number;
 };
 
-// Preset "6×4" jest domyślnie zaznaczony — najczęstszy układ mezocyklu u naszych trenerów, zgodny
-// z przykładem ze specu ("T1–T6, 4 dni/tydz."). Happy path do kreatora to jeden klik, nie pusty formularz.
+// Preset "4×3" jest domyślnie zaznaczony — mniejszy canvas na pierwszy plan (nie 24 puste dni).
 const STRUCTURE_PRESETS: StructurePreset[] = [
   { id: "4x3", label: "4 tygodnie", weeks: 4, daysPerWeek: 3 },
   { id: "6x4", label: "6 tygodni", weeks: 6, daysPerWeek: 4 },
@@ -49,7 +48,7 @@ type AssignTo = { id: number; name: string };
 function NewPlanWizard({ assignTo }: { assignTo: AssignTo | null }) {
   const [boot, setBoot] = useState<Boot>({ status: "loading" });
   const [isTemplate, setIsTemplate] = useState(false);
-  const [presetId, setPresetId] = useState<string>("6x4");
+  const [presetId, setPresetId] = useState<string>("4x3");
   const [name, setName] = useState(() =>
     assignTo ? `Plan — ${assignTo.name} — ${todayLabel()}` : `Nowy plan — ${todayLabel()}`,
   );
@@ -73,7 +72,7 @@ function NewPlanWizard({ assignTo }: { assignTo: AssignTo | null }) {
     };
   }, []);
 
-  const preset = STRUCTURE_PRESETS.find((p) => p.id === presetId) ?? STRUCTURE_PRESETS[1];
+  const preset = STRUCTURE_PRESETS.find((p) => p.id === presetId) ?? STRUCTURE_PRESETS[0];
 
   if (boot.status === "loading") {
     return <PlanWizardSkeleton />;

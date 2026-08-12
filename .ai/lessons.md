@@ -15,6 +15,13 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Portal: jeden CTA, tab bar nie jak Styrka
+
+**Kontekst**: Dziś miało invert nad listą i drugi sticky nad floating pill; aktywny tab = biała pigułka.
+**Problem**: Dwie dominanty naraz; chrome 1:1 jak Styrka (pływająca kapsuła + invert fill).
+**Zasada**: Jedna dominanta invert. Sticky dokuje tylko gdy in-flow CTA wyjedzie z kadru (`IntersectionObserver`). Portal = tab bar na krawędzi, hairline, ikona+label 12px, active = kreska + waga + foreground — bez floating pill i bez invert na tabie. Panel trenera (mobile pill) zostaje.
+**Dotyczy**: `PortalBottomNav.tsx`, `portal/[token]/page.tsx`, `portal/layout.tsx`, skill `design-system`.
+
 ## Superseria: nigdy „runda” w UI
 
 **Kontekst**: Copy wykonania superserii używało „runda” / „po rundzie” / „Runda 2 z 3”.

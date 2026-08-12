@@ -18,6 +18,8 @@ import {
   ErrorBanner,
   PageHeader,
   Dialog,
+  OverflowMenu,
+  OverflowMenuItem,
   ProgressRing,
   StatBlock,
 } from "@/components/ui";
@@ -37,6 +39,20 @@ type RowStatus = {
   action?: AttentionItem["action"];
   portalToken?: string | null;
   attention?: AttentionItem;
+};
+
+type InboxRow = {
+  key: string;
+  clientId: number;
+  clientName: string;
+  label: string;
+  href: string;
+  rank: number;
+  ctaLabel: string;
+  ctaKind: "link" | "copy" | "assign";
+  ctaHref?: string;
+  portalToken?: string | null;
+  attention?: AttentionItem | null;
 };
 
 export function TrainerDashboard() {
@@ -120,7 +136,10 @@ export function TrainerDashboard() {
 
   const clientActivity = dash?.clientActivity ?? [];
 
-  const needsAttention = rows.filter((r) => r.status.kind !== "ok");
+  const needsAttention = useMemo(
+    () => rows.filter((r) => r.status.kind !== "ok"),
+    [rows],
+  );
   const attentionIds = useMemo(
     () => new Set(needsAttention.map((r) => r.client.clientId)),
     [needsAttention],
@@ -132,6 +151,61 @@ export function TrainerDashboard() {
   const sessionsPrevWeek = dash?.sessionsPrev7Days ?? 0;
   const sessionsDelta = sessionsThisWeek - sessionsPrevWeek;
   const prsLast7Days = dash?.prsLast7Days ?? 0;
+
+  const firstClient = clientActivity[0] ?? null;
+  const clientNeedingPlan =
+    clientActivity.find((c) => c.activePlans === 0) ?? firstClient;
+  const clientForLink =
+    clientActivity.find((c) => c.portalToken) ?? firstClient;
+
+  const inbox = useMemo(() => {
+    if (!dash) return [];
+    const byClient = new Map<number, InboxRow>();
+    const take = (row: InboxRow) => {
+      const prev = byClient.get(row.clientId);
+      if (!prev || row.rank < prev.rank) byClient.set(row.clientId, row);
+    };
+
+    for (const item of dash.fromClients ?? []) {
+      const href =
+        item.sessionId != null
+          ? `/clients/${item.clientId}/sessions/${item.sessionId}`
+          : `/clients/${item.clientId}`;
+      take({
+        key: fromClientKey(item),
+        clientId: item.clientId,
+        clientName: item.clientName,
+        label: item.preview,
+        href,
+        rank: inboxRank(item.kind),
+        ctaLabel: item.sessionId != null ? "Otwórz" : "Przejdź do klienta",
+        ctaKind: "link",
+        ctaHref: href,
+      });
+    }
+
+    for (const { client, status } of needsAttention) {
+      const assign = status.kind === "no_plan";
+      const copy = status.action === "copy_portal_link";
+      take({
+        key: `att-${client.clientId}`,
+        clientId: client.clientId,
+        clientName: client.clientName,
+        label: status.label,
+        href: `/clients/${client.clientId}`,
+        rank: inboxRank(status.kind, status.attention?.reason),
+        ctaLabel: assign ? "Przypisz plan" : copy ? "Skopiuj link" : "Przejdź do klienta",
+        ctaKind: assign ? "assign" : copy ? "copy" : "link",
+        ctaHref: `/clients/${client.clientId}`,
+        portalToken: status.portalToken,
+        attention: status.attention ?? null,
+      });
+    }
+
+    return [...byClient.values()]
+      .sort((a, b) => a.rank - b.rank || a.clientName.localeCompare(b.clientName, "pl"))
+      .slice(0, 8);
+  }, [dash, needsAttention]);
 
   const copyPortalLink = async (clientId: number, portalToken: string | null | undefined) => {
     if (!portalToken) return;
@@ -167,9 +241,34 @@ export function TrainerDashboard() {
         title="Panel"
         subtitle="Przegląd ostatnich 7 dni"
         action={
-          <Link href="/plans/new">
-            <Button>+ Nowy plan</Button>
-          </Link>
+          showOnboarding && !onboardingSteps[0] ? (
+            <Link href="/clients">
+              <Button>Dodaj klienta</Button>
+            </Link>
+          ) : showOnboarding && !onboardingSteps[1] ? (
+            <Link
+              href={
+                clientNeedingPlan
+                  ? `/plans/new?clientId=${clientNeedingPlan.clientId}`
+                  : "/plans/new"
+              }
+            >
+              <Button>Przypisz plan</Button>
+            </Link>
+          ) : showOnboarding ? (
+            <Button
+              disabled={!clientForLink?.portalToken}
+              onClick={() =>
+                void copyPortalLink(clientForLink?.clientId ?? 0, clientForLink?.portalToken)
+              }
+            >
+              {copiedId === clientForLink?.clientId ? "Skopiowano" : "Skopiuj link"}
+            </Button>
+          ) : (
+            <Link href="/plans/new">
+              <Button>+ Nowy plan</Button>
+            </Link>
+          )
         }
       />
       <ErrorBanner
@@ -210,10 +309,17 @@ export function TrainerDashboard() {
                 <span>Plan przypisany</span>
               ) : (
                 <span>
-                  <Link href="/plans" className="font-semibold text-accent-text hover:underline">
+                  <Link
+                    href={
+                      clientNeedingPlan
+                        ? `/plans/new?clientId=${clientNeedingPlan.clientId}`
+                        : "/plans/new"
+                    }
+                    className="font-semibold text-accent-text hover:underline"
+                  >
                     Przypisz plan
                   </Link>{" "}
-                  — wybierz gotowy plan z biblioteki albo zbuduj własny.
+                  — szablon albo nowy plan dla klienta.
                 </span>
               )}
             </OnboardingStep>
@@ -221,15 +327,26 @@ export function TrainerDashboard() {
               {onboardingSteps[2] ? (
                 <span>Link portalu wysłany</span>
               ) : (
-                <span>Skopiuj link portalu z karty klienta i wyślij go podopiecznemu.</span>
+                <span className="flex flex-wrap items-center gap-2">
+                  <span>Wyślij podopiecznemu link do portalu.</span>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={!clientForLink?.portalToken}
+                    onClick={() =>
+                      void copyPortalLink(clientForLink?.clientId ?? 0, clientForLink?.portalToken)
+                    }
+                  >
+                    {copiedId === clientForLink?.clientId ? "Skopiowano" : "Skopiuj link"}
+                  </Button>
+                </span>
               )}
             </OnboardingStep>
           </ol>
         </Card>
       )}
 
-      {!showOnboarding && (
-        <div className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-3">
+      <div className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <StatCard
             label="Trenowało (7 dni)"
             value={`${trainedCount} z ${clientActivity.length}`}
@@ -252,78 +369,75 @@ export function TrainerDashboard() {
             valueClassName={prsLast7Days > 0 ? "text-pr" : undefined}
           />
         </div>
-      )}
 
-      {(dash?.fromClients ?? []).length > 0 ? (
+      {inbox.length > 0 ? (
         <Card
           className="mb-6"
-          title="Od klientów"
-          headerAction={
-            <span className="font-mono text-xs tabular-nums text-muted">
-              {dash!.fromClients!.length}
-            </span>
-          }
-        >
-          <ul className="divide-y divide-border">
-            {dash!.fromClients!.map((item) => (
-              <FromClientRow key={fromClientKey(item)} item={item} />
-            ))}
-          </ul>
-        </Card>
-      ) : null}
-
-      {needsAttention.length > 0 ? (
-        <Card
-          className="mb-6"
-          title="Wymagają uwagi"
+          title="Wymaga Ciebie"
           pending
           headerAction={
-            <span className="font-mono text-xs tabular-nums text-muted">
-              {needsAttention.length}
-            </span>
+            <span className="font-mono text-xs tabular-nums text-muted">{inbox.length}</span>
           }
         >
           <ul className="divide-y divide-border">
-            {needsAttention.map(({ client, status }) => (
-              <li key={client.clientId} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <Link href={`/clients/${client.clientId}`} className="flex min-w-0 items-center gap-2.5">
-                  <Avatar name={client.clientName} size="sm" />
+            {inbox.map((row) => (
+              <li
+                key={row.key}
+                className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <Link href={row.href} className="flex min-w-0 items-center gap-2.5">
+                  <Avatar name={row.clientName} size="sm" />
                   <span className="min-w-0">
-                    <span className="block break-words text-sm font-medium">{client.clientName}</span>
-                    <span className="block text-xs text-muted">{status.label}</span>
+                    <span className="block break-words text-sm font-medium">{row.clientName}</span>
+                    <span className="block break-words text-xs text-muted">{row.label}</span>
                   </span>
                 </Link>
-                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
-                  {formatCompliance(status.attention) ? (
-                    <span className="font-mono text-xs tabular-nums text-muted-strong">
-                      {formatCompliance(status.attention)}
-                    </span>
-                  ) : null}
-                  <Link href={`/clients/${client.clientId}`} className="w-full sm:w-auto">
-                    <Button size="sm" variant="ghost" className="w-full sm:w-auto">
-                      Przejdź do klienta
+                <div className="flex w-full items-center gap-2 sm:w-auto">
+                  {row.ctaKind === "copy" ? (
+                    <Button
+                      size="sm"
+                      className="flex-1 sm:flex-none"
+                      disabled={!row.portalToken}
+                      onClick={() => void copyPortalLink(row.clientId, row.portalToken)}
+                    >
+                      {copiedId === row.clientId ? "Skopiowano" : row.ctaLabel}
                     </Button>
-                  </Link>
-                  {status.action === "copy_portal_link" && status.portalToken ? (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="w-full sm:w-auto"
-                        onClick={() => void copyPortalLink(client.clientId, status.portalToken)}
-                      >
-                        Skopiuj link
+                  ) : (
+                    <Link href={row.ctaHref ?? row.href} className="flex-1 sm:flex-none">
+                      <Button size="sm" className="w-full">
+                        {row.ctaLabel}
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="w-full sm:w-auto"
-                        onClick={() => setReminder(status.attention ?? null)}
-                      >
-                        Wyślij przypomnienie
-                      </Button>
-                    </>
-                  ) : null}
+                    </Link>
+                  )}
+                  <OverflowMenu>
+                    {({ close }) => (
+                      <>
+                        <OverflowMenuItem href={`/clients/${row.clientId}`} onClick={close}>
+                          Przejdź do klienta
+                        </OverflowMenuItem>
+                        {row.portalToken ? (
+                          <OverflowMenuItem
+                            onClick={() => {
+                              void copyPortalLink(row.clientId, row.portalToken);
+                              close();
+                            }}
+                          >
+                            Skopiuj link
+                          </OverflowMenuItem>
+                        ) : null}
+                        {row.attention?.action === "copy_portal_link" ? (
+                          <OverflowMenuItem
+                            onClick={() => {
+                              setReminder(row.attention ?? null);
+                              close();
+                            }}
+                          >
+                            Wyślij przypomnienie
+                          </OverflowMenuItem>
+                        ) : null}
+                      </>
+                    )}
+                  </OverflowMenu>
                 </div>
               </li>
             ))}
@@ -506,38 +620,13 @@ function fromClientKey(item: DashboardFromClientItem): string {
   return `${item.kind}-${item.clientId}-${item.sessionId ?? item.checkInId ?? item.at}`;
 }
 
-function FromClientRow({ item }: { item: DashboardFromClientItem }) {
-  const href =
-    item.sessionId != null
-      ? `/clients/${item.clientId}/sessions/${item.sessionId}`
-      : `/clients/${item.clientId}`;
-  const kindLabel =
-    item.kind === "session_reply"
-      ? "Odpowiedź"
-      : item.kind === "session_note"
-        ? "Wiadomość"
-        : item.kind === "out_of_order"
-          ? "Poza kolejką"
-          : "Check-in";
-  return (
-    <li>
-      <Link
-        href={href}
-        className="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 rounded-md focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
-      >
-        <span className="flex min-w-0 items-center gap-2.5">
-          <Avatar name={item.clientName} size="sm" />
-          <span className="min-w-0">
-            <span className="block break-words text-sm font-medium">{item.clientName}</span>
-            <span className="mt-0.5 block break-words text-xs text-muted-strong">{item.preview}</span>
-          </span>
-        </span>
-        <span className="shrink-0 pl-8 font-mono text-[11px] uppercase tracking-[var(--track-label)] text-muted sm:pl-0">
-          {kindLabel}
-        </span>
-      </Link>
-    </li>
-  );
+function inboxRank(kind: string, reason?: string): number {
+  if (kind === "session_reply") return 0;
+  if (kind === "low_checkin") return 1;
+  if (kind === "session_note") return 2;
+  if (kind === "no_plan" || reason === "no_plan") return 3;
+  if (kind === "out_of_order") return 4;
+  return 5;
 }
 
 function OnboardingStep({ done, children }: { done: boolean; children: ReactNode }) {

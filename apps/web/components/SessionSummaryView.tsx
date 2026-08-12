@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import { api, SessionDetail } from "@/lib/api";
-import { Button, SegmentedControl, Sheet, StatBlock } from "@/components/ui";
+import { api, ProgressReport, SessionCheckinInput, SessionDetail } from "@/lib/api";
+import { Button, SegmentedControl, Sheet, StatBlock, inputClass } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { formatKg } from "@/lib/plates";
 import { formatSetLoadReps } from "@/lib/weight";
 import { parseShareVariant, type ShareVariant } from "@/lib/shareCard";
+import { buildSessionBlocks } from "@/lib/sessionRounds";
 
 function formatDay(iso: string): string {
   const d = new Date(`${iso}T12:00:00`);
@@ -114,6 +115,9 @@ export function SessionSummaryView({
   onEdit,
   shareImageUrl,
   fromHistory = false,
+  facts,
+  portalToken,
+  onSessionPatched,
 }: {
   session: SessionDetail;
   onBack: () => void;
@@ -122,6 +126,9 @@ export function SessionSummaryView({
   shareImageUrl?: string | null;
   /** Wejście z zakładki historii — górny back „Historia”, CTA wraca do listy. */
   fromHistory?: boolean;
+  facts?: ProgressReport["facts"];
+  portalToken?: string;
+  onSessionPatched?: (next: SessionDetail) => void;
 }) {
   const hasPrs = session.prs.length > 0;
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -132,6 +139,10 @@ export function SessionSummaryView({
   const [sharing, setSharing] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
   const blobCache = useRef<Map<ShareVariant, Blob>>(new Map());
+  const [feeling, setFeeling] = useState<number | null>(session.feelingScore);
+  const [note, setNote] = useState(session.note ?? "");
+  const [checkinBusy, setCheckinBusy] = useState(false);
+  const showFeeling = Boolean(portalToken) && !fromHistory;
 
   const doneTotal = session.exercises.reduce(
     (acc, ex) => {
@@ -185,6 +196,73 @@ export function SessionSummaryView({
     },
     [ensureBlob, shareTitle],
   );
+
+  const saveFeeling = async (score: number) => {
+    if (!portalToken) return;
+    setFeeling(score);
+    setCheckinBusy(true);
+    try {
+      const input: SessionCheckinInput = {
+        feelingScore: score,
+        sleepScore: session.sleepScore,
+        energyScore: session.energyScore,
+      };
+      const next = await api.portal.checkinSession(portalToken, session.id, input);
+      onSessionPatched?.(next);
+    } catch {
+      /* zostaw lokalny wybór */
+    } finally {
+      setCheckinBusy(false);
+    }
+  };
+
+  const saveNote = async () => {
+    if (!portalToken) return;
+    const trimmed = note.trim();
+    if (trimmed === (session.note ?? "")) return;
+    setCheckinBusy(true);
+    try {
+      const next = await api.portal.updateSession(portalToken, session.id, {
+        clientId: session.clientId,
+        performedOn: session.performedOn,
+        assignmentId: session.assignmentId,
+        planDayId: session.planDayId,
+        planId: session.planId,
+        durationSeconds: session.durationSeconds,
+        note: trimmed || null,
+        status: session.status,
+        exercises: session.exercises.map((e) => ({
+          id: e.id > 0 ? e.id : null,
+          exerciseId: e.exerciseId,
+          substitutedFromExerciseId: e.substitutedFromExerciseId ?? null,
+          order: e.order,
+          note: e.note,
+          sets: e.sets.map((s) => ({
+            id: s.id > 0 ? s.id : null,
+            setNumber: s.setNumber,
+            weightKg: s.weightKg,
+            reps: s.reps,
+            durationSeconds: s.durationSeconds,
+            distanceMeters: s.distanceMeters,
+            rir: s.rir,
+            rpe: s.rpe,
+            isWarmup: s.isWarmup,
+            completed: s.completed,
+            note: s.note ?? null,
+            side: s.side ?? null,
+          })),
+        })),
+      });
+      onSessionPatched?.(next);
+    } catch {
+      /* ignore */
+    } finally {
+      setCheckinBusy(false);
+    }
+  };
+
+  const highlightFacts = (facts ?? []).slice(0, 3);
+  const sessionBlocks = buildSessionBlocks(session.exercises);
 
   const aspectClass = variant === "story" ? "aspect-[9/16]" : "aspect-[4/5]";
 
@@ -259,6 +337,30 @@ export function SessionSummaryView({
         </section>
       ) : null}
 
+      {highlightFacts.length > 0 ? (
+        <section aria-label="Twój progres">
+          <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
+            Twój progres
+          </p>
+          <ul className="mt-3 space-y-2">
+            {highlightFacts.map((fact, index) => (
+              <li
+                key={`${fact.kind}-${index}`}
+                className={`text-[15px] leading-snug ${
+                  fact.kind === "pr" ? "font-medium text-pr" : "text-foreground-secondary"
+                }`}
+              >
+                {fact.kind === "pr" && !String(fact.text).includes("★")
+                  ? `★ ${fact.text}`
+                  : fact.kind === "gain" || (fact.deltaKg != null && fact.deltaKg > 0)
+                    ? `▲ ${fact.text}`
+                    : fact.text}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <section
         aria-label="Podsumowanie"
         className="grid grid-cols-3 gap-3 border-y border-border py-5"
@@ -268,20 +370,70 @@ export function SessionSummaryView({
         <StatBlock label="Serie" value={`${doneTotal.done}/${doneTotal.total}`} />
       </section>
 
+      {showFeeling ? (
+        <section aria-label="Samopoczucie">
+          <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
+            Samopoczucie
+          </p>
+          <p className="mt-1 text-sm text-muted">Opcjonalnie — sen zostaje na ekranie Dziś.</p>
+          <div className="mt-3 grid grid-cols-5 gap-1">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                disabled={checkinBusy}
+                onClick={() => void saveFeeling(n)}
+                className={`min-h-11 rounded-[8px] border py-2 font-mono text-sm font-semibold tabular-nums transition-colors ${
+                  feeling === n
+                    ? "border-accent-border bg-accent-dim text-foreground"
+                    : "border-border-strong text-muted hover:border-border-strong hover:bg-surface-hover"
+                }`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+          <textarea
+            className={`${inputClass} mt-3 min-h-[72px] resize-none py-3`}
+            placeholder="Wiadomość do trenera (opcjonalnie)"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            onBlur={() => void saveNote()}
+            rows={2}
+          />
+        </section>
+      ) : null}
+
       <section aria-label="Ćwiczenia">
         <p className="mb-1 font-mono text-xs font-medium uppercase tracking-caps text-muted">
           Ćwiczenia
         </p>
         <ul className="divide-y divide-border">
-          {session.exercises.map((ex) => {
+          {sessionBlocks.map((block) => {
+            const indices = block.kind === "single" ? [block.exIdx] : block.members;
+            const pos =
+              block.kind === "superset"
+                ? session.exercises[block.members[0]]?.supersetLabel?.replace(/[a-z]+$/i, "") ?? ""
+                : "";
+            return (
+              <li key={block.kind === "single" ? `ex-${block.exIdx}` : `ss-${block.group}`}>
+                {block.kind === "superset" ? (
+                  <p className="pt-3 font-mono text-xs font-medium uppercase tracking-caps text-muted">
+                    Superseria {pos}
+                  </p>
+                ) : null}
+                {indices.map((exIdx) => {
+            const ex = session.exercises[exIdx];
+            if (!ex) return null;
             const done = ex.sets.filter((s) => s.completed).length;
             const incomplete = done < ex.sets.length;
             const isTime = ex.exerciseType === "time";
             const exerciseNote = ex.note?.trim() || null;
             return (
-              <li key={ex.id} className="py-3.5">
+              <div key={ex.id} className="py-3.5">
                 <div className="flex min-h-7 items-start justify-between gap-3">
                   <p className="min-w-0 flex-1 break-words text-[15px] font-medium leading-snug text-foreground">
+                    {ex.supersetLabel ? `${ex.supersetLabel} ` : ""}
                     {ex.exerciseName}
                   </p>
                   {incomplete ? (
@@ -335,6 +487,9 @@ export function SessionSummaryView({
                     );
                   })}
                 </ul>
+              </div>
+            );
+                })}
               </li>
             );
           })}
@@ -347,7 +502,7 @@ export function SessionSummaryView({
         </div>
       </section>
 
-      {session.note ? (
+      {session.note && !showFeeling ? (
         <section>
           <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
             Wiadomość do trenera

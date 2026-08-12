@@ -11,6 +11,7 @@ import {
   MostImproved,
   MuscleVolumeResponse,
   PortalSessionSummary,
+  ProgressReport,
   StagnationResponse,
 } from "@/lib/api";
 import { Card, EmptyState, ErrorBanner, SegmentedControl, StatBlock } from "@/components/ui";
@@ -125,6 +126,7 @@ export default function PortalProgressPage() {
   const [trends, setTrends] = useState<ClientTrendsResponse | null>(null);
   const [mostImproved, setMostImproved] = useState<MostImproved | null | undefined>(undefined);
   const [stagnation, setStagnation] = useState<StagnationResponse | null | undefined>(undefined);
+  const [report, setReport] = useState<ProgressReport | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [expandedRecordId, setExpandedRecordId] = useState<number | null>(null);
   const [statsCache, setStatsCache] = useState<Record<number, ExerciseStats | "loading" | "error">>({});
@@ -138,14 +140,16 @@ export default function PortalProgressPage() {
       api.portal.trends(token, 12),
       api.portal.mostImproved(token, 90).catch(() => null),
       api.portal.stagnation(token).catch(() => null),
+      api.portal.progressReport(token).catch(() => null),
     ])
-      .then(([s, r, mv, tr, mi, st]) => {
+      .then(([s, r, mv, tr, mi, st, pr]) => {
         setSessions(s);
         setRecords(r);
         setMuscleVolume(mv);
         setTrends(tr);
         setMostImproved(mi);
         setStagnation(st);
+        setReport(pr);
       })
       .catch((e: Error) => setError(e.message));
   }, [token]);
@@ -257,10 +261,34 @@ export default function PortalProgressPage() {
 
       <ErrorBanner message={error} />
 
-      {!sessions || !records || mostImproved === undefined || stagnation === undefined ? (
+      {!sessions || !records || mostImproved === undefined || stagnation === undefined || report === undefined ? (
         <PortalPageSkeleton label="Wczytuję progres…" />
       ) : (
         <>
+          {report && report.facts.length > 0 ? (
+            <section aria-label="Fakty">
+              <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
+                Ostatnio
+              </p>
+              <ul className="mt-3 space-y-2">
+                {report.facts.slice(0, 3).map((fact, index) => (
+                  <li
+                    key={`${fact.kind}-${index}`}
+                    className={`text-[15px] leading-snug ${
+                      fact.kind === "pr" ? "font-medium text-pr" : "text-foreground-secondary"
+                    }`}
+                  >
+                    {fact.kind === "pr" && !String(fact.text).includes("★")
+                      ? `★ ${fact.text}`
+                      : fact.deltaKg != null && fact.deltaKg > 0
+                        ? `▲ ${fact.text}`
+                        : fact.text}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
           <section
             aria-label="Podsumowanie"
             className="grid grid-cols-2 gap-3 border-y border-border py-5 sm:grid-cols-4"

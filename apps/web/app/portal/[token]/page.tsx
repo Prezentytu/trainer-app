@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -13,7 +13,6 @@ import {
   PortalHome,
   PortalSessionSummary,
   PortalWeekDay,
-  ProgressReport,
   SessionDetail,
 } from "@/lib/api";
 import { Button, ErrorBanner } from "@/components/ui";
@@ -93,7 +92,6 @@ export default function PortalTodayPage() {
   const router = useRouter();
   const [home, setHome] = useState<PortalHome | null>(null);
   const [history, setHistory] = useState<PortalSessionSummary[]>([]);
-  const [progress, setProgress] = useState<ProgressReport | null>(null);
   const [intake, setIntake] = useState<ClientIntake | null>(null);
   const [checkIns, setCheckIns] = useState<ClientCheckIn[]>([]);
   const [exercises, setExercises] = useState<PortalExercise[]>([]);
@@ -104,6 +102,8 @@ export default function PortalTodayPage() {
   const [staleBusy, setStaleBusy] = useState<"save" | "discard" | null>(null);
   const [selectedWeekDay, setSelectedWeekDay] = useState<PortalWeekDay | null>(null);
   const { setStickyCta } = usePortalStickyCta();
+  const heroCtaRef = useRef<HTMLDivElement>(null);
+  const [heroCtaLeftView, setHeroCtaLeftView] = useState(false);
   const todayIso = useMemo(() => todayIsoLocal(), []);
 
   const exerciseById = useMemo(() => {
@@ -116,15 +116,13 @@ export default function PortalTodayPage() {
     Promise.all([
       api.portal.home(token, todayIso),
       api.portal.sessions(token).catch(() => [] as PortalSessionSummary[]),
-      api.portal.progressReport(token).catch(() => null),
       api.portal.getIntake(token).catch(() => null),
       api.portal.checkIns(token).catch(() => [] as ClientCheckIn[]),
       api.portal.exercises(token).catch(() => [] as PortalExercise[]),
     ])
-      .then(([h, s, p, intk, checkinRows, exs]) => {
+      .then(([h, s, intk, checkinRows, exs]) => {
         setHome(h);
         setHistory(s);
-        setProgress(p);
         setIntake(intk);
         setCheckIns(checkinRows);
         setExercises(exs);
@@ -272,12 +270,31 @@ export default function PortalTodayPage() {
     }
   }, [home, token, load]);
 
-  // CTA w dolnym pasku — świeża sesja = Kontynuuj z kontekstem; inaczej Rozpocznij / Powtórz.
+  // Jeden invert: sticky tylko gdy CTA nad listą wyjedzie z kadru (albo gdy go nie ma).
   useEffect(() => {
+    const el = heroCtaRef.current;
+    if (!el) {
+      setHeroCtaLeftView(false);
+      return;
+    }
+    const io = new IntersectionObserver(
+      ([entry]) =>
+        setHeroCtaLeftView(!(entry.isIntersecting && entry.intersectionRatio >= 0.35)),
+      { threshold: [0, 0.35, 1] },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [home?.inProgressSession?.id, home?.today?.day.id]);
+
+  useEffect(() => {
+    const hasInFlow = Boolean(home?.inProgressSession || home?.today);
+    if (hasInFlow && !heroCtaLeftView) {
+      setStickyCta(null);
+      return () => setStickyCta(null);
+    }
     if (home?.inProgressSession) {
-      const label = home.inProgressSession.dayLabel?.trim() || "trening";
       setStickyCta({
-        label: `Kontynuuj: ${label}`,
+        label: "Kontynuuj trening",
         disabled: false,
         onClick: () => router.push(`/portal/${token}/session/${home.inProgressSession!.id}`),
       });
@@ -306,6 +323,7 @@ export default function PortalTodayPage() {
   }, [
     home,
     lastCompleted,
+    heroCtaLeftView,
     setStickyCta,
     start,
     starting,
@@ -370,14 +388,11 @@ export default function PortalTodayPage() {
     );
   }
 
-  const firstName = home.client.name.split(" ")[0];
-  const tip = progress?.facts[0]?.text;
   const estMin = today ? estimateDayMinutes(today.day.items) : null;
   const weekMeta = today?.day ? `tydzień ${today.day.weekNumber}` : null;
   const hasTodayCheckIn = checkIns.some((checkIn) => checkIn.date.slice(0, 10) === todayIso);
   const needsIntake = Boolean(intake && !hasEssentialIntake(intake));
 
-  const showSticky = Boolean(today || lastCompleted || fresh);
   // Gdy świeża sesja trwa — karta pokazuje dzień tej sesji (spójność z CTA).
   const cardTitle = fresh?.dayLabel?.trim() || today?.day.label || null;
   const cardSubtitle = today
@@ -407,12 +422,20 @@ export default function PortalTodayPage() {
   };
 
   return (
-    <div className={`mx-auto max-w-lg space-y-8 ${showSticky ? "pb-36" : "pb-24"}`}>
+    <div className="mx-auto max-w-lg space-y-8">
       <header>
-        <p className="text-xs font-medium uppercase tracking-caps text-muted">Dziś</p>
-        <h1 className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-tight text-foreground sm:text-3xl">
-          Cześć, {firstName}
+        <p className="text-xs font-medium uppercase tracking-caps text-muted">
+          {heroSectionLabel}
+        </p>
+        <h1 className="mt-2 break-words text-[1.75rem] font-semibold leading-tight tracking-tight text-foreground sm:text-3xl">
+          {cardTitle || (fresh ? "Trening w toku" : "Trening")}
         </h1>
+        {cardSubtitle ? (
+          <p className="mt-1.5 text-[15px] text-muted">{cardSubtitle}</p>
+        ) : null}
+        {metaRight ? (
+          <p className="mt-1 font-mono text-sm tabular-nums text-muted">{metaRight}</p>
+        ) : null}
       </header>
 
       <ErrorBanner message={error} />
@@ -517,31 +540,32 @@ export default function PortalTodayPage() {
         </section>
       ) : (
         <section aria-label={heroSectionLabel} className="space-y-1">
-          <div className="flex items-baseline justify-between gap-3">
-            <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
-              {heroSectionLabel}
-            </p>
-            {metaRight ? (
-              <p className="shrink-0 font-mono text-xs tabular-nums text-muted">{metaRight}</p>
-            ) : null}
-          </div>
-          {cardTitle ? (
-            <h2 className="break-words text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-              {cardTitle}
-            </h2>
-          ) : null}
-          {cardSubtitle ? (
-            <p className="mt-1 text-[15px] text-muted">{cardSubtitle}</p>
+          {today?.cycleRestart && !fresh ? (
+            <p className="text-sm text-muted">Cykl ukończony — zaczynasz od nowa.</p>
           ) : null}
 
-          {today?.cycleRestart && !fresh ? (
-            <p className="mt-3 text-sm text-muted">
-              Cykl ukończony — zaczynasz od nowa.
-            </p>
+          {fresh ? (
+            <div ref={heroCtaRef} className="pt-2">
+              <Button full size="lg" onClick={goToLiveSession}>
+                Kontynuuj trening
+              </Button>
+            </div>
+          ) : today ? (
+            <div ref={heroCtaRef} className="pt-2">
+              <Button
+                full
+                size="lg"
+                disabled={starting}
+                loading={starting}
+                onClick={() => void start()}
+              >
+                {starting ? "Startuję…" : "Rozpocznij trening"}
+              </Button>
+            </div>
           ) : null}
 
           {heroRows.length > 0 ? (
-            <ul className="mt-6 divide-y divide-border">
+            <ul className="mt-4 divide-y divide-border">
               {heroRows.map((row) => (
                 <li key={row.key}>
                   {fresh ? (
@@ -576,9 +600,6 @@ export default function PortalTodayPage() {
             </ul>
           ) : null}
 
-          {tip && !fresh ? <p className="pt-3 text-sm text-muted">Ostatnio: {tip}</p> : null}
-
-          {/* Gdy jest dziś — sticky „Rozpocznij” jest dominantą; Powtórz tylko bez today. */}
           {lastCompleted && !fresh && !stale && !today ? (
             <div className="pt-4">
               <Button
@@ -671,27 +692,20 @@ export default function PortalTodayPage() {
         ) : null}
 
         {needsIntake ? (
-          <section className="rounded-xl border border-dashed border-border-strong bg-surface-raised px-4 py-4">
-            <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
-              Ankieta startowa
-            </p>
-            <p className="mt-2 text-[15px] font-semibold text-foreground">
-              Uzupełnij kilka informacji o sobie
-            </p>
-            <p className="mt-1 text-sm text-muted">
-              Cele, zdrowie i styl życia — dzięki temu trener ułoży bezpieczny plan.
-            </p>
-            <div className="mt-4">
-              <Link href={`/portal/${token}/intake`} className="block">
-                <Button variant="secondary" full>
-                  Uzupełnij ankietę
-                </Button>
-              </Link>
+          <Link
+            href={`/portal/${token}/intake`}
+            className="flex min-h-11 w-full items-center gap-3 rounded-xl border border-dashed border-border-strong bg-surface-raised px-4 py-3 text-left transition-[background-color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.98]"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
+                Ankieta startowa
+              </p>
+              <p className="mt-1 text-sm text-muted">Kilka informacji dla trenera</p>
             </div>
-          </section>
+          </Link>
         ) : null}
 
-        <PwaInstallPrompt token={token} />
+        <PwaInstallPrompt token={token} defaultCollapsed />
       </div>
     </div>
   );

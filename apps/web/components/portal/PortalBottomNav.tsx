@@ -58,9 +58,9 @@ export function PortalBottomNav({ token }: { token: string }) {
   }
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex flex-col items-center gap-2.5 px-5 pb-[max(20px,env(safe-area-inset-bottom))]">
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background">
       {stickyCta ? (
-        <div className="pointer-events-auto w-full max-w-lg">
+        <div className="mx-auto max-w-lg px-4 pt-3">
           <Button
             full
             size="lg"
@@ -72,10 +72,7 @@ export function PortalBottomNav({ token }: { token: string }) {
           </Button>
         </div>
       ) : null}
-      <nav
-        aria-label="Nawigacja portalu"
-        className="pointer-events-auto inline-flex gap-0.5 rounded-[var(--r-pill)] border border-border-strong bg-surface p-1"
-      >
+      <nav aria-label="Nawigacja portalu" className="mx-auto flex max-w-lg">
         {TABS.map((tab) => {
           const active = tab.match(pathname, token);
           return (
@@ -83,15 +80,22 @@ export function PortalBottomNav({ token }: { token: string }) {
               key={tab.id}
               href={tab.href(token)}
               aria-current={active ? "page" : undefined}
-              aria-label={tab.label}
-              className={`flex min-h-11 min-w-[62px] flex-col items-center justify-center gap-0.5 rounded-[var(--r-pill)] px-2 transition-[background-color,transform,color] duration-[var(--dur-fast)] ease-[var(--ease-out)] active:[transform:var(--press)] ${FOCUS} ${
-                active
-                  ? "bg-invert-bg text-invert-fg"
-                  : "text-fg-faint hover:bg-surface-raised hover:text-foreground"
+              className={`flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-1 px-1 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] transition-[color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] active:[transform:var(--press)] ${FOCUS} ${
+                active ? "text-foreground" : "text-muted hover:text-foreground-secondary"
               }`}
             >
+              <span
+                className={`h-0.5 w-4 rounded-full ${active ? "bg-invert-bg" : "bg-transparent"}`}
+                aria-hidden
+              />
               <Icon name={tab.icon} size={20} decorative />
-              <span className="text-xs font-semibold leading-none tracking-wide">{tab.label}</span>
+              <span
+                className={`text-xs leading-none tracking-wide ${
+                  active ? "font-semibold" : "font-medium"
+                }`}
+              >
+                {tab.label}
+              </span>
             </Link>
           );
         })}

@@ -3,8 +3,12 @@ import { formatMeasureCore } from "@/lib/measure";
 import { formatRest } from "@/components/ui";
 import { polishExerciseCount, polishSetCount } from "@/lib/plural";
 import { formatLoadDisplay } from "@/lib/weight";
+import { estimateItemsMinutes, formatDurationApprox } from "@/lib/estimateDuration";
+import { computeGroupsFromLinks } from "@/lib/supersets";
 import { OPEN_RAMP_SET_FALLBACK, formatRampScheme, parseRampSchemeInfo } from "./listGroups";
 import { BuilderDay, BuilderItem } from "./types";
+
+export { formatDurationApprox };
 
 export type SchemeParts = {
   primary: string;
@@ -191,21 +195,27 @@ export function dayStatsLine(day: BuilderDay, exercises: Exercise[]): string {
   ].join(" · ");
 }
 
-/** Heurystyka czasu: serie × (40s + przerwa). */
+/** Czas dnia — te same rundy co portal (`estimateDayMinutes`). */
 export function estimateWeekMinutes(items: BuilderItem[], exercises: Exercise[]): number {
-  let seconds = 0;
-  for (const item of items) {
-    const exercise = exercises.find((e) => e.id === item.exerciseId);
-    const sets = itemSetCount(item, exercise) || 3;
-    const rest = item.restBetweenSetsSeconds ?? exercise?.defaultRestBetweenSetsSeconds ?? 60;
-    seconds += sets * (40 + rest);
-  }
-  return Math.round(seconds / 60);
+  const groups = computeGroupsFromLinks(items.map((item) => item.linkedToNext));
+  return estimateItemsMinutes(
+    items.map((item) => {
+      const exercise = exercises.find((e) => e.id === item.exerciseId);
+      return {
+        setScheme: item.setScheme,
+        prescribedSets: item.prescribedSets,
+        sets: item.sets ?? exercise?.defaultSets ?? 3,
+        restBetweenSetsSeconds:
+          item.restBetweenSetsSeconds ?? exercise?.defaultRestBetweenSetsSeconds ?? 60,
+        restAfterExerciseSeconds: item.restAfterExerciseSeconds ?? 0,
+        repDurationSeconds: item.repDurationSeconds,
+      };
+    }),
+    (_item, index) => groups[index] ?? null,
+  );
 }
 
-export function formatDurationApprox(minutes: number): string {
-  if (minutes < 60) return `~${minutes} min`;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return m === 0 ? `~${h} h` : `~${h} h ${m} min`;
+/** Suma dni — nie spłaszcza tygodnia (klamra nie przechodzi przez granicę dnia). */
+export function estimateDaysMinutes(days: BuilderDay[], exercises: Exercise[]): number {
+  return days.reduce((sum, day) => sum + estimateWeekMinutes(day.items, exercises), 0);
 }
