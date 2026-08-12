@@ -663,6 +663,10 @@ export type LoggedExercise = {
   order: number;
   note: string | null;
   restSeconds: number | null;
+  /** Ta sama wartość = klamra superserii; null = straight. */
+  supersetGroup: number | null;
+  /** `"2a"` / `"2b"`; null gdy solo. */
+  supersetLabel: string | null;
   /** Cel RIR / tempo / notatka trenera z planu (additive). */
   targetRir?: number | null;
   tempo?: string | null;

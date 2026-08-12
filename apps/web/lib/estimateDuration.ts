@@ -1,4 +1,5 @@
 import { PlanItem } from "@/lib/api";
+import { groupConsecutiveBySuperset } from "@/lib/supersets";
 
 const OPEN_RAMP_SET_FALLBACK = 5;
 
@@ -6,28 +7,53 @@ function isRampScheme(setScheme: string | null | undefined): boolean {
   return !!setScheme && /rampa/i.test(setScheme);
 }
 
-/** Heurystyka czasu dnia: serie × (praca + przerwa). Praca = duration serii lub 40s. */
+function itemSetCount(item: PlanItem): number {
+  if (isRampScheme(item.setScheme)) {
+    const boCount = item.prescribedSets.filter(
+      (s) => (s.role ?? "").toLowerCase() === "backoff",
+    ).length;
+    const rampSets = item.overrides?.sets ?? OPEN_RAMP_SET_FALLBACK;
+    return rampSets + boCount;
+  }
+  if (item.prescribedSets.length > 0) return item.prescribedSets.length;
+  return item.sets || 3;
+}
+
+function itemWorkSeconds(item: PlanItem): number {
+  return item.repDurationSeconds ?? 40;
+}
+
+function itemRestSeconds(item: PlanItem): number {
+  return item.restBetweenSetsSeconds ?? 60;
+}
+
+/** Heurystyka czasu dnia. Superseria: seria pary = suma pracy członków + 1 przerwa (bez restu po ostatniej pracy dnia). */
 export function estimateDayMinutes(items: PlanItem[]): number {
+  const blocks = groupConsecutiveBySuperset(items, (it) => it.supersetGroup);
   let seconds = 0;
-  for (const item of items) {
-    const rest = item.restBetweenSetsSeconds ?? 60;
-    const work = item.repDurationSeconds ?? 40;
-    if (isRampScheme(item.setScheme)) {
-      const boCount = item.prescribedSets.filter(
-        (s) => (s.role ?? "").toLowerCase() === "backoff"
-      ).length;
-      // otwarta rampa: overrides.sets = null → fallback; inaczej podana liczba
-      const rampSets = item.overrides?.sets ?? OPEN_RAMP_SET_FALLBACK;
-      seconds += (rampSets + boCount) * (work + rest);
-    } else if (item.prescribedSets.length > 0) {
-      for (const s of item.prescribedSets) {
-        seconds += (s.durationSeconds ?? work) + rest;
-      }
-    } else {
-      const sets = item.sets || 3;
-      seconds += sets * (work + rest);
+
+  for (let b = 0; b < blocks.length; b++) {
+    const block = blocks[b];
+    const isLastBlock = b === blocks.length - 1;
+
+    if (!block.multi) {
+      const item = block.items[0];
+      const rest = itemRestSeconds(item);
+      const work = itemWorkSeconds(item);
+      const sets = itemSetCount(item);
+      seconds += sets * work;
+      seconds += rest * (isLastBlock ? Math.max(0, sets - 1) : sets);
+      seconds += item.restAfterExerciseSeconds ?? 0;
+      continue;
     }
-    seconds += item.restAfterExerciseSeconds ?? 0;
+
+    const rounds = Math.max(...block.items.map(itemSetCount), 0);
+    const groupRest = Math.max(...block.items.map(itemRestSeconds), 0);
+    for (const item of block.items) {
+      seconds += itemSetCount(item) * itemWorkSeconds(item);
+    }
+    const restAfterRounds = isLastBlock ? Math.max(0, rounds - 1) : rounds;
+    seconds += groupRest * restAfterRounds;
   }
   const minutes = Math.round(seconds / 60);
   if (minutes <= 0) return 5;

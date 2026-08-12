@@ -222,7 +222,7 @@ export function readRampBackoffs(item: BuilderItem): BackoffRow[] {
 }
 
 /** Jedna linia podsumowania karty Lista (jak makieta WA). */
-export function listEntrySummary(item: BuilderItem, exercise?: Exercise): string {
+export function listEntrySummary(item: BuilderItem, exercise?: Exercise, omitRest = false): string {
   const sets = item.sets ?? exercise?.defaultSets ?? null;
   const ramp = parseRampSchemeInfo(item.setScheme);
   let schemeText: string;
@@ -248,11 +248,11 @@ export function listEntrySummary(item: BuilderItem, exercise?: Exercise): string
     parts.push(`RIR ${rirLabel}`);
   }
   const rest = item.restBetweenSetsSeconds ?? exercise?.defaultRestBetweenSetsSeconds ?? null;
-  if (rest != null) parts.push(`przerwa ${rest}s`);
+  if (rest != null && !omitRest) parts.push(`przerwa ${rest}s`);
   return parts.join(" · ");
 }
 
-function itemSetCount(item: BuilderItem, exercise?: Exercise): number {
+export function itemSetCount(item: BuilderItem, exercise?: Exercise): number {
   const ramp = parseRampSchemeInfo(item.setScheme);
   if (ramp != null) {
     const boCount = item.prescribedSets.filter((s) => s.role === "backoff").length;

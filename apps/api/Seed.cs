@@ -214,7 +214,7 @@ public static class Seed
                             ],
                         },
                         new PlanItem { ExerciseId = row.Id, Order = 2, Sets = 4, Reps = 8, RepsMax = 10, LoadKg = 50, TargetRir = 2, RestBetweenSetsSeconds = 90, SupersetGroup = 1 },
-                        new PlanItem { ExerciseId = pushups.Id, Order = 3, Sets = 3, Reps = 10, TargetRir = 2, RestBetweenSetsSeconds = 60, SupersetGroup = 1 },
+                        new PlanItem { ExerciseId = pushups.Id, Order = 3, Sets = 4, Reps = 10, TargetRir = 2, RestBetweenSetsSeconds = 90, SupersetGroup = 1 },
                         new PlanItem { ExerciseId = pullup.Id, Order = 4, Sets = 3, Reps = 6, TargetRir = 1, RestBetweenSetsSeconds = 120 },
                         new PlanItem { ExerciseId = plank.Id, Order = 5, Sets = 3, RepDurationSeconds = 60, TargetRir = 1, RestBetweenSetsSeconds = 45 },
                     ],
@@ -240,8 +240,8 @@ public static class Seed
                     Items =
                     [
                         new PlanItem { ExerciseId = squat.Id, Order = 1, Sets = 3, Reps = 10, LoadPercent = 70, TargetRir = 2, RestAfterExerciseSeconds = 120 },
-                        new PlanItem { ExerciseId = bench.Id, Order = 2, Sets = 3, Reps = 10, LoadKg = 40, TargetRir = 2, RestAfterExerciseSeconds = 120 },
-                        new PlanItem { ExerciseId = row.Id, Order = 3, TargetRir = 3, RestAfterExerciseSeconds = 90 },
+                        new PlanItem { ExerciseId = bench.Id, Order = 2, Sets = 3, Reps = 10, LoadKg = 40, TargetRir = 2, RestBetweenSetsSeconds = 90, RestAfterExerciseSeconds = 90, SupersetGroup = 1 },
+                        new PlanItem { ExerciseId = row.Id, Order = 3, Sets = 3, Reps = 10, TargetRir = 3, RestBetweenSetsSeconds = 90, RestAfterExerciseSeconds = 90, SupersetGroup = 1 },
                         new PlanItem { ExerciseId = plank.Id, Order = 4, TargetRir = 1, RestAfterExerciseSeconds = 60 },
                     ],
                 },

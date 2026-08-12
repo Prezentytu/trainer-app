@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Exercise } from "@/lib/api";
-import { IconButton } from "@/components/ui";
+import { IconButton, formatRest } from "@/components/ui";
 import { DayTabs } from "./DayTabs";
 import { ListComposer } from "./ListComposer";
 import { ListEntryCard } from "./ListEntryCard";
@@ -199,7 +199,12 @@ export function ListView({
                       <span className="font-mono text-xs font-semibold tracking-[0.08em] text-accent-strong">
                         SUPERSERIA {g.positionNum}
                       </span>
-                      <span className="text-xs text-muted">bez przerwy {g.flow}</span>
+                      <span className="text-xs text-muted">
+                        {g.flow}
+                        {g.entries[0]?.item.restBetweenSetsSeconds != null
+                          ? ` · ${formatRest(g.entries[0].item.restBetweenSetsSeconds)} po superserii`
+                          : ""}
+                      </span>
                     </div>
                   ) : null}
                   {g.entries.map((entry) => {

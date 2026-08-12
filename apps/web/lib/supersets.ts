@@ -41,3 +41,46 @@ export function computeGroupsFromLinks(linked: boolean[]): Array<number | null> 
   }
   return groups;
 }
+
+export type ConsecutiveGroup<T> = {
+  group: number | null;
+  items: T[];
+  startIndex: number;
+  multi: boolean;
+  positionNum: number;
+  labels: Array<string | null>;
+};
+
+/** Sąsiadujące pozycje z tym samym `supersetGroup` = jedna klamra. Solo / orphan = osobny blok. */
+export function groupConsecutiveBySuperset<T>(
+  items: T[],
+  groupOf: (item: T) => number | null,
+  opts?: { startAt?: number },
+): ConsecutiveGroup<T>[] {
+  const groups: ConsecutiveGroup<T>[] = [];
+  let position = opts?.startAt ?? 1;
+  let i = 0;
+  while (i < items.length) {
+    const g = groupOf(items[i]);
+    const start = i;
+    if (g != null) {
+      while (i + 1 < items.length && groupOf(items[i + 1]) === g) i++;
+    }
+    const slice = items.slice(start, i + 1);
+    const multi = slice.length > 1;
+    const labels = slice.map((_, idx) =>
+      multi ? `${position}${String.fromCharCode(97 + idx)}` : null,
+    );
+    groups.push({
+      group: multi ? g : null,
+      items: slice,
+      startIndex: start,
+      multi,
+      positionNum: position,
+      labels,
+    });
+    position++;
+    i++;
+  }
+  return groups;
+}

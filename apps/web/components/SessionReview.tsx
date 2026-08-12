@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Fragment } from "react";
 import { api, SessionDetail, WorkoutSessionInput } from "@/lib/api";
 import { Button, Card, ErrorBanner, Field, formatRest, inputClass, Marker } from "@/components/ui";
 import { formatKg } from "@/lib/plates";
 import { formatSetLoadReps, isDumbbellPair } from "@/lib/weight";
+import { buildSessionBlocks } from "@/lib/sessionRounds";
 
 function toSessionInput(session: SessionDetail, performedOn: string): WorkoutSessionInput {
   return {
@@ -232,18 +233,26 @@ export function SessionReview({
       </div>
 
       <div className="space-y-3">
-        {session.exercises.map((ex) => {
+        {buildSessionBlocks(session.exercises).map((block) => {
+          const indices = block.kind === "single" ? [block.exIdx] : block.members;
+          const cards = indices.map((exIdx) => {
+          const ex = session.exercises[exIdx];
+          if (!ex) return null;
           const isTime = ex.exerciseType === "time";
           const pairDb = isDumbbellPair(ex);
           const done = ex.sets.filter((s) => s.completed).length;
           const hasPr =
             ex.sets.some((s) => s.isPr && s.completed) ||
             session.prs.some((p) => p.exerciseId === ex.exerciseId);
+          const restMeta =
+            ex.restSeconds != null
+              ? ` · ${formatRest(ex.restSeconds)}${ex.supersetLabel ? " po superserii" : ""}`
+              : "";
           return (
             <Card
               key={ex.id}
-              title={ex.exerciseName}
-              meta={`${done}/${ex.sets.length} serii${ex.restSeconds != null ? ` · ${formatRest(ex.restSeconds)}` : ""}`}
+              title={`${ex.supersetLabel ? `${ex.supersetLabel} ` : ""}${ex.exerciseName}`}
+              meta={`${done}/${ex.sets.length} serii${restMeta}`}
               headerAction={hasPr ? <Marker tone="pr">PR</Marker> : undefined}
             >
               {ex.substitutedFromName ? (
@@ -325,6 +334,24 @@ export function SessionReview({
                 </p>
               ) : null}
             </Card>
+          );
+          });
+          if (block.kind === "single") {
+            return <Fragment key={`ex-${block.exIdx}`}>{cards}</Fragment>;
+          }
+          const pos = session.exercises[block.members[0]]?.supersetLabel?.replace(/[a-z]+$/i, "") ?? "";
+          return (
+            <div
+              key={`ss-${block.group}-${block.members.join("-")}`}
+              className="overflow-hidden rounded-[10px] border border-border-strong"
+            >
+              <div className="border-b border-border bg-surface-raised px-3 py-1.5">
+                <span className="font-mono text-xs font-semibold uppercase tracking-[0.08em] text-muted">
+                  Superseria {pos}
+                </span>
+              </div>
+              <div className="space-y-3 p-3">{cards}</div>
+            </div>
           );
         })}
       </div>

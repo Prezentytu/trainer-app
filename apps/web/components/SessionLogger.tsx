@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   api,
   CATEGORY_LABELS,
@@ -33,6 +33,12 @@ import { demoMedia } from "@/lib/youtube";
 import { lightHaptic, unlockAudio } from "@/lib/restAlarm";
 import { clearLocalDraft, readLocalDraft, saveLocalDraft } from "@/lib/sessionDraft";
 import { readAutoRest, readLogRir } from "@/lib/portalPrefs";
+import {
+  buildSessionBlocks,
+  groupRestSeconds,
+  nextIncompleteFocus,
+  shouldStartRest,
+} from "@/lib/sessionRounds";
 import { SetValueInput } from "@/components/session/SetValueInput";
 import { SessionClock } from "@/components/session/SessionClock";
 import { RestTimer } from "@/components/session/RestTimer";
@@ -355,6 +361,24 @@ function restPillLabel(seconds: number): string {
   return `${seconds} s`;
 }
 
+function SessionKlamra({
+  wrap,
+  header,
+  children,
+}: {
+  wrap: boolean;
+  header: ReactNode;
+  children: ReactNode;
+}) {
+  if (!wrap) return <>{children}</>;
+  return (
+    <div className="overflow-hidden rounded-[10px] border border-border-strong">
+      {header}
+      <div className="divide-y divide-border">{children}</div>
+    </div>
+  );
+}
+
 export function SessionLogger({
   session,
   portalToken,
@@ -450,17 +474,36 @@ export function SessionLogger({
   const statusRef = useRef(session.status);
 
   const restContext = useMemo(() => {
-    const idx = draft.exercises.findIndex((ex) => ex.sets.some((s) => !s.completed));
-    const ex = idx >= 0 ? draft.exercises[idx] : null;
-    const nextSet = ex?.sets.find((s) => !s.completed);
+    const focus = nextIncompleteFocus(draft.exercises);
+    const ex = focus ? draft.exercises[focus.exIdx] : null;
+    const nextSet = focus ? ex?.sets[focus.setIdx] : null;
+    const blocks = buildSessionBlocks(draft.exercises);
+    const block = focus
+      ? blocks.find((b) =>
+          b.kind === "single" ? b.exIdx === focus.exIdx : b.members.includes(focus.exIdx),
+        )
+      : null;
+    let roundLabel: string | null = null;
+    let setsDone = nextSet?.setNumber ?? 0;
+    let setsTotal = ex?.sets.length ?? 0;
+    if (block?.kind === "superset" && ex && focus) {
+      const working = ex.sets.filter((s) => !s.isWarmup);
+      const workingIdx = working.findIndex((s) => s === ex.sets[focus.setIdx]);
+      const round = workingIdx >= 0 ? workingIdx + 1 : 1;
+      roundLabel = `Seria ${round} z ${block.roundCount}`;
+      setsDone = round;
+      setsTotal = block.roundCount;
+    }
+    const name = ex?.exerciseName ?? null;
+    const labeled = ex?.supersetLabel ? `${ex.supersetLabel} ${name}` : name;
     return {
-      nextLabel: ex?.exerciseName ?? null,
-      nextExerciseName: ex?.exerciseName ?? null,
+      nextLabel: roundLabel ? `${roundLabel} · ${labeled}` : labeled,
+      nextExerciseName: labeled,
       nextSetNumber: nextSet?.setNumber ?? null,
       nextSetsInExercise: ex?.sets.length ?? null,
-      // Lock Screen / keep-alive: seria w ćwiczeniu, nie globalnie w treningu
-      setsDone: nextSet?.setNumber ?? 0,
-      setsTotal: ex?.sets.length ?? 0,
+      roundLabel,
+      setsDone,
+      setsTotal,
     };
   }, [draft.exercises]);
 
@@ -657,14 +700,9 @@ export function SessionLogger({
     if (didScrollToNext.current) return;
     if (session.status !== "in_progress") return;
     let targetUid: string | null = null;
-    for (const ex of draft.exercises) {
-      for (const s of ex.sets) {
-        if (!s.completed) {
-          targetUid = s.uid;
-          break;
-        }
-      }
-      if (targetUid) break;
+    const focus = nextIncompleteFocus(draft.exercises);
+    if (focus) {
+      targetUid = draft.exercises[focus.exIdx]?.sets[focus.setIdx]?.uid ?? null;
     }
     if (!targetUid) return;
     const el = setRowRefs.current.get(targetUid);
@@ -764,11 +802,32 @@ export function SessionLogger({
         setLastSetAt(Date.now());
       }
       if (liveClock && readAutoRest()) {
-        const seconds = restOverrideByEx[exIdx] ?? exercise.restSeconds ?? 90;
-        setActiveCell(null);
-        setPlatesOpen(false);
-        (document.activeElement as HTMLElement | null)?.blur?.();
-        startRest(seconds);
+        const snapshot = draftRef.current;
+        if (shouldStartRest(snapshot.exercises, exIdx, setIdx)) {
+          const blocks = buildSessionBlocks(snapshot.exercises);
+          const block = blocks.find((b) =>
+            b.kind === "single" ? b.exIdx === exIdx : b.members.includes(exIdx),
+          );
+          const members = block?.kind === "superset" ? block.members : [exIdx];
+          const seconds = groupRestSeconds(snapshot.exercises, members, restOverrideByEx);
+          setActiveCell(null);
+          setPlatesOpen(false);
+          (document.activeElement as HTMLElement | null)?.blur?.();
+          startRest(seconds);
+        }
+        const focus = nextIncompleteFocus(snapshot.exercises);
+        const uid = focus
+          ? snapshot.exercises[focus.exIdx]?.sets[focus.setIdx]?.uid
+          : null;
+        if (uid) {
+          const el = setRowRefs.current.get(uid);
+          if (el) {
+            const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            requestAnimationFrame(() => {
+              el.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
+            });
+          }
+        }
       }
     } else {
       // Przypadkowe zaliczenie — wyłącz przerwę; zegar znika tylko gdy nie ma już zaliczonych.
@@ -1191,8 +1250,10 @@ export function SessionLogger({
   }, [libraryExercises, swapSearch]);
 
   const nextRestDockLabel = useMemo(() => {
-    const { nextExerciseName, nextSetNumber, nextSetsInExercise } = restContext;
-    if (!nextExerciseName || nextSetNumber == null || !nextSetsInExercise) return null;
+    const { nextExerciseName, nextSetNumber, nextSetsInExercise, roundLabel } = restContext;
+    if (!nextExerciseName) return null;
+    if (roundLabel) return `${roundLabel} · ${nextExerciseName}`;
+    if (nextSetNumber == null || !nextSetsInExercise) return null;
     return `Seria ${nextSetNumber} z ${nextSetsInExercise} · ${nextExerciseName}`;
   }, [restContext]);
 
@@ -1463,18 +1524,11 @@ export function SessionLogger({
   const progressPct =
     totalSetsCount > 0 ? Math.round((doneSetsCount / totalSetsCount) * 100) : 0;
 
-  // Pierwsza nieukończona seria — do podświetlenia wiersza
-  let nextExIdx = -1;
-  let nextSetIdx = -1;
-  outer: for (let i = 0; i < draft.exercises.length; i++) {
-    for (let j = 0; j < draft.exercises[i].sets.length; j++) {
-      if (!draft.exercises[i].sets[j].completed) {
-        nextExIdx = i;
-        nextSetIdx = j;
-        break outer;
-      }
-    }
-  }
+  // Pierwsza nieukończona seria w kolejności superserii — do podświetlenia wiersza
+  const nextFocus = nextIncompleteFocus(draft.exercises);
+  const nextExIdx = nextFocus?.exIdx ?? -1;
+  const nextSetIdx = nextFocus?.setIdx ?? -1;
+  const sessionBlocks = buildSessionBlocks(draft.exercises);
 
   const volumeKg = Math.round(
     draft.exercises.reduce(
@@ -1613,12 +1667,47 @@ export function SessionLogger({
         onCancel={() => setTypoConfirm(null)}
       />
 
-      {draft.exercises.map((exercise, exIdx) => {
+      {sessionBlocks.map((block) => {
+        const indices = block.kind === "single" ? [block.exIdx] : block.members;
+        const groupRest =
+          block.kind === "superset"
+            ? groupRestSeconds(draft.exercises, block.members, restOverrideByEx)
+            : null;
+        const first = draft.exercises[indices[0]];
+        const pos = first?.supersetLabel?.replace(/[a-z]+$/i, "") ?? "";
+        return (
+          <SessionKlamra
+            key={
+              block.kind === "single"
+                ? `ex-${block.exIdx}`
+                : `ss-${block.group}-${indices.join("-")}`
+            }
+            wrap={block.kind === "superset"}
+            header={
+              <div className="flex items-baseline justify-between gap-2 border-b border-border bg-surface-raised px-3 py-1.5">
+                <span className="font-mono text-xs font-semibold uppercase tracking-[0.08em] text-muted">
+                  Superseria {pos}
+                </span>
+                <span className="shrink-0 text-xs text-muted-faint">
+                  {groupRest != null
+                    ? `${formatRest(groupRest)} po superserii`
+                    : "bez przerwy między"}
+                </span>
+              </div>
+            }
+          >
+            {indices.map((exIdx) => {
+              const exercise = draft.exercises[exIdx];
+              if (!exercise) return null;
         const thumb = demoMedia({ media: exercise.media, category: exercise.category });
         const isTime = exercise.exerciseType === "time";
         const trainerNote = exercise.planNote || null;
         const menuOpen = menuExIdx === exIdx;
-        const restSec = restOverrideByEx[exIdx] ?? exercise.restSeconds ?? 90;
+        const inSuperset = Boolean(exercise.supersetLabel);
+        const restSec =
+          inSuperset && groupRest != null
+            ? groupRest
+            : (restOverrideByEx[exIdx] ?? exercise.restSeconds ?? 90);
         const noteOpen = noteOpenEx.has(exIdx) || Boolean(exercise.note);
         const prevHeader = formatPrevDate(exercise.prevPerformedOn);
 
@@ -1631,18 +1720,27 @@ export function SessionLogger({
           null;
         const metaBits = [
           exercise.targetRir != null ? `RIR ${exercise.targetRir}` : null,
-          `Przerwa ${restPillLabel(restSec)}`,
+          inSuperset ? null : `Przerwa ${restPillLabel(restSec)}`,
           targetKg != null && pairDb ? formatLoadDisplay(targetKg, exercise) : null,
         ].filter(Boolean);
 
         return (
           <section
             key={exercise.id > 0 ? exercise.id : `ex-${exIdx}`}
-            className="relative space-y-4 border-t border-border pt-6 first:border-t-0 first:pt-2"
+            className={
+              inSuperset
+                ? "relative space-y-4 px-3 py-4"
+                : "relative space-y-4 border-t border-border pt-6 first:border-t-0 first:pt-2"
+            }
           >
             <div className="flex items-start gap-2">
               <div className="min-w-0 flex-1">
                 <h2 className="break-words text-[15px] font-semibold leading-snug tracking-tight text-foreground">
+                  {exercise.supersetLabel ? (
+                    <span className="mr-1.5 font-mono text-xs font-semibold text-muted">
+                      {exercise.supersetLabel}
+                    </span>
+                  ) : null}
                   {exercise.exerciseName}
                 </h2>
                 {exercise.substitutedFromName ? (
@@ -1754,7 +1852,13 @@ export function SessionLogger({
                           restSec === sec ? "text-foreground" : "text-foreground-secondary"
                         }`}
                         onClick={() => {
-                          setRestOverrideByEx((prev) => ({ ...prev, [exIdx]: sec }));
+                          setRestOverrideByEx((prev) => {
+                            const next = { ...prev };
+                            const members =
+                              block.kind === "superset" ? block.members : [exIdx];
+                            for (const idx of members) next[idx] = sec;
+                            return next;
+                          });
                           setRestPickerEx(null);
                         }}
                       >
@@ -2080,6 +2184,9 @@ export function SessionLogger({
               />
             ) : null}
           </section>
+            );
+            })}
+          </SessionKlamra>
         );
       })}
 
@@ -2130,6 +2237,7 @@ export function SessionLogger({
           nextExerciseName={restContext.nextExerciseName}
           nextSetNumber={restContext.nextSetNumber}
           nextSetsInExercise={restContext.nextSetsInExercise}
+          roundLabel={restContext.roundLabel}
           onAdjust={adjustRest}
           onDismiss={dismissRest}
           onExpand={setExpanded}

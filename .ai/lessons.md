@@ -15,6 +15,13 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Superseria: nigdy „runda” w UI
+
+**Kontekst**: Copy wykonania superserii używało „runda” / „po rundzie” / „Runda 2 z 3”.
+**Problem**: Na siłowni mówi się superseria i seria. „Runda” to obwód / sport, nie język trenera.
+**Zasada**: W tekstach PL (kreator, logger, Dziś, preview, review): „po superserii”, „3 serie”, „Seria 2 z 3”. Nigdy „runda”. Nazwy w kodzie (`roundCount`, `sessionRounds`) mogą zostać.
+**Dotyczy**: `supersetPreview.ts`, `ListEntryEditor`, `ListView`, `PlanDayColumn`, `SessionLogger`, `SessionReview`, `RestTimer`.
+
 ## Profil ≠ status treningu
 
 **Kontekst**: Redesign Profilu dodał kartę „Aktualny plan” (nazwa, tydzień, pasek, %). User: kafel nie daje wartości.

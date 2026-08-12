@@ -126,6 +126,7 @@ export function ListEntryEditor({
   weekNumber,
   exercise,
   superLabel,
+  inSuperset = false,
   onCollapse,
   onPatch,
   onToggleWarmup,
@@ -142,6 +143,7 @@ export function ListEntryEditor({
   weekNumber: number;
   exercise?: Exercise;
   superLabel: string;
+  inSuperset?: boolean;
   onCollapse: () => void;
   onPatch: (patch: Partial<BuilderItem>) => void;
   onToggleWarmup: () => void;
@@ -161,6 +163,7 @@ export function ListEntryEditor({
   const [moreOpen, setMoreOpen] = useState(false);
   const [schemeWanted, setSchemeWanted] = useState(!isRamp && item.prescribedSets.length > 0);
   const [boFocus, setBoFocus] = useState<number>(0);
+  const restLabel = inSuperset ? "Po superserii (s)" : "Przerwa (s)";
   const schemeOpen = !isRamp && (schemeWanted || item.prescribedSets.length > 0);
 
   const pickSets = () => {
@@ -294,7 +297,7 @@ export function ListEntryEditor({
           <Field label="Ciężar (kg)">
             <div className={`${inputNumericClass} flex items-center justify-center text-muted-faint`}>—</div>
           </Field>
-          <Field label="Przerwa (s)">
+          <Field label={restLabel}>
             <NumInput
               value={item.restBetweenSetsSeconds}
               min={0}
@@ -308,7 +311,7 @@ export function ListEntryEditor({
           <div className="hidden sm:block" />
           <div className="hidden sm:block" />
           <div className="hidden sm:block" />
-          <Field label="Przerwa (s)">
+          <Field label={restLabel}>
             <NumInput
               value={item.restBetweenSetsSeconds}
               min={0}
@@ -337,7 +340,7 @@ export function ListEntryEditor({
               placeholder="—"
             />
           </Field>
-          <Field label="Przerwa (s)">
+          <Field label={restLabel}>
             <NumInput
               value={item.restBetweenSetsSeconds}
               min={0}
@@ -515,14 +518,16 @@ export function ListEntryEditor({
                   placeholder="—"
                 />
               </Field>
-              <Field label="Po ćwiczeniu (s)">
-                <NumInput
-                  value={item.restAfterExerciseSeconds}
-                  min={0}
-                  onChange={(v) => onPatch({ restAfterExerciseSeconds: v })}
-                  placeholder="90"
-                />
-              </Field>
+              {!inSuperset ? (
+                <Field label="Po ćwiczeniu (s)">
+                  <NumInput
+                    value={item.restAfterExerciseSeconds}
+                    min={0}
+                    onChange={(v) => onPatch({ restAfterExerciseSeconds: v })}
+                    placeholder="90"
+                  />
+                </Field>
+              ) : null}
               <div className="col-span-2 sm:col-span-3">
                 <Field label="Notatka dla klienta">
                   <input

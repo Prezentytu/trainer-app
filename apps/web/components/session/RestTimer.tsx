@@ -11,6 +11,8 @@ type Props = {
   nextSetNumber?: number | null;
   /** Ile serii ma to ćwiczenie. */
   nextSetsInExercise?: number | null;
+  /** Superseria: „Seria 2 z 3” w parze, nie w jednym ćwiczeniu. */
+  roundLabel?: string | null;
   onAdjust: (deltaSeconds: number) => void;
   onDismiss: () => void;
   onExpand: (expanded: boolean) => void;
@@ -85,6 +87,7 @@ export function RestTimer({
   nextExerciseName,
   nextSetNumber,
   nextSetsInExercise,
+  roundLabel,
   onAdjust,
   onDismiss,
   onExpand,
@@ -93,9 +96,8 @@ export function RestTimer({
     rest.totalSeconds > 0 ? Math.min(1, rest.leftSeconds / rest.totalSeconds) : 0;
   const hasNext =
     Boolean(nextExerciseName) &&
-    nextSetNumber != null &&
-    nextSetsInExercise != null &&
-    nextSetsInExercise > 0;
+    (Boolean(roundLabel) ||
+      (nextSetNumber != null && nextSetsInExercise != null && nextSetsInExercise > 0));
 
   if (!rest.expanded) return null;
 
@@ -120,13 +122,13 @@ export function RestTimer({
         {hasNext ? (
           <div className="flex max-w-[32ch] flex-col items-center gap-1.5 px-4 text-center">
             <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
-              Następna seria
+              {roundLabel ? "Dalej" : "Następna seria"}
             </p>
             <p className="break-words text-[17px] font-semibold leading-snug tracking-tight text-foreground">
               {nextExerciseName}
             </p>
             <p className="font-mono text-sm tabular-nums text-muted">
-              Seria {nextSetNumber} z {nextSetsInExercise}
+              {roundLabel ?? `Seria ${nextSetNumber} z ${nextSetsInExercise}`}
             </p>
           </div>
         ) : null}

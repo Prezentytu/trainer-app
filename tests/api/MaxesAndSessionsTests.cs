@@ -377,6 +377,64 @@ public class MaxesAndSessionsTests : IClassFixture<TestWebAppFactory>
         Assert.Equal(640, Stats.VolumeKg(sets));
     }
 
+    [Fact]
+    public async Task StartSession_CopiesSupersetGroupAndSharedRest()
+    {
+        var clients = await _client.GetFromJsonAsync<List<ClientRow>>("/api/clients");
+        var jan = clients!.First(c => c.Name == "Jan Kowalski");
+        var assignments = await _client.GetFromJsonAsync<List<AssignmentRow>>("/api/assignments");
+        var active = assignments!.First(a => a.ClientId == jan.Id && a.Status == "active");
+        var planRes = await _client.GetAsync($"/api/plans/{active.PlanId}");
+        var planJson = await planRes.Content.ReadAsStringAsync();
+        using var planDoc = JsonDocument.Parse(planJson);
+        var day = planDoc.RootElement.GetProperty("days")[0];
+        var dayId = day.GetProperty("id").GetInt32();
+        var grouped = day.GetProperty("items").EnumerateArray()
+            .Where(i => i.TryGetProperty("supersetGroup", out var g) && g.ValueKind == JsonValueKind.Number)
+            .ToList();
+        Assert.True(grouped.Count >= 2);
+
+        var start = await _client.PostAsJsonAsync("/api/sessions/start", new
+        {
+            clientId = jan.Id,
+            assignmentId = active.Id,
+            planId = active.PlanId,
+            planDayId = dayId,
+        });
+        Assert.Equal(HttpStatusCode.Created, start.StatusCode);
+        using var sessionDoc = JsonDocument.Parse(await start.Content.ReadAsStringAsync());
+        var exercises = sessionDoc.RootElement.GetProperty("exercises").EnumerateArray().ToList();
+        var super = exercises
+            .Where(e => e.TryGetProperty("supersetGroup", out var g) && g.ValueKind == JsonValueKind.Number)
+            .ToList();
+        Assert.True(super.Count >= 2);
+        var groupId = super[0].GetProperty("supersetGroup").GetInt32();
+        Assert.All(super, e => Assert.Equal(groupId, e.GetProperty("supersetGroup").GetInt32()));
+        var labels = super.Select(e => e.GetProperty("supersetLabel").GetString()).ToList();
+        Assert.Contains(labels, l => l != null && l.EndsWith("a"));
+        Assert.Contains(labels, l => l != null && l.EndsWith("b"));
+        var rests = super.Select(e => e.GetProperty("restSeconds").GetInt32()).Distinct().ToList();
+        Assert.Single(rests);
+        Assert.Equal(90, rests[0]);
+    }
+
+    [Fact]
+    public void SupersetLabels_PairGetsPositionLetters()
+    {
+        var ordered = new List<LoggedExercise>
+        {
+            new() { Order = 0, SupersetGroup = null },
+            new() { Order = 1, SupersetGroup = 1 },
+            new() { Order = 2, SupersetGroup = 1 },
+            new() { Order = 3, SupersetGroup = null },
+        };
+        var labels = Sessions.SupersetLabels(ordered);
+        Assert.Null(labels[0]);
+        Assert.Equal("2a", labels[1]);
+        Assert.Equal("2b", labels[2]);
+        Assert.Null(labels[3]);
+    }
+
     private record ClientRow(int Id, string Name);
     private record ExerciseRow(int Id, string Name);
     private record MaxRow(int Id, double MaxKg, string ExerciseName);

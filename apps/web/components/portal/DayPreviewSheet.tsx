@@ -10,6 +10,7 @@ import {
 import { Button, ErrorBanner, Sheet } from "@/components/ui";
 import { estimateDayMinutes, formatDurationApprox } from "@/lib/estimateDuration";
 import { formatLoadDisplay } from "@/lib/weight";
+import { previewRowsFromItems } from "@/lib/supersetPreview";
 
 function schemeLine(
   item: PortalDayPreview["day"]["items"][number],
@@ -203,16 +204,25 @@ export function DayPreviewSheet({
           <p className="text-sm text-muted">Wczytuję ćwiczenia…</p>
         ) : items.length > 0 ? (
           <ul className="divide-y divide-border border-y border-border">
-            {items.map((item) => (
+            {previewRowsFromItems(
+              items.map((item) => ({
+                id: item.id,
+                name: item.exerciseName,
+                detail: schemeLine(item, exerciseById.get(item.exerciseId)),
+                supersetGroup: item.supersetGroup,
+                restSeconds: item.restBetweenSetsSeconds,
+                setCount: item.sets,
+              })),
+            ).map((row) => (
               <li
-                key={item.id}
+                key={row.key}
                 className="flex min-h-11 items-start justify-between gap-3 py-3"
               >
                 <p className="min-w-0 flex-1 break-words text-[15px] font-semibold leading-snug text-foreground">
-                  {item.exerciseName}
+                  {row.name}
                 </p>
                 <p className="shrink-0 font-mono text-[15px] tabular-nums text-muted">
-                  {schemeLine(item, exerciseById.get(item.exerciseId))}
+                  {row.detail}
                 </p>
               </li>
             ))}

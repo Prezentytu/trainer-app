@@ -31,6 +31,7 @@ import {
   weekdayIndexFromLabel,
 } from "@/lib/dates";
 import { formatLoadDisplay } from "@/lib/weight";
+import { previewRowsFromItems } from "@/lib/supersetPreview";
 
 function schemeLine(
   item: NonNullable<PortalHome["today"]>["day"]["items"][number],
@@ -85,15 +86,6 @@ function exerciseCountLabel(n: number): string {
   }
   return `${n} ćwiczeń`;
 }
-
-type HeroRow = {
-  key: string | number;
-  name: string;
-  detail: string;
-  done: boolean;
-  partial: boolean;
-  exerciseId?: number;
-};
 
 export default function PortalTodayPage() {
   const params = useParams<{ token: string }>();
@@ -327,38 +319,44 @@ export default function PortalTodayPage() {
   const fresh = home?.inProgressSession ?? null;
   const stale = home?.staleSession ?? null;
 
-  const heroRows: HeroRow[] = useMemo(() => {
+  const heroRows = useMemo(() => {
     if (fresh && liveSession && liveSession.id === fresh.id) {
-      return liveSession.exercises.map((ex) => {
-        const doneCount = ex.sets.filter((s) => s.completed).length;
-        const total = ex.sets.length;
-        const done = total > 0 && doneCount === total;
-        const partial = doneCount > 0 && !done;
-        const meta = exerciseById.get(ex.exerciseId);
-        const detail = done
-          ? "✓"
-          : partial
-            ? `${doneCount}/${total}`
-            : schemeFromLogged(ex, meta);
-        return {
-          key: ex.id,
-          name: ex.exerciseName,
-          detail,
-          done,
-          partial,
-          exerciseId: ex.exerciseId,
-        };
-      });
+      return previewRowsFromItems(
+        liveSession.exercises.map((ex) => {
+          const doneCount = ex.sets.filter((s) => s.completed).length;
+          const total = ex.sets.length;
+          const done = total > 0 && doneCount === total;
+          const partial = doneCount > 0 && !done;
+          const meta = exerciseById.get(ex.exerciseId);
+          const detail = done
+            ? "✓"
+            : partial
+              ? `${doneCount}/${total}`
+              : schemeFromLogged(ex, meta);
+          return {
+            id: ex.id,
+            name: ex.exerciseName,
+            detail,
+            supersetGroup: ex.supersetGroup ?? null,
+            restSeconds: ex.restSeconds,
+            setCount: ex.sets.filter((s) => !s.isWarmup).length,
+            done,
+            partial,
+          };
+        }),
+      );
     }
     if (today) {
-      return today.day.items.map((item) => ({
-        key: item.id,
-        name: item.exerciseName,
-        detail: schemeLine(item, exerciseById.get(item.exerciseId)),
-        done: false,
-        partial: false,
-        exerciseId: item.exerciseId,
-      }));
+      return previewRowsFromItems(
+        today.day.items.map((item) => ({
+          id: item.id,
+          name: item.exerciseName,
+          detail: schemeLine(item, exerciseById.get(item.exerciseId)),
+          supersetGroup: item.supersetGroup,
+          restSeconds: item.restBetweenSetsSeconds,
+          setCount: item.sets,
+        })),
+      );
     }
     return [];
   }, [fresh, liveSession, today, exerciseById]);

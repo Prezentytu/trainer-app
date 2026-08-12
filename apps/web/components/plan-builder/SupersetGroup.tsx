@@ -19,7 +19,7 @@ export function SupersetGroup({
           Superseria {letter}
         </span>
         <div className="flex shrink-0 items-center gap-2">
-          <span className="text-xs text-muted-faint">bez przerwy</span>
+          <span className="text-xs text-muted-faint">bez przerwy między</span>
           <button
             type="button"
             onClick={onUnlink}

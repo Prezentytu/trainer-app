@@ -48,7 +48,7 @@ export function ListEntryCard({
   onApplyPreset: (presetId: string) => void;
   onClearSets: () => void;
 }) {
-  const summary = listEntrySummary(item, exercise);
+  const summary = listEntrySummary(item, exercise, multi);
 
   return (
     <div className="flex flex-col gap-2">
@@ -126,6 +126,7 @@ export function ListEntryCard({
           weekNumber={weekNumber}
           exercise={exercise}
           superLabel={superLabel}
+          inSuperset={multi}
           onCollapse={onToggleExpand}
           onPatch={onPatch}
           onToggleWarmup={onToggleWarmup}

@@ -280,6 +280,7 @@ public static class Sessions
                 ExerciseId = ex.ExerciseId,
                 Order = order++,
                 Note = ex.Note,
+                SupersetGroup = ex.SupersetGroup,
             };
             foreach (var s in ex.Sets.OrderBy(x => x.SetNumber))
             {
@@ -312,6 +313,7 @@ public static class Sessions
             {
                 ExerciseId = item.ExerciseId,
                 Order = order++,
+                SupersetGroup = item.SupersetGroup,
                 // Wskazówka trenera żyje w planNote (enrichment) — nie duplikuj do notatki klienta
             };
             if (item.PrescribedSets.Count > 0)
@@ -515,7 +517,7 @@ public static class Sessions
 
         var prs = Stats.FindPrSets(session, historical);
         var (prevSets, prevDates) = await LoadPrevSetsAsync(db, session, exerciseIds);
-        var restSeconds = await LoadRestSecondsAsync(db, session, exerciseIds);
+        var restSeconds = await LoadRestSecondsAsync(db, session);
         var targets = await LoadTargetsAsync(db, session, exerciseIds);
         return Stats.SessionDetail(session, prs, prevSets, restSeconds, targets, prevDates);
     }
@@ -633,26 +635,86 @@ public static class Sessions
         return (result, dates);
     }
 
-    static async Task<Dictionary<int, int?>> LoadRestSecondsAsync(
-        AppDb db, WorkoutSession session, List<int> exerciseIds)
+    /// <summary>Etykiety 1a/1b dla kolejnych grup; solo = null. Orphan (grupa 1-osobowa) jak solo.</summary>
+    public static string?[] SupersetLabels(IReadOnlyList<LoggedExercise> ordered)
+    {
+        var labels = new string?[ordered.Count];
+        var position = 1;
+        var i = 0;
+        while (i < ordered.Count)
+        {
+            var g = ordered[i].SupersetGroup;
+            if (g is null)
+            {
+                labels[i] = null;
+                position++;
+                i++;
+                continue;
+            }
+
+            var start = i;
+            while (i + 1 < ordered.Count && ordered[i + 1].SupersetGroup == g) i++;
+            var count = i - start + 1;
+            if (count == 1)
+            {
+                labels[start] = null;
+                position++;
+                i++;
+                continue;
+            }
+
+            for (var j = 0; j < count; j++)
+                labels[start + j] = $"{position}{(char)('a' + j)}";
+            position++;
+            i++;
+        }
+        return labels;
+    }
+
+    /// <summary>Klucz = LoggedExercise.Id. W grupie — wspólna przerwa po superserii (max z członków planu).</summary>
+    static async Task<Dictionary<int, int?>> LoadRestSecondsAsync(AppDb db, WorkoutSession session)
     {
         var result = new Dictionary<int, int?>();
-        if (session.PlanDayId is null || exerciseIds.Count == 0) return result;
+        var logged = session.Exercises.OrderBy(e => e.Order).ToList();
+        foreach (var ex in logged)
+            result[ex.Id] = 90;
+
+        if (session.PlanDayId is null || logged.Count == 0) return result;
 
         var items = await db.PlanItems
             .Include(i => i.Exercise)
-            .Where(i => i.PlanDayId == session.PlanDayId && exerciseIds.Contains(i.ExerciseId))
+            .Where(i => i.PlanDayId == session.PlanDayId)
+            .OrderBy(i => i.Order)
             .ToListAsync();
 
-        foreach (var item in items)
+        var groupRest = new Dictionary<int, int>();
+        foreach (var grp in items.Where(i => i.SupersetGroup != null).GroupBy(i => i.SupersetGroup!.Value))
         {
-            if (!result.ContainsKey(item.ExerciseId))
-            {
-                result[item.ExerciseId] = item.RestBetweenSetsSeconds
-                    ?? item.Exercise?.DefaultRestBetweenSetsSeconds
-                    ?? 90;
-            }
+            var rests = grp
+                .Select(i => i.RestBetweenSetsSeconds ?? i.Exercise?.DefaultRestBetweenSetsSeconds)
+                .Where(r => r != null)
+                .Select(r => r!.Value)
+                .ToList();
+            groupRest[grp.Key] = rests.Count > 0 ? rests.Max() : 90;
         }
+
+        for (var i = 0; i < logged.Count; i++)
+        {
+            var ex = logged[i];
+            if (ex.SupersetGroup is int sg && groupRest.TryGetValue(sg, out var gr))
+            {
+                result[ex.Id] = gr;
+                continue;
+            }
+
+            var item = i < items.Count
+                ? items[i]
+                : items.FirstOrDefault(it => it.ExerciseId == ex.ExerciseId);
+            result[ex.Id] = item?.RestBetweenSetsSeconds
+                ?? item?.Exercise?.DefaultRestBetweenSetsSeconds
+                ?? 90;
+        }
+
         return result;
     }
 }

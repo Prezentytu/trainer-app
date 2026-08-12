@@ -165,7 +165,7 @@ public static class Stats
         WorkoutSession s,
         IReadOnlyList<PrHit> prHits,
         IReadOnlyDictionary<int, List<object>>? prevSetsByExercise = null,
-        IReadOnlyDictionary<int, int?>? restSecondsByExercise = null,
+        IReadOnlyDictionary<int, int?>? restSecondsByLoggedId = null,
         IReadOnlyDictionary<int, ExerciseTargets>? targetsByExercise = null,
         IReadOnlyDictionary<int, DateOnly>? prevPerformedOnByExercise = null)
     {
@@ -191,6 +191,9 @@ public static class Stats
                 };
             })
             .ToList();
+
+        var orderedExercises = s.Exercises.OrderBy(e => e.Order).ToList();
+        var labels = Sessions.SupersetLabels(orderedExercises);
 
         return new
         {
@@ -220,7 +223,7 @@ public static class Stats
             TotalSets = WorkingSetCount(allSets),
             TotalVolumeKg = VolumeKg(allSets),
             Prs = prs,
-            Exercises = s.Exercises.OrderBy(e => e.Order).Select(e =>
+            Exercises = orderedExercises.Select((e, idx) =>
             {
                 ExerciseTargets? targets = null;
                 if (targetsByExercise is not null)
@@ -238,12 +241,14 @@ public static class Stats
                     e.SubstitutedFromExerciseId,
                     SubstitutedFromName = e.SubstitutedFromExercise?.Name,
                     e.Order,
+                    e.SupersetGroup,
+                    SupersetLabel = labels[idx],
                     e.Note,
                     TargetRir = targets?.TargetRir,
                     Tempo = targets?.Tempo,
                     PlanNote = targets?.PlanNote,
-                    RestSeconds = restSecondsByExercise is not null
-                        && restSecondsByExercise.TryGetValue(e.ExerciseId, out var rest)
+                    RestSeconds = restSecondsByLoggedId is not null
+                        && restSecondsByLoggedId.TryGetValue(e.Id, out var rest)
                         ? rest
                         : 90,
                     PrevPerformedOn = prevPerformedOnByExercise is not null

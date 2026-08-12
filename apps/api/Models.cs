@@ -334,6 +334,8 @@ public class LoggedExercise
     public int? SubstitutedFromExerciseId { get; set; }
     public Exercise? SubstitutedFromExercise { get; set; }
     public int Order { get; set; }
+    /// <summary>Kopia PlanItem.SupersetGroup — kolejność superserii w loggerze nie zależy od żywego dnia planu.</summary>
+    public int? SupersetGroup { get; set; }
     public string? Note { get; set; }
     public List<LoggedSet> Sets { get; set; } = [];
 }

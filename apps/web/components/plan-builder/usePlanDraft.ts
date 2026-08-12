@@ -251,9 +251,29 @@ export function usePlanDraft({
   const patchItem = useCallback(
     (dayKey: string, itemKey: string, patch: Partial<BuilderItem>) =>
       setDays((prev) =>
-        prev.map((d) =>
-          d.key !== dayKey ? d : { ...d, items: d.items.map((i) => (i.key === itemKey ? { ...i, ...patch } : i)) }
-        )
+        prev.map((d) => {
+          if (d.key !== dayKey) return d;
+          if (patch.restBetweenSetsSeconds === undefined) {
+            return { ...d, items: d.items.map((i) => (i.key === itemKey ? { ...i, ...patch } : i)) };
+          }
+          const idx = d.items.findIndex((i) => i.key === itemKey);
+          if (idx === -1) return d;
+          let start = idx;
+          while (start > 0 && d.items[start - 1].linkedToNext) start--;
+          let end = idx;
+          while (end < d.items.length - 1 && d.items[end].linkedToNext) end++;
+          const multi = end > start;
+          return {
+            ...d,
+            items: d.items.map((i, iIdx) => {
+              if (i.key === itemKey) return { ...i, ...patch };
+              if (multi && iIdx >= start && iIdx <= end) {
+                return { ...i, restBetweenSetsSeconds: patch.restBetweenSetsSeconds ?? i.restBetweenSetsSeconds };
+              }
+              return i;
+            }),
+          };
+        })
       ),
     []
   );
@@ -352,13 +372,15 @@ export function usePlanDraft({
           let nextItems = [...d.items];
 
           if (target) {
-            // Dołącz do istniejącej pozycji (superseria) albo wstaw za nią jako nowy człon
+            const anchorRest = nextItems[target.end]?.restBetweenSetsSeconds ?? newItem.restBetweenSetsSeconds;
+            newItem.restBetweenSetsSeconds = anchorRest;
             nextItems = nextItems.map((it, idx) => {
               if (idx >= target.start && idx <= target.end) {
                 return {
                   ...it,
                   isWarmup: warmupFlag,
                   linkedToNext: idx === target.end ? true : it.linkedToNext,
+                  restBetweenSetsSeconds: anchorRest,
                 };
               }
               return it;
@@ -476,9 +498,20 @@ export function usePlanDraft({
         const rest = d.items.filter((i) => !keySet.has(i.key));
         const firstIdx = d.items.findIndex((i) => keySet.has(i.key));
         const insertAt = firstIdx === -1 ? rest.length : Math.min(firstIdx, rest.length);
+        const rests = selected
+          .map((i) => i.restBetweenSetsSeconds)
+          .filter((r): r is number => r != null);
+        const sharedRest = rests.length > 0 ? Math.max(...rests) : 90;
+        const setCounts = selected.map((i) => i.sets).filter((n): n is number => n != null);
+        const sharedSets = setCounts.length > 0 ? Math.max(...setCounts) : null;
         const linked = selected.map((i, idx) => ({
           ...i,
           linkedToNext: idx < selected.length - 1,
+          restBetweenSetsSeconds: sharedRest,
+          sets:
+            sharedSets != null && i.prescribedSets.length === 0 && !i.setScheme
+              ? sharedSets
+              : i.sets,
         }));
         const items = [...rest];
         items.splice(insertAt, 0, ...linked);

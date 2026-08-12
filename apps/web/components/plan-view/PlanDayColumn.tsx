@@ -1,7 +1,7 @@
 "use client";
 
 import { PlanDay, PlanItem } from "@/lib/api";
-import { EmptyState } from "@/components/ui";
+import { EmptyState, formatRest } from "@/components/ui";
 import { buildGroupLabels } from "@/lib/supersets";
 import { PlanItemCard } from "./PlanItemCard";
 import { dayStats } from "./summary";
@@ -123,7 +123,11 @@ export function PlanDayColumn({
                       <span className="font-mono text-xs font-semibold uppercase tracking-[0.08em] text-muted">
                         Superseria {block.letter}
                       </span>
-                      <span className="shrink-0 text-xs text-muted-faint">bez przerwy</span>
+                      <span className="shrink-0 text-xs text-muted-faint">
+                        {day.items[block.indices[0]]?.restBetweenSetsSeconds
+                          ? `${formatRest(day.items[block.indices[0]].restBetweenSetsSeconds)} po superserii`
+                          : "bez przerwy między"}
+                      </span>
                     </div>
                     <div className="divide-y divide-border">
                       {block.indices.map((idx) => (
