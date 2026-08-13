@@ -25,18 +25,21 @@ public class RetentionLoopTests : IClassFixture<TestWebAppFactory>
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
         using var doc = JsonDocument.Parse(await res.Content.ReadAsStringAsync());
         Assert.Equal("dev", doc.RootElement.GetProperty("planKey").GetString());
-        Assert.True(doc.RootElement.GetProperty("notifySessionComplete").GetBoolean());
+        Assert.True(doc.RootElement.GetProperty("notifyDailySummary").GetBoolean());
+        Assert.True(doc.RootElement.GetProperty("notifyClientReply").GetBoolean());
+        Assert.True(doc.RootElement.GetProperty("notifyWeeklyDigest").GetBoolean());
+        Assert.False(doc.RootElement.TryGetProperty("notifySessionComplete", out _));
     }
 
     [Fact]
-    public async Task Preferences_CanDisableSessionMail()
+    public async Task Preferences_CanDisableDailySummary()
     {
-        var put = await _client.PutAsJsonAsync("/api/me/preferences", new { notifySessionComplete = false });
+        var put = await _client.PutAsJsonAsync("/api/me/preferences", new { notifyDailySummary = false });
         Assert.Equal(HttpStatusCode.OK, put.StatusCode);
         var me = await _client.GetAsync("/api/me");
         using var doc = JsonDocument.Parse(await me.Content.ReadAsStringAsync());
-        Assert.False(doc.RootElement.GetProperty("notifySessionComplete").GetBoolean());
-        await _client.PutAsJsonAsync("/api/me/preferences", new { notifySessionComplete = true });
+        Assert.False(doc.RootElement.GetProperty("notifyDailySummary").GetBoolean());
+        await _client.PutAsJsonAsync("/api/me/preferences", new { notifyDailySummary = true });
     }
 
     [Fact]
@@ -138,6 +141,94 @@ public class RetentionLoopTests : IClassFixture<TestWebAppFactory>
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
         var rows = await res.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(JsonValueKind.Array, rows.ValueKind);
+        Assert.True(rows.GetArrayLength() >= 1);
+        var first = rows[0];
+        Assert.True(first.TryGetProperty("id", out _));
+        Assert.True(first.TryGetProperty("kind", out _));
+        Assert.True(first.TryGetProperty("unread", out _));
+    }
+
+    [Fact]
+    public async Task PortalNote_CreatesInboxItem_AndMarkRead()
+    {
+        const string token = "demo-jan-kowalski";
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var checkin = await _client.PostAsJsonAsync($"/api/portal/{token}/check-ins", new
+        {
+            moodScore = 1,
+            note = "Słabo spałem",
+            date = today.ToString("yyyy-MM-dd"),
+        });
+        Assert.Equal(HttpStatusCode.OK, checkin.StatusCode);
+
+        var inbox = await _client.GetAsync("/api/inbox?kind=low_checkin&unreadOnly=true");
+        Assert.Equal(HttpStatusCode.OK, inbox.StatusCode);
+        using var doc = JsonDocument.Parse(await inbox.Content.ReadAsStringAsync());
+        Assert.True(doc.RootElement.GetArrayLength() >= 1);
+        var item = doc.RootElement.EnumerateArray()
+            .First(r => r.GetProperty("preview").GetString()!.Contains("Samopoczucie 1/5"));
+        Assert.True(item.GetProperty("unread").GetBoolean());
+        var id = item.GetProperty("id").GetInt32();
+
+        var read = await _client.PostAsync($"/api/inbox/{id}/read", null);
+        Assert.Equal(HttpStatusCode.NoContent, read.StatusCode);
+
+        var after = await _client.GetAsync("/api/inbox?kind=low_checkin&unreadOnly=true");
+        using var afterDoc = JsonDocument.Parse(await after.Content.ReadAsStringAsync());
+        Assert.DoesNotContain(
+            afterDoc.RootElement.EnumerateArray(),
+            r => r.GetProperty("id").GetInt32() == id);
+    }
+
+    [Fact]
+    public async Task Inbox_MarkAllRead_ClearsUnreadCount()
+    {
+        const string token = "demo-jan-kowalski";
+        var photoNote = await _client.PostAsJsonAsync($"/api/portal/{token}/measurements", new
+        {
+            measuredOn = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd"),
+            weightKg = 82.5,
+        });
+        Assert.Equal(HttpStatusCode.Created, photoNote.StatusCode);
+
+        var countsBefore = await _client.GetAsync("/api/counts");
+        using var beforeDoc = JsonDocument.Parse(await countsBefore.Content.ReadAsStringAsync());
+        Assert.True(beforeDoc.RootElement.GetProperty("inboxUnread").GetInt32() >= 1);
+
+        var all = await _client.PostAsync("/api/inbox/read-all", null);
+        Assert.Equal(HttpStatusCode.OK, all.StatusCode);
+
+        var countsAfter = await _client.GetAsync("/api/counts");
+        using var afterDoc = JsonDocument.Parse(await countsAfter.Content.ReadAsStringAsync());
+        Assert.Equal(0, afterDoc.RootElement.GetProperty("inboxUnread").GetInt32());
+    }
+
+    [Fact]
+    public async Task SessionCommentRead_MarksSessionNotifications()
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDb>();
+        var trainer = db.Trainers.First(t => t.ClerkUserId == TrainerAccess.LocalClerkUserId);
+        var jan = db.Clients.First(c => c.Name == "Jan Kowalski");
+        var session = db.WorkoutSessions.First(s => s.ClientId == jan.Id);
+        var row = new TrainerNotification
+        {
+            TrainerId = trainer.Id,
+            ClientId = jan.Id,
+            Kind = TrainerNotifications.SessionNote,
+            SessionId = session.Id,
+            Preview = "Ból w lędźwiach",
+        };
+        db.TrainerNotifications.Add(row);
+        await db.SaveChangesAsync();
+        var id = row.Id;
+
+        var res = await _client.PostAsync($"/api/sessions/{session.Id}/comment/read", null);
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+
+        await db.Entry(row).ReloadAsync();
+        Assert.NotNull(row.ReadAt);
+        Assert.Equal(id, row.Id);
     }
 
     [Fact]

@@ -921,17 +921,32 @@ export type AttentionItem = {
   action: "assign_plan" | "copy_portal_link" | string;
 };
 
-/** Sygnały od klientów na Panelu (wiadomości + niskie check-iny). */
-export type DashboardFromClientItem = {
-  kind: "session_reply" | "session_note" | "low_checkin" | "out_of_order" | "history_import";
+/** Sygnały od klientów na Panelu i w skrzynce. */
+export type TrainerNotificationKind =
+  | "session_reply"
+  | "session_note"
+  | "low_checkin"
+  | "out_of_order"
+  | "history_import"
+  | "photo"
+  | "measurement"
+  | "intake";
+
+export type TrainerNotification = {
+  id: number;
+  kind: TrainerNotificationKind;
   clientId: number;
   clientName: string;
   sessionId?: number | null;
   checkInId?: number | null;
   preview: string;
   at: string;
-  unread?: boolean;
+  unread: boolean;
+  readAt?: string | null;
 };
+
+/** Alias — ten sam kształt na dashboardzie. */
+export type DashboardFromClientItem = TrainerNotification;
 
 export type MuscleVolumeGroup = {
   muscle: string;
@@ -996,8 +1011,9 @@ export type DashboardData = {
   recentSessions: (SessionSummary & { clientName: string })[];
   recentPrs: (ClientRecord & { clientId: number; clientName: string })[];
   attention: AttentionItem[];
-  /** Nieprzeczytane wiadomości z sesji + niskie check-iny (7 dni). */
-  fromClients?: DashboardFromClientItem[];
+  /** Nieprzeczytane od klientów. */
+  fromClients?: TrainerNotification[];
+  inboxUnread?: number;
   clientActivity: ClientActivityItem[];
   sessionsLast7Days: number;
   sessionsPrev7Days: number;
@@ -1034,9 +1050,8 @@ export type TrainerMe = {
   clientCount?: number;
   clientLimit?: number | null;
   billingConfigured?: boolean;
-  notifySessionComplete?: boolean;
+  notifyDailySummary?: boolean;
   notifyClientReply?: boolean;
-  notifyPr?: boolean;
   notifyWeeklyDigest?: boolean;
 };
 
@@ -1061,6 +1076,7 @@ export type NavCounts = {
   clients: number;
   plans: number;
   exercises: number;
+  inboxUnread?: number;
 };
 
 export type PlanDayInput = {
@@ -1272,15 +1288,13 @@ export const api = {
   dashboard: () => request<DashboardData>("/api/dashboard"),
   me: () => request<TrainerMe>("/api/me"),
   updatePreferences: (input: {
-    notifySessionComplete?: boolean;
+    notifyDailySummary?: boolean;
     notifyClientReply?: boolean;
-    notifyPr?: boolean;
     notifyWeeklyDigest?: boolean;
   }) =>
     request<{
-      notifySessionComplete: boolean;
+      notifyDailySummary: boolean;
       notifyClientReply: boolean;
-      notifyPr: boolean;
       notifyWeeklyDigest: boolean;
     }>("/api/me/preferences", { method: "PUT", body: JSON.stringify(input) }),
   billing: {
@@ -1292,7 +1306,18 @@ export const api = {
     portal: () =>
       request<{ portalUrl: string; message: string }>("/api/billing/portal", { method: "POST" }),
   },
-  inbox: () => request<DashboardFromClientItem[]>("/api/inbox"),
+  inbox: {
+    list: (opts?: { unreadOnly?: boolean; kind?: string; take?: number }) => {
+      const q = new URLSearchParams();
+      if (opts?.unreadOnly) q.set("unreadOnly", "true");
+      if (opts?.kind && opts.kind !== "all") q.set("kind", opts.kind);
+      if (opts?.take != null) q.set("take", String(opts.take));
+      const qs = q.toString();
+      return request<TrainerNotification[]>(`/api/inbox${qs ? `?${qs}` : ""}`);
+    },
+    markRead: (id: number) => request<void>(`/api/inbox/${id}/read`, { method: "POST" }),
+    markAllRead: () => request<{ marked: number }>("/api/inbox/read-all", { method: "POST" }),
+  },
   founding: {
     apply: (input: {
       name: string;

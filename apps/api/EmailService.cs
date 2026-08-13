@@ -58,18 +58,6 @@ public sealed class EmailService(IHttpClientFactory httpFactory, IConfiguration 
     public static string ReminderHtml(string clientName, string portalUrl, string reason) =>
         PortalLinkHtml(clientName, portalUrl, reason);
 
-    public static string TrainerSessionHtml(string firstName, string dayLabel, string url) =>
-        TrainerActionHtml(
-            $"{Html(firstName)} skończył trening ({Html(dayLabel)}).",
-            "Otwórz sesję",
-            url);
-
-    public static string TrainerPrHtml(string firstName, string exercises, string url) =>
-        TrainerActionHtml(
-            $"{Html(firstName)} ma nowy rekord: {Html(exercises)}.",
-            "Zobacz rekord",
-            url);
-
     public static string TrainerReplyHtml(string firstName, string preview, string url) =>
         TrainerActionHtml(
             $"{Html(firstName)} odpisał: „{Html(preview)}”",
@@ -85,6 +73,22 @@ public sealed class EmailService(IHttpClientFactory httpFactory, IConfiguration 
           <p><a href="{origin}" style="display:inline-block;padding:12px 20px;background:#0B0C0D;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Otwórz panel</a></p>
         </div>
         """;
+
+    public static string TrainerDailySummaryHtml(int unread, IReadOnlyList<(string ClientName, string Preview)> items, string inboxUrl)
+    {
+        var lines = items.Count == 0
+            ? ""
+            : "<ul>" + string.Join("", items.Select(i =>
+                $"<li><strong>{Html(i.ClientName)}</strong> — {Html(i.Preview)}</li>")) + "</ul>";
+        var count = unread == 1 ? "1 nieprzeczytany sygnał" : $"{unread} nieprzeczytanych sygnałów";
+        return $"""
+        <div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;color:#1a1a1a">
+          <p>Masz {count} od klientów.</p>
+          {lines}
+          <p><a href="{inboxUrl}" style="display:inline-block;padding:12px 20px;background:#0B0C0D;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Otwórz skrzynkę</a></p>
+        </div>
+        """;
+    }
 
     static string TrainerActionHtml(string body, string cta, string url) =>
         $"""

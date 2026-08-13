@@ -24,6 +24,7 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
     public DbSet<TrainerNote> TrainerNotes => Set<TrainerNote>();
     public DbSet<ClientHistoryImport> ClientHistoryImports => Set<ClientHistoryImport>();
     public DbSet<ClientProgressPhoto> ClientProgressPhotos => Set<ClientProgressPhoto>();
+    public DbSet<TrainerNotification> TrainerNotifications => Set<TrainerNotification>();
     public DbSet<WorkoutSession> WorkoutSessions => Set<WorkoutSession>();
     public DbSet<LoggedExercise> LoggedExercises => Set<LoggedExercise>();
     public DbSet<LoggedSet> LoggedSets => Set<LoggedSet>();
@@ -244,6 +245,15 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
 
         modelBuilder.Entity<ClientProgressPhoto>()
             .HasIndex(p => new { p.ClientId, p.TakenOn });
+
+        modelBuilder.Entity<TrainerNotification>()
+            .HasOne(n => n.Client)
+            .WithMany(c => c.Notifications)
+            .HasForeignKey(n => n.ClientId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TrainerNotification>()
+            .HasIndex(n => new { n.TrainerId, n.ReadAt, n.CreatedAt });
 
         modelBuilder.Entity<LoggedSet>()
             .HasOne(s => s.LoggedExercise)

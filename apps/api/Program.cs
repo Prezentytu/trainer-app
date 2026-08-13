@@ -256,8 +256,16 @@ app.MapPost("/api/cron/digest", async (HttpContext http, IConfiguration config, 
         || !string.Equals(provided.ToString(), expected, StringComparison.Ordinal))
         return Results.Unauthorized();
 
-    var (sent, skipped) = await digest.SendWeeklyAsync();
-    return Results.Ok(new { sent, skipped, utc = DateTime.UtcNow });
+    var (dailySent, dailySkipped) = await digest.SendDailyUnreadAsync();
+    var (weeklySent, weeklySkipped) = await digest.SendWeeklyAsync();
+    return Results.Ok(new
+    {
+        dailySent,
+        dailySkipped,
+        sent = weeklySent,
+        skipped = weeklySkipped,
+        utc = DateTime.UtcNow,
+    });
 });
 
 app.MapPost("/api/founding/apply", async (FoundingApplyInput input, FoundingService founding) =>
@@ -291,9 +299,8 @@ app.MapGet("/api/me", async (HttpContext http, AppDb db, IConfiguration config, 
             clientCount,
             clientLimit = plan.ClientLimit,
             billingConfigured = billing.StripeConfigured,
-            notifySessionComplete = trainer.NotifySessionComplete,
+            notifyDailySummary = trainer.NotifyDailySummary,
             notifyClientReply = trainer.NotifyClientReply,
-            notifyPr = trainer.NotifyPr,
             notifyWeeklyDigest = trainer.NotifyWeeklyDigest,
         });
     }
@@ -305,16 +312,14 @@ app.MapPut("/api/me/preferences", async (TrainerPreferencesInput input, HttpCont
     try
     {
         var trainer = await TrainerAccess.RequireTrainerAsync(http, db, config);
-        if (input.NotifySessionComplete is bool a) trainer.NotifySessionComplete = a;
+        if (input.NotifyDailySummary is bool a) trainer.NotifyDailySummary = a;
         if (input.NotifyClientReply is bool b) trainer.NotifyClientReply = b;
-        if (input.NotifyPr is bool c) trainer.NotifyPr = c;
         if (input.NotifyWeeklyDigest is bool d) trainer.NotifyWeeklyDigest = d;
         await db.SaveChangesAsync();
         return Results.Ok(new
         {
-            notifySessionComplete = trainer.NotifySessionComplete,
+            notifyDailySummary = trainer.NotifyDailySummary,
             notifyClientReply = trainer.NotifyClientReply,
-            notifyPr = trainer.NotifyPr,
             notifyWeeklyDigest = trainer.NotifyWeeklyDigest,
         });
     }
@@ -923,6 +928,7 @@ app.MapGet("/api/counts", async (HttpContext http, AppDb db, IConfiguration conf
             clients = await db.Clients.CountAsync(c => c.TrainerId == trainerId),
             plans = await db.Plans.CountAsync(p => p.TrainerId == trainerId),
             exercises = await db.Exercises.CountAsync(e => e.TrainerId == null || e.TrainerId == trainerId),
+            inboxUnread = await TrainerNotifications.UnreadCountAsync(db, trainerId),
         });
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
@@ -1060,7 +1066,8 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
 
         var attention = await ChurnRadar.BuildAttentionAsync(db, trainerId);
 
-        var fromClients = await TrainerInbox.BuildAsync(db, trainerId, 8, weekStart, today);
+        var fromClients = await TrainerNotifications.ListAsync(db, trainerId, unreadOnly: true, kind: null, take: 8);
+        var inboxUnread = await TrainerNotifications.UnreadCountAsync(db, trainerId);
 
         var trainerCreatedAt = await db.Trainers
             .Where(t => t.Id == trainerId)
@@ -1086,6 +1093,7 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
             recentPrs,
             attention,
             fromClients,
+            inboxUnread,
             clientActivity,
             sessionsLast7Days,
             sessionsPrev7Days,
@@ -1103,14 +1111,35 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
-app.MapGet("/api/inbox", async (HttpContext http, AppDb db, IConfiguration config) =>
+app.MapGet("/api/inbox", async (HttpContext http, AppDb db, IConfiguration config, bool? unreadOnly, string? kind, int? take) =>
 {
     try
     {
         var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var weekStart = today.AddDays(-14);
-        return Results.Ok(await TrainerInbox.BuildAsync(db, trainerId, 50, weekStart, today));
+        return Results.Ok(await TrainerNotifications.ListAsync(
+            db, trainerId, unreadOnly == true, kind, take ?? 50));
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapPost("/api/inbox/{id:int}/read", async (int id, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var ok = await TrainerNotifications.MarkReadAsync(db, trainerId, id);
+        return ok ? Results.NoContent() : Results.NotFound();
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapPost("/api/inbox/read-all", async (HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var marked = await TrainerNotifications.MarkAllReadAsync(db, trainerId);
+        return Results.Ok(new { marked });
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
@@ -1627,6 +1656,7 @@ app.MapPost("/api/sessions/{id:int}/comment/read", async (int id, HttpContext ht
         if (session is null) return Results.NotFound();
         if (session.ClientReply is not null)
             session.ClientReplyReadAt = DateTime.UtcNow;
+        await TrainerNotifications.MarkSessionReadAsync(db, trainerId, session.Id);
         await db.SaveChangesAsync();
         return Results.Ok(await Sessions.LoadDto(db, session.Id));
     }
@@ -2560,6 +2590,12 @@ app.MapPost("/api/portal/{token}/measurements", async (string token, ClientMeasu
         Note = input.Note,
     };
     db.ClientMeasurements.Add(row);
+    await TrainerNotifications.AddAsync(
+        db,
+        access.Client!.TrainerId,
+        access.ClientId,
+        TrainerNotifications.Measurement,
+        row.WeightKg is double kg ? $"Nowy pomiar — {kg:0.#} kg" : "Nowy pomiar");
     await db.SaveChangesAsync();
     return Results.Created($"/api/portal/{token}/measurements/{row.Id}", new { row.Id });
 }).RequireRateLimiting("portal");
@@ -2604,6 +2640,12 @@ app.MapPost("/api/portal/{token}/photos", async (string token, ProgressPhotoInpu
         Bytes = bytes,
     };
     db.ClientProgressPhotos.Add(row);
+    await TrainerNotifications.AddAsync(
+        db,
+        access.Client!.TrainerId,
+        access.ClientId,
+        TrainerNotifications.Photo,
+        string.IsNullOrWhiteSpace(row.Note) ? "Nowe zdjęcie postępu" : row.Note);
     await db.SaveChangesAsync();
     return Results.Created($"/api/portal/{token}/photos/{row.Id}", ProgressPhotos.Meta(row));
 }).RequireRateLimiting("portal");
@@ -2632,6 +2674,13 @@ app.MapPut("/api/portal/{token}/intake", async (string token, ClientIntakeInput 
     var access = await ResolvePortalToken(db, token);
     if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
     var intake = await UpsertIntakeAsync(db, access.ClientId, input);
+    await TrainerNotifications.AddAsync(
+        db,
+        access.Client!.TrainerId,
+        access.ClientId,
+        TrainerNotifications.Intake,
+        "Wypełnił wywiad");
+    await db.SaveChangesAsync();
     return Results.Ok(IntakeToDto(access.ClientId, intake));
 }).RequireRateLimiting("portal");
 
@@ -2708,6 +2757,20 @@ app.MapPost("/api/portal/{token}/check-ins", async (string token, ClientCheckInI
         db.ClientCheckIns.Add(existing);
     }
     await db.SaveChangesAsync();
+    if (existing.MoodScore is int mood && mood <= 2)
+    {
+        var preview = $"Samopoczucie {mood}/5";
+        if (existing.SleepScore != null) preview += $" · sen {existing.SleepScore}/5";
+        if (!string.IsNullOrWhiteSpace(existing.Note)) preview += $" — {existing.Note}";
+        await TrainerNotifications.AddAsync(
+            db,
+            access.Client!.TrainerId,
+            access.ClientId,
+            TrainerNotifications.LowCheckIn,
+            preview,
+            checkInId: existing.Id);
+        await db.SaveChangesAsync();
+    }
     return Results.Ok(new { existing.Id, existing.Date, existing.MoodScore, existing.SleepScore, existing.Note, existing.CreatedAt });
 }).RequireRateLimiting("portal");
 
@@ -2744,6 +2807,12 @@ app.MapPost("/api/portal/{token}/history-import", async (
             DraftJson = JsonSerializer.Serialize(draft, HistoryImport.JsonOptions),
         };
         db.ClientHistoryImports.Add(row);
+        await TrainerNotifications.AddAsync(
+            db,
+            client.TrainerId,
+            access.ClientId,
+            TrainerNotifications.HistoryImport,
+            "Klient wrzucił zdjęcia treningów — sprawdź, czy się zgadzają.");
         await db.SaveChangesAsync(ct);
         return Results.Created($"/api/portal/{token}/history-import", new { row.Id });
     }
@@ -2818,7 +2887,18 @@ app.MapPost("/api/portal/{token}/sessions/start", async (string token, StartSess
     input = input with { ClientId = access.ClientId };
     var (session, error) = await Sessions.StartAsync(db, input, requireDayOwnedByClient: true);
     if (error is not null) return error;
-    return Results.Created($"/api/portal/{token}/sessions/{session!.Id}", await Sessions.LoadDto(db, session.Id));
+    if (session!.OutOfOrder)
+    {
+        await TrainerNotifications.AddAsync(
+            db,
+            access.Client!.TrainerId,
+            access.ClientId,
+            TrainerNotifications.OutOfOrder,
+            "Zrobił trening poza kolejką",
+            sessionId: session.Id);
+        await db.SaveChangesAsync();
+    }
+    return Results.Created($"/api/portal/{token}/sessions/{session.Id}", await Sessions.LoadDto(db, session.Id));
 }).RequireRateLimiting("portal");
 
 app.MapPut("/api/portal/{token}/sessions/{id:int}", async (string token, int id, WorkoutSessionInput input, AppDb db) =>
@@ -2835,18 +2915,38 @@ app.MapPut("/api/portal/{token}/sessions/{id:int}", async (string token, int id,
     if (dateErr is not null) return dateErr;
 
     Sessions.ApplyUpdate(db, session, input);
+    if (session.Status == "completed" && !string.IsNullOrWhiteSpace(session.Note))
+    {
+        await TrainerNotifications.AddAsync(
+            db,
+            access.Client!.TrainerId,
+            access.ClientId,
+            TrainerNotifications.SessionNote,
+            session.Note,
+            sessionId: session.Id);
+    }
     await db.SaveChangesAsync();
     return Results.Ok(await Sessions.LoadDto(db, session.Id));
 }).RequireRateLimiting("portal");
 
-app.MapPatch("/api/portal/{token}/sessions/{id:int}/complete", async (string token, int id, AppDb db, TrainerNotifyService notify) =>
+app.MapPatch("/api/portal/{token}/sessions/{id:int}/complete", async (string token, int id, AppDb db) =>
 {
     var access = await ResolvePortalToken(db, token);
     if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
     var session = await db.WorkoutSessions.FindAsync(id);
     if (session is null || session.ClientId != access.ClientId) return Results.NotFound();
     await Sessions.CompleteAsync(db, session);
-    await notify.NotifySessionCompletedAsync(session.Id);
+    if (!string.IsNullOrWhiteSpace(session.Note))
+    {
+        await TrainerNotifications.AddAsync(
+            db,
+            access.Client!.TrainerId,
+            access.ClientId,
+            TrainerNotifications.SessionNote,
+            session.Note,
+            sessionId: session.Id);
+        await db.SaveChangesAsync();
+    }
     return Results.Ok(await Sessions.LoadDto(db, session.Id));
 }).RequireRateLimiting("portal");
 
@@ -2879,6 +2979,13 @@ app.MapPost("/api/portal/{token}/sessions/{id:int}/comment", async (string token
     session.ClientReply = text;
     session.ClientReplyAt = DateTime.UtcNow;
     session.ClientReplyReadAt = null;
+    await TrainerNotifications.AddAsync(
+        db,
+        access.Client!.TrainerId,
+        access.ClientId,
+        TrainerNotifications.SessionReply,
+        text,
+        sessionId: session.Id);
     await db.SaveChangesAsync();
     await notify.NotifyClientReplyAsync(session.Id);
     return Results.Ok(await Sessions.LoadDto(db, session.Id));

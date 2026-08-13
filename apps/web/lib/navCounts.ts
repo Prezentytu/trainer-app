@@ -9,19 +9,26 @@ export type NavShellState = {
   clients: number | null;
   plans: number | null;
   trainerName: string;
+  inboxUnread: number | null;
 };
 
 const DEFAULT: NavShellState = {
   clients: null,
   plans: null,
   trainerName: "Trener",
+  inboxUnread: null,
 };
 
 let memory: NavShellState = DEFAULT;
 let inflight: Promise<void> | null = null;
 
 function isSame(a: NavShellState, b: NavShellState): boolean {
-  return a.clients === b.clients && a.plans === b.plans && a.trainerName === b.trainerName;
+  return (
+    a.clients === b.clients &&
+    a.plans === b.plans &&
+    a.trainerName === b.trainerName &&
+    a.inboxUnread === b.inboxUnread
+  );
 }
 
 function readStorage(): NavShellState {
@@ -37,6 +44,7 @@ function readStorage(): NavShellState {
         typeof parsed.trainerName === "string" && parsed.trainerName.trim()
           ? parsed.trainerName
           : "Trener",
+      inboxUnread: typeof parsed.inboxUnread === "number" ? parsed.inboxUnread : null,
     };
     // useSyncExternalStore porównuje referencje — bez tego każdy odczyt to nowy obiekt i pętla renderów.
     return isSame(memory, next) ? memory : next;
@@ -83,6 +91,7 @@ export function refreshNavCounts(): Promise<void> {
         clients: counts.clients,
         plans: counts.plans,
         trainerName: name || getNavShell().trainerName,
+        inboxUnread: typeof counts.inboxUnread === "number" ? counts.inboxUnread : 0,
       });
     })
     .catch(() => {

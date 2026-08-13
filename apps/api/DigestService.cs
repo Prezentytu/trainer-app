@@ -4,6 +4,59 @@ namespace TrainerApp.Api;
 
 public sealed class DigestService(AppDb db, EmailService email, IConfiguration config)
 {
+    public async Task<(int Sent, int Skipped)> SendDailyUnreadAsync(CancellationToken ct = default)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var origin = (config["WEB_ORIGIN"] ?? "http://localhost:3000").TrimEnd('/');
+        var inboxUrl = $"{origin}/inbox";
+        var trainers = await db.Trainers
+            .Where(t => t.NotifyDailySummary && t.LastActivityEmailOn != today)
+            .ToListAsync(ct);
+
+        var sent = 0;
+        var skipped = 0;
+        foreach (var trainer in trainers)
+        {
+            if (!CanEmail(trainer.Email))
+            {
+                skipped++;
+                continue;
+            }
+
+            var unread = await TrainerNotifications.UnreadCountAsync(db, trainer.Id, ct);
+            if (unread == 0)
+            {
+                skipped++;
+                continue;
+            }
+
+            var items = await db.TrainerNotifications
+                .Where(n => n.TrainerId == trainer.Id && n.ReadAt == null)
+                .OrderByDescending(n => n.CreatedAt)
+                .Take(3)
+                .Select(n => new { n.Client!.Name, n.Preview })
+                .ToListAsync(ct);
+
+            var (ok, _) = await email.SendAsync(
+                trainer.Email,
+                unread == 1 ? "1 nieprzeczytany sygnał od klientów" : $"{unread} nieprzeczytanych od klientów",
+                EmailService.TrainerDailySummaryHtml(
+                    unread,
+                    items.Select(i => (i.Name, i.Preview)).ToList(),
+                    inboxUrl),
+                ct);
+            if (ok)
+            {
+                trainer.LastActivityEmailOn = today;
+                sent++;
+            }
+            else skipped++;
+        }
+
+        await db.SaveChangesAsync(ct);
+        return (sent, skipped);
+    }
+
     public async Task<(int Sent, int Skipped)> SendWeeklyAsync(CancellationToken ct = default)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -21,8 +74,7 @@ public sealed class DigestService(AppDb db, EmailService email, IConfiguration c
 
         foreach (var trainer in trainers)
         {
-            if (string.IsNullOrWhiteSpace(trainer.Email) || !trainer.Email.Contains('@')
-                || trainer.Email.EndsWith("@localhost", StringComparison.OrdinalIgnoreCase))
+            if (!CanEmail(trainer.Email))
             {
                 skipped++;
                 continue;
@@ -70,4 +122,7 @@ public sealed class DigestService(AppDb db, EmailService email, IConfiguration c
             .CountAsync(ct);
         return rows;
     }
+
+    static bool CanEmail(string? addr) =>
+        !string.IsNullOrWhiteSpace(addr) && addr.Contains('@') && !addr.EndsWith("@localhost", StringComparison.OrdinalIgnoreCase);
 }

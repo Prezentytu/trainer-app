@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Fragment } from "react";
 import { api, SessionDetail, WorkoutSessionInput } from "@/lib/api";
+import { refreshNavCounts } from "@/lib/navCounts";
 import { Button, Card, ErrorBanner, Field, formatRest, inputClass, Marker } from "@/components/ui";
 import { formatDurationMinutes } from "@/lib/estimateDuration";
 import { formatKg } from "@/lib/plates";
@@ -105,11 +106,21 @@ export function SessionReview({
   );
 
   useEffect(() => {
-    if (!session.hasUnreadClientReply) return;
-    api.sessions.markReplyRead(session.id).then(onUpdated).catch(() => {
-      /* ignore */
-    });
-  }, [session.hasUnreadClientReply, session.id, onUpdated]);
+    let cancelled = false;
+    api.sessions
+      .markReplyRead(session.id)
+      .then((updated) => {
+        if (cancelled) return;
+        onUpdated(updated);
+        void refreshNavCounts();
+      })
+      .catch(() => {
+        /* ignore */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session.id, onUpdated]);
 
   const saveComment = async () => {
     if (!trainerComment.trim()) return;

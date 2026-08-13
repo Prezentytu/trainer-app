@@ -308,6 +308,23 @@ public static class Seed
         });
 
         db.SaveChanges();
+
+        var seededSession = db.WorkoutSessions
+            .Where(s => s.ClientId == client.Id && s.Note != null && s.Note != "")
+            .OrderByDescending(s => s.Id)
+            .FirstOrDefault();
+        if (seededSession is not null)
+        {
+            db.TrainerNotifications.Add(new TrainerNotification
+            {
+                TrainerId = trainerId,
+                ClientId = client.Id,
+                Kind = TrainerNotifications.SessionNote,
+                SessionId = seededSession.Id,
+                Preview = TrainerNotifications.ClipPreview(seededSession.Note!),
+            });
+            db.SaveChanges();
+        }
     }
 
     private static string NormalizeName(string? name) =>

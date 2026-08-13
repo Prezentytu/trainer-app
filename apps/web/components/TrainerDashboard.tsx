@@ -26,6 +26,7 @@ import {
 import { Icon } from "@/components/Icon";
 import { DashboardSkeleton } from "@/components/skeletons";
 import { markPortalLinkSent } from "@/lib/portalLinkSent";
+import { refreshNavCounts } from "@/lib/navCounts";
 import { formatKg } from "@/lib/plates";
 import { formatTrainingsFraction } from "@/lib/plural";
 import { canWriteSilence, silenceKind, silenceLabel, silenceMessage } from "@/lib/silenceProtocol";
@@ -50,6 +51,7 @@ type InboxRow = {
   ctaHref?: string;
   portalToken?: string | null;
   attention?: AttentionItem | null;
+  notificationId?: number;
 };
 
 export function TrainerDashboard() {
@@ -184,6 +186,7 @@ export function TrainerDashboard() {
               : "Przejdź do klienta",
         ctaKind: "link",
         ctaHref: href,
+        notificationId: item.id,
       });
     }
 
@@ -210,6 +213,14 @@ export function TrainerDashboard() {
       .sort((a, b) => a.rank - b.rank || a.clientName.localeCompare(b.clientName, "pl"))
       .slice(0, 8);
   }, [dash, needsAttention]);
+
+  const markInboxRow = (row: InboxRow) => {
+    if (row.notificationId == null) return;
+    void api.inbox
+      .markRead(row.notificationId)
+      .then(() => refreshNavCounts())
+      .catch(() => {});
+  };
 
   const copyPortalLink = async (clientId: number, portalToken: string | null | undefined) => {
     if (!portalToken) return;
@@ -420,7 +431,7 @@ export function TrainerDashboard() {
           pending
           headerAction={
             <Link href="/inbox" className="font-mono text-xs tabular-nums text-muted underline-offset-2 hover:underline">
-              Wszystkie
+              {(dash?.inboxUnread ?? 0) > 0 ? `Wszystkie · ${dash?.inboxUnread}` : "Wszystkie"}
             </Link>
           }
         >
@@ -430,7 +441,11 @@ export function TrainerDashboard() {
                 key={row.key}
                 className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between"
               >
-                <Link href={row.href} className="flex min-w-0 items-center gap-2.5">
+                <Link
+                  href={row.href}
+                  className="flex min-w-0 items-center gap-2.5"
+                  onClick={() => markInboxRow(row)}
+                >
                   <Avatar name={row.clientName} size="sm" />
                   <span className="min-w-0">
                     <span className="block break-words text-sm font-medium">{row.clientName}</span>
@@ -458,7 +473,11 @@ export function TrainerDashboard() {
                       {row.ctaLabel}
                     </Button>
                   ) : (
-                    <Link href={row.ctaHref ?? row.href} className="flex-1 sm:flex-none">
+                    <Link
+                      href={row.ctaHref ?? row.href}
+                      className="flex-1 sm:flex-none"
+                      onClick={() => markInboxRow(row)}
+                    >
                       <Button size="sm" variant="secondary" className="w-full">
                         {row.ctaLabel}
                       </Button>
@@ -734,7 +753,7 @@ function formatCompliance(att?: AttentionItem | null): string | null {
 }
 
 function fromClientKey(item: DashboardFromClientItem): string {
-  return `${item.kind}-${item.clientId}-${item.sessionId ?? item.checkInId ?? item.at}`;
+  return `n-${item.id}`;
 }
 
 function inboxRank(kind: string, reason?: string): number {
@@ -742,6 +761,7 @@ function inboxRank(kind: string, reason?: string): number {
   if (kind === "history_import") return 1;
   if (kind === "low_checkin") return 2;
   if (kind === "session_note") return 3;
+  if (kind === "photo" || kind === "measurement" || kind === "intake") return 3;
   if (kind === "no_plan" || reason === "no_plan") return 4;
   if (kind === "out_of_order") return 5;
   return 6;

@@ -15,7 +15,7 @@ Ortogonalna oś: `<html data-theme="light"|brak>` × `<html data-palette="forest
 - Brak `data-palette` = Mono (dotychczasowy wygląd, zero migracji).
 - Paleta nadpisuje `--bg`, `--surface*`, `--field`, `--line*`, `--scrim` oraz lekko `--fg-muted` (dark i light). `--pr`/`--gain`/`--loss`/`--danger` zostają. Pink Pony w light ma cukierkowy invert (przycisk).
 - Komponenty nie znają palet — idą tokenami.
-- Picker tylko w profilu portalu. Landing zdejmuje paletę (`lockLightTheme` → Mono), żeby marketing został mono.
+- Picker w profilu portalu i w `/settings` panelu trenera. Landing zdejmuje paletę (`lockLightTheme` → Mono), żeby marketing został mono.
 - Per-urządzenie: klucz `repmaxer-palette` obok `repmaxer-theme`.
 
 ## Model danych
@@ -47,9 +47,9 @@ Profil portalu, sekcja „Aplikacja”: siatka 5 swatchy — Grafit, Mech, Piase
 | Kontrast AA na zabarwionym tle | Tinta powierzchnie, tekst zostaje z mono; hairline w podobnej jasności co oryginał |
 | Landing z hue | `lockLightTheme` czyści `data-palette` |
 | FOUC palety | ten sam boot script co motyw |
-| Trener i klient na jednym urządzeniu | paleta globalna na `<html>` — akceptowalne; picker tylko w portalu |
+| Trener i klient na jednym urządzeniu | paleta globalna na `<html>` i w `localStorage` — ten sam wybór w panelu i portalu |
 
 ## Changelog
 
 - 2026-08-13 — utworzono spec i wdrożono palety portalu.
-- 2026-08-13 — palety z realną chromatycznością (nie near-black tint). Nazwy: Grafit, Mech, Piasek, Ocean, Pink Pony. Pony = cukierkowy róż (tło, karty, krawędzie; light invert różowy).
+- 2026-08-13 — picker także w ustawieniach panelu trenera (ten sam `PalettePicker` i `repmaxer-palette`).

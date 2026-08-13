@@ -904,7 +904,9 @@ export function Switch({
   return (
     <label
       htmlFor={id}
-      className={`inline-flex cursor-pointer items-center gap-3 ${disabled ? "opacity-45" : ""}`}
+      className={`${
+        label ? "flex w-full min-h-11 min-w-0" : "inline-flex"
+      } cursor-pointer items-center gap-3 ${disabled ? "opacity-45" : ""}`}
     >
       <button
         id={id}
@@ -932,7 +934,7 @@ export function Switch({
           ) : null}
         </span>
       </button>
-      {label ? <span className="t-body text-[15px]">{label}</span> : null}
+      {label ? <span className="t-body min-w-0 flex-1 break-words text-[15px]">{label}</span> : null}
     </label>
   );
 }

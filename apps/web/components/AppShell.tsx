@@ -10,7 +10,7 @@ import { Avatar, useIsClient, usePresence } from "@/components/ui";
 import { Icon, type IconName } from "@/components/Icon";
 import { Wordmark } from "@/components/Wordmark";
 
-const NAV_SHELL_SSR = { clients: null, plans: null, trainerName: "Trener" } as const;
+const NAV_SHELL_SSR = { clients: null, plans: null, trainerName: "Trener", inboxUnread: null } as const;
 
 const NAV: { href: string; label: string; icon: IconName }[] = [
   { href: "/", label: "Panel", icon: "home" },
@@ -27,31 +27,51 @@ const PRESS = "active:[transform:var(--press)]";
 function SideNavLinks({
   onNavigate,
   compact,
+  inboxUnread,
 }: {
   onNavigate?: () => void;
   compact?: boolean;
+  inboxUnread: number | null;
 }) {
   const pathname = usePathname();
   return (
     <nav className="flex flex-col gap-0.5" aria-label="Główna nawigacja">
       {NAV.map((item) => {
         const active = item.href === "/" ? pathname === "/" : pathname?.startsWith(item.href);
+        const unread = item.href === "/inbox" ? inboxUnread ?? 0 : 0;
+        const label =
+          item.href === "/inbox" && unread > 0
+            ? `${item.label}, ${unread > 99 ? "ponad 99" : unread} nieprzeczytanych`
+            : item.label;
         return (
           <Link
             key={item.href}
             href={item.href}
             onClick={onNavigate}
-            title={compact ? item.label : undefined}
+            title={compact ? label : undefined}
             aria-current={active ? "page" : undefined}
-            aria-label={compact ? item.label : undefined}
-            className={`flex min-h-[44px] items-center rounded-[var(--r-pill)] text-[15px] font-medium transition-[background-color,color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] ${FOCUS} ${PRESS} ${
+            aria-label={compact || unread > 0 ? label : undefined}
+            className={`relative flex min-h-[44px] items-center rounded-[var(--r-pill)] text-[15px] font-medium transition-[background-color,color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] ${FOCUS} ${PRESS} ${
               active
                 ? "bg-invert-bg text-invert-fg"
                 : "text-fg-faint hover:bg-surface-raised hover:text-foreground"
             } ${compact ? "justify-center px-0" : "gap-3 px-3"}`}
           >
             <Icon name={item.icon} size={20} decorative />
-            {!compact ? <span className="min-w-0 flex-1 truncate">{item.label}</span> : null}
+            {!compact ? <span className="min-w-0 flex-1 break-words">{item.label}</span> : null}
+            {!compact && unread > 0 ? (
+              <span className="shrink-0 font-mono text-[11px] font-medium tabular-nums text-current opacity-70">
+                {unread > 99 ? "99+" : unread}
+              </span>
+            ) : null}
+            {compact && unread > 0 ? (
+              <span
+                className={`absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full ${
+                  active ? "bg-invert-fg" : "bg-invert-bg"
+                }`}
+                aria-hidden
+              />
+            ) : null}
           </Link>
         );
       })}
@@ -282,7 +302,7 @@ function TrainerFooter({ compact, name }: { compact?: boolean; name: string }) {
   return <ClerkTrainerFooter compact={compact} fallbackName={name} />;
 }
 
-function FloatingBottomNav() {
+function FloatingBottomNav({ inboxUnread }: { inboxUnread: number | null }) {
   const pathname = usePathname();
   return (
     <div
@@ -295,20 +315,33 @@ function FloatingBottomNav() {
       >
         {NAV.map((item) => {
           const active = item.href === "/" ? pathname === "/" : pathname?.startsWith(item.href);
+          const unread = item.href === "/inbox" ? inboxUnread ?? 0 : 0;
+          const label =
+            item.href === "/inbox" && unread > 0
+              ? `${item.label}, ${unread > 99 ? "ponad 99" : unread} nieprzeczytanych`
+              : item.label;
           return (
             <Link
               key={item.href}
               href={item.href}
               aria-current={active ? "page" : undefined}
-              aria-label={item.label}
-              title={item.label}
-              className={`flex min-h-[44px] min-w-[48px] items-center justify-center rounded-[var(--r-pill)] px-2 transition-[background-color,color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] ${FOCUS} ${PRESS} ${
+              aria-label={label}
+              title={label}
+              className={`relative flex min-h-[44px] min-w-[48px] items-center justify-center rounded-[var(--r-pill)] px-2 transition-[background-color,color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] ${FOCUS} ${PRESS} ${
                 active
                   ? "bg-invert-bg text-invert-fg"
                   : "text-fg-faint hover:bg-surface hover:text-foreground"
               }`}
             >
               <Icon name={item.icon} size={20} decorative />
+              {unread > 0 ? (
+                <span
+                  className={`absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full ${
+                    active ? "bg-invert-fg" : "bg-invert-bg"
+                  }`}
+                  aria-hidden
+                />
+              ) : null}
             </Link>
           );
         })}
@@ -363,7 +396,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className={`mb-6 ${showRail ? "flex justify-center" : "px-3 pt-1"}`}>
           <Wordmark compact={showRail} />
         </div>
-        <SideNavLinks compact={showRail} />
+        <SideNavLinks compact={showRail} inboxUnread={shell.inboxUnread} />
         <TrainerFooter compact={showRail} name={trainerName} />
       </aside>
 
@@ -396,7 +429,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Icon name="close" size={20} decorative />
               </button>
             </div>
-            <SideNavLinks onNavigate={() => setDrawerOpen(false)} />
+            <SideNavLinks onNavigate={() => setDrawerOpen(false)} inboxUnread={shell.inboxUnread} />
             <TrainerFooter name={trainerName} />
           </aside>
         </div>
@@ -420,7 +453,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </main>
 
-      <FloatingBottomNav />
+      <FloatingBottomNav inboxUnread={shell.inboxUnread} />
     </div>
   );
 }

@@ -277,9 +277,8 @@ public record HistoryImportAnalyzeResult(
     PlanImportDraft PlanDraft);
 
 public record TrainerPreferencesInput(
-    bool? NotifySessionComplete = null,
+    bool? NotifyDailySummary = null,
     bool? NotifyClientReply = null,
-    bool? NotifyPr = null,
     bool? NotifyWeeklyDigest = null);
 
 public record BillingCheckoutInput(string PlanKey);

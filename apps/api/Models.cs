@@ -13,11 +13,12 @@ public class Trainer
     public string PlanKey { get; set; } = "free";
     public string? StripeCustomerId { get; set; }
     public string? StripeSubscriptionId { get; set; }
-    public bool NotifySessionComplete { get; set; } = true;
+    /// <summary>Dzienne podsumowanie nieprzeczytanych (max 1 mail/dzień).</summary>
+    public bool NotifyDailySummary { get; set; } = true;
     public bool NotifyClientReply { get; set; } = true;
-    public bool NotifyPr { get; set; } = true;
     public bool NotifyWeeklyDigest { get; set; } = true;
     public DateOnly? LastDigestSentOn { get; set; }
+    public DateOnly? LastActivityEmailOn { get; set; }
 }
 
 public class Client
@@ -45,6 +46,7 @@ public class Client
     public ClientIntake? Intake { get; set; }
     public List<ClientHistoryImport> HistoryImports { get; set; } = [];
     public List<ClientProgressPhoto> ProgressPhotos { get; set; } = [];
+    public List<TrainerNotification> Notifications { get; set; } = [];
 }
 
 /// <summary>Prywatna notatka trenera o kliencie. NIGDY nie wystawiana w /api/portal/*.</summary>
@@ -57,6 +59,22 @@ public class TrainerNote
     public DateTime? PinnedAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
+}
+
+/// <summary>Sygnał od klienta w skrzynce trenera (trwały dziennik, nie wyliczany).</summary>
+public class TrainerNotification
+{
+    public int Id { get; set; }
+    public int TrainerId { get; set; }
+    public int ClientId { get; set; }
+    public Client? Client { get; set; }
+    /// <summary>session_note | session_reply | low_checkin | out_of_order | history_import | photo | measurement | intake.</summary>
+    public string Kind { get; set; } = "";
+    public int? SessionId { get; set; }
+    public int? CheckInId { get; set; }
+    public string Preview { get; set; } = "";
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? ReadAt { get; set; }
 }
 
 /// <summary>Lekki check-in między sesjami (samopoczucie / sen / notatka).</summary>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useClerk } from "@clerk/nextjs";
 import { Icon } from "@/components/Icon";
 import { api, NavCounts, TrainerMe, clerkEnabled } from "@/lib/api";
+import { PalettePicker } from "@/components/PalettePicker";
 import { useTheme } from "@/lib/theme";
 import { Button, Card, ErrorBanner, PageHeader, Skeleton, Switch } from "@/components/ui";
 
@@ -19,7 +20,7 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const [me, setMe] = useState<TrainerMe | null>(null);
   const [meLoading, setMeLoading] = useState(true);
-  const [notify, setNotify] = useState({ session: true, pr: true, reply: true, digest: true });
+  const [notify, setNotify] = useState({ daily: true, reply: true, digest: true });
   const [billingBusy, setBillingBusy] = useState<string | null>(null);
 
   useEffect(() => {
@@ -41,8 +42,7 @@ export default function SettingsPage() {
         if (cancelled) return;
         setMe(m);
         setNotify({
-          session: m.notifySessionComplete !== false,
-          pr: m.notifyPr !== false,
+          daily: m.notifyDailySummary !== false,
           reply: m.notifyClientReply !== false,
           digest: m.notifyWeeklyDigest !== false,
         });
@@ -59,13 +59,12 @@ export default function SettingsPage() {
   }, []);
 
   const savePref = async (
-    key: "notifySessionComplete" | "notifyClientReply" | "notifyPr" | "notifyWeeklyDigest",
+    key: "notifyDailySummary" | "notifyClientReply" | "notifyWeeklyDigest",
     value: boolean,
   ) => {
     const prev = notify;
     const next = {
-      session: key === "notifySessionComplete" ? value : notify.session,
-      pr: key === "notifyPr" ? value : notify.pr,
+      daily: key === "notifyDailySummary" ? value : notify.daily,
       reply: key === "notifyClientReply" ? value : notify.reply,
       digest: key === "notifyWeeklyDigest" ? value : notify.digest,
     };
@@ -161,7 +160,7 @@ export default function SettingsPage() {
       <Card
         icon={<Icon name="sliders-horizontal" size={16} decorative />}
         title="Wygląd"
-        meta="Motyw zapisuje się w tej przeglądarce."
+        meta="Motyw i kolory zapisują się w tej przeglądarce."
       >
         <Switch
           label="Jasny motyw"
@@ -171,34 +170,40 @@ export default function SettingsPage() {
         <p className="mt-3 text-xs text-muted">
           Wyłączony = ciemny interfejs (domyślny).
         </p>
+        <div className="mt-5 border-t border-border pt-4">
+          <p id="settings-palette" className="text-[15px] font-medium text-foreground">
+            Kolorystyka
+          </p>
+          <p className="mt-0.5 text-xs text-muted">
+            Każda paleta ma swój kolor. Rekordy zostają złote.
+          </p>
+          <div className="mt-3">
+            <PalettePicker labelledBy="settings-palette" />
+          </div>
+        </div>
       </Card>
 
       <Card
         icon={<Icon name="chat" size={16} decorative />}
         title="Powiadomienia e-mail"
-        meta="Dostajesz maila, gdy klient skończy trening, zrobi rekord albo odpisze."
+        meta="Maile tylko przy odpowiedzi i w podsumowaniach — nie po każdym treningu."
       >
         {meLoading ? (
           <p className="text-sm text-muted">Ładuję ustawienia…</p>
         ) : (
           <div className="space-y-3">
             <Switch
-              label="Ukończony trening"
-              checked={notify.session}
-              onChange={(v) => void savePref("notifySessionComplete", v)}
-            />
-            <Switch
-              label="Nowy rekord"
-              checked={notify.pr}
-              onChange={(v) => void savePref("notifyPr", v)}
-            />
-            <Switch
-              label="Odpowiedź na komentarz"
+              label="Odpowiedzi klientów — od razu"
               checked={notify.reply}
               onChange={(v) => void savePref("notifyClientReply", v)}
             />
             <Switch
-              label="Podsumowanie tygodnia (poniedziałek)"
+              label="Codzienne podsumowanie nieprzeczytanych"
+              checked={notify.daily}
+              onChange={(v) => void savePref("notifyDailySummary", v)}
+            />
+            <Switch
+              label="Poniedziałkowy przegląd tygodnia"
               checked={notify.digest}
               onChange={(v) => void savePref("notifyWeeklyDigest", v)}
             />
