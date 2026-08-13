@@ -12,17 +12,17 @@ import {
   PortalExercise,
   PortalHome,
   PortalSessionSummary,
-  PortalWeekDay,
   SessionDetail,
 } from "@/lib/api";
 import { Button, ErrorBanner } from "@/components/ui";
 import { PortalHomeSkeleton } from "@/components/skeletons";
 import { usePortalStickyCta } from "@/components/portal/PortalChrome";
 import { estimateDayMinutes, formatDurationApprox } from "@/lib/estimateDuration";
-import { buildWeekStrip, planDaysMapToWeekdays } from "@/lib/portalWeekStrip";
+import { buildWeekStrip, planDaysMapToWeekdays, weekStripDayFromPlanDay, type WeekStripDay } from "@/lib/portalWeekStrip";
 import { CheckInCard } from "@/components/portal/CheckInCard";
-import { DayPreviewSheet } from "@/components/portal/DayPreviewSheet";
-import { DemoThumbButton } from "@/components/portal/DemoThumbButton";
+import { DaySheet } from "@/components/portal/DaySheet";
+import { ExercisePreviewList } from "@/components/portal/ExercisePreviewList";
+import { WeekStrip } from "@/components/portal/WeekStrip";
 import { PwaInstallPrompt } from "@/components/portal/PwaInstallPrompt";
 import {
   daysAgo,
@@ -32,7 +32,7 @@ import {
   weekdayIndexFromLabel,
 } from "@/lib/dates";
 import { formatLoadDisplay } from "@/lib/weight";
-import { previewRowsFromItems } from "@/lib/supersetPreview";
+import { previewBlocksFromItems, type PreviewItem } from "@/lib/supersetPreview";
 
 function schemeLine(
   item: NonNullable<PortalHome["today"]>["day"]["items"][number],
@@ -98,11 +98,12 @@ export default function PortalTodayPage() {
   const [checkIns, setCheckIns] = useState<ClientCheckIn[]>([]);
   const [exercises, setExercises] = useState<PortalExercise[]>([]);
   const [liveSession, setLiveSession] = useState<SessionDetail | null>(null);
+  const [liveErrorId, setLiveErrorId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [repeating, setRepeating] = useState(false);
   const [staleBusy, setStaleBusy] = useState<"save" | "discard" | null>(null);
-  const [selectedWeekDay, setSelectedWeekDay] = useState<PortalWeekDay | null>(null);
+  const [selectedWeekDay, setSelectedWeekDay] = useState<WeekStripDay | null>(null);
   const { setStickyCta } = usePortalStickyCta();
   const heroCtaRef = useRef<HTMLDivElement>(null);
   const [heroCtaLeftView, setHeroCtaLeftView] = useState(false);
@@ -135,7 +136,7 @@ export default function PortalTodayPage() {
   useEffect(load, [load]);
 
   // Szczegóły sesji w toku — markery postępu na liście ćwiczeń.
-  // Stary liveSession jest ignorowany, dopóki id nie zgadza się z fresh (heroRows).
+  // Do czasu zgodnego id nie pokazujemy rozpisu innego dnia (unikamy podmiany treści).
   useEffect(() => {
     const id = home?.inProgressSession?.id;
     if (id == null) return;
@@ -146,7 +147,7 @@ export default function PortalTodayPage() {
         if (!cancelled) setLiveSession(detail);
       })
       .catch(() => {
-        /* fallback: heroRows używa listy z planu */
+        if (!cancelled) setLiveErrorId(id);
       });
     return () => {
       cancelled = true;
@@ -159,7 +160,7 @@ export default function PortalTodayPage() {
   );
 
   const weekStrip = useMemo(
-    () => buildWeekStrip(history.map((s) => s.performedOn), false, home?.week),
+    () => buildWeekStrip(history, home?.week),
     [history, home?.week],
   );
 
@@ -341,51 +342,51 @@ export default function PortalTodayPage() {
   const silentDays = lastCompleted ? daysAgo(lastCompleted.performedOn) : null;
   const returning = Boolean(!fresh && silentDays != null && silentDays >= 14);
 
-  const heroRows = useMemo(() => {
+  const liveFailed = fresh != null && liveErrorId === fresh.id;
+  const heroItems = useMemo((): PreviewItem[] => {
     if (fresh && liveSession && liveSession.id === fresh.id) {
-      return previewRowsFromItems(
-        liveSession.exercises.map((ex) => {
-          const doneCount = ex.sets.filter((s) => s.completed).length;
-          const total = ex.sets.length;
-          const done = total > 0 && doneCount === total;
-          const partial = doneCount > 0 && !done;
-          const meta = exerciseById.get(ex.exerciseId);
-          const detail = done
-            ? "✓"
-            : partial
-              ? `${doneCount}/${total}`
-              : schemeFromLogged(ex, meta);
-          return {
-            id: ex.id,
-            name: ex.exerciseName,
-            detail,
-            supersetGroup: ex.supersetGroup ?? null,
-            restSeconds: ex.restSeconds,
-            setCount: ex.sets.filter((s) => !s.isWarmup).length,
-            done,
-            partial,
-            exerciseId: ex.exerciseId,
-            notes: ex.planNote ?? ex.note,
-          };
-        }),
-      );
+      return liveSession.exercises.map((ex) => {
+        const doneCount = ex.sets.filter((s) => s.completed).length;
+        const total = ex.sets.length;
+        const done = total > 0 && doneCount === total;
+        const partial = doneCount > 0 && !done;
+        const meta = exerciseById.get(ex.exerciseId);
+        const detail = done
+          ? "✓"
+          : partial
+            ? `${doneCount}/${total}`
+            : schemeFromLogged(ex, meta);
+        return {
+          id: ex.id,
+          name: ex.exerciseName,
+          detail,
+          supersetGroup: ex.supersetGroup ?? null,
+          restSeconds: ex.restSeconds,
+          setCount: ex.sets.filter((s) => !s.isWarmup).length,
+          done,
+          partial,
+          exerciseId: ex.exerciseId,
+          notes: ex.planNote ?? ex.note,
+        };
+      });
     }
+    if (fresh && !liveFailed) return [];
     if (today) {
-      return previewRowsFromItems(
-        today.day.items.map((item) => ({
-          id: item.id,
-          name: item.exerciseName,
-          detail: schemeLine(item, exerciseById.get(item.exerciseId)),
-          supersetGroup: item.supersetGroup,
-          restSeconds: item.restBetweenSetsSeconds,
-          setCount: item.sets,
-          exerciseId: item.exerciseId,
-          notes: item.notes,
-        })),
-      );
+      return today.day.items.map((item) => ({
+        id: item.id,
+        name: item.exerciseName,
+        detail: schemeLine(item, exerciseById.get(item.exerciseId)),
+        supersetGroup: item.supersetGroup,
+        restSeconds: item.restBetweenSetsSeconds,
+        setCount: item.sets,
+        exerciseId: item.exerciseId,
+        notes: item.notes,
+      }));
     }
     return [];
-  }, [fresh, liveSession, today, exerciseById]);
+  }, [fresh, liveSession, liveFailed, today, exerciseById]);
+
+  const liveListPending = Boolean(fresh && !liveFailed && !(liveSession && liveSession.id === fresh.id));
 
   if (!home) {
     return (
@@ -416,7 +417,7 @@ export default function PortalTodayPage() {
         : "Dzisiejszy trening";
   const sheetBusy = starting || repeating;
 
-  const exerciseCount = heroRows.length;
+  const exerciseCount = previewBlocksFromItems(heroItems).length;
   const metaRight = fresh
     ? setsProgressLabel(fresh.completedSets, fresh.totalSets)
     : estMin != null && exerciseCount > 0
@@ -450,53 +451,11 @@ export default function PortalTodayPage() {
 
       <ErrorBanner message={error} />
 
-      <section aria-label="Tydzień" className="flex gap-1.5">
-        {weekStrip.map((d, i) => {
-          const clickable = weekMapsToCalendar && d.hasPlanDay && d.planDay != null;
-          const inner = (
-            <>
-              <div
-                className={`font-mono text-xs font-medium uppercase tracking-caps ${
-                  d.today ? "text-foreground-secondary" : "text-muted-faint"
-                }`}
-              >
-                {d.label}
-              </div>
-              <div
-                className={`flex h-8 w-8 items-center justify-center rounded-full font-mono text-[13px] tabular-nums ${
-                  d.done
-                    ? "bg-surface-active text-foreground"
-                    : d.today
-                      ? "border border-dashed border-border-strong text-muted"
-                      : d.hasPlanDay && weekMapsToCalendar
-                        ? "border border-border text-muted"
-                        : "text-muted-faint"
-                }`}
-              >
-                {d.done ? "✓" : d.today ? "·" : d.hasPlanDay && weekMapsToCalendar ? "·" : ""}
-              </div>
-            </>
-          );
-          if (clickable) {
-            return (
-              <button
-                key={i}
-                type="button"
-                aria-label={`Podgląd: ${d.planDay!.label}`}
-                onClick={() => setSelectedWeekDay(d.planDay!)}
-                className="flex flex-1 flex-col items-center gap-1.5 rounded-lg py-1 transition-[transform,opacity] duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:bg-surface-hover/40 focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.97]"
-              >
-                {inner}
-              </button>
-            );
-          }
-          return (
-            <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
-              {inner}
-            </div>
-          );
-        })}
-      </section>
+      <WeekStrip
+        days={weekStrip}
+        selectedIso={selectedWeekDay?.iso ?? null}
+        onSelect={setSelectedWeekDay}
+      />
 
       {stale ? (
         <section
@@ -574,60 +533,26 @@ export default function PortalTodayPage() {
             </div>
           ) : null}
 
-          {heroRows.length > 0 ? (
-            <ul className="mt-4 divide-y divide-border">
-              {heroRows.map((row) => {
-                const ex = row.exerciseId != null ? exerciseById.get(row.exerciseId) : undefined;
-                const nameBlock = (
-                  <div className="min-w-0 flex-1">
-                    <p
-                      className={`break-words text-[15px] font-semibold leading-snug ${
-                        row.done ? "text-muted" : "text-foreground"
-                      }`}
-                    >
-                      {row.name}
-                    </p>
-                    {row.notes ? (
-                      <p className="mt-0.5 text-[13px] leading-snug text-muted">{row.notes}</p>
-                    ) : null}
+          {liveListPending ? (
+            <ul className="mt-4 divide-y divide-border" aria-busy aria-label="Wczytuję ćwiczenia">
+              {[0, 1, 2].map((i) => (
+                <li key={i} className="flex min-h-11 items-start gap-3 py-4">
+                  <div className="h-11 w-11 shrink-0 rounded-lg bg-surface-active" />
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <div className="h-4 w-2/3 max-w-[14rem] rounded bg-surface-active" />
+                    <div className="h-3 w-24 rounded bg-surface-active" />
                   </div>
-                );
-                const thumb = (
-                  <DemoThumbButton
-                    exercise={ex}
-                    fallbackYoutubeId={ex ? undefined : null}
-                    title={row.name}
-                  />
-                );
-                return (
-                  <li key={row.key}>
-                    {fresh ? (
-                      <div className="flex min-h-11 items-start gap-3 py-4">
-                        {thumb}
-                        <button
-                          type="button"
-                          onClick={goToLiveSession}
-                          className="flex min-w-0 flex-1 items-start justify-between gap-3 text-left transition-colors duration-[var(--dur-fast)] hover:bg-surface-hover/40 focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.99]"
-                        >
-                          {nameBlock}
-                          <p className="shrink-0 font-mono text-[15px] tabular-nums text-muted">
-                            {row.detail}
-                          </p>
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex min-h-11 items-start gap-3 py-4">
-                        {thumb}
-                        {nameBlock}
-                        <p className="shrink-0 font-mono text-[15px] tabular-nums text-muted">
-                          {row.detail}
-                        </p>
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
+                </li>
+              ))}
             </ul>
+          ) : heroItems.length > 0 ? (
+            <div className="mt-4">
+              <ExercisePreviewList
+                items={heroItems}
+                exerciseById={exerciseById}
+                onRowClick={fresh ? goToLiveSession : undefined}
+              />
+            </div>
           ) : null}
 
           {lastCompleted && !fresh && !stale && !today ? (
@@ -657,7 +582,7 @@ export default function PortalTodayPage() {
               <li key={d.id}>
                 <button
                   type="button"
-                  onClick={() => setSelectedWeekDay(d)}
+                  onClick={() => setSelectedWeekDay(weekStripDayFromPlanDay(d, history))}
                   className="flex min-h-11 w-full items-center justify-between gap-3 py-3.5 text-left transition-colors duration-[var(--dur-fast)] hover:bg-surface-hover/40 focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:scale-[0.99]"
                 >
                   <span className="min-w-0">
@@ -683,12 +608,12 @@ export default function PortalTodayPage() {
         </section>
       ) : null}
 
-      <DayPreviewSheet
-        key={selectedWeekDay?.id ?? "closed"}
+      <DaySheet
+        key={selectedWeekDay?.iso ?? selectedWeekDay?.planDay?.id ?? "closed"}
         open={selectedWeekDay != null}
         onClose={() => setSelectedWeekDay(null)}
         token={token}
-        weekDay={selectedWeekDay}
+        slot={selectedWeekDay}
         exerciseById={exerciseById}
         inProgressSessionId={fresh?.id ?? null}
         busy={sheetBusy}

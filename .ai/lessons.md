@@ -15,6 +15,13 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Kalendarz: jeden box model; ✓ = data wykonania
+
+**Kontekst**: Pasek P–N na Dziś renderował klikalny dzień jako `<button py-1>`, a pusty jako `<div>` bez paddingu. `✓` brał się z postępu cyklu planu, nie z daty sesji.
+**Problem**: Litery i kółka się rozjeżdżały (flex stretch + różny padding). Poniedziałkowy trening zrobiony w piątek zapalał ✓ pod „P”. Klik pokazywał rozpis z planu, nie wykonane serie.
+**Zasada**: Slot listy/paska renderuj zawsze tym samym elementem — wariant `<button>` z paddingiem obok gołego `<div>` rozjeżdża rząd we flexie. Znacznik „zrobione” w kalendarzu musi wynikać z daty wykonania (`performedOn`), nie z postępu cyklu.
+**Dotyczy**: `portalWeekStrip.ts`, `WeekStrip.tsx`, `DaySheet.tsx`, portal Dziś
+
 ## Panel: jedna szerokość contentu
 
 **Kontekst**: Import historii dostał własną kolumnę `max-w-2xl` / `max-w-xl`, podczas gdy Klienci i profil klienta biorą szerokość z AppShell (`max-w-[1080px]`).

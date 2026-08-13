@@ -1159,19 +1159,21 @@ export function Sheet({
         role="dialog"
         aria-modal
         aria-labelledby={title ? titleId : undefined}
-        className={`relative w-full border border-border-strong bg-surface p-[18px] transition-[opacity,transform] duration-[var(--dur-med)] motion-reduce:duration-[var(--dur-fast)] motion-reduce:transform-none ${ease} ${panelMotion} ${
+        className={`relative flex max-h-[85dvh] w-full flex-col overflow-hidden border border-border-strong bg-surface p-[18px] transition-[opacity,transform] duration-[var(--dur-med)] motion-reduce:duration-[var(--dur-fast)] motion-reduce:transform-none ${ease} ${panelMotion} ${
           center
             ? "max-w-sm rounded-[var(--r-sheet)]"
             : "max-w-[430px] rounded-t-[var(--r-sheet)] border-b-0"
         }`}
       >
         {title ? (
-          <h2 id={titleId} className="t-heading mb-3">
+          <h2 id={titleId} className="t-heading mb-3 shrink-0">
             {title}
           </h2>
         ) : null}
-        {children}
-        {footer ? <div className="mt-5 flex gap-2">{footer}</div> : null}
+        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+        {footer ? (
+          <div className="mt-5 shrink-0 pb-[env(safe-area-inset-bottom)]">{footer}</div>
+        ) : null}
       </div>
     </div>
   );

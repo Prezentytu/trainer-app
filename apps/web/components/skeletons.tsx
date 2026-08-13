@@ -190,9 +190,13 @@ export function PortalHomeSkeleton() {
         <Skeleton className="h-3 w-12" />
         <Skeleton className="h-9 w-44" />
       </div>
-      <div className="flex gap-1.5">
+      <div className="grid grid-cols-7 gap-1">
         {Array.from({ length: 7 }).map((_, i) => (
-          <Skeleton key={i} className="mx-auto h-8 w-8 rounded-full" />
+          <div key={i} className="flex flex-col items-center gap-1 py-1">
+            <Skeleton className="h-3 w-3" />
+            <Skeleton className="h-3 w-4" />
+            <Skeleton className="h-8 w-8 rounded-full" />
+          </div>
         ))}
       </div>
       <div className="space-y-3">
