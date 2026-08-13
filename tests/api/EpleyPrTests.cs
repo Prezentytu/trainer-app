@@ -59,6 +59,113 @@ public class EpleyPrTests : IClassFixture<TestWebAppFactory>
     }
 
     [Fact]
+    public void FindPrSets_RampInOneSession_EmitsSinglePeakPr()
+    {
+        var session = new WorkoutSession
+        {
+            Exercises =
+            [
+                new LoggedExercise
+                {
+                    ExerciseId = 7,
+                    Order = 1,
+                    Sets =
+                    [
+                        new LoggedSet { Id = 1, SetNumber = 1, WeightKg = 10, Reps = 5, Completed = true },
+                        new LoggedSet { Id = 2, SetNumber = 2, WeightKg = 20, Reps = 5, Completed = true },
+                        new LoggedSet { Id = 3, SetNumber = 3, WeightKg = 30, Reps = 5, Completed = true },
+                        new LoggedSet { Id = 4, SetNumber = 4, WeightKg = 40, Reps = 5, Completed = true },
+                        new LoggedSet { Id = 5, SetNumber = 5, WeightKg = 50, Reps = 5, Completed = true },
+                    ],
+                },
+            ],
+        };
+
+        var prs = Stats.FindPrSets(session, []);
+
+        var pr = Assert.Single(prs);
+        Assert.Equal(7, pr.ExerciseId);
+        Assert.Equal(5, pr.SetId);
+        Assert.Equal(Stats.Epley1Rm(50, 5), pr.Estimated1Rm);
+        Assert.Null(pr.PreviousBest1Rm);
+    }
+
+    [Fact]
+    public void FindPrSets_Ramp_PreviousBestIsHistoryNotEarlierSet()
+    {
+        var histEx = new LoggedExercise { ExerciseId = 7 };
+        var historical = new List<LoggedSet>
+        {
+            new()
+            {
+                WeightKg = 40,
+                Reps = 5,
+                Completed = true,
+                IsWarmup = false,
+                LoggedExercise = histEx,
+            },
+        };
+        var session = new WorkoutSession
+        {
+            Exercises =
+            [
+                new LoggedExercise
+                {
+                    ExerciseId = 7,
+                    Order = 1,
+                    Sets =
+                    [
+                        new LoggedSet { Id = 11, SetNumber = 1, WeightKg = 42, Reps = 5, Completed = true },
+                        new LoggedSet { Id = 12, SetNumber = 2, WeightKg = 45, Reps = 5, Completed = true },
+                        new LoggedSet { Id = 13, SetNumber = 3, WeightKg = 48, Reps = 5, Completed = true },
+                    ],
+                },
+            ],
+        };
+
+        var prs = Stats.FindPrSets(session, historical);
+
+        var pr = Assert.Single(prs);
+        Assert.Equal(13, pr.SetId);
+        Assert.Equal(Stats.Epley1Rm(48, 5), pr.Estimated1Rm);
+        Assert.Equal(Stats.Epley1Rm(40, 5), pr.PreviousBest1Rm);
+    }
+
+    [Fact]
+    public void FindPrSets_RampBelowHistory_EmitsNothing()
+    {
+        var histEx = new LoggedExercise { ExerciseId = 7 };
+        var historical = new List<LoggedSet>
+        {
+            new()
+            {
+                WeightKg = 100,
+                Reps = 5,
+                Completed = true,
+                LoggedExercise = histEx,
+            },
+        };
+        var session = new WorkoutSession
+        {
+            Exercises =
+            [
+                new LoggedExercise
+                {
+                    ExerciseId = 7,
+                    Order = 1,
+                    Sets =
+                    [
+                        new LoggedSet { Id = 1, SetNumber = 1, WeightKg = 10, Reps = 5, Completed = true },
+                        new LoggedSet { Id = 2, SetNumber = 2, WeightKg = 50, Reps = 5, Completed = true },
+                    ],
+                },
+            ],
+        };
+
+        Assert.Empty(Stats.FindPrSets(session, historical));
+    }
+
+    [Fact]
     public async Task HighRepSet_DoesNotCreateEstimated1RmOrPr()
     {
         var (clientId, exerciseId, sessionId) = await SeedSessionAsync(
@@ -208,6 +315,76 @@ public class EpleyPrTests : IClassFixture<TestWebAppFactory>
         var set = doc.RootElement.GetProperty("exercises")[0].GetProperty("sets")[0];
         Assert.True(set.GetProperty("isPr").GetBoolean());
         Assert.Equal(53.5, set.GetProperty("previousBest1Rm").GetDouble());
+    }
+
+    [Fact]
+    public async Task RampInOneSession_SessionDetailHasSinglePrOnPeakSet()
+    {
+        var trainerId = await GetTrainerIdAsync();
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDb>();
+
+        var client = new Client
+        {
+            TrainerId = trainerId,
+            Name = $"Ramp {Guid.NewGuid():N}"[..16],
+            Email = $"ramp-{Guid.NewGuid():N}@test.local",
+        };
+        db.Clients.Add(client);
+        await db.SaveChangesAsync();
+
+        var exercise = new Exercise
+        {
+            TrainerId = trainerId,
+            Name = $"Wycisk {Guid.NewGuid():N}"[..16],
+            Type = "reps",
+            PrimaryMuscles = ["Klatka piersiowa"],
+            Category = "chest",
+        };
+        db.Exercises.Add(exercise);
+        await db.SaveChangesAsync();
+
+        var session = new WorkoutSession
+        {
+            ClientId = client.Id,
+            PerformedOn = DateOnly.FromDateTime(DateTime.UtcNow),
+            Status = "completed",
+            Exercises =
+            [
+                new LoggedExercise
+                {
+                    ExerciseId = exercise.Id,
+                    Order = 1,
+                    Sets =
+                    [
+                        new LoggedSet { SetNumber = 1, WeightKg = 10, Reps = 5, Completed = true },
+                        new LoggedSet { SetNumber = 2, WeightKg = 20, Reps = 5, Completed = true },
+                        new LoggedSet { SetNumber = 3, WeightKg = 30, Reps = 5, Completed = true },
+                        new LoggedSet { SetNumber = 4, WeightKg = 40, Reps = 5, Completed = true },
+                        new LoggedSet { SetNumber = 5, WeightKg = 50, Reps = 5, Completed = true },
+                    ],
+                },
+            ],
+        };
+        db.WorkoutSessions.Add(session);
+        await db.SaveChangesAsync();
+        var sessionId = session.Id;
+
+        var sessionRes = await _client.GetAsync($"/api/sessions/{sessionId}");
+        Assert.Equal(HttpStatusCode.OK, sessionRes.StatusCode);
+        using var doc = JsonDocument.Parse(await sessionRes.Content.ReadAsStringAsync());
+
+        var prs = doc.RootElement.GetProperty("prs");
+        Assert.Equal(1, prs.GetArrayLength());
+        Assert.Equal(50, prs[0].GetProperty("weightKg").GetDouble());
+        Assert.Equal(5, prs[0].GetProperty("setNumber").GetInt32());
+        Assert.Equal(JsonValueKind.Null, prs[0].GetProperty("previousBest1Rm").ValueKind);
+
+        var sets = doc.RootElement.GetProperty("exercises")[0].GetProperty("sets");
+        Assert.Equal(5, sets.GetArrayLength());
+        for (var i = 0; i < 4; i++)
+            Assert.False(sets[i].GetProperty("isPr").GetBoolean());
+        Assert.True(sets[4].GetProperty("isPr").GetBoolean());
     }
 
     async Task<(int ClientId, int ExerciseId, int SessionId)> SeedSessionAsync(

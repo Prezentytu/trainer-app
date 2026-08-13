@@ -222,6 +222,180 @@
   --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--fg);
 }
 
+/*
+ * Palety portalu — druga oś obok data-theme.
+ * Brak atrybutu = Grafit (mono). Powierzchnie i krawędzie mają realną chromatyczność;
+ * przyciski zostają invert; --pr / --gain / --loss / --danger bez zmian.
+ */
+[data-palette="forest"] {
+  --bg: #0c1610;
+  --surface-sunken: #101c14;
+  --surface: #16241a;
+  --surface-raised: #1e3224;
+  --surface-hover: #1e3224;
+  --surface-active: #284032;
+  --field: #1e3224;
+  --line: #5a8a68;
+  --line-faint: #2d4a38;
+  --scrim: rgba(6, 16, 10, 0.82);
+  --fg-muted: #c5ddcc;
+  --fg-faint: #8fb89a;
+  --fg-ghost: #5e8a6a;
+}
+
+[data-palette="forest"][data-theme="light"] {
+  --bg: #e7f3ea;
+  --surface-sunken: #d8ecdd;
+  --surface: #c8e4d0;
+  --surface-raised: #b0d6bc;
+  --surface-hover: #b0d6bc;
+  --surface-active: #96c6a6;
+  --field: #cfe8d6;
+  --line: #3a6348;
+  --line-faint: #8ab698;
+  --scrim: rgba(10, 28, 16, 0.42);
+  --fg: #0e1a12;
+  --fg-muted: #2a4a34;
+  --fg-faint: #3d6348;
+  --fg-ghost: #5a8066;
+  --invert-bg: #0e1a12;
+  --invert-fg: #e7f3ea;
+}
+
+[data-palette="calm"] {
+  --bg: #16120e;
+  --surface-sunken: #1c1813;
+  --surface: #261f18;
+  --surface-raised: #32281e;
+  --surface-hover: #32281e;
+  --surface-active: #403428;
+  --field: #32281e;
+  --line: #8a7358;
+  --line-faint: #4a3c2e;
+  --scrim: rgba(14, 10, 6, 0.82);
+  --fg-muted: #e2d2bc;
+  --fg-faint: #c4a888;
+  --fg-ghost: #8a7358;
+}
+
+[data-palette="calm"][data-theme="light"] {
+  --bg: #f6efe4;
+  --surface-sunken: #efe4d2;
+  --surface: #e6d6be;
+  --surface-raised: #d8c4a4;
+  --surface-hover: #d8c4a4;
+  --surface-active: #c8b08c;
+  --field: #eadcc6;
+  --line: #6a5440;
+  --line-faint: #c4ae90;
+  --scrim: rgba(28, 20, 12, 0.42);
+  --fg: #1a140e;
+  --fg-muted: #4a3c2c;
+  --fg-faint: #6a5844;
+  --fg-ghost: #8a7358;
+  --invert-bg: #1a140e;
+  --invert-fg: #f6efe4;
+}
+
+[data-palette="sea"] {
+  --bg: #0a141c;
+  --surface-sunken: #0e1c28;
+  --surface: #142838;
+  --surface-raised: #1a3448;
+  --surface-hover: #1a3448;
+  --surface-active: #244058;
+  --field: #1a3448;
+  --line: #5a90b0;
+  --line-faint: #2a4c64;
+  --scrim: rgba(4, 12, 20, 0.82);
+  --fg-muted: #c4dcec;
+  --fg-faint: #88b4d0;
+  --fg-ghost: #5a88a8;
+}
+
+[data-palette="sea"][data-theme="light"] {
+  --bg: #e4f1f8;
+  --surface-sunken: #d2e8f4;
+  --surface: #bee0f0;
+  --surface-raised: #a4d0e8;
+  --surface-hover: #a4d0e8;
+  --surface-active: #88c0dc;
+  --field: #c6e4f2;
+  --line: #3a6280;
+  --line-faint: #8ab4cc;
+  --scrim: rgba(8, 24, 36, 0.42);
+  --fg: #0c1822;
+  --fg-muted: #2a4860;
+  --fg-faint: #3a6280;
+  --fg-ghost: #5a88a8;
+  --invert-bg: #0c1822;
+  --invert-fg: #e4f1f8;
+}
+
+[data-palette="pony"] {
+  --bg: #1f0a14;
+  --surface-sunken: #2c101c;
+  --surface: #3e1628;
+  --surface-raised: #521e36;
+  --surface-hover: #521e36;
+  --surface-active: #6a2848;
+  --field: #521e36;
+  --line: #e878a0;
+  --line-faint: #7a3858;
+  --scrim: rgba(24, 6, 14, 0.84);
+  --fg: #fff0f6;
+  --fg-muted: #ffc4d8;
+  --fg-faint: #f090b0;
+  --fg-ghost: #c46084;
+}
+
+[data-palette="pony"][data-theme="light"] {
+  --bg: #ffd6e8;
+  --surface-sunken: #ffc4de;
+  --surface: #ffb0d4;
+  --surface-raised: #ff96c6;
+  --surface-hover: #ff96c6;
+  --surface-active: #ff7ab6;
+  --field: #ffb8da;
+  --line: #c43068;
+  --line-faint: #f080a8;
+  --scrim: rgba(80, 16, 40, 0.4);
+  --fg: #3a1020;
+  --fg-muted: #6a2040;
+  --fg-faint: #8a3060;
+  --fg-ghost: #b05080;
+  --invert-bg: #c43068;
+  --invert-fg: #fff5f8;
+}
+
+.palette-swatch {
+  display: block;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--line-faint);
+}
+
+.palette-swatch[data-swatch="mono"] {
+  background: #0b0c0d;
+}
+
+.palette-swatch[data-swatch="forest"] {
+  background: #2d8a4e;
+}
+
+.palette-swatch[data-swatch="calm"] {
+  background: #c9a06a;
+}
+
+.palette-swatch[data-swatch="sea"] {
+  background: #2e8bc4;
+}
+
+.palette-swatch[data-swatch="pony"] {
+  background: #ff4d94;
+}
+
 @media (prefers-contrast: more) {
   :root {
     --line: var(--ink-300);

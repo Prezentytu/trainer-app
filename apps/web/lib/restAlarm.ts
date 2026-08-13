@@ -2,6 +2,32 @@
 
 let ctx: AudioContext | null = null;
 
+type AudioSessionType =
+  | "auto"
+  | "playback"
+  | "transient"
+  | "transient-solo"
+  | "ambient"
+  | "play-and-record";
+
+function audioSession(): { type: string } | undefined {
+  if (typeof navigator === "undefined") return undefined;
+  return (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
+}
+
+/**
+ * Safari 16.4+: `ambient` miksuje się z muzyką zamiast ją pauzować.
+ * Keep-alive na Lock Screen przełącza na `playback` (restKeepAlive).
+ */
+export function setAudioSessionType(type: AudioSessionType): void {
+  try {
+    const session = audioSession();
+    if (session) session.type = type;
+  } catch {
+    /* ignore */
+  }
+}
+
 function getCtx(): AudioContext | null {
   if (typeof window === "undefined") return null;
   if (!ctx) {
@@ -9,6 +35,7 @@ function getCtx(): AudioContext | null {
       window.AudioContext ||
       (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AC) return null;
+    setAudioSessionType("ambient");
     ctx = new AC();
   }
   return ctx;
@@ -23,8 +50,9 @@ export function lightHaptic(): void {
   }
 }
 
-/** Wywołaj w handlerze gestu użytkownika (np. ✓ serii) — odblokowuje audio na iOS. */
+/** Wywołaj w handlerze gestu użytkownika (start przerwy) — odblokowuje audio na iOS. */
 export function unlockAudio(): void {
+  setAudioSessionType("ambient");
   const c = getCtx();
   if (!c) return;
   if (c.state === "suspended") {
@@ -58,6 +86,7 @@ function beep(c: AudioContext, when: number, freq: number, dur: number) {
 
 /** Trzy krótkie beepy + wibracja. */
 export function playRestEndAlarm(): void {
+  setAudioSessionType("ambient");
   const c = getCtx();
   if (c) {
     void c.resume().then(() => {

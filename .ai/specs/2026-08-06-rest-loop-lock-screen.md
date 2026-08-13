@@ -13,7 +13,7 @@ Pętla przerwy w portalu jest połowiczna:
 3. `navigator.wakeLock` nie istnieje w Safari iOS — `useWakeLock` nic nie daje na telefonie klienta.
 4. Ekran blokady nie pokazuje odliczania ani postępu serii.
 
-Klient odkłada telefon → ekran gaśnie → przerwa cicho mija. To dokładnie problem, który Styrka rozwiązała w 2.3–3.6.
+Klient odkłada telefon → ekran gaśnie → przerwa cicho mija. To dokładnie problem, który Styrka rozwiązała w 2.3–3.6. Keep-alive audio **pauzuje muzykę** na słuchawkach i system jej nie wznawia — dlatego funkcja jest **opt-in** (domyślnie wyłączona).
 
 ## Proponowane rozwiązanie
 
@@ -23,7 +23,7 @@ Jeden mechanizm: **cichy, zapętlony `<audio>`** (`public/silence.wav`) utrzymuj
 - alarm (WebAudio + wibracja) może zabrzmieć punktualnie,
 - `navigator.mediaSession` wystawia metadane i pasek postępu na Lock Screen (na iOS wymaga aktywnego elementu media — WebAudio go nie aktywuje).
 
-Źródło prawdy o końcu przerwy: `setTimeout` na `endsAt` (nie polling). Druga warstwa: lokalne `showNotification` gdy karta w tle (belt-and-braces). Preferencja klienta: przełącznik w profilu portalu (domyślnie włączony).
+Źródło prawdy o końcu przerwy: `setTimeout` na `endsAt` (nie polling). Druga warstwa: lokalne `showNotification` gdy karta w tle (belt-and-braces). Preferencja klienta: przełącznik w profilu portalu (**domyślnie wyłączony** — pauzuje muzykę).
 
 Benchmark i backlog pozostałych luk: `.ai/specs/2026-08-05-styrka-minimalizm-analiza.md`.
 
@@ -38,7 +38,7 @@ Brak nowych endpointów.
 ## UI
 
 - `RestTimer` — pod ringiem linia `Seria 4 z 12`.
-- Profil portalu — Switch „Przerwa na ekranie blokady" z krótkim wyjaśnieniem (aplikacja pojawia się w kontrolkach odtwarzania).
+- Profil portalu — Switch „Przerwa na ekranie blokady" z hintem, że pauzuje muzykę.
 - Media Session: tytuł = odliczanie `m:ss`, artysta = `Dalej: {ćwiczenie}`, album = `Seria {done} z {total}`.
 
 ## Fazy implementacji
@@ -53,8 +53,8 @@ Brak nowych endpointów.
 
 | Ryzyko | Mitigacja |
 |---|---|
-| iOS wymaga gestu użytkownika do startu audio | Start w `toggleComplete` (już gest); `unlockAudio()` zostaje |
-| Aplikacja w kontrolkach odtwarzania | Przełącznik w profilu + jasna etykieta |
+| iOS wymaga gestu użytkownika do startu audio | Start w `startRest` (gest ✓); `unlockAudio()` tylko tam, nie przy każdym toggle |
+| Aplikacja w kontrolkach odtwarzania **i pauza muzyki** | Domyślnie OFF; hint w profilu; `audioSession.type = ambient` dla beepów |
 | Media Session bez aktywnego media | Keep-alive audio jest warunkiem; bez niego fallback jak dziś |
 | Powiadomienie bez permission | Graceful no-op; push i tak prosi o permission w profilu |
 | Pełna funkcja tylko w PWA standalone | Dokumentujemy; istniejący prompt instalacji |
@@ -68,3 +68,4 @@ Watch, widgety, własne profile progresji u klienta. Pozostałe luki (Powtórz o
 - 2026-08-06 — utworzono spec (analiza luki vs Styrka Live Activity, keep-alive + Media Session).
 - 2026-08-06 — wdrożono: `restKeepAlive` + `silence.wav`, `setTimeout` na `endsAt`, Media Session (odliczanie / Dalej / Seria X z Y), lokalne powiadomienie w tle, Switch w profilu portalu, linia licznika w `RestTimer`.
 - 2026-08-06 — fix skakania na Lock Screen: `playbackRate: 0`, update metadata tylko przy zmianie sekundy; tytuł = sam countdown (bliżej widgetu niż „muzyki”).
+- 2026-08-13 — keep-alive **opt-in** (domyślnie OFF): pauzuje muzykę i nie wznawia jej. Beepy/unlock: `navigator.audioSession.type = ambient`. `unlockAudio()` tylko w `startRest`, nie przy każdym ✓.

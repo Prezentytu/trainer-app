@@ -24,15 +24,15 @@ export function writeAutoRest(enabled: boolean) {
   }
 }
 
-/** Keep-alive audio + Media Session na ekranie blokady (domyślnie włączone). */
+/** Keep-alive audio + Media Session na ekranie blokady (domyślnie wyłączone — pauzuje muzykę). */
 export function readRestLockScreen(): boolean {
-  if (typeof window === "undefined") return true;
+  if (typeof window === "undefined") return false;
   try {
     const raw = localStorage.getItem(REST_LOCK_SCREEN_KEY);
-    if (raw === null) return true;
+    if (raw === null) return false;
     return raw === "1" || raw === "true";
   } catch {
-    return true;
+    return false;
   }
 }
 

@@ -1029,32 +1029,32 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
             })
             .ToListAsync();
 
-        var best = new Dictionary<(int ClientId, int ExerciseId), double>();
         var allPrs = new List<object>();
         var prsLast7Days = 0;
-        foreach (var row in allSets)
+        var dashboardPeaks = Stats.PeakPerSessionExercise(
+            allSets,
+            s => s.SessionId,
+            s => s.ExerciseId,
+            s => Stats.Epley1Rm(s.WeightKg, s.Reps));
+        foreach (var (row, _) in Stats.ScanPeakPrs(
+            dashboardPeaks.OrderBy(s => s.PerformedOn).ThenBy(s => s.SessionId),
+            s => (s.ClientId, s.ExerciseId),
+            s => Stats.Epley1Rm(s.WeightKg, s.Reps)!.Value))
         {
-            var e1 = Stats.Epley1Rm(row.WeightKg, row.Reps);
-            if (e1 is null) continue;
-            var key = (row.ClientId, row.ExerciseId);
-            best.TryGetValue(key, out var prev);
-            if (Stats.IsEpleyPr(e1, prev))
+            var e1 = Stats.Epley1Rm(row.WeightKg, row.Reps)!.Value;
+            allPrs.Add(new
             {
-                best[key] = e1.Value;
-                allPrs.Add(new
-                {
-                    clientId = row.ClientId,
-                    clientName = row.ClientName,
-                    exerciseId = row.ExerciseId,
-                    exerciseName = row.ExerciseName,
-                    estimated1Rm = Stats.RoundToHalf(e1.Value),
-                    weightKg = row.WeightKg,
-                    reps = row.Reps,
-                    performedOn = row.PerformedOn,
-                });
-                if (row.PerformedOn >= weekStart && row.PerformedOn <= today)
-                    prsLast7Days++;
-            }
+                clientId = row.ClientId,
+                clientName = row.ClientName,
+                exerciseId = row.ExerciseId,
+                exerciseName = row.ExerciseName,
+                estimated1Rm = Stats.RoundToHalf(e1),
+                weightKg = row.WeightKg,
+                reps = row.Reps,
+                performedOn = row.PerformedOn,
+            });
+            if (row.PerformedOn >= weekStart && row.PerformedOn <= today)
+                prsLast7Days++;
         }
         var recentPrs = allPrs.AsEnumerable().Reverse().Take(6).ToList();
 
@@ -2406,34 +2406,32 @@ app.MapGet("/api/portal/{token}/sessions", async (string token, AppDb db) =>
         })
         .ToListAsync();
 
-    var best = new Dictionary<int, double>();
     var prsBySession = new Dictionary<int, List<object>>();
-    foreach (var row in workingSets
-        .OrderBy(x => x.PerformedOn)
-        .ThenBy(x => x.SessionId)
-        .ThenBy(x => x.SetNumber))
+    var portalPeaks = Stats.PeakPerSessionExercise(
+        workingSets,
+        s => s.SessionId,
+        s => s.ExerciseId,
+        s => Stats.Epley1Rm(s.WeightKg, s.Reps));
+    foreach (var (row, prev) in Stats.ScanPeakPrs(
+        portalPeaks.OrderBy(x => x.PerformedOn).ThenBy(x => x.SessionId),
+        s => s.ExerciseId,
+        s => Stats.Epley1Rm(s.WeightKg, s.Reps)!.Value))
     {
-        var e1 = Stats.Epley1Rm(row.WeightKg, row.Reps);
-        if (e1 is null) continue;
-        best.TryGetValue(row.ExerciseId, out var prev);
-        if (Stats.IsEpleyPr(e1, prev))
+        var e1 = Stats.Epley1Rm(row.WeightKg, row.Reps)!.Value;
+        if (!prsBySession.TryGetValue(row.SessionId, out var list))
         {
-            best[row.ExerciseId] = e1.Value;
-            if (!prsBySession.TryGetValue(row.SessionId, out var list))
-            {
-                list = [];
-                prsBySession[row.SessionId] = list;
-            }
-            list.Add(new
-            {
-                exerciseId = row.ExerciseId,
-                exerciseName = row.ExerciseName,
-                weightKg = row.WeightKg,
-                reps = row.Reps,
-                estimated1Rm = Stats.RoundToHalf(e1.Value),
-                previousBest1Rm = prev > 0 ? Stats.RoundToHalf(prev) : (double?)null,
-            });
+            list = [];
+            prsBySession[row.SessionId] = list;
         }
+        list.Add(new
+        {
+            exerciseId = row.ExerciseId,
+            exerciseName = row.ExerciseName,
+            weightKg = row.WeightKg,
+            reps = row.Reps,
+            estimated1Rm = Stats.RoundToHalf(e1),
+            previousBest1Rm = prev > 0 ? Stats.RoundToHalf(prev) : (double?)null,
+        });
     }
 
     var result = sessions.Select(s => new

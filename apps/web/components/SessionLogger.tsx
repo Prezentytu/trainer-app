@@ -29,7 +29,7 @@ import {
   useUndoToast,
 } from "@/components/ui";
 import { demoMedia } from "@/lib/youtube";
-import { lightHaptic, unlockAudio } from "@/lib/restAlarm";
+import { lightHaptic } from "@/lib/restAlarm";
 import { clearLocalDraft, readLocalDraft, saveLocalDraft } from "@/lib/sessionDraft";
 import { readAutoRest, readLogRir } from "@/lib/portalPrefs";
 import {
@@ -769,7 +769,6 @@ export function SessionLogger({
       }
     }
 
-    unlockAudio();
     if (nextCompleted) lightHaptic();
     const exerciseId = exercise.exerciseId;
     const setNumber = set.setNumber;

@@ -1,5 +1,7 @@
 /** Cichy keep-alive audio + Media Session — przerwa widoczna na ekranie blokady iOS. */
 
+import { setAudioSessionType } from "@/lib/restAlarm";
+
 export type RestKeepAliveState = {
   endsAt: number;
   totalSeconds: number;
@@ -172,6 +174,7 @@ export function start(state: RestKeepAliveState, nextHandlers: RestKeepAliveHand
   if (typeof window === "undefined") return;
   handlers = nextHandlers;
   current = state;
+  setAudioSessionType("playback");
   const el = ensureAudio();
   if (el) {
     try {
@@ -209,6 +212,7 @@ export function stop() {
     }
   }
   clearActions();
+  setAudioSessionType("ambient");
 }
 
 export function isActive(): boolean {

@@ -87,25 +87,26 @@ public static class ProgressReports
             .ThenBy(s => s.Id)
             .Select(s => new
             {
-                ExerciseId = s.LoggedExercise!.ExerciseId,
+                SessionId = s.LoggedExercise!.WorkoutSessionId,
+                ExerciseId = s.LoggedExercise.ExerciseId,
                 s.WeightKg,
                 s.Reps,
                 PerformedOn = s.LoggedExercise.Session!.PerformedOn,
             })
             .ToListAsync();
 
-        var best = new Dictionary<int, double>();
+        var peaks = Stats.PeakPerSessionExercise(
+            sets,
+            s => s.SessionId,
+            s => s.ExerciseId,
+            s => Stats.Epley1Rm(s.WeightKg, s.Reps));
         var count = 0;
-        foreach (var row in sets)
+        foreach (var (row, _) in Stats.ScanPeakPrs(
+            peaks.OrderBy(s => s.PerformedOn).ThenBy(s => s.SessionId),
+            s => s.ExerciseId,
+            s => Stats.Epley1Rm(s.WeightKg, s.Reps)!.Value))
         {
-            var e1 = Stats.Epley1Rm(row.WeightKg, row.Reps);
-            if (e1 is null) continue;
-            best.TryGetValue(row.ExerciseId, out var prev);
-            if (Stats.IsEpleyPr(e1, prev))
-            {
-                best[row.ExerciseId] = e1.Value;
-                if (row.PerformedOn >= since) count++;
-            }
+            if (row.PerformedOn >= since) count++;
         }
         return count;
     }

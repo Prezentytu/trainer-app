@@ -18,7 +18,7 @@ import {
   writeRestLockScreen,
 } from "@/lib/portalPrefs";
 import { isIosDevice, isStandaloneDisplay, useIsIos, useIsStandalone } from "@/lib/pwa";
-import { useTheme } from "@/lib/theme";
+import { PALETTES, usePalette, useTheme } from "@/lib/theme";
 
 function SettingsRow({
   title,
@@ -81,6 +81,7 @@ export default function PortalProfilePage() {
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushSaving, setPushSaving] = useState(false);
   const { theme, setTheme } = useTheme();
+  const { palette, setPalette } = usePalette();
   const standalone = useIsStandalone();
   const ios = useIsIos();
   const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -196,6 +197,7 @@ export default function PortalProfilePage() {
           />
           <SettingsRow
             title="Przerwa na ekranie blokady"
+            hint="Pauzuje muzykę na słuchawkach na czas odliczania."
             right={
               <Switch
                 checked={restLockScreen}
@@ -233,6 +235,49 @@ export default function PortalProfilePage() {
               />
             }
           />
+          <li className="py-3">
+            <p className="text-[15px] font-medium text-foreground">Kolorystyka</p>
+            <p className="mt-0.5 text-xs text-muted">
+              Każda ma swój kolor. Rekordy zostają złote.
+            </p>
+            <div
+              className="mt-3 grid grid-cols-5 gap-1"
+              role="radiogroup"
+              aria-label="Kolorystyka"
+            >
+              {PALETTES.map((p) => {
+                const selected = palette === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    aria-label={p.label}
+                    onClick={() => setPalette(p.id)}
+                    className="flex min-h-11 min-w-0 flex-col items-center gap-1.5 rounded-lg px-0.5 py-1 text-center transition-[transform,color] duration-[var(--dur-fast)] ease-[var(--ease-out)] active:scale-[0.97] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+                  >
+                    <span
+                      className={
+                        selected
+                          ? "palette-swatch ring-2 ring-invert-bg ring-offset-2 ring-offset-background"
+                          : "palette-swatch"
+                      }
+                      data-swatch={p.id}
+                      aria-hidden
+                    />
+                    <span
+                      className={`break-words text-[13px] leading-tight ${
+                        selected ? "font-medium text-foreground" : "text-muted"
+                      }`}
+                    >
+                      {p.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </li>
           {vapidKey ? (
             <SettingsRow
               title="Przypomnienia push"

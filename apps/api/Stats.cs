@@ -295,8 +295,47 @@ public static class Stats
     }
 
     /// <summary>
-    /// PR e1RM względem historii + wcześniejszych ukończonych serii w tej sesji.
-    /// Tylko serie z <see cref="LoggedSet.Completed"/> = true (nagroda po checkmarku, jak Gravitus).
+    /// Najwyższe e1RM na parę (sesja, ćwiczenie). Wiersze bez e1RM odpadają.
+    /// </summary>
+    public static List<T> PeakPerSessionExercise<T>(
+        IEnumerable<T> rows,
+        Func<T, int> sessionId,
+        Func<T, int> exerciseId,
+        Func<T, double?> estimated1Rm)
+    {
+        return rows
+            .Select(r => (Row: r, E1: estimated1Rm(r)))
+            .Where(x => x.E1 is not null)
+            .GroupBy(x => (sessionId(x.Row), exerciseId(x.Row)))
+            .Select(g => g.MaxBy(x => x.E1!.Value)!.Row)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Skan peaków (już 1 wiersz na sesję×ćwiczenie) w kolejności chronologicznej.
+    /// PR tylko gdy peak bije best sprzed tej sesji — maks. 1 na ćwiczenie na sesję.
+    /// </summary>
+    public static IEnumerable<(T Row, double PreviousBest)> ScanPeakPrs<T, TKey>(
+        IEnumerable<T> orderedPeaks,
+        Func<T, TKey> exerciseKey,
+        Func<T, double> estimated1Rm)
+        where TKey : notnull
+    {
+        var best = new Dictionary<TKey, double>();
+        foreach (var row in orderedPeaks)
+        {
+            var e1 = estimated1Rm(row);
+            best.TryGetValue(exerciseKey(row), out var prev);
+            if (!IsEpleyPr(e1, prev)) continue;
+            best[exerciseKey(row)] = e1;
+            yield return (row, prev);
+        }
+    }
+
+    /// <summary>
+    /// PR e1RM względem historii sprzed sesji. Maks. jeden hit na ćwiczenie —
+    /// seria z najwyższym e1RM, o ile bije best historyczny (nie każda rampa w sesji).
+    /// Tylko serie z <see cref="LoggedSet.Completed"/> = true.
     /// </summary>
     public static List<PrHit> FindPrSets(
         WorkoutSession session,
@@ -317,23 +356,32 @@ public static class Stats
         }
 
         var prs = new List<PrHit>();
-        foreach (var ex in session.Exercises.OrderBy(e => e.Order))
+        foreach (var group in session.Exercises.GroupBy(e => e.ExerciseId))
         {
-            if (!bestByExercise.TryGetValue(ex.ExerciseId, out var best))
-                best = 0;
-            foreach (var set in ex.Sets.OrderBy(s => s.SetNumber))
+            if (!bestByExercise.TryGetValue(group.Key, out var historicalBest))
+                historicalBest = 0;
+
+            LoggedSet? peakSet = null;
+            double peakE1 = 0;
+            foreach (var set in group
+                .OrderBy(e => e.Order)
+                .SelectMany(e => e.Sets.OrderBy(s => s.SetNumber)))
             {
-                // Prefill / niezrobione serie nie są PR — dopiero checkmark.
                 if (set.IsWarmup || !set.Completed) continue;
                 var e1 = Epley1Rm(set.WeightKg, set.Reps);
-                if (IsEpleyPr(e1, best))
+                if (e1 is null) continue;
+                if (peakSet is null || e1.Value > peakE1)
                 {
-                    double? previous = best > 0 ? best : null;
-                    prs.Add(new PrHit(ex.ExerciseId, set.Id, e1!.Value, previous));
-                    best = e1.Value;
+                    peakSet = set;
+                    peakE1 = e1.Value;
                 }
             }
-            bestByExercise[ex.ExerciseId] = best;
+
+            if (peakSet is not null && IsEpleyPr(peakE1, historicalBest))
+            {
+                double? previous = historicalBest > 0 ? historicalBest : null;
+                prs.Add(new PrHit(group.Key, peakSet.Id, peakE1, previous));
+            }
         }
         return prs;
     }

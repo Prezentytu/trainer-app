@@ -461,8 +461,8 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 **Kontekst**: Portalu klienta miał rest timer + alarm WebAudio + `navigator.wakeLock`. Na iPhonie po zgaszeniu ekranu alarm nie grał punktualnie, a Lock Screen nic nie pokazywał (Styrka ma Live Activity).
 **Problem**: Safari zawiesza `AudioContext` w tle; `setInterval` jest throttlowany; `wakeLock` nie istnieje w Safari iOS. Media Session bez aktywnego elementu `<audio>` też nie działa.
-**Zasada**: Na iOS PWA utrzymuj sesję dźwiękową cichym zapętlonym `<audio>` (`restKeepAlive` + `/silence.wav`). Koniec przerwy = `setTimeout` na `endsAt` (nie polling). Metadane na Lock Screen przez `navigator.mediaSession`. Preferencja użytkownika + etykieta o kontrolkach odtwarzania. `wakeLock` zostaje jako bonus na Android/desktop.
-**Dotyczy**: `lib/restKeepAlive.ts`, `useRestTimer.ts`, `restAlarm.ts`, profil portalu, `public/silence.wav`.
+**Zasada**: Na iOS PWA utrzymuj sesję dźwiękową cichym zapętlonym `<audio>` (`restKeepAlive` + `/silence.wav`) **tylko gdy klient włączy** „Przerwa na ekranie blokady” — to pauzuje muzykę i system jej nie wznawia. Domyślnie OFF. Beepy końca przerwy: `navigator.audioSession.type = "ambient"` (Safari 16.4+), żeby miksować się z muzyką. `unlockAudio()` tylko w geście `startRest`, nie przy każdym ✓. Koniec przerwy = `setTimeout` na `endsAt`. `wakeLock` zostaje jako bonus na Android/desktop.
+**Dotyczy**: `lib/restKeepAlive.ts`, `useRestTimer.ts`, `restAlarm.ts`, `portalPrefs.ts`, profil portalu, `public/silence.wav`.
 
 ## Media Session: `playbackRate: 0` + update tylko przy zmianie sekundy
 
@@ -617,5 +617,26 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Problem**: To żargon apki / OCR. Trener nie musi znać odczytu ani BW na tym ekranie — ma sprawdzić, czy trening ze zdjęcia się zgadza.
 **Zasada**: Etykieta nazywa rzecz tak, jak trener mówi do kolegi. Hierarchia: trening → ćwiczenie → serie (`t-num`, masa ciała nie BW). Combobox za „Zmień”; nazwa ze zdjęcia tylko gdy inna. Checksum tylko przy rozjechaniu. Jeden CTA. SQLite `EnsureCreated` nie migruje istniejącego `trainer.db` — nowa tabela wymaga usunięcia pliku; dashboard nie może padać na brak tabeli.
 **Dotyczy**: `HistoryImportReview.tsx`, `clients/[id]/import`, `HistoryImport.cs`, dashboard
+
+## WebAudio i keep-alive kradną sesję audio (muzyka na słuchawkach)
+
+**Kontekst**: Klient ze Spotify/Apple Music na słuchawkach odhaczał serię — muzyka milkła i nie wracała.
+**Problem**: `unlockAudio()` przy każdym ✓ wznawiał `AudioContext` (iOS traktuje to jako playback). Keep-alive `silence.wav` + Media Session (domyślnie ON) przejmował sesję i po `stop()` system nie wznawiał poprzedniego odtwarzacza.
+**Zasada**: Beepy = `navigator.audioSession.type = "ambient"` (feature-detect). `unlockAudio()` tylko w geście startu przerwy. Keep-alive Lock Screen = opt-in, z jawnym hintem że pauzuje muzykę; przy starcie `playback`, po stopie z powrotem `ambient`.
+**Dotyczy**: `restAlarm.ts`, `restKeepAlive.ts`, `SessionLogger.tsx`, `portalPrefs.ts`, profil portalu.
+
+## PR e1RM: jeden na ćwiczenie w sesji, nie każda rampa
+
+**Kontekst**: Klient w jednym ćwiczeniu robił 10–20–30–40–50 kg. Podsumowanie sesji sypało pięcioma rekordami.
+**Problem**: `FindPrSets` oznaczał PR przy każdym skoku e1RM w ramach sesji (best aktualizowany po każdej serii).
+**Zasada**: Maks. jeden PR na ćwiczenie w sesji — seria z najwyższym e1RM, o ile bije best **sprzed** sesji. `previousBest1Rm` = historia, nie wcześniejsza seria rampy. Ta sama semantyka w dashboardzie, liście sesji portalu i `CountRecentPrsAsync` (`PeakPerSessionExercise` + `ScanPeakPrs`).
+**Dotyczy**: `Stats.cs`, `Program.cs` (dashboard + portal sessions), `ProgressReports.cs`, `EpleyPrTests.cs`.
+
+## Palety: realna chroma, nie 2% hue-shift na near-black
+
+**Kontekst**: Pierwsza wersja palet portalu (Las/Spokój/Morze/Pink Pony) prawie nie różniła się od Grafitu — Pony miał być cukierkowy.
+**Problem**: Nadpisanie `--bg` z `#0b0c0d` na `#0e0b0c` jest niewidoczne. Klient nie rozpoznaje motywu w 1 s.
+**Zasada**: Paleta musi być od razu czytelna: powierzchnie i krawędzie z wyraźnym hue, swatch = kolor tożsamości (Pony `#ff4d94`, nie dusty rose). Nazwa nazywa kolor (Mech, Piasek, Ocean), nie nastrój („Spokój”). `--pr`/`--gain`/`--loss` zostają. Nie udawaj chromatyczności 2-procentowym shiftem.
+**Dotyczy**: `globals.css` `[data-palette]`, `lib/theme.ts` `PALETTES`, profil portalu.
 
 ---
