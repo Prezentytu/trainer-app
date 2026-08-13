@@ -40,10 +40,10 @@ import {
   ErrorBanner,
   formatRest,
   IconButton,
-  inputClass,
   ListRow,
   PageHeader,
   Pill,
+  SearchInput,
   Tag,
   useUndoToast,
 } from "@/components/ui";
@@ -203,38 +203,21 @@ export default function ExercisesPage() {
       <PageHeader
         title="Ćwiczenia"
         subtitle={subtitle}
-        action={<Button onClick={() => startCreate()}>+ Nowe ćwiczenie</Button>}
+        action={<Button onClick={() => startCreate()}>Dodaj ćwiczenie</Button>}
       />
       <ErrorBanner message={error} />
 
-      <div className="mb-4 space-y-3 md:sticky md:top-0 md:z-20 md:-mx-1 md:bg-background md:px-1 md:py-3">
+      <div className="mb-4 space-y-3 md:sticky md:top-0 md:z-20 md:-mx-1 md:border-b md:border-border md:bg-background md:px-1 md:py-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="relative min-w-0 flex-1">
-            <Icon
-              name="search"
-              size={16}
-              className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-faint"
-              decorative
-            />
-            <input
-              ref={searchRef}
-              type="search"
-              className={`${inputClass} pl-9 pr-9`}
-              placeholder="Szukaj po nazwie, sprzęcie, mięśniu…"
+          <div className="min-w-0 flex-1">
+            <SearchInput
               value={filters.query}
-              onChange={(e) => setFilter("query", e.target.value)}
+              onChange={(v) => setFilter("query", v)}
+              placeholder="Szukaj po nazwie, sprzęcie, mięśniu…"
               aria-label="Szukaj ćwiczenia"
+              inputRef={searchRef}
+              shortcutHint="/"
             />
-            {filters.query ? (
-              <button
-                type="button"
-                aria-label="Wyczyść wyszukiwanie"
-                className="absolute top-1/2 right-2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted hover:bg-surface-hover hover:text-foreground"
-                onClick={() => setFilter("query", "")}
-              >
-                <Icon name="close" size={16} decorative />
-              </button>
-            ) : null}
           </div>
           <Button
             variant="secondary"
@@ -385,9 +368,9 @@ export default function ExercisesPage() {
       ) : exercises.length === 0 ? (
         <EmptyState
           title="Biblioteka jest pusta"
-          action={<Button onClick={() => startCreate()}>+ Dodaj pierwsze ćwiczenie</Button>}
+          action={<Button onClick={() => startCreate()}>Dodaj pierwsze ćwiczenie</Button>}
         >
-          Dodaj własne ćwiczenie albo poczekaj na seed wspólnej biblioteki.
+          Dodaj własne ćwiczenie — startowa biblioteka wgra się automatycznie.
         </EmptyState>
       ) : filtered.length === 0 ? (
         <EmptyState
@@ -404,7 +387,7 @@ export default function ExercisesPage() {
                   Utwórz ćwiczenie „{filters.query.trim()}”
                 </Button>
               ) : (
-                <Button onClick={() => startCreate()}>+ Nowe ćwiczenie</Button>
+                <Button onClick={() => startCreate()}>Dodaj ćwiczenie</Button>
               )}
             </div>
           }
@@ -467,12 +450,12 @@ export default function ExercisesPage() {
                   title={
                     <Link
                       href={`/exercises/${ex.id}`}
-                      className="break-words focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+                      className="break-words after:absolute after:inset-0 after:z-0 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
                     >
                       {ex.name}
                     </Link>
                   }
-                  sub={`${meta}${ex.isUnilateral ? " · 1-str." : ""} · ${volumeLabel(ex)} · ${formatRest(ex.defaultRestBetweenSetsSeconds)}`}
+                  sub={`${meta}${ex.isUnilateral ? " · jednostronne" : ""} · ${volumeLabel(ex)} · ${formatRest(ex.defaultRestBetweenSetsSeconds)}`}
                 />
                 <div className="absolute top-1/2 right-1 z-10 flex -translate-y-1/2 shrink-0 gap-0.5 opacity-100 transition-opacity duration-[var(--dur-fast)] md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
                   <IconButton title="Edytuj" size="sm" onClick={() => startEdit(ex)}>
@@ -533,7 +516,7 @@ export default function ExercisesPage() {
                 href={`/exercises/${preview.id}`}
                 className="text-sm font-medium text-accent-text hover:text-accent-strong"
               >
-                Pełne szczegóły →
+                Otwórz szczegóły
               </Link>
             </div>
           </>

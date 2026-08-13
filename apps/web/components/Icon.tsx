@@ -38,6 +38,7 @@ export type IconName =
   | "ruler"
   | "dots-three"
   | "copy-simple"
+  | "stack"
   | "circle"
   | "user"
   | "eye"

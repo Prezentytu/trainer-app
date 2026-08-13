@@ -29,15 +29,24 @@ import {
   Tag,
 } from "@/components/ui";
 import { ExerciseDetailSkeleton } from "@/components/skeletons";
+import { polishFilmLabel } from "@/lib/plural";
 
 function volumeValue(exercise: Exercise): string {
   if (exercise.type === "time") {
-    return exercise.defaultRepDurationSeconds ? `${exercise.defaultRepDurationSeconds}s` : "—";
+    return exercise.defaultRepDurationSeconds ? `${exercise.defaultRepDurationSeconds} s` : "—";
   }
   if (exercise.type === "distance") {
     return exercise.defaultDistanceMeters ? `${exercise.defaultDistanceMeters} m` : "—";
   }
   return `${exercise.defaultReps}`;
+}
+
+function restStat(seconds: number): { value: string; unit?: string } {
+  if (seconds < 60) return { value: String(seconds), unit: "s" };
+  const min = Math.floor(seconds / 60);
+  const sec = seconds % 60;
+  if (sec === 0) return { value: String(min), unit: "min" };
+  return { value: formatRest(seconds) };
 }
 
 export default function ExerciseDetailPage() {
@@ -151,6 +160,7 @@ export default function ExerciseDetailPage() {
     exercise.pattern && exercise.pattern in PATTERN_LABELS
       ? PATTERN_LABELS[exercise.pattern as ExercisePattern]
       : exercise.pattern;
+  const rest = restStat(exercise.defaultRestBetweenSetsSeconds);
 
   return (
     <div>
@@ -230,26 +240,35 @@ export default function ExerciseDetailPage() {
         </div>
 
         <div className="space-y-4">
-          <Card>
-            <div className="mb-4 flex flex-wrap gap-1.5">
-              {cat ? <Badge tone="accent">{cat}</Badge> : null}
+          <Card className="overflow-hidden">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {cat ? <Tag invert>{cat}</Tag> : null}
               <Tag>{EXERCISE_TYPE_LABELS[exercise.type]}</Tag>
               {(exercise.equipment ?? []).map((eq) => (
                 <Tag key={eq}>{EQUIPMENT_LABELS[eq] ?? eq}</Tag>
               ))}
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <StatBlock
-                label={exercise.type === "reps" ? "Serie × powt." : "Serie × wartość"}
-                value={`${exercise.defaultSets}×${volumeValue(exercise)}`}
-              />
-              <StatBlock label="Przerwa" value={formatRest(exercise.defaultRestBetweenSetsSeconds)} />
-              <StatBlock
-                label="Ciężar"
-                value={exercise.defaultLoadKg ?? "—"}
-                unit={exercise.defaultLoadKg != null ? "kg" : undefined}
-              />
-              <StatBlock label="Filmy" value={media.length} />
+            <div className="-mx-3.5 mt-3.5 -mb-3.5 grid grid-cols-2 border-t border-border sm:-mx-4 sm:-mb-4">
+              <div className="border-r border-b border-border px-3.5 py-3 sm:px-4">
+                <StatBlock
+                  label={exercise.type === "reps" ? "Serie × powt." : "Serie × wartość"}
+                  value={`${exercise.defaultSets}×${volumeValue(exercise)}`}
+                />
+              </div>
+              <div className="border-b border-border px-3.5 py-3 sm:px-4">
+                <StatBlock label="Przerwa" value={rest.value} unit={rest.unit} />
+              </div>
+              <div className="border-r border-border px-3.5 py-3 sm:px-4">
+                <StatBlock
+                  label="Ciężar"
+                  value={exercise.defaultLoadKg ?? "—"}
+                  unit={exercise.defaultLoadKg != null ? "kg" : undefined}
+                  valueClassName={exercise.defaultLoadKg == null ? "text-muted" : undefined}
+                />
+              </div>
+              <div className="px-3.5 py-3 sm:px-4">
+                <StatBlock label={polishFilmLabel(media.length)} value={media.length} />
+              </div>
             </div>
           </Card>
 

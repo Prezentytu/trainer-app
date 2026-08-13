@@ -290,7 +290,7 @@ function DrawerBody({
           }
           className="text-accent hover:text-accent-strong"
         >
-          + Nowe ćwiczenie
+          Dodaj ćwiczenie
         </button>
         <Link
           href="/exercises"

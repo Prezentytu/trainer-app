@@ -178,7 +178,7 @@ export function TrainerDashboard() {
         rank: inboxRank(item.kind),
         ctaLabel:
           item.kind === "history_import"
-            ? "Czy to się zgadza?"
+            ? "Sprawdź import"
             : item.sessionId != null
               ? "Otwórz"
               : "Przejdź do klienta",
@@ -309,7 +309,7 @@ export function TrainerDashboard() {
             </Button>
           ) : (
             <Link href="/plans/new">
-              <Button>+ Nowy plan</Button>
+              <Button>Utwórz plan</Button>
             </Link>
           )
         }
@@ -389,55 +389,29 @@ export function TrainerDashboard() {
         </Card>
       )}
 
-      <div className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-3">
+      <div className="mb-6 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <StatCard
-            label="Trenowało (7 dni)"
+            label="Trenowało"
             value={`${trainedCount} z ${clientActivity.length}`}
-            href="#klienci-tygodnia"
+            href={showOnboarding ? "#ostatnie-sesje" : "#klienci-tygodnia"}
           />
           <StatCard
-            label="Sesje (7 dni)"
+            label="Sesje"
             value={sessionsThisWeek}
             href="#ostatnie-sesje"
             delta={
               sessionsDelta === 0
-                ? "bez zmian vs poprz. tydz."
-                : `${sessionsDelta > 0 ? "+" : ""}${sessionsDelta} vs poprz. tydz.`
+                ? "bez zmian vs poprzedni tydzień"
+                : `${sessionsDelta > 0 ? "+" : ""}${sessionsDelta} vs poprzedni tydzień`
             }
           />
           <StatCard
-            label="Nowe rekordy (7 dni)"
+            label="Nowe rekordy"
             value={prsLast7Days > 0 ? `★ ${prsLast7Days}` : prsLast7Days}
             href="#nowe-rekordy"
             valueClassName={prsLast7Days > 0 ? "text-pr" : undefined}
           />
         </div>
-
-      {silent14 > 0 ? (
-        <p className="mb-6 text-sm text-muted">
-          {silent14 === 1
-            ? "1 osoba bez treningu od 14 dni — napisz z kolejki powyżej."
-            : silent14 < 5
-              ? `${silent14} osoby bez treningu od 14 dni — napisz z kolejki powyżej.`
-              : `${silent14} osób bez treningu od 14 dni — napisz z kolejki powyżej.`}
-        </p>
-      ) : null}
-
-      {hasCompletedSession && !referralDismissed && !showOnboarding ? (
-        <Card className="mb-6" title="Znasz trenera, który wciąż wysyła PDF-y?">
-          <p className="text-sm text-foreground-secondary">
-            Miesiąc przy limicie 15 osób za polecenie, które dojdzie do zalogowanego treningu — nie do rejestracji.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => void copyReferral()}>
-              {copiedId === -1 ? "Skopiowano" : "Skopiuj wiadomość"}
-            </Button>
-            <Button size="sm" variant="ghost" onClick={dismissReferral}>
-              Ukryj
-            </Button>
-          </div>
-        </Card>
-      ) : null}
 
       {inbox.length > 0 ? (
         <Card
@@ -465,6 +439,7 @@ export function TrainerDashboard() {
                   {row.ctaKind === "copy" ? (
                     <Button
                       size="sm"
+                      variant="secondary"
                       className="flex-1 sm:flex-none"
                       disabled={!row.portalToken}
                       onClick={() => void copyPortalLink(row.clientId, row.portalToken)}
@@ -474,6 +449,7 @@ export function TrainerDashboard() {
                   ) : row.ctaKind === "remind" ? (
                     <Button
                       size="sm"
+                      variant="secondary"
                       className="flex-1 sm:flex-none"
                       onClick={() => setReminder(row.attention ?? null)}
                     >
@@ -481,7 +457,7 @@ export function TrainerDashboard() {
                     </Button>
                   ) : (
                     <Link href={row.ctaHref ?? row.href} className="flex-1 sm:flex-none">
-                      <Button size="sm" className="w-full">
+                      <Button size="sm" variant="secondary" className="w-full">
                         {row.ctaLabel}
                       </Button>
                     </Link>
@@ -520,6 +496,16 @@ export function TrainerDashboard() {
             ))}
           </ul>
         </Card>
+      ) : null}
+
+      {silent14 > 0 ? (
+        <p className="mb-6 text-sm text-muted">
+          {silent14 === 1
+            ? "1 osoba bez treningu od 14 dni — napisz z kolejki powyżej."
+            : silent14 < 5
+              ? `${silent14} osoby bez treningu od 14 dni — napisz z kolejki powyżej.`
+              : `${silent14} osób bez treningu od 14 dni — napisz z kolejki powyżej.`}
+        </p>
       ) : null}
 
       {!showOnboarding && (
@@ -676,6 +662,23 @@ export function TrainerDashboard() {
         </Card>
         </div>
       </div>
+
+      {hasCompletedSession && !referralDismissed && !showOnboarding ? (
+        <Card className="mt-6" title="Poleć RepMaxer trenerowi">
+          <p className="text-sm text-foreground-secondary">
+            Miesiąc przy limicie 15 osób za polecenie, które dojdzie do zalogowanego treningu — nie do rejestracji.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button size="sm" variant="secondary" onClick={() => void copyReferral()}>
+              {copiedId === -1 ? "Skopiowano" : "Skopiuj wiadomość"}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={dismissReferral}>
+              Ukryj
+            </Button>
+          </div>
+        </Card>
+      ) : null}
+
       <Dialog
         open={Boolean(reminder)}
         title={reminder ? `Napisz do ${reminder.clientName}` : "Napisz"}

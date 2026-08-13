@@ -433,7 +433,7 @@ export function usePlanDraft({
         const removedIndex = day?.items.findIndex((i) => i.key === itemKey) ?? -1;
         const removed = removedIndex >= 0 && day ? day.items[removedIndex] : null;
         if (removed) {
-          showUndoToast(`Usunięto „${removed.exerciseName}"`, () => {
+          showUndoToast(`Usunięto „${removed.exerciseName}”`, () => {
             setDays((cur) =>
               cur.map((d) => {
                 if (d.key !== dayKey) return d;

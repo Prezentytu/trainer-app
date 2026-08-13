@@ -3,6 +3,7 @@
 import { useEffect, useState, Fragment } from "react";
 import { api, SessionDetail, WorkoutSessionInput } from "@/lib/api";
 import { Button, Card, ErrorBanner, Field, formatRest, inputClass, Marker } from "@/components/ui";
+import { formatDurationMinutes } from "@/lib/estimateDuration";
 import { formatKg } from "@/lib/plates";
 import { formatSetLoadReps, isDumbbellPair } from "@/lib/weight";
 import { buildSessionBlocks } from "@/lib/sessionRounds";
@@ -39,21 +40,6 @@ function toSessionInput(session: SessionDetail, performedOn: string): WorkoutSes
       })),
     })),
   };
-}
-
-function formatDay(iso: string): string {
-  const d = new Date(`${iso}T12:00:00`);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("pl-PL", { day: "numeric", month: "short", year: "numeric" });
-}
-
-function formatDurationClock(seconds: number | null): string {
-  const sec = seconds ?? 0;
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = sec % 60;
-  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  return `${m}:${String(s).padStart(2, "0")}`;
 }
 
 function formatSet(
@@ -173,51 +159,13 @@ export function SessionReview({
         </div>
       ) : null}
 
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-caps text-muted-faint">
-          {inProgress ? "Sesja w toku" : "Trening ukończony"}
-        </p>
-        <h1 className="mt-1 break-words font-display text-2xl font-bold sm:text-3xl">
-          {session.dayLabel ?? "Trening"}
-        </h1>
-        <p className="mt-0.5 text-[13px] text-muted">
-          {formatDay(session.performedOn)}
-          {session.planName ? ` · ${session.planName}` : ""}
-        </p>
-      </div>
-
-      {!inProgress ? (
-        <Card title="Data treningu" meta="Popraw, gdy klient zapomniał odhaczyć we właściwym dniu.">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="min-w-0 flex-1">
-              <Field label="Data">
-                <input
-                  type="date"
-                  className={inputClass}
-                  value={performedOn}
-                  onChange={(e) => setPerformedOn(e.target.value)}
-                />
-              </Field>
-            </div>
-            <Button
-              variant="secondary"
-              disabled={savingDate || !dateDirty || !performedOn}
-              loading={savingDate}
-              onClick={() => void saveDate()}
-            >
-              Zapisz datę
-            </Button>
-          </div>
-        </Card>
-      ) : null}
-
       <div className="grid grid-cols-2 gap-3">
         <StatCard
           label="Czas"
           value={
             inProgress && session.durationSeconds == null
               ? "—"
-              : formatDurationClock(session.durationSeconds)
+              : (formatDurationMinutes(session.durationSeconds) ?? "—")
           }
         />
         <StatCard
@@ -407,6 +355,31 @@ export function SessionReview({
         </Card>
       ) : null}
 
+      {!inProgress ? (
+        <Card title="Data treningu" meta="Popraw, gdy klient zapomniał odhaczyć we właściwym dniu.">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="min-w-0 flex-1">
+              <Field label="Data">
+                <input
+                  type="date"
+                  className={inputClass}
+                  value={performedOn}
+                  onChange={(e) => setPerformedOn(e.target.value)}
+                />
+              </Field>
+            </div>
+            <Button
+              variant="secondary"
+              disabled={savingDate || !dateDirty || !performedOn}
+              loading={savingDate}
+              onClick={() => void saveDate()}
+            >
+              Zapisz datę
+            </Button>
+          </div>
+        </Card>
+      ) : null}
+
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button variant="secondary" full onClick={onEdit}>
           {inProgress ? "Wpisz wynik za klienta" : "Popraw wyniki"}
@@ -426,11 +399,7 @@ function StatCard({
   highlight?: boolean;
 }) {
   return (
-    <div
-      className={`rounded-2xl border bg-surface px-4 py-4 ${
-        highlight ? "border-pr" : "border-border"
-      }`}
-    >
+    <div className="rounded-[var(--r-card)] border border-border bg-surface px-4 py-4">
       <p
         className={`font-mono text-3xl font-semibold tabular-nums ${
           highlight ? "text-pr" : "text-foreground"

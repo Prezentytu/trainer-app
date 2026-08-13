@@ -13,6 +13,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import { SESSION_EXPIRED_MESSAGE, clerkEnabled } from "@/lib/api";
+import { Icon } from "@/components/Icon";
 
 const subscribeNoop = () => () => {};
 const snapshotClient = () => true;
@@ -302,7 +303,7 @@ export function Button({
     primary: "bg-invert-bg text-invert-fg hover:bg-fg-muted",
     secondary: "border border-border-strong bg-surface text-foreground hover:bg-surface-raised hover:border-fg-ghost",
     ghost: "bg-transparent text-foreground underline decoration-transparent underline-offset-[3px] hover:decoration-foreground",
-    danger: "bg-transparent text-danger hover:bg-danger-bg",
+    danger: "bg-danger text-invert-fg hover:bg-loss",
   };
   const sizes: Record<ButtonSize, string> = {
     sm: "h-[var(--h-control-sm)] px-3 text-[13px]",
@@ -367,6 +368,60 @@ export function Field({
 /** 16px na mobile (iOS nie auto-zoomuje); sm:text-sm na większych ekranach. */
 export const inputClass =
   "h-[var(--h-field)] w-full rounded-[var(--r-field)] border border-border-strong bg-field px-2.5 text-base font-medium text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:font-normal placeholder:text-fg-ghost focus:border-foreground focus:shadow-[var(--focus-ring)] sm:text-sm";
+
+/** Szukajka z lupą i czyszczeniem — wspólna dla list (Klienci, Plany, Ćwiczenia). */
+export function SearchInput({
+  value,
+  onChange,
+  placeholder,
+  "aria-label": ariaLabel,
+  inputRef,
+  shortcutHint,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  "aria-label": string;
+  inputRef?: RefObject<HTMLInputElement | null>;
+  shortcutHint?: string;
+}) {
+  return (
+    <div className="relative min-w-0 w-full">
+      <Icon
+        name="search"
+        size={16}
+        className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-faint"
+        decorative
+      />
+      <input
+        ref={inputRef}
+        type="search"
+        className={`${inputClass} pl-9 pr-9 [&::-webkit-search-cancel-button]:hidden`}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={ariaLabel}
+      />
+      {value ? (
+        <button
+          type="button"
+          aria-label="Wyczyść wyszukiwanie"
+          className={`absolute top-1/2 right-2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted hover:bg-surface-hover hover:text-foreground ${FOCUS}`}
+          onClick={() => onChange("")}
+        >
+          <Icon name="close" size={16} decorative />
+        </button>
+      ) : shortcutHint ? (
+        <kbd
+          className="pointer-events-none absolute top-1/2 right-2.5 hidden h-6 min-w-6 -translate-y-1/2 items-center justify-center rounded-[var(--r-field)] border border-border px-1.5 font-mono text-xs text-fg-ghost md:inline-flex"
+          aria-hidden
+        >
+          {shortcutHint}
+        </kbd>
+      ) : null}
+    </div>
+  );
+}
 
 /** Input liczbowy — mono + tabular, bez „drgania” layoutu przy zmianie cyfr. 16px na mobile (iOS nie zoomuje). */
 export const inputNumericClass =
@@ -673,7 +728,7 @@ export function StatBlock({
   const glyph = signGlyph(delta);
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <div className="flex items-baseline gap-1">
+      <div className="flex min-h-[25px] items-baseline gap-1">
         <span
           className={`t-num ${valueClassName ?? "text-foreground"} ${
             size === "lg" ? "text-[34px] leading-none" : "text-[25px] leading-none"
@@ -698,16 +753,31 @@ export function StatBlock({
   );
 }
 
-export function Tag({ children, onRemove }: { children: ReactNode; onRemove?: () => void }) {
+export function Tag({
+  children,
+  onRemove,
+  invert = false,
+}: {
+  children: ReactNode;
+  onRemove?: () => void;
+  /** Invert fill — ta sama wysokość co zwykły Tag (chip 28px). */
+  invert?: boolean;
+}) {
   return (
-    <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-border-strong bg-surface px-2.5 text-xs text-fg-muted">
+    <span
+      className={`inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs ${
+        invert
+          ? "border-invert-bg bg-invert-bg text-invert-fg"
+          : "border-border-strong bg-surface text-fg-muted"
+      }`}
+    >
       {children}
       {onRemove ? (
         <button
           type="button"
           onClick={onRemove}
           aria-label="Usuń"
-          className="text-fg-ghost hover:text-foreground"
+          className={`-my-1.5 -mr-2 inline-flex h-10 w-10 items-center justify-center text-fg-ghost hover:text-foreground ${FOCUS}`}
         >
           ×
         </button>
@@ -806,7 +876,7 @@ export function SegmentedControl({
                 : "text-fg-faint hover:bg-surface-raised hover:text-foreground"
             }`}
           >
-            <span className="truncate">{tabLabel(item)}</span>
+            <span className="whitespace-nowrap">{tabLabel(item)}</span>
             {tabCount(item) != null ? (
               <span className="shrink-0 font-mono text-[12px] tabular-nums opacity-70">
                 {tabCount(item)}
@@ -1198,8 +1268,8 @@ export function useUndoToast() {
 }
 
 export function formatRest(seconds: number): string {
-  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 60) return `${seconds} s`;
   const min = Math.floor(seconds / 60);
   const rest = seconds % 60;
-  return rest === 0 ? `${min}min` : `${min}min ${rest}s`;
+  return rest === 0 ? `${min} min` : `${min} min ${rest} s`;
 }

@@ -95,7 +95,7 @@ export function TableDay({
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Badge>{day.items.length} ćw.</Badge>
-          <IconButton title={`Powiel układ „${day.label}"`} onClick={onDuplicateDay}>
+          <IconButton title={`Powiel układ „${day.label}”`} onClick={onDuplicateDay}>
             ⧉
           </IconButton>
           <IconButton title="Usuń dzień" variant="danger" onClick={onRemoveDay}>

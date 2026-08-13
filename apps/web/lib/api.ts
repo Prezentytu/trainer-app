@@ -300,9 +300,9 @@ export type ExercisePattern =
   | "hinge";
 
 export const EXERCISE_TYPE_LABELS: Record<ExerciseType, string> = {
-  reps: "powtórzenia",
-  time: "czas",
-  distance: "dystans",
+  reps: "Powtórzenia",
+  time: "Czas",
+  distance: "Dystans",
 };
 
 export const CATEGORY_LABELS: Record<ExerciseCategory, string> = {

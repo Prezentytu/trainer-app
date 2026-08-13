@@ -7,7 +7,7 @@ import { Icon } from "@/components/Icon";
 import { api, PlanSummary } from "@/lib/api";
 import { daysAgo, formatDayShort, relativeDayLabel } from "@/lib/dates";
 import { refreshNavCounts } from "@/lib/navCounts";
-import { polishDayCount, polishExerciseCount, polishWeekCount } from "@/lib/plural";
+import { polishDayCount, polishExerciseCount, polishResultCount, polishWeekCount } from "@/lib/plural";
 import {
   Avatar,
   Button,
@@ -16,8 +16,8 @@ import {
   ErrorBanner,
   IconButton,
   PageHeader,
-  SegmentedControl,
-  inputClass,
+  SearchInput,
+  Tabs,
   useUndoToast,
 } from "@/components/ui";
 import { PlanListSkeleton } from "@/components/skeletons";
@@ -119,7 +119,7 @@ export default function PlansPage() {
               <Button variant="secondary">Importuj</Button>
             </Link>
             <Link href="/plans/new">
-              <Button>+ Nowy plan</Button>
+              <Button>Utwórz plan</Button>
             </Link>
           </div>
         }
@@ -133,49 +133,30 @@ export default function PlansPage() {
         <>
           <div className="mb-4 flex flex-col gap-3">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <div className="relative min-w-0 flex-1">
-                <Icon
-                  name="search"
-                  size={16}
-                  className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-faint"
-                  decorative
-                />
-                <input
-                  type="search"
-                  className={`${inputClass} pl-9 pr-9`}
-                  placeholder="Szukaj po nazwie lub opisie…"
+              <div className="min-w-0 flex-1">
+                <SearchInput
                   value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+                  onChange={setQuery}
+                  placeholder="Szukaj po nazwie lub opisie…"
                   aria-label="Szukaj planu"
                 />
-                {query ? (
-                  <button
-                    type="button"
-                    aria-label="Wyczyść wyszukiwanie"
-                    className="absolute top-1/2 right-2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted hover:bg-surface-hover hover:text-foreground"
-                    onClick={() => setQuery("")}
-                  >
-                    <Icon name="close" size={16} decorative />
-                  </button>
-                ) : null}
               </div>
-              <div className="flex h-10 w-full sm:w-auto sm:shrink-0">
-                <SegmentedControl
-                  full
-                  value={kind}
-                  onChange={(v) => setKind(v as KindFilter)}
+              <div className="sm:shrink-0">
+                <Tabs
                   items={[
                     { value: "all", label: "Wszystkie", count: plans.length },
                     { value: "library", label: "Biblioteka", count: libraryCount },
                     { value: "clients", label: "Klienci", count: clientCount },
                   ]}
+                  value={kind}
+                  onChange={(v) => setKind(v as KindFilter)}
                 />
               </div>
             </div>
             {filtersActive ? (
               <p className="text-sm text-muted">
-                {filtered.length === 1 ? "1 wynik" : `${filtered.length} wyników`}
-                {query.trim() ? ` dla „${query.trim()}"` : ""}
+                {polishResultCount(filtered.length)}
+                {query.trim() ? ` dla „${query.trim()}”` : ""}
               </p>
             ) : null}
           </div>
@@ -186,7 +167,7 @@ export default function PlansPage() {
               action={
                 <div className="flex flex-wrap items-center justify-center gap-2">
                   <Link href="/plans/new">
-                    <Button size="sm">+ Nowy plan</Button>
+                    <Button size="sm">Utwórz plan</Button>
                   </Link>
                   <Link href="/plans/import">
                     <Button size="sm" variant="secondary">
@@ -214,7 +195,7 @@ export default function PlansPage() {
                 <span>Struktura</span>
                 <span>Klienci</span>
                 <span>Dodano</span>
-                <span className="text-right">Akcje</span>
+                <span className="sr-only">Akcje</span>
               </div>
               <ul className="divide-y divide-border">
                 {filtered.map((p) => (
@@ -237,7 +218,7 @@ export default function PlansPage() {
 
       <Dialog
         open={!!deleteTarget}
-        title={deleteTarget ? `Usunąć „${deleteTarget.name}"?` : "Usunąć plan?"}
+        title={deleteTarget ? `Usunąć „${deleteTarget.name}”?` : "Usunąć plan?"}
         description="Plan i powiązane przypisania zostaną usunięte na stałe. Tej operacji nie można cofnąć."
         confirmLabel="Usuń plan"
         danger
@@ -263,7 +244,7 @@ function PlansEmptyState({
   if (q) {
     return (
       <EmptyState
-        title={`Nic nie pasuje do „${q}"`}
+        title={`Nic nie pasuje do „${q}”`}
         action={
           <Button variant="ghost" size="sm" onClick={onClearQuery}>
             Wyczyść szukanie
@@ -280,7 +261,7 @@ function PlansEmptyState({
         title="Biblioteka jest pusta"
         action={
           <Link href="/plans/new">
-            <Button size="sm">+ Nowy plan</Button>
+            <Button size="sm">Utwórz plan</Button>
           </Link>
         }
       >
@@ -291,7 +272,7 @@ function PlansEmptyState({
   if (kind === "clients") {
     return (
       <EmptyState title="Żaden plan nie jest jeszcze przypisany" action={null}>
-        Skopiuj plan z biblioteki → „Utwórz plan klienta”, albo utwórz nowy bez oznaczenia wielokrotnego użytku.
+        Skopiuj plan z biblioteki przyciskiem „Utwórz plan klienta” — pojawi się tutaj.
       </EmptyState>
     );
   }
@@ -330,7 +311,11 @@ function PlanRow({
           aria-hidden
           className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--r-field)] bg-surface-active text-fg-muted"
         >
-          {plan.isTemplate ? <TemplateIcon /> : <ClientPlanIcon />}
+          {plan.isTemplate ? (
+            <Icon name="stack" size={16} decorative />
+          ) : (
+            <Icon name="user" size={16} decorative />
+          )}
         </span>
         <div className="min-w-0 flex-1">
           <Link
@@ -401,12 +386,12 @@ function PlanRow({
       </div>
 
       {/* Akcje — stała szerokość, zawsze te same 2 ikony */}
-      <div className="relative z-10 flex w-full shrink-0 items-center justify-end gap-0.5 lg:w-auto">
-        <IconButton title={`Duplikuj „${plan.name}"`} size="sm" onClick={onDuplicate}>
-          <DuplicateIcon />
+      <div className="relative z-10 flex w-full shrink-0 items-center justify-end gap-0.5 opacity-100 transition-opacity duration-[var(--dur-fast)] lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
+        <IconButton title={`Duplikuj „${plan.name}”`} size="sm" onClick={onDuplicate}>
+          <Icon name="copy" size={16} decorative />
         </IconButton>
-        <IconButton title={`Usuń „${plan.name}"`} size="sm" variant="danger" onClick={onDelete}>
-          <TrashIcon />
+        <IconButton title={`Usuń „${plan.name}”`} size="sm" variant="danger" onClick={onDelete}>
+          <Icon name="delete" size={16} decorative />
         </IconButton>
       </div>
     </li>
@@ -418,55 +403,4 @@ function planAddedLabel(createdAt?: string): string {
   const iso = createdAt.slice(0, 10);
   if (daysAgo(iso) > 30) return formatDayShort(iso);
   return relativeDayLabel(iso);
-}
-
-const iconProps = {
-  width: 16,
-  height: 16,
-  viewBox: "0 0 16 16",
-  fill: "none",
-  stroke: "currentColor",
-  strokeWidth: 1.4,
-  strokeLinecap: "round" as const,
-  strokeLinejoin: "round" as const,
-  "aria-hidden": true,
-};
-
-function TemplateIcon() {
-  return (
-    <svg {...iconProps}>
-      <path d="M8 1.8 1.8 5 8 8.2 14.2 5 8 1.8Z" />
-      <path d="m1.8 8 6.2 3.2L14.2 8" />
-      <path d="m1.8 11 6.2 3.2 6.2-3.2" />
-    </svg>
-  );
-}
-
-function ClientPlanIcon() {
-  return (
-    <svg {...iconProps}>
-      <circle cx="8" cy="5.2" r="2.6" />
-      <path d="M2.8 14c0-2.6 2.33-4.7 5.2-4.7s5.2 2.1 5.2 4.7" />
-    </svg>
-  );
-}
-
-function DuplicateIcon() {
-  return (
-    <svg {...iconProps}>
-      <rect x="5.4" y="5.4" width="8.4" height="8.4" rx="1.6" />
-      <path d="M10.6 5.4V3.8a1.6 1.6 0 0 0-1.6-1.6H3.8a1.6 1.6 0 0 0-1.6 1.6v5.2a1.6 1.6 0 0 0 1.6 1.6h1.6" />
-    </svg>
-  );
-}
-
-function TrashIcon() {
-  return (
-    <svg {...iconProps}>
-      <path d="M2.6 4.4h10.8" />
-      <path d="M6.4 4.4V3.2a1 1 0 0 1 1-1h1.2a1 1 0 0 1 1 1v1.2" />
-      <path d="m4 4.4.62 8.5a1.2 1.2 0 0 0 1.2 1.1h4.36a1.2 1.2 0 0 0 1.2-1.1L12 4.4" />
-      <path d="M6.7 7v4M9.3 7v4" />
-    </svg>
-  );
 }

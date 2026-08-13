@@ -56,7 +56,7 @@ export function WeeklyActivityBar({
     weekCounts.push({ mondayIso, count, isCurrent: i === 0 });
   }
 
-  const max = Math.max(1, ...weekCounts.map((w) => w.count));
+  const max = Math.max(3, ...weekCounts.map((w) => w.count));
   const thisWeek = weekCounts[weekCounts.length - 1]?.count ?? 0;
   const first = weekCounts[0];
   const last = weekCounts[weekCounts.length - 1];

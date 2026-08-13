@@ -143,6 +143,11 @@ export default function PlanDetailsPage() {
               ) : plan.assignedCount > 0 ? (
                 <Badge tone="positive">{plan.assignedCount}</Badge>
               ) : null}
+              {weeks.length <= 1 ? (
+                <span className="shrink-0 font-mono text-xs tabular-nums text-muted-faint">
+                  {weekMeta}
+                </span>
+              ) : null}
             </>
           }
           right={
@@ -171,8 +176,8 @@ export default function PlanDetailsPage() {
         />
         <ErrorBanner message={error} />
 
-        <div className="flex min-h-9 items-center gap-2 border-b border-border py-1.5">
-          {weeks.length > 1 ? (
+        {weeks.length > 1 ? (
+          <div className="flex min-h-9 items-center gap-2 border-b border-border py-1.5">
             <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto overscroll-x-contain">
               {weeks.map((week) => (
                 <button
@@ -194,11 +199,9 @@ export default function PlanDetailsPage() {
                 </button>
               ))}
             </div>
-          ) : (
-            <div className="flex-1" />
-          )}
-          <span className="shrink-0 font-mono text-xs tabular-nums text-muted-faint">{weekMeta}</span>
-        </div>
+            <span className="shrink-0 font-mono text-xs tabular-nums text-muted-faint">{weekMeta}</span>
+          </div>
+        ) : null}
       </div>
 
       {weekDays.length === 0 ? (

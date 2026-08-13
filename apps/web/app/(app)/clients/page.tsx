@@ -17,6 +17,7 @@ import {
   inputClass,
   PageHeader,
   Pill,
+  SearchInput,
   Switch,
   Tabs,
   useUndoToast,
@@ -209,29 +210,33 @@ export default function ClientsPage() {
             </div>
           </Field>
           <Switch
-            label="Mam zdjęcia z poprzedniej apki"
+            label="Mam zdjęcia treningów z poprzedniej aplikacji"
             checked={hasScreens}
             onChange={setHasScreens}
           />
         </div>
       </Dialog>
 
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Tabs
-          items={[
-            { value: "all", label: "Wszyscy", count: counts.all },
-            { value: "active", label: "Z planem", count: counts.active },
-            { value: "idle", label: "Bez planu", count: counts.idle },
-          ]}
-          value={tab}
-          onChange={(v) => setTab(v as TabFilter)}
-        />
-        <input
-          className={`${inputClass} sm:max-w-xs`}
-          placeholder="Szukaj klienta…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="min-w-0 flex-1">
+          <SearchInput
+            value={query}
+            onChange={setQuery}
+            placeholder="Szukaj klienta…"
+            aria-label="Szukaj klienta"
+          />
+        </div>
+        <div className="sm:shrink-0">
+          <Tabs
+            items={[
+              { value: "all", label: "Wszyscy", count: counts.all },
+              { value: "active", label: "Z planem", count: counts.active },
+              { value: "idle", label: "Bez planu", count: counts.idle },
+            ]}
+            value={tab}
+            onChange={(v) => setTab(v as TabFilter)}
+          />
+        </div>
       </div>
 
       {toastNode}
@@ -256,7 +261,7 @@ export default function ClientsPage() {
           Zmień filtr albo wyszukiwanie — albo dodaj nowego klienta.
         </EmptyState>
       ) : (
-        <div>
+        <div className="divide-y divide-border border-y border-border">
           {filtered.map((c) => {
             const ago = c.lastSessionOn ? daysAgo(c.lastSessionOn) : null;
             const stale = ago != null && ago > 7;
@@ -264,25 +269,10 @@ export default function ClientsPage() {
               <Link
                 key={c.id}
                 href={`/clients/${c.id}`}
-                className="flex flex-col gap-3 border-b border-border px-1 py-4 transition-colors duration-[var(--dur-fast)] hover:bg-surface-hover/60 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-3 px-2 py-4 transition-colors duration-[var(--dur-fast)] hover:bg-surface-hover/60 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="flex min-w-0 items-start gap-3">
-                  <span className="relative shrink-0">
-                    <Avatar name={c.name} size="lg" />
-                    <span
-                      role="img"
-                      aria-label={
-                        ago == null ? "Brak treningów" : stale ? "Bez treningu ponad 7 dni" : "Aktywny"
-                      }
-                      className={`absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-background ${
-                        ago == null
-                          ? "bg-fg-ghost"
-                          : stale
-                            ? "bg-loss"
-                            : "bg-gain"
-                      }`}
-                    />
-                  </span>
+                  <Avatar name={c.name} size="lg" />
                   <div className="min-w-0">
                     <p className="break-words text-base font-medium text-foreground">{c.name}</p>
                     <p className="mt-0.5 break-words text-sm text-muted">
@@ -303,9 +293,9 @@ export default function ClientsPage() {
                         : `▲ Aktywny · ${relativeDayLabel(c.lastSessionOn!)}`}
                   </span>
                   {c.activePlans > 0 ? (
-                    <Badge tone="positive">{activePlansLabel(c.activePlans)}</Badge>
+                    <Badge tone="neutral">{activePlansLabel(c.activePlans)}</Badge>
                   ) : (
-                    <Badge tone="neutral">bez planu</Badge>
+                    <Badge tone="neutral">Bez planu</Badge>
                   )}
                 </div>
               </Link>

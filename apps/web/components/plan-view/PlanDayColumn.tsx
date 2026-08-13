@@ -78,7 +78,7 @@ export function PlanDayColumn({
   };
 
   return (
-    <div className="flex max-h-[70dvh] w-full shrink-0 flex-col rounded-[var(--r-card)] border border-border bg-surface md:h-full md:max-h-none md:w-[300px] md:min-h-0 md:snap-start">
+    <div className="flex max-h-[70dvh] w-full shrink-0 flex-col rounded-[var(--r-card)] border border-border bg-surface md:h-full md:max-h-none md:w-auto md:min-w-[300px] md:max-w-[400px] md:flex-1 md:min-h-0 md:snap-start">
       <div className="shrink-0 border-b border-border px-3.5 pb-3 pt-3.5">
         <div className="flex min-w-0 items-baseline gap-2">
           <span className="shrink-0 font-mono text-xs font-semibold tracking-wide text-muted">
@@ -126,7 +126,7 @@ export function PlanDayColumn({
                       <span className="shrink-0 text-xs text-muted-faint">
                         {day.items[block.indices[0]]?.restBetweenSetsSeconds
                           ? `${formatRest(day.items[block.indices[0]].restBetweenSetsSeconds)} po superserii`
-                          : "bez przerwy między"}
+                          : "bez przerwy między ćwiczeniami"}
                       </span>
                     </div>
                     <div className="divide-y divide-border">

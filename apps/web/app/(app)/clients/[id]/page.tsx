@@ -736,7 +736,7 @@ function ClientDetailsPage() {
                   ? `Ostatni trening ${relativeDayLabel(lastSession.performedOn)}`
                   : "Jeszcze bez sesji"}
               {progress?.assignmentId === activeAssignment.id
-                ? ` · ${progress.completed}/${progress.total}`
+                ? ` · ukończone ${progress.completed}/${progress.total}`
                 : ""}
               {nextDayLabel ? ` · dalej: ${nextDayLabel}` : ""}
             </p>
@@ -1546,7 +1546,11 @@ function ClientDetailsPage() {
       </div>
 
       <div className="mt-10 border-t border-border pt-4">
-        <Button variant="ghost" onClick={() => setDeleteClientOpen(true)}>
+        <Button
+          variant="ghost"
+          className="hover:text-danger hover:decoration-danger"
+          onClick={() => setDeleteClientOpen(true)}
+        >
           Usuń klienta
         </Button>
       </div>
