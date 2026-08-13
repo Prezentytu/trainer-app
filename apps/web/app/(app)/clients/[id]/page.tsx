@@ -61,6 +61,17 @@ import { WeeklyActivityBar } from "@/components/WeeklyActivityBar";
 import { formatDurationMinutes } from "@/lib/estimateDuration";
 import { formatKg } from "@/lib/plates";
 
+function trendChartPoints(
+  weeks: { weekStart: string; volumeKg: number; sessions: number }[] | undefined,
+  pick: "volumeKg" | "sessions",
+) {
+  const points = (weeks ?? []).map((w) => ({
+    label: formatDayShort(w.weekStart),
+    value: w[pick],
+  }));
+  return points.filter((p) => p.value !== 0).length < 2 ? [] : points;
+}
+
 function PlanPickerCard({ plan, selected, onSelect }: { plan: PlanSummary; selected: boolean; onSelect: () => void }) {
   return (
     <button
@@ -675,7 +686,7 @@ function ClientDetailsPage() {
   }
 
   const statusTone = (status: string) =>
-    status === "active" ? ("positive" as const) : status === "completed" ? ("accent" as const) : ("danger" as const);
+    status === "active" || status === "completed" ? ("neutral" as const) : ("danger" as const);
   const statusLabel = (status: string) =>
     status === "active" ? "aktywny" : status === "completed" ? "zakończony" : "anulowany";
 
@@ -889,30 +900,38 @@ function ClientDetailsPage() {
             ) : (
               <div className="grid gap-2">
                 {client.assignments.map((a) => (
-                  <Card key={a.id} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <Card
+                    key={a.id}
+                    className="group flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+                  >
                     <div className="min-w-0">
                       <Link href={`/plans/${a.planId}`} className="break-words text-base font-medium hover:text-accent">
                         {a.planName}
                       </Link>
                       <p className="mt-0.5 text-sm text-muted">
                         od {formatDayShort(a.startDate)}
+                        {a.status === "active" && progress?.assignmentId === a.id
+                          ? ` · ukończone ${progress.completed}/${progress.total}`
+                          : ""}
                         {a.note ? ` · ${a.note}` : ""}
                       </p>
                     </div>
                     <div className="flex shrink-0 flex-wrap items-center gap-2">
                       <Badge tone={statusTone(a.status)}>{statusLabel(a.status)}</Badge>
-                      {a.status === "active" ? (
-                        <Button variant="ghost" onClick={() => handleStatus(a.id, "completed")}>
-                          Zakończ
+                      <div className="flex flex-wrap items-center gap-2 opacity-100 transition-opacity duration-[var(--dur-fast)] lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
+                        {a.status === "active" ? (
+                          <Button variant="ghost" onClick={() => handleStatus(a.id, "completed")}>
+                            Zakończ
+                          </Button>
+                        ) : (
+                          <Button variant="ghost" onClick={() => handleStatus(a.id, "active")}>
+                            Wznów
+                          </Button>
+                        )}
+                        <Button variant="ghost" onClick={() => void handleRemove(a)}>
+                          Usuń
                         </Button>
-                      ) : (
-                        <Button variant="ghost" onClick={() => handleStatus(a.id, "active")}>
-                          Wznów
-                        </Button>
-                      )}
-                      <Button variant="ghost" onClick={() => void handleRemove(a)}>
-                        Usuń
-                      </Button>
+                      </div>
                     </div>
                   </Card>
                 ))}
@@ -946,7 +965,7 @@ function ClientDetailsPage() {
                 Wrzuć screeny z poprzedniej apki — albo wpisz trening ręcznie, także bez planu.
               </EmptyState>
             ) : (
-              <div className="grid gap-2">
+              <ul className="divide-y divide-border overflow-hidden rounded-[var(--r-card)] border border-border bg-surface">
                 {sessions.map((s) => {
                   const wellness = [
                     s.feelingScore != null ? `samopoczucie ${s.feelingScore}/5` : null,
@@ -955,46 +974,53 @@ function ClientDetailsPage() {
                   ]
                     .filter(Boolean)
                     .join(" · ");
+                  const volume =
+                    s.totalVolumeKg > 0
+                      ? `${Math.round(s.totalVolumeKg).toLocaleString("pl-PL")} kg`
+                      : null;
                   return (
-                    <Link key={s.id} href={`/clients/${clientId}/sessions/${s.id}`}>
-                      <Card className="flex flex-wrap items-center justify-between gap-3 transition-colors hover:border-border-strong">
-                        <div className="flex min-w-0 items-start gap-3">
-                          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-hover text-foreground-secondary">
-                            <Icon name="dumbbell" size={16} decorative />
-                          </span>
-                          <div className="min-w-0">
-                            <p className="break-words text-base font-medium">
-                              {s.dayLabel ?? s.planName ?? "Trening"}
+                    <li key={s.id}>
+                      <Link
+                        href={`/clients/${clientId}/sessions/${s.id}`}
+                        className="flex min-h-[var(--tap-min)] flex-wrap items-center justify-between gap-3 px-3.5 py-3 transition-colors duration-[var(--dur-fast)] hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] sm:px-4"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="break-words text-base font-medium">
+                            {s.dayLabel ?? s.planName ?? "Trening"}
+                          </p>
+                          <p className="mt-0.5 text-sm text-muted">
+                            {s.status === "completed"
+                              ? relativeDayLabel(s.performedOn)
+                              : formatDayShort(s.performedOn)}
+                            {` · ${s.exerciseCount} ćw.`}
+                            {formatDurationMinutes(s.durationSeconds)
+                              ? ` · ${formatDurationMinutes(s.durationSeconds)}`
+                              : ""}
+                            {volume ? ` · ${volume}` : ""}
+                            {wellness ? ` · ${wellness}` : ""}
+                          </p>
+                          {s.note?.trim() ? (
+                            <p className="mt-1 break-words text-sm text-foreground-secondary">
+                              {s.note.trim()}
                             </p>
-                            <p className="mt-0.5 text-sm text-muted">
-                              {s.status === "completed" ? relativeDayLabel(s.performedOn) : formatDayShort(s.performedOn)}
-                              {` · ${s.exerciseCount} ćw.`}
-                              {formatDurationMinutes(s.durationSeconds)
-                                ? ` · ${formatDurationMinutes(s.durationSeconds)}`
-                                : ""}
-                              {wellness ? ` · ${wellness}` : ""}
-                            </p>
-                            {s.note?.trim() ? (
-                              <p className="mt-1 break-words text-sm text-foreground-secondary">
-                                {s.note.trim()}
-                              </p>
-                            ) : null}
-                            {s.hasUnreadClientReply ? (
-                              <p className="mt-1 text-xs font-medium text-foreground">Nowa odpowiedź</p>
+                          ) : null}
+                          {s.hasUnreadClientReply ? (
+                            <p className="mt-1 text-xs font-medium text-foreground">Nowa odpowiedź</p>
+                          ) : null}
+                        </div>
+                        {s.status !== "completed" || s.outOfOrder ? (
+                          <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+                            {s.outOfOrder ? <Badge tone="accent">Poza kolejką</Badge> : null}
+                            {s.status !== "completed" ? (
+                              <Badge tone="accent">w trakcie</Badge>
                             ) : null}
                           </div>
-                        </div>
-                        <div className="flex shrink-0 flex-wrap items-center gap-1.5">
-                          {s.outOfOrder ? <Badge tone="accent">Poza kolejką</Badge> : null}
-                          <Badge tone={s.status === "completed" ? "positive" : "accent"}>
-                            {s.status === "completed" ? "ukończony" : "w trakcie"}
-                          </Badge>
-                        </div>
-                      </Card>
-                    </Link>
+                        ) : null}
+                      </Link>
+                    </li>
                   );
                 })}
-              </div>
+              </ul>
             )}
 
             {checkInsLoaded && checkIns.length > 0 ? (
@@ -1102,10 +1128,7 @@ function ClientDetailsPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <Card eyebrow="12 tyg." title="Tonaż tygodniowy">
                   <LineChart
-                    points={(trends?.weeks ?? []).map((w) => ({
-                      label: formatDayShort(w.weekStart),
-                      value: w.volumeKg,
-                    }))}
+                    points={trendChartPoints(trends?.weeks, "volumeKg")}
                     unit="kg"
                     emptyHint="Za mało treningów na trend tonażu."
                     ariaLabel="Tonaż tygodniowy"
@@ -1113,10 +1136,7 @@ function ClientDetailsPage() {
                 </Card>
                 <Card eyebrow="12 tyg." title="Częstotliwość">
                   <LineChart
-                    points={(trends?.weeks ?? []).map((w) => ({
-                      label: formatDayShort(w.weekStart),
-                      value: w.sessions,
-                    }))}
+                    points={trendChartPoints(trends?.weeks, "sessions")}
                     emptyHint="Za mało treningów na trend częstotliwości."
                     ariaLabel="Liczba treningów tygodniowo"
                   />
@@ -1476,7 +1496,6 @@ function ClientDetailsPage() {
         {activeTab === "notes" && (
           <div className="space-y-4">
             <SegmentedControl
-              full
               items={[
                 { value: "mine", label: "Moje", count: notesLoaded ? trainerNotes.length : undefined },
                 {

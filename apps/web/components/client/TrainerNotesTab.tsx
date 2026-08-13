@@ -7,7 +7,6 @@ import {
   Badge,
   Button,
   Card,
-  EmptyState,
   ErrorBanner,
   inputClass,
 } from "@/components/ui";
@@ -160,7 +159,7 @@ export function TrainerNotesTab({
 
       <ErrorBanner message={error} />
 
-      <Card className="mb-6" eyebrow="Nowa" title="Dodaj notatkę">
+      <Card className="mb-6">
         <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-3">
           <textarea
             className={`${inputClass} min-h-[88px] resize-none py-3`}
@@ -180,9 +179,7 @@ export function TrainerNotesTab({
       </Card>
 
       {sorted.length === 0 ? (
-        <EmptyState title="Twoje prywatne notatki o kliencie" action={null}>
-          Zapisuj kontuzje, ustalenia, płatności albo to, co działa na tego klienta. Klient nigdy tego nie zobaczy.
-        </EmptyState>
+        <p className="t-small">Jeszcze bez notatek.</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {sorted.map((note) => (
