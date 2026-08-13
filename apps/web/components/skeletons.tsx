@@ -103,11 +103,12 @@ export function ClientDetailSkeleton() {
           <Skeleton className="h-4 w-56" />
         </div>
       </div>
-      <div className="mb-6 grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <Skeleton className="h-44 w-full rounded-xl" />
-        <Skeleton className="h-44 w-full rounded-xl" />
+      <div className="mb-6 border-b border-border pb-6">
+        <Skeleton className="h-3 w-24" />
+        <Skeleton className="mt-2 h-6 w-64" />
+        <Skeleton className="mt-2 h-4 w-80 max-w-full" />
       </div>
-      <Skeleton className="mb-6 h-10 w-full max-w-sm rounded-md" />
+      <Skeleton className="mb-6 h-10 w-full max-w-md rounded-md" />
       <div className="grid gap-2">
         <Skeleton className="h-20 w-full rounded-xl" />
         <Skeleton className="h-20 w-full rounded-xl" />

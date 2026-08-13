@@ -15,6 +15,13 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Szczegóły klienta: setup-once na dół, hero dla statusu
+
+**Kontekst**: Profil klienta otwierał się kartą „Link i WhatsApp” (PIN, ważność, szablony wiadomości) nad aktywnym planem i zakładkami.
+**Problem**: Trener wchodzi, żeby sprawdzić trening albo otworzyć plan — a pierwsze, co widzi, to konfigurację ustawianą raz. Za dużo konkurujących bloków, nic nie da się znaleźć intuicyjnie.
+**Zasada**: Na górze strony szczegółów tylko status i praca dnia (plan, postęp, zakładki z danymi). Ustawienia setup-once (PIN, ważność linku, wysyłka, WhatsApp) zwijaj na dole; jedną częstą akcję („Skopiuj link”) zostaw w nagłówku. Nie ładuj tokenu dostępu, dopóki sekcja nie zostanie rozwinięta.
+**Dotyczy**: `clients/[id]/page.tsx`, `PortalAccessSection.tsx`, strony szczegółów z mieszanką daily-work + admin
+
 ## Kalendarz: jeden box model; ✓ = data wykonania
 
 **Kontekst**: Pasek P–N na Dziś renderował klikalny dzień jako `<button py-1>`, a pusty jako `<div>` bez paddingu. `✓` brał się z postępu cyklu planu, nie z daty sesji.

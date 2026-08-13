@@ -27,6 +27,7 @@ import {
   TrainerNote,
 } from "@/lib/api";
 import { ClientNotesTab, countClientNotes } from "@/components/client/ClientNotesTab";
+import { PortalAccessSection } from "@/components/client/PortalAccessSection";
 import { TrainerNotesTab } from "@/components/client/TrainerNotesTab";
 import { ExerciseCombobox } from "@/components/ExerciseCombobox";
 import { SearchPicker } from "@/components/SearchPicker";
@@ -61,8 +62,6 @@ import { WeeklyActivityBar } from "@/components/WeeklyActivityBar";
 import { formatDurationMinutes } from "@/lib/estimateDuration";
 import { formatKg } from "@/lib/plates";
 import { ProgressPhotoGallery } from "@/components/ProgressPhotoGallery";
-import { silenceKind, silenceMessage } from "@/lib/silenceProtocol";
-import { afterSessionMessage, prCongratsMessage, whatsappShareUrl } from "@/lib/whatsappMessages";
 
 function trendChartPoints(
   weeks: { weekStart: string; volumeKg: number; sessions: number }[] | undefined,
@@ -167,10 +166,6 @@ function ClientDetailsPage() {
   const [trainerNotes, setTrainerNotes] = useState<TrainerNote[]>([]);
   const [clientNotes, setClientNotes] = useState<ClientNoteGroup[]>([]);
   const [notesForClient, setNotesForClient] = useState<number | null>(null);
-  const [pinDraft, setPinDraft] = useState("");
-  const [pinSaving, setPinSaving] = useState(false);
-  const [tokenExpiresAt, setTokenExpiresAt] = useState<string | null>(null);
-  const [expireSaving, setExpireSaving] = useState(false);
   const intakeLoaded = intakeForClient === clientId;
   const notesLoaded = notesForClient === clientId;
 
@@ -188,10 +183,6 @@ function ClientDetailsPage() {
         setSessions(s);
         setProgress(prog);
         setRecords(r);
-        void api.clients
-          .accessToken(clientId)
-          .then((t) => setTokenExpiresAt(t.expiresAt))
-          .catch(() => setTokenExpiresAt(null));
         setAssignOpen(false);
         setTab((prev) => {
           if (prev === "client-notes") return "notes";
@@ -639,16 +630,6 @@ function ClientDetailsPage() {
     }
   };
 
-  const sendPortalLink = async () => {
-    try {
-      await api.clients.sendPortalLink(clientId);
-      markPortalLinkSent();
-      showUndoToast("Wysłano link portalu e-mailem");
-    } catch (err) {
-      setError((err as Error).message);
-    }
-  };
-
   const handleSaveIntake = async (input: ClientIntakeInput) => {
     setError(null);
     try {
@@ -732,131 +713,10 @@ function ClientDetailsPage() {
           <Button variant="ghost" onClick={() => void copyPortalLink()}>
             Skopiuj link dla klienta
           </Button>
-          {client.email ? (
-            <Button variant="secondary" onClick={() => void sendPortalLink()}>
-              Wyślij e-mailem
-            </Button>
-          ) : null}
         </div>
       </div>
 
       <ErrorBanner message={error} />
-
-      {!client.email ? (
-        <p className="mb-4 text-sm text-foreground-secondary">
-          Bez e-maila klient nie odzyska zgubionego linku. Dopisz adres w edycji profilu.
-        </p>
-      ) : null}
-
-      <Card className="mb-6" title="Link i WhatsApp" meta="PIN, ważność linku i gotowe wiadomości.">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="PIN portalu" hint={client.hasPortalPin ? "ustawiony" : "opcjonalny"}>
-            <input
-              className={inputClass}
-              inputMode="numeric"
-              maxLength={4}
-              value={pinDraft}
-              onChange={(e) => setPinDraft(e.target.value.replace(/\D/g, "").slice(0, 4))}
-              placeholder="4 cyfry"
-            />
-          </Field>
-          <div className="flex flex-wrap items-end gap-2">
-            <Button
-              variant="secondary"
-              disabled={pinSaving || (pinDraft.length > 0 && pinDraft.length !== 4)}
-              onClick={() => {
-                void (async () => {
-                  setPinSaving(true);
-                  setError(null);
-                  try {
-                    await api.clients.setPortalPin(clientId, pinDraft.length === 4 ? pinDraft : null);
-                    setPinDraft("");
-                    load();
-                    showUndoToast(pinDraft.length === 4 ? "Ustawiono PIN" : "Usunięto PIN");
-                  } catch (e) {
-                    setError((e as Error).message);
-                  } finally {
-                    setPinSaving(false);
-                  }
-                })();
-              }}
-            >
-              {pinDraft.length === 4 ? "Zapisz PIN" : "Usuń PIN"}
-            </Button>
-          </div>
-          <Field label="Link ważny">
-            <select
-              className={inputClass}
-              disabled={expireSaving}
-              value={
-                tokenExpiresAt == null
-                  ? "never"
-                  : "90"
-              }
-              onChange={(e) => {
-                const days = e.target.value === "never" ? null : Number(e.target.value);
-                void (async () => {
-                  setExpireSaving(true);
-                  setError(null);
-                  try {
-                    const row = await api.clients.expireAccessToken(clientId, days);
-                    setTokenExpiresAt(row.expiresAt);
-                  } catch (err) {
-                    setError((err as Error).message);
-                  } finally {
-                    setExpireSaving(false);
-                  }
-                })();
-              }}
-            >
-              <option value="never">Bez daty</option>
-              <option value="30">30 dni</option>
-              <option value="90">90 dni</option>
-              <option value="365">Rok</option>
-            </select>
-          </Field>
-        </div>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {lastSession ? (
-            <a
-              className="inline-flex h-[var(--h-btn)] items-center rounded-[var(--r-pill)] border border-border-strong px-3 text-sm font-medium text-foreground"
-              href={whatsappShareUrl(afterSessionMessage(client.name, lastSession.dayLabel))}
-              target="_blank"
-              rel="noreferrer"
-            >
-              WhatsApp po treningu
-            </a>
-          ) : null}
-          {records[0] ? (
-            <a
-              className="inline-flex h-[var(--h-btn)] items-center rounded-[var(--r-pill)] border border-border-strong px-3 text-sm font-medium text-foreground"
-              href={whatsappShareUrl(
-                prCongratsMessage(client.name, records[0].exerciseName, records[0].weightKg),
-              )}
-              target="_blank"
-              rel="noreferrer"
-            >
-              WhatsApp: rekord
-            </a>
-          ) : null}
-          {lastAgo != null && lastAgo >= 7 ? (
-            <a
-              className="inline-flex h-[var(--h-btn)] items-center rounded-[var(--r-pill)] border border-border-strong px-3 text-sm font-medium text-foreground"
-              href={whatsappShareUrl(
-                silenceMessage(
-                  silenceKind({ reason: lastAgo >= 14 ? "silent" : "silent", daysSilent: lastAgo }),
-                  client.name,
-                  `${typeof window !== "undefined" ? window.location.origin : ""}/portal`,
-                ),
-              )}
-              target="_blank"
-              rel="noreferrer"
-            >
-              WhatsApp: cisza
-            </a>
-          ) : null}
-        </div>
-      </Card>
 
       {activeAssignment ? (
         <div className="mb-6 flex flex-col gap-3 border-b border-border pb-6 sm:flex-row sm:items-center sm:justify-between">
@@ -1694,14 +1554,30 @@ function ClientDetailsPage() {
         )}
       </div>
 
-      <div className="mt-10 border-t border-border pt-4">
-        <Button
-          variant="ghost"
-          className="hover:text-danger hover:decoration-danger"
-          onClick={() => setDeleteClientOpen(true)}
-        >
-          Usuń klienta
-        </Button>
+      <div className="mt-10 space-y-4">
+        <PortalAccessSection
+          key={clientId}
+          clientId={clientId}
+          clientName={client.name}
+          email={client.email}
+          hasPortalPin={Boolean(client.hasPortalPin)}
+          lastSession={lastSession ? { dayLabel: lastSession.dayLabel } : null}
+          lastRecord={records[0] ? { exerciseName: records[0].exerciseName, weightKg: records[0].weightKg } : null}
+          lastAgo={lastAgo}
+          onPinChange={(hasPin) =>
+            setClient((c) => (c ? { ...c, hasPortalPin: hasPin } : c))
+          }
+          onUndoToast={showUndoToast}
+        />
+        <div className="border-t border-border pt-4">
+          <Button
+            variant="ghost"
+            className="hover:text-danger hover:decoration-danger"
+            onClick={() => setDeleteClientOpen(true)}
+          >
+            Usuń klienta
+          </Button>
+        </div>
       </div>
 
       <Dialog
