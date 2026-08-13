@@ -526,6 +526,9 @@ function ExerciseFormDialogBody({
                   autoComplete="off"
                 />
               </Field>
+              <p className="text-xs text-muted">
+                Własne wideo: wrzuć na YouTube jako niepubliczne i wklej link. Klient zobaczy je w portalu, bez osobnego konta.
+              </p>
               {parsedYt.invalid ? (
                 <p className="text-xs text-muted">Nie rozpoznano linku — możesz zapisać bez filmu.</p>
               ) : null}

@@ -276,3 +276,26 @@ public record HistoryImportAnalyzeResult(
     bool HasTestWeek,
     PlanImportDraft PlanDraft);
 
+public record TrainerPreferencesInput(
+    bool? NotifySessionComplete = null,
+    bool? NotifyClientReply = null,
+    bool? NotifyPr = null,
+    bool? NotifyWeeklyDigest = null);
+
+public record BillingCheckoutInput(string PlanKey);
+
+public record ClientsImportInput(string Csv);
+
+public record PortalPinInput(string? Pin);
+
+public record AccessTokenExpireInput(int? Days);
+
+public record PortalUnlockInput(string Pin);
+
+public record ProgressPhotoInput(
+    string ImageBase64,
+    string? ContentType = "image/jpeg",
+    string? TakenOn = null,
+    string? View = "front",
+    string? Note = null);
+

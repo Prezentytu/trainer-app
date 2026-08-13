@@ -85,6 +85,9 @@ builder.Services.AddHttpClient("stripe");
 builder.Services.AddSingleton<EmailService>();
 builder.Services.AddSingleton<FoundingService>();
 builder.Services.AddScoped<PushService>();
+builder.Services.AddScoped<BillingService>();
+builder.Services.AddScoped<TrainerNotifyService>();
+builder.Services.AddScoped<DigestService>();
 
 var app = builder.Build();
 AuthStartup.EnsureProductionAuthConfigured(app.Environment, app.Configuration);
@@ -128,6 +131,61 @@ if (!string.IsNullOrWhiteSpace(clerkAuthority))
     app.UseAuthentication();
     app.UseAuthorization();
 }
+
+app.Use(async (ctx, next) =>
+{
+    var path = ctx.Request.Path.Value ?? "";
+    if (!path.StartsWith("/api/portal/", StringComparison.OrdinalIgnoreCase))
+    {
+        await next();
+        return;
+    }
+
+    var rest = path["/api/portal/".Length..];
+    if (rest.Equals("recover", StringComparison.OrdinalIgnoreCase))
+    {
+        await next();
+        return;
+    }
+
+    var slash = rest.IndexOf('/');
+    var token = slash < 0 ? rest : rest[..slash];
+    var after = slash < 0 ? "" : rest[(slash + 1)..];
+    if (after.Equals("unlock", StringComparison.OrdinalIgnoreCase)
+        || after.Equals("pin-status", StringComparison.OrdinalIgnoreCase))
+    {
+        await next();
+        return;
+    }
+
+    if (string.IsNullOrWhiteSpace(token))
+    {
+        await next();
+        return;
+    }
+
+    var db = ctx.RequestServices.GetRequiredService<AppDb>();
+    var access = await db.ClientAccessTokens
+        .Include(t => t.Client)
+        .FirstOrDefaultAsync(t => t.Token == token);
+    if (access?.Client is null
+        || (access.ExpiresAt is not null && access.ExpiresAt < DateTime.UtcNow)
+        || string.IsNullOrEmpty(access.Client.PortalPinHash))
+    {
+        await next();
+        return;
+    }
+
+    var pin = ctx.Request.Headers["X-Portal-Pin"].FirstOrDefault();
+    if (string.IsNullOrEmpty(pin) || !PortalPin.Verify(pin, access.Client.PortalPinHash, access.Client.PortalPinSalt))
+    {
+        ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+        await ctx.Response.WriteAsJsonAsync(new { message = "Podaj PIN.", code = "pin_required" });
+        return;
+    }
+
+    await next();
+});
 
 // Postgres: migracje wyłącznie w CI (efbundle), chyba że jawnie włączysz Database:MigrateOnStartup.
 // Seed na Postgresie idzie w WarmupService (po starcie HTTP). SQLite lokalnie — EnsureCreated + Seed synchronicznie.
@@ -189,6 +247,19 @@ app.MapPost("/api/cron/reminders", async (HttpContext http, IConfiguration confi
     return Results.Ok(new { sent, skipped, utc = DateTime.UtcNow });
 });
 
+app.MapPost("/api/cron/digest", async (HttpContext http, IConfiguration config, DigestService digest) =>
+{
+    var expected = config["Cron:Key"];
+    if (string.IsNullOrWhiteSpace(expected))
+        return Results.Json(new { message = "Cron:Key nie jest skonfigurowany." }, statusCode: 503);
+    if (!http.Request.Headers.TryGetValue("X-Cron-Key", out var provided)
+        || !string.Equals(provided.ToString(), expected, StringComparison.Ordinal))
+        return Results.Unauthorized();
+
+    var (sent, skipped) = await digest.SendWeeklyAsync();
+    return Results.Ok(new { sent, skipped, utc = DateTime.UtcNow });
+});
+
 app.MapPost("/api/founding/apply", async (FoundingApplyInput input, FoundingService founding) =>
 {
     var (ok, checkoutUrl, message) = await founding.ApplyAsync(input);
@@ -196,15 +267,86 @@ app.MapPost("/api/founding/apply", async (FoundingApplyInput input, FoundingServ
     return Results.Ok(new { ok = true, checkoutUrl, message });
 }).RequireRateLimiting("founding");
 
-app.MapGet("/api/me", async (HttpContext http, AppDb db, IConfiguration config) =>
+app.MapGet("/api/me", async (HttpContext http, AppDb db, IConfiguration config, BillingService billing) =>
 {
     try
     {
         var trainer = await TrainerAccess.RequireTrainerAsync(http, db, config);
-        return Results.Ok(new { trainer.Id, trainer.Email, trainer.Name, trainer.ClerkUserId, trainer.CreatedAt });
+        if (trainer.ClerkUserId == TrainerAccess.LocalClerkUserId && trainer.PlanKey != BillingPlans.Dev)
+        {
+            trainer.PlanKey = BillingPlans.Dev;
+            await db.SaveChangesAsync();
+        }
+        var clientCount = await db.Clients.CountAsync(c => c.TrainerId == trainer.Id);
+        var plan = BillingPlans.Resolve(trainer.PlanKey);
+        return Results.Ok(new
+        {
+            trainer.Id,
+            trainer.Email,
+            trainer.Name,
+            trainer.ClerkUserId,
+            trainer.CreatedAt,
+            planKey = plan.Key,
+            planName = plan.Name,
+            clientCount,
+            clientLimit = plan.ClientLimit,
+            billingConfigured = billing.StripeConfigured,
+            notifySessionComplete = trainer.NotifySessionComplete,
+            notifyClientReply = trainer.NotifyClientReply,
+            notifyPr = trainer.NotifyPr,
+            notifyWeeklyDigest = trainer.NotifyWeeklyDigest,
+        });
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
+
+app.MapPut("/api/me/preferences", async (TrainerPreferencesInput input, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainer = await TrainerAccess.RequireTrainerAsync(http, db, config);
+        if (input.NotifySessionComplete is bool a) trainer.NotifySessionComplete = a;
+        if (input.NotifyClientReply is bool b) trainer.NotifyClientReply = b;
+        if (input.NotifyPr is bool c) trainer.NotifyPr = c;
+        if (input.NotifyWeeklyDigest is bool d) trainer.NotifyWeeklyDigest = d;
+        await db.SaveChangesAsync();
+        return Results.Ok(new
+        {
+            notifySessionComplete = trainer.NotifySessionComplete,
+            notifyClientReply = trainer.NotifyClientReply,
+            notifyPr = trainer.NotifyPr,
+            notifyWeeklyDigest = trainer.NotifyWeeklyDigest,
+        });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapPost("/api/billing/checkout", async (BillingCheckoutInput input, HttpContext http, AppDb db, IConfiguration config, BillingService billing) =>
+{
+    try
+    {
+        var trainer = await TrainerAccess.RequireTrainerAsync(http, db, config);
+        var (ok, url, message) = await billing.CreateCheckoutAsync(trainer, input.PlanKey);
+        if (!ok) return Results.Conflict(new { message });
+        return Results.Ok(new { checkoutUrl = url, message });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapPost("/api/billing/portal", async (HttpContext http, AppDb db, IConfiguration config, BillingService billing) =>
+{
+    try
+    {
+        var trainer = await TrainerAccess.RequireTrainerAsync(http, db, config);
+        var (ok, url, message) = await billing.CreatePortalAsync(trainer);
+        if (!ok) return Results.Conflict(new { message });
+        return Results.Ok(new { portalUrl = url, message });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapPost("/api/stripe/webhook", async (HttpContext http, BillingService billing, AppDb db) =>
+    await billing.HandleWebhookAsync(http, db));
 
 app.MapGet("/api/export", async (HttpContext http, AppDb db, IConfiguration config) =>
 {
@@ -277,6 +419,7 @@ app.MapGet("/api/clients/{id:int}", async (int id, HttpContext http, AppDb db, I
         return Results.Ok(new
         {
             client.Id, client.Name, client.Email, client.Note, client.GoalWeightKg, client.CreatedAt,
+            HasPortalPin = !string.IsNullOrEmpty(client.PortalPinHash),
             Assignments = client.Assignments
                 .OrderByDescending(a => a.CreatedAt)
                 .Select(a => new
@@ -292,10 +435,13 @@ app.MapPost("/api/clients", async (ClientInput input, HttpContext http, AppDb db
 {
     try
     {
-        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var trainer = await TrainerAccess.RequireTrainerAsync(http, db, config);
+        var clientCount = await db.Clients.CountAsync(c => c.TrainerId == trainer.Id);
+        var limit = BillingPlans.RejectIfAtLimit(trainer, clientCount);
+        if (limit is not null) return limit;
         var client = new Client
         {
-            TrainerId = trainerId,
+            TrainerId = trainer.Id,
             Name = input.Name,
             Email = input.Email,
             Note = input.Note,
@@ -304,6 +450,55 @@ app.MapPost("/api/clients", async (ClientInput input, HttpContext http, AppDb db
         db.Clients.Add(client);
         await db.SaveChangesAsync();
         return Results.Created($"/api/clients/{client.Id}", client);
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapPost("/api/clients/import", async (ClientsImportInput input, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainer = await TrainerAccess.RequireTrainerAsync(http, db, config);
+        var rows = ClientsImport.Parse(input.Csv ?? "");
+        if (rows.Count == 0)
+            return Results.BadRequest(new { message = "Wklej CSV: imię, e-mail (e-mail opcjonalny)." });
+        if (rows.Count > ClientsImport.MaxRows)
+            return Results.BadRequest(new { message = $"Na raz maksymalnie {ClientsImport.MaxRows} osób." });
+
+        var created = 0;
+        var skipped = 0;
+        var errors = new List<string>();
+        var ids = new List<int>();
+        var existing = await db.Clients.Where(c => c.TrainerId == trainer.Id).Select(c => c.Name).ToListAsync();
+        var names = new HashSet<string>(existing, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var row in rows)
+        {
+            var count = await db.Clients.CountAsync(c => c.TrainerId == trainer.Id);
+            if (BillingPlans.RejectIfAtLimit(trainer, count) is not null)
+            {
+                errors.Add($"Zatrzymano na limicie planu ({BillingPlans.Resolve(trainer.PlanKey).ClientLimit} osób).");
+                break;
+            }
+            if (names.Contains(row.Name))
+            {
+                skipped++;
+                continue;
+            }
+            var client = new Client
+            {
+                TrainerId = trainer.Id,
+                Name = row.Name,
+                Email = row.Email,
+            };
+            db.Clients.Add(client);
+            await db.SaveChangesAsync();
+            names.Add(row.Name);
+            ids.Add(client.Id);
+            created++;
+        }
+
+        return Results.Ok(new { created, skipped, errors, ids });
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
@@ -865,145 +1060,7 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
 
         var attention = await ChurnRadar.BuildAttentionAsync(db, trainerId);
 
-        // Skrzynka „Od klientów": nieprzeczytane odpowiedzi, notatki bez odpowiedzi, niskie check-iny.
-        static string ClipPreview(string text, int max = 120)
-        {
-            var t = text.Trim().Replace('\n', ' ');
-            return t.Length <= max ? t : t[..(max - 1)] + "…";
-        }
-
-        var fromClientRows = new List<(string Kind, int ClientId, string ClientName, int? SessionId, int? CheckInId, string Preview, DateTime At)>();
-
-        var unreadReplies = await db.WorkoutSessions
-            .Where(s =>
-                s.Client!.TrainerId == trainerId
-                && s.ClientReply != null
-                && s.ClientReply != ""
-                && s.ClientReplyReadAt == null)
-            .OrderByDescending(s => s.ClientReplyAt ?? s.CreatedAt)
-            .Take(8)
-            .Select(s => new
-            {
-                s.ClientId,
-                ClientName = s.Client!.Name,
-                s.Id,
-                Preview = s.ClientReply!,
-                At = s.ClientReplyAt ?? s.CreatedAt,
-            })
-            .ToListAsync();
-        foreach (var r in unreadReplies)
-            fromClientRows.Add(("session_reply", r.ClientId, r.ClientName, r.Id, null, ClipPreview(r.Preview), r.At));
-
-        var unansweredNotes = await db.WorkoutSessions
-            .Where(s =>
-                s.Client!.TrainerId == trainerId
-                && s.Status == "completed"
-                && s.Note != null
-                && s.Note != ""
-                && s.TrainerComment == null
-                && s.PerformedOn >= weekStart
-                && s.PerformedOn <= today)
-            .OrderByDescending(s => s.PerformedOn)
-            .ThenByDescending(s => s.Id)
-            .Take(8)
-            .Select(s => new
-            {
-                s.ClientId,
-                ClientName = s.Client!.Name,
-                s.Id,
-                Preview = s.Note!,
-                s.CreatedAt,
-            })
-            .ToListAsync();
-        foreach (var n in unansweredNotes)
-            fromClientRows.Add(("session_note", n.ClientId, n.ClientName, n.Id, null, ClipPreview(n.Preview), n.CreatedAt));
-
-        var lowCheckIns = await db.ClientCheckIns
-            .Where(c =>
-                c.Client!.TrainerId == trainerId
-                && c.Date >= weekStart
-                && c.Date <= today
-                && c.MoodScore != null
-                && c.MoodScore <= 2)
-            .OrderByDescending(c => c.Date)
-            .ThenByDescending(c => c.Id)
-            .Take(8)
-            .Select(c => new
-            {
-                c.ClientId,
-                ClientName = c.Client!.Name,
-                c.Id,
-                c.MoodScore,
-                c.SleepScore,
-                c.Note,
-                c.CreatedAt,
-            })
-            .ToListAsync();
-        foreach (var c in lowCheckIns)
-        {
-            var preview = $"Samopoczucie {c.MoodScore}/5";
-            if (c.SleepScore != null) preview += $" · sen {c.SleepScore}/5";
-            if (!string.IsNullOrWhiteSpace(c.Note)) preview += $" — {c.Note}";
-            fromClientRows.Add(("low_checkin", c.ClientId, c.ClientName, null, c.Id, ClipPreview(preview), c.CreatedAt));
-        }
-
-        var outOfOrderSessions = await db.WorkoutSessions
-            .Where(s =>
-                s.Client!.TrainerId == trainerId
-                && s.OutOfOrder
-                && s.Status == "completed"
-                && s.PerformedOn >= weekStart
-                && s.PerformedOn <= today)
-            .OrderByDescending(s => s.PerformedOn)
-            .ThenByDescending(s => s.Id)
-            .Take(8)
-            .Select(s => new
-            {
-                s.ClientId,
-                ClientName = s.Client!.Name,
-                s.Id,
-                DayLabel = s.PlanDay != null ? s.PlanDay.Label : null,
-                s.PerformedOn,
-                s.CreatedAt,
-            })
-            .ToListAsync();
-        foreach (var s in outOfOrderSessions)
-        {
-            var label = string.IsNullOrWhiteSpace(s.DayLabel) ? "trening" : s.DayLabel!;
-            var preview = $"Zrobił {label} poza kolejką — {s.PerformedOn:yyyy-MM-dd}";
-            fromClientRows.Add(("out_of_order", s.ClientId, s.ClientName, s.Id, null, ClipPreview(preview), s.CreatedAt));
-        }
-
-        try
-        {
-            var pendingHistory = await db.ClientHistoryImports
-                .Where(h => h.Client!.TrainerId == trainerId && h.Status == "pending")
-                .OrderByDescending(h => h.CreatedAt)
-                .Take(8)
-                .Select(h => new { h.ClientId, ClientName = h.Client!.Name, h.CreatedAt })
-                .ToListAsync();
-            foreach (var h in pendingHistory)
-                fromClientRows.Add(("history_import", h.ClientId, h.ClientName, null, null, "Klient wrzucił zdjęcia treningów — sprawdź, czy się zgadzają.", h.CreatedAt));
-        }
-        catch (Exception ex) when (IsMissingClientHistoryImportsTable(ex))
-        {
-            // SQLite EnsureCreated nie migruje istniejącej bazy — panel ma działać bez tej tabeli.
-        }
-
-        var fromClients = fromClientRows
-            .OrderByDescending(x => x.At)
-            .Take(8)
-            .Select(x => new
-            {
-                kind = x.Kind,
-                clientId = x.ClientId,
-                clientName = x.ClientName,
-                sessionId = x.SessionId,
-                checkInId = x.CheckInId,
-                preview = x.Preview,
-                at = x.At,
-            })
-            .ToList();
+        var fromClients = await TrainerInbox.BuildAsync(db, trainerId, 8, weekStart, today);
 
         var trainerCreatedAt = await db.Trainers
             .Where(t => t.Id == trainerId)
@@ -1042,6 +1099,18 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
                 trainerCreatedAt,
             },
         });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapGet("/api/inbox", async (HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var weekStart = today.AddDays(-14);
+        return Results.Ok(await TrainerInbox.BuildAsync(db, trainerId, 50, weekStart, today));
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
@@ -1303,7 +1372,76 @@ app.MapDelete("/api/measurements/{id:int}", async (int id, HttpContext http, App
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
-// ---------- Sesje treningowe ----------
+app.MapGet("/api/clients/{clientId:int}/photos", async (int clientId, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        var rows = await db.ClientProgressPhotos
+            .Where(p => p.ClientId == clientId)
+            .OrderByDescending(p => p.TakenOn)
+            .ThenByDescending(p => p.Id)
+            .ToListAsync();
+        return Results.Ok(rows.Select(ProgressPhotos.Meta));
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapGet("/api/clients/{clientId:int}/photos/{photoId:int}/image", async (int clientId, int photoId, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        var row = await db.ClientProgressPhotos.FirstOrDefaultAsync(p => p.Id == photoId && p.ClientId == clientId);
+        if (row is null) return Results.NotFound();
+        return Results.File(row.Bytes, row.ContentType);
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapPost("/api/clients/{clientId:int}/photos", async (int clientId, ProgressPhotoInput input, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        var count = await db.ClientProgressPhotos.CountAsync(p => p.ClientId == clientId);
+        if (count >= ProgressPhotos.MaxPerClient)
+            return Results.Conflict(new { message = $"Maksymalnie {ProgressPhotos.MaxPerClient} zdjęć na osobę." });
+        var decode = ProgressPhotos.Decode(input, out var bytes, out var contentType);
+        if (decode is not null) return decode;
+        var row = new ClientProgressPhoto
+        {
+            ClientId = clientId,
+            TakenOn = ClientsImport.ParseDate(input.TakenOn),
+            View = ProgressPhotos.NormalizeView(input.View),
+            Note = string.IsNullOrWhiteSpace(input.Note) ? null : input.Note.Trim(),
+            ContentType = contentType,
+            Bytes = bytes,
+        };
+        db.ClientProgressPhotos.Add(row);
+        await db.SaveChangesAsync();
+        return Results.Created($"/api/clients/{clientId}/photos/{row.Id}", ProgressPhotos.Meta(row));
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapDelete("/api/clients/{clientId:int}/photos/{photoId:int}", async (int clientId, int photoId, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        var row = await db.ClientProgressPhotos.FirstOrDefaultAsync(p => p.Id == photoId && p.ClientId == clientId);
+        if (row is null) return Results.NotFound();
+        db.ClientProgressPhotos.Remove(row);
+        await db.SaveChangesAsync();
+        return Results.NoContent();
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
 
 app.MapGet("/api/clients/{clientId:int}/sessions", async (int clientId, HttpContext http, AppDb db, IConfiguration config) =>
 {
@@ -1719,6 +1857,53 @@ app.MapPost("/api/clients/{clientId:int}/access-token/rotate", async (int client
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
+app.MapPost("/api/clients/{clientId:int}/access-token/expire", async (
+    int clientId, AccessTokenExpireInput input, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, clientId)) return Results.NotFound();
+        var row = await db.ClientAccessTokens
+            .Where(t => t.ClientId == clientId && (t.ExpiresAt == null || t.ExpiresAt > DateTime.UtcNow))
+            .OrderByDescending(t => t.CreatedAt)
+            .FirstOrDefaultAsync();
+        if (row is null) return Results.NotFound(new { message = "Brak aktywnego linku." });
+        row.ExpiresAt = input.Days is int d && d > 0
+            ? DateTime.UtcNow.AddDays(d)
+            : null;
+        await db.SaveChangesAsync();
+        return Results.Ok(new { row.Token, row.CreatedAt, row.ExpiresAt });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapPost("/api/clients/{clientId:int}/portal-pin", async (
+    int clientId, PortalPinInput input, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var client = await db.Clients.FirstOrDefaultAsync(c => c.Id == clientId && c.TrainerId == trainerId);
+        if (client is null) return Results.NotFound();
+        if (string.IsNullOrWhiteSpace(input.Pin))
+        {
+            client.PortalPinHash = null;
+            client.PortalPinSalt = null;
+            await db.SaveChangesAsync();
+            return Results.Ok(new { hasPortalPin = false });
+        }
+        if (!PortalPin.IsValidFormat(input.Pin))
+            return Results.BadRequest(new { message = "PIN to 4 cyfry." });
+        var (hash, salt) = PortalPin.Hash(input.Pin);
+        client.PortalPinHash = hash;
+        client.PortalPinSalt = salt;
+        await db.SaveChangesAsync();
+        return Results.Ok(new { hasPortalPin = true });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
 app.MapPost("/api/clients/{clientId:int}/send-portal-link", async (
     int clientId, SendPortalLinkInput input, HttpContext http, AppDb db, IConfiguration config,
     EmailService email) =>
@@ -1893,6 +2078,24 @@ static async Task<ClientAccessToken?> ResolvePortalToken(AppDb db, string token)
     if (row.ExpiresAt is not null && row.ExpiresAt < DateTime.UtcNow) return null;
     return row;
 }
+
+app.MapGet("/api/portal/{token}/pin-status", async (string token, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    return Results.Ok(new { pinRequired = !string.IsNullOrEmpty(access.Client!.PortalPinHash) });
+}).RequireRateLimiting("portal");
+
+app.MapPost("/api/portal/{token}/unlock", async (string token, PortalUnlockInput input, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    if (string.IsNullOrEmpty(access.Client!.PortalPinHash))
+        return Results.Ok(new { ok = true });
+    if (!PortalPin.IsValidFormat(input.Pin) || !PortalPin.Verify(input.Pin, access.Client.PortalPinHash, access.Client.PortalPinSalt))
+        return Results.Json(new { message = "Niepoprawny PIN.", code = "pin_required" }, statusCode: 403);
+    return Results.Ok(new { ok = true });
+}).RequireRateLimiting("portal");
 
 static object IntakeToDto(int clientId, ClientIntake? i) => new
 {
@@ -2363,6 +2566,61 @@ app.MapPost("/api/portal/{token}/measurements", async (string token, ClientMeasu
     return Results.Created($"/api/portal/{token}/measurements/{row.Id}", new { row.Id });
 }).RequireRateLimiting("portal");
 
+app.MapGet("/api/portal/{token}/photos", async (string token, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    var rows = await db.ClientProgressPhotos
+        .Where(p => p.ClientId == access.ClientId)
+        .OrderByDescending(p => p.TakenOn)
+        .ThenByDescending(p => p.Id)
+        .ToListAsync();
+    return Results.Ok(rows.Select(ProgressPhotos.Meta));
+}).RequireRateLimiting("portal");
+
+app.MapGet("/api/portal/{token}/photos/{photoId:int}/image", async (string token, int photoId, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    var row = await db.ClientProgressPhotos.FirstOrDefaultAsync(p => p.Id == photoId && p.ClientId == access.ClientId);
+    if (row is null) return Results.NotFound();
+    return Results.File(row.Bytes, row.ContentType);
+}).RequireRateLimiting("portal");
+
+app.MapPost("/api/portal/{token}/photos", async (string token, ProgressPhotoInput input, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    var count = await db.ClientProgressPhotos.CountAsync(p => p.ClientId == access.ClientId);
+    if (count >= ProgressPhotos.MaxPerClient)
+        return Results.Conflict(new { message = $"Maksymalnie {ProgressPhotos.MaxPerClient} zdjęć." });
+    var decode = ProgressPhotos.Decode(input, out var bytes, out var contentType);
+    if (decode is not null) return decode;
+    var row = new ClientProgressPhoto
+    {
+        ClientId = access.ClientId,
+        TakenOn = ClientsImport.ParseDate(input.TakenOn),
+        View = ProgressPhotos.NormalizeView(input.View),
+        Note = string.IsNullOrWhiteSpace(input.Note) ? null : input.Note.Trim(),
+        ContentType = contentType,
+        Bytes = bytes,
+    };
+    db.ClientProgressPhotos.Add(row);
+    await db.SaveChangesAsync();
+    return Results.Created($"/api/portal/{token}/photos/{row.Id}", ProgressPhotos.Meta(row));
+}).RequireRateLimiting("portal");
+
+app.MapDelete("/api/portal/{token}/photos/{photoId:int}", async (string token, int photoId, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    var row = await db.ClientProgressPhotos.FirstOrDefaultAsync(p => p.Id == photoId && p.ClientId == access.ClientId);
+    if (row is null) return Results.NotFound();
+    db.ClientProgressPhotos.Remove(row);
+    await db.SaveChangesAsync();
+    return Results.NoContent();
+}).RequireRateLimiting("portal");
+
 app.MapGet("/api/portal/{token}/intake", async (string token, AppDb db) =>
 {
     var access = await ResolvePortalToken(db, token);
@@ -2583,13 +2841,14 @@ app.MapPut("/api/portal/{token}/sessions/{id:int}", async (string token, int id,
     return Results.Ok(await Sessions.LoadDto(db, session.Id));
 }).RequireRateLimiting("portal");
 
-app.MapPatch("/api/portal/{token}/sessions/{id:int}/complete", async (string token, int id, AppDb db) =>
+app.MapPatch("/api/portal/{token}/sessions/{id:int}/complete", async (string token, int id, AppDb db, TrainerNotifyService notify) =>
 {
     var access = await ResolvePortalToken(db, token);
     if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
     var session = await db.WorkoutSessions.FindAsync(id);
     if (session is null || session.ClientId != access.ClientId) return Results.NotFound();
     await Sessions.CompleteAsync(db, session);
+    await notify.NotifySessionCompletedAsync(session.Id);
     return Results.Ok(await Sessions.LoadDto(db, session.Id));
 }).RequireRateLimiting("portal");
 
@@ -2604,7 +2863,7 @@ app.MapPatch("/api/portal/{token}/sessions/{id:int}/abandon", async (string toke
     return Results.Ok(await Sessions.LoadDto(db, abandoned!.Id));
 }).RequireRateLimiting("portal");
 
-app.MapPost("/api/portal/{token}/sessions/{id:int}/comment", async (string token, int id, SessionCommentInput input, AppDb db) =>
+app.MapPost("/api/portal/{token}/sessions/{id:int}/comment", async (string token, int id, SessionCommentInput input, AppDb db, TrainerNotifyService notify) =>
 {
     var access = await ResolvePortalToken(db, token);
     if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
@@ -2623,6 +2882,7 @@ app.MapPost("/api/portal/{token}/sessions/{id:int}/comment", async (string token
     session.ClientReplyAt = DateTime.UtcNow;
     session.ClientReplyReadAt = null;
     await db.SaveChangesAsync();
+    await notify.NotifyClientReplyAsync(session.Id);
     return Results.Ok(await Sessions.LoadDto(db, session.Id));
 }).RequireRateLimiting("portal");
 

@@ -21,6 +21,7 @@ public static class Seed
                 ClerkUserId = TrainerAccess.LocalClerkUserId,
                 Email = "trener@localhost",
                 Name = "Trener lokalny",
+                PlanKey = "dev",
             });
             db.SaveChanges();
         }

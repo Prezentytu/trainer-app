@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useClerk } from "@clerk/nextjs";
 import { Icon } from "@/components/Icon";
-import { api, NavCounts, clerkEnabled } from "@/lib/api";
+import { api, NavCounts, TrainerMe, clerkEnabled } from "@/lib/api";
 import { useTheme } from "@/lib/theme";
 import { Button, Card, ErrorBanner, PageHeader, Skeleton, Switch } from "@/components/ui";
 
@@ -17,6 +17,10 @@ export default function SettingsPage() {
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState("");
   const { theme, setTheme } = useTheme();
+  const [me, setMe] = useState<TrainerMe | null>(null);
+  const [meLoading, setMeLoading] = useState(true);
+  const [notify, setNotify] = useState({ session: true, pr: true, reply: true, digest: true });
+  const [billingBusy, setBillingBusy] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,10 +35,72 @@ export default function SettingsPage() {
       .finally(() => {
         if (!cancelled) setLoadingCounts(false);
       });
+    api
+      .me()
+      .then((m) => {
+        if (cancelled) return;
+        setMe(m);
+        setNotify({
+          session: m.notifySessionComplete !== false,
+          pr: m.notifyPr !== false,
+          reply: m.notifyClientReply !== false,
+          digest: m.notifyWeeklyDigest !== false,
+        });
+      })
+      .catch((e: Error) => {
+        if (!cancelled) setError(e.message);
+      })
+      .finally(() => {
+        if (!cancelled) setMeLoading(false);
+      });
     return () => {
       cancelled = true;
     };
   }, []);
+
+  const savePref = async (
+    key: "notifySessionComplete" | "notifyClientReply" | "notifyPr" | "notifyWeeklyDigest",
+    value: boolean,
+  ) => {
+    const prev = notify;
+    const next = {
+      session: key === "notifySessionComplete" ? value : notify.session,
+      pr: key === "notifyPr" ? value : notify.pr,
+      reply: key === "notifyClientReply" ? value : notify.reply,
+      digest: key === "notifyWeeklyDigest" ? value : notify.digest,
+    };
+    setNotify(next);
+    try {
+      await api.updatePreferences({ [key]: value });
+    } catch (e) {
+      setNotify(prev);
+      setError((e as Error).message);
+    }
+  };
+
+  const startCheckout = async (planKey: string) => {
+    setBillingBusy(planKey);
+    setError(null);
+    try {
+      const { checkoutUrl } = await api.billing.checkout(planKey);
+      window.location.href = checkoutUrl;
+    } catch (e) {
+      setError((e as Error).message);
+      setBillingBusy(null);
+    }
+  };
+
+  const openBillingPortal = async () => {
+    setBillingBusy("portal");
+    setError(null);
+    try {
+      const { portalUrl } = await api.billing.portal();
+      window.location.href = portalUrl;
+    } catch (e) {
+      setError((e as Error).message);
+      setBillingBusy(null);
+    }
+  };
 
   const downloadCsv = async () => {
     setDownloadingCsv(true);
@@ -105,6 +171,83 @@ export default function SettingsPage() {
         <p className="mt-3 text-xs text-muted">
           Wyłączony = ciemny interfejs (domyślny).
         </p>
+      </Card>
+
+      <Card
+        icon={<Icon name="chat" size={16} decorative />}
+        title="Powiadomienia e-mail"
+        meta="Dostajesz maila, gdy klient skończy trening, zrobi rekord albo odpisze."
+      >
+        {meLoading ? (
+          <p className="text-sm text-muted">Ładuję ustawienia…</p>
+        ) : (
+          <div className="space-y-3">
+            <Switch
+              label="Ukończony trening"
+              checked={notify.session}
+              onChange={(v) => void savePref("notifySessionComplete", v)}
+            />
+            <Switch
+              label="Nowy rekord"
+              checked={notify.pr}
+              onChange={(v) => void savePref("notifyPr", v)}
+            />
+            <Switch
+              label="Odpowiedź na komentarz"
+              checked={notify.reply}
+              onChange={(v) => void savePref("notifyClientReply", v)}
+            />
+            <Switch
+              label="Podsumowanie tygodnia (poniedziałek)"
+              checked={notify.digest}
+              onChange={(v) => void savePref("notifyWeeklyDigest", v)}
+            />
+          </div>
+        )}
+      </Card>
+
+      <Card
+        icon={<Icon name="sliders-horizontal" size={16} decorative />}
+        title="Plan i limit osób"
+        meta={me?.planName ?? "Darmowy — 5 osób"}
+      >
+        {me ? (
+          <>
+            <p className="mb-4 text-sm text-foreground-secondary">
+              {me.planKey === "dev"
+                ? "Konto deweloperskie — bez limitu."
+                : me.clientLimit != null
+                  ? `${me.clientCount ?? 0} z ${me.clientLimit} osób.`
+                  : `${me.clientCount ?? 0} osób.`}
+            </p>
+            {me.planKey !== "dev" && me.billingConfigured ? (
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                {me.planKey === "free" || me.planKey === "founding" ? (
+                  <>
+                    <Button onClick={() => void startCheckout("starter")} loading={billingBusy === "starter"}>
+                      39 zł · 15 osób
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => void startCheckout("pro")}
+                      loading={billingBusy === "pro"}
+                    >
+                      99 zł · 30 osób
+                    </Button>
+                  </>
+                ) : (
+                  <Button variant="secondary" onClick={() => void openBillingPortal()} loading={billingBusy === "portal"}>
+                    Zarządzaj subskrypcją
+                  </Button>
+                )}
+              </div>
+            ) : me.planKey !== "dev" && !me.billingConfigured ? (
+              <p className="text-xs text-muted">
+                Płatność kartą włączymy przy starcie. Limit 5 osób obowiązuje na koncie produkcyjnym.
+              </p>
+            ) : null}
+          </>
+        ) : null}
       </Card>
 
       <Card

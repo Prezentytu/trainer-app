@@ -18,20 +18,26 @@ export class ApiError extends Error {
   readonly status: number | null;
   readonly userMessage: string;
   readonly technical: string | null;
+  readonly code: string | null;
 
-  constructor(userMessage: string, opts?: { status?: number | null; technical?: string | null }) {
+  constructor(
+    userMessage: string,
+    opts?: { status?: number | null; technical?: string | null; code?: string | null },
+  ) {
     super(userMessage);
     this.name = "ApiError";
     this.userMessage = userMessage;
     this.status = opts?.status ?? null;
     this.technical = opts?.technical ?? null;
+    this.code = opts?.code ?? null;
   }
 }
 
 /** Stały komunikat 401 — ErrorBanner rozpoznaje go i dokłada CTA „Zaloguj się ponownie". */
 export const SESSION_EXPIRED_MESSAGE = "Sesja wygasła. Zaloguj się ponownie.";
 
-function userMessageForStatus(status: number, bodyMessage?: string): string {
+function userMessageForStatus(status: number, bodyMessage?: string, code?: string | null): string {
+  if (code === "pin_required") return bodyMessage || "Podaj PIN.";
   if (bodyMessage && status >= 400 && status < 500 && status !== 401 && status !== 429) {
     // Komunikaty biznesowe z backendu (Conflict, walidacja) — po polsku, przechodzą bez zmian.
     return bodyMessage;
@@ -131,6 +137,7 @@ export type ClientDetails = {
   email: string | null;
   note: string | null;
   goalWeightKg?: number | null;
+  hasPortalPin?: boolean;
   assignments: ClientAssignment[];
 };
 
@@ -923,6 +930,7 @@ export type DashboardFromClientItem = {
   checkInId?: number | null;
   preview: string;
   at: string;
+  unread?: boolean;
 };
 
 export type MuscleVolumeGroup = {
@@ -1021,6 +1029,32 @@ export type TrainerMe = {
   name: string;
   clerkUserId: string;
   createdAt: string;
+  planKey?: string;
+  planName?: string;
+  clientCount?: number;
+  clientLimit?: number | null;
+  billingConfigured?: boolean;
+  notifySessionComplete?: boolean;
+  notifyClientReply?: boolean;
+  notifyPr?: boolean;
+  notifyWeeklyDigest?: boolean;
+};
+
+export type ProgressPhoto = {
+  id: number;
+  clientId: number;
+  takenOn: string;
+  view: string;
+  note: string | null;
+  contentType: string;
+  createdAt: string;
+};
+
+export type ClientsImportResult = {
+  created: number;
+  skipped: number;
+  errors: string[];
+  ids: number[];
 };
 
 export type NavCounts = {
@@ -1045,7 +1079,28 @@ export type PlanInput = {
 };
 
 function isPublicApiPath(path: string): boolean {
-  return path.startsWith("/api/portal/") || path.startsWith("/api/founding/");
+  return (
+    path.startsWith("/api/portal/") ||
+    path.startsWith("/api/founding/") ||
+    path.startsWith("/api/stripe/webhook")
+  );
+}
+
+const PORTAL_PIN_STORAGE = "repmaxer-portal-pin:";
+
+export function portalPinStorageKey(token: string): string {
+  return `${PORTAL_PIN_STORAGE}${token}`;
+}
+
+function portalPinFromStorage(path: string): string | null {
+  if (typeof window === "undefined") return null;
+  const match = path.match(/^\/api\/portal\/([^/]+)/);
+  if (!match || match[1] === "recover") return null;
+  try {
+    return sessionStorage.getItem(portalPinStorageKey(match[1]));
+  } catch {
+    return null;
+  }
 }
 
 async function buildHeaders(
@@ -1058,6 +1113,8 @@ async function buildHeaders(
     ...(withJsonContentType ? { "Content-Type": "application/json" } : {}),
     ...(init?.headers as Record<string, string> | undefined),
   };
+  const pin = portalPinFromStorage(path);
+  if (pin) headers["X-Portal-Pin"] = pin;
   const needsAuth = clerkEnabled && !isPublicApiPath(path);
   if (needsAuth) {
     // Efekty dzieci biegną przed efektem AuthTokenBridge — czekamy na markAuthReady().
@@ -1070,15 +1127,21 @@ async function buildHeaders(
   return headers;
 }
 
-async function parseErrorMessage(res: Response): Promise<string> {
+async function parseError(res: Response): Promise<{ message: string; code: string | null }> {
   let bodyMessage: string | undefined;
+  let code: string | null = null;
   try {
     const body = await res.json();
     if (body?.message && typeof body.message === "string") bodyMessage = body.message;
+    if (body?.code && typeof body.code === "string") code = body.code;
   } catch {
     // brak body
   }
-  return userMessageForStatus(res.status, bodyMessage);
+  return { message: userMessageForStatus(res.status, bodyMessage, code), code };
+}
+
+async function parseErrorMessage(res: Response): Promise<string> {
+  return (await parseError(res)).message;
 }
 
 const WARMING_MESSAGE = "Uruchamiamy serwer. Odśwież za chwilę.";
@@ -1138,9 +1201,9 @@ async function sendRequest(
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await sendRequest(path, init, true);
   if (!res.ok) {
-    const message = await parseErrorMessage(res);
-    const warming = isRetriableStatus(res.status) ? WARMING_MESSAGE : message;
-    throw new ApiError(warming, { status: res.status, technical: message });
+    const parsed = await parseError(res);
+    const warming = isRetriableStatus(res.status) ? WARMING_MESSAGE : parsed.message;
+    throw new ApiError(warming, { status: res.status, technical: parsed.message, code: parsed.code });
   }
   if (res.status === 204) return undefined as T;
   // Puste body (np. Results.Ok(null) w Minimal API) — nie wywołuj res.json().
@@ -1157,6 +1220,15 @@ async function requestText(path: string, init?: RequestInit): Promise<string> {
     throw new ApiError(warming, { status: res.status, technical: message });
   }
   return res.text();
+}
+
+async function requestBlob(path: string, init?: RequestInit): Promise<Blob> {
+  const res = await sendRequest(path, init, false);
+  if (!res.ok) {
+    const parsed = await parseError(res);
+    throw new ApiError(parsed.message, { status: res.status, technical: parsed.message, code: parsed.code });
+  }
+  return res.blob();
 }
 
 export type LoggedSetInput = {
@@ -1199,6 +1271,28 @@ export const api = {
   counts: () => request<NavCounts>("/api/counts"),
   dashboard: () => request<DashboardData>("/api/dashboard"),
   me: () => request<TrainerMe>("/api/me"),
+  updatePreferences: (input: {
+    notifySessionComplete?: boolean;
+    notifyClientReply?: boolean;
+    notifyPr?: boolean;
+    notifyWeeklyDigest?: boolean;
+  }) =>
+    request<{
+      notifySessionComplete: boolean;
+      notifyClientReply: boolean;
+      notifyPr: boolean;
+      notifyWeeklyDigest: boolean;
+    }>("/api/me/preferences", { method: "PUT", body: JSON.stringify(input) }),
+  billing: {
+    checkout: (planKey: string) =>
+      request<{ checkoutUrl: string; message: string }>("/api/billing/checkout", {
+        method: "POST",
+        body: JSON.stringify({ planKey }),
+      }),
+    portal: () =>
+      request<{ portalUrl: string; message: string }>("/api/billing/portal", { method: "POST" }),
+  },
+  inbox: () => request<DashboardFromClientItem[]>("/api/inbox"),
   founding: {
     apply: (input: {
       name: string;
@@ -1229,6 +1323,11 @@ export const api = {
       note: string | null;
       goalWeightKg?: number | null;
     }) => request<{ id: number }>("/api/clients", { method: "POST", body: JSON.stringify(input) }),
+    importCsv: (csv: string) =>
+      request<ClientsImportResult>("/api/clients/import", {
+        method: "POST",
+        body: JSON.stringify({ csv }),
+      }),
     update: (
       id: number,
       input: {
@@ -1319,6 +1418,29 @@ export const api = {
         `/api/clients/${clientId}/access-token/rotate`,
         { method: "POST" },
       ),
+    expireAccessToken: (clientId: number, days: number | null) =>
+      request<{ token: string; createdAt: string; expiresAt: string | null }>(
+        `/api/clients/${clientId}/access-token/expire`,
+        { method: "POST", body: JSON.stringify({ days }) },
+      ),
+    setPortalPin: (clientId: number, pin: string | null) =>
+      request<{ hasPortalPin: boolean }>(`/api/clients/${clientId}/portal-pin`, {
+        method: "POST",
+        body: JSON.stringify({ pin }),
+      }),
+    photos: (clientId: number) => request<ProgressPhoto[]>(`/api/clients/${clientId}/photos`),
+    photoBlob: (clientId: number, photoId: number) =>
+      requestBlob(`/api/clients/${clientId}/photos/${photoId}/image`),
+    addPhoto: (
+      clientId: number,
+      input: { imageBase64: string; contentType?: string; takenOn?: string; view?: string; note?: string | null },
+    ) =>
+      request<ProgressPhoto>(`/api/clients/${clientId}/photos`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    removePhoto: (clientId: number, photoId: number) =>
+      request(`/api/clients/${clientId}/photos/${photoId}`, { method: "DELETE" }),
     getIntake: (clientId: number) => request<ClientIntake>(`/api/clients/${clientId}/intake`),
     saveIntake: (clientId: number, input: ClientIntakeInput) =>
       request<ClientIntake>(`/api/clients/${clientId}/intake`, {
@@ -1453,6 +1575,12 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ email }),
       }),
+    pinStatus: (token: string) => request<{ pinRequired: boolean }>(`/api/portal/${token}/pin-status`),
+    unlock: (token: string, pin: string) =>
+      request<{ ok: boolean }>(`/api/portal/${token}/unlock`, {
+        method: "POST",
+        body: JSON.stringify({ pin }),
+      }),
     home: (token: string, today?: string) =>
       request<PortalHome>(
         `/api/portal/${token}${today ? `?today=${encodeURIComponent(today)}` : ""}`,
@@ -1551,6 +1679,19 @@ export const api = {
         method: "POST",
         body: JSON.stringify(input),
       }),
+    photos: (token: string) => request<ProgressPhoto[]>(`/api/portal/${token}/photos`),
+    photoBlob: (token: string, photoId: number) =>
+      requestBlob(`/api/portal/${token}/photos/${photoId}/image`),
+    addPhoto: (
+      token: string,
+      input: { imageBase64: string; contentType?: string; takenOn?: string; view?: string; note?: string | null },
+    ) =>
+      request<ProgressPhoto>(`/api/portal/${token}/photos`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    removePhoto: (token: string, photoId: number) =>
+      request(`/api/portal/${token}/photos/${photoId}`, { method: "DELETE" }),
     getIntake: (token: string) => request<ClientIntake>(`/api/portal/${token}/intake`),
     saveIntake: (token: string, input: ClientIntakeInput) =>
       request<ClientIntake>(`/api/portal/${token}/intake`, {

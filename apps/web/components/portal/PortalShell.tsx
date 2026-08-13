@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { PortalBottomNav } from "@/components/portal/PortalBottomNav";
 import { PortalChromeProvider } from "@/components/portal/PortalChrome";
 import { PortalOfflineBanner } from "@/components/portal/PortalOfflineBanner";
+import { PortalPinGate } from "@/components/portal/PortalPinGate";
 
 /** Klientowa otoczka portalu: SW, banner offline, chrome, bottom nav. */
 export function PortalShell({ token, children }: { token: string; children: ReactNode }) {
@@ -19,7 +20,7 @@ export function PortalShell({ token, children }: { token: string; children: Reac
   return (
     <PortalChromeProvider>
       <PortalOfflineBanner />
-      {children}
+      <PortalPinGate token={token}>{children}</PortalPinGate>
       <PortalBottomNav token={token} />
     </PortalChromeProvider>
   );

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { api, CLIENT_GOALS, ClientSummary } from "@/lib/api";
+import { api, ApiError, CLIENT_GOALS, ClientSummary } from "@/lib/api";
 import { daysAgo, relativeDayLabel } from "@/lib/dates";
 import { refreshNavCounts } from "@/lib/navCounts";
 import {
@@ -62,6 +62,10 @@ export default function ClientsPage() {
   const [daysPerWeek, setDaysPerWeek] = useState<number | null>(null);
   const [hasScreens, setHasScreens] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [csvText, setCsvText] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [limitHit, setLimitHit] = useState(false);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<TabFilter>("all");
   const { showUndoToast, toastNode } = useUndoToast();
@@ -92,6 +96,7 @@ export default function ClientsPage() {
     if (!name.trim() || saving) return;
     setSaving(true);
     setError(null);
+    setLimitHit(false);
     const payload = {
       name: name.trim(),
       email: email.trim() || null,
@@ -119,7 +124,9 @@ export default function ClientsPage() {
       load();
     } catch (err) {
       setClients((prev) => prev.filter((c) => c.id !== tempId));
-      setError((err as Error).message);
+      const apiErr = err as ApiError;
+      setError(apiErr.message);
+      setLimitHit(apiErr.code === "client_limit");
     } finally {
       setSaving(false);
     }
@@ -150,9 +157,24 @@ export default function ClientsPage() {
       <PageHeader
         title="Klienci"
         subtitle="Twoi podopieczni i ich aktywne plany"
-        action={<Button onClick={() => setShowForm(true)}>Dodaj klienta</Button>}
+        action={
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={() => setShowImport(true)}>
+              Wklej listę
+            </Button>
+            <Button onClick={() => setShowForm(true)}>Dodaj klienta</Button>
+          </div>
+        }
       />
       <ErrorBanner message={error} />
+      {limitHit ? (
+        <p className="mb-4 text-sm text-foreground-secondary">
+          <Link href="/settings" className="underline-offset-2 hover:underline">
+            Zmień plan w ustawieniach
+          </Link>
+          , żeby dodać kolejną osobę.
+        </p>
+      ) : null}
 
       <Dialog
         open={showForm}
@@ -177,7 +199,7 @@ export default function ClientsPage() {
               autoFocus
             />
           </Field>
-          <Field label="E-mail">
+          <Field label="E-mail" hint="Bez e-maila klient nie odzyska zgubionego linku.">
             <input
               className={inputClass}
               type="email"
@@ -215,6 +237,53 @@ export default function ClientsPage() {
             onChange={setHasScreens}
           />
         </div>
+      </Dialog>
+
+      <Dialog
+        open={showImport}
+        title="Wklej listę klientów"
+        confirmLabel={importing ? "Dodaję…" : "Dodaj z listy"}
+        onConfirm={() => {
+          void (async () => {
+            if (!csvText.trim() || importing) return;
+            setImporting(true);
+            setError(null);
+            setLimitHit(false);
+            try {
+              const result = await api.clients.importCsv(csvText);
+              void refreshNavCounts();
+              setShowImport(false);
+              setCsvText("");
+              load();
+              const parts = [`Dodano ${result.created}`];
+              if (result.skipped) parts.push(`pominięto ${result.skipped} (już są)`);
+              if (result.errors.length) {
+                setError(result.errors[0] ?? null);
+                setLimitHit(result.errors[0]?.includes("limicie") ?? false);
+              }
+              showUndoToast(parts.join(" · "));
+            } catch (err) {
+              const apiErr = err as ApiError;
+              setError(apiErr.message);
+              setLimitHit(apiErr.code === "client_limit");
+            } finally {
+              setImporting(false);
+            }
+          })();
+        }}
+        onCancel={() => {
+          if (importing) return;
+          setShowImport(false);
+        }}
+      >
+        <Field label="CSV" hint="imię, e-mail — jedna osoba w wierszu">
+          <textarea
+            className={`${inputClass} min-h-32 py-2`}
+            value={csvText}
+            onChange={(e) => setCsvText(e.target.value)}
+            placeholder={"Anna Nowak, anna@example.com\nPiotr Lis"}
+          />
+        </Field>
       </Dialog>
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">

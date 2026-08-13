@@ -13,6 +13,7 @@ export type CopyWeekOpts = {
   keepSets: boolean;
   reapplyPresets: boolean;
   progression: CopyWeekProgression;
+  copies: number;
 };
 
 const MODE_OPTS: { id: CopyWeekProgression["mode"]; label: string }[] = [
@@ -36,6 +37,7 @@ export function CopyWeekPopover({
   const [reapplyPresets, setReapplyPresets] = useState(false);
   const [mode, setMode] = useState<CopyWeekProgression["mode"]>("none");
   const [amount, setAmount] = useState("2.5");
+  const [copies, setCopies] = useState("1");
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,6 +50,7 @@ export function CopyWeekPopover({
   }, [open]);
 
   const parsedAmount = Number(amount.replace(",", "."));
+  const parsedCopies = Math.max(1, Math.min(12, Math.round(Number(copies.replace(",", ".")) || 1)));
   const amountOk = mode === "none" || (Number.isFinite(parsedAmount) && parsedAmount !== 0);
 
   return (
@@ -128,6 +131,21 @@ export function CopyWeekPopover({
             )}
           </div>
 
+          <div className="mt-4">
+            <Field label="Ile tygodni dodać">
+              <input
+                className={inputClass}
+                inputMode="numeric"
+                value={copies}
+                onChange={(e) => setCopies(e.target.value)}
+                placeholder="1"
+              />
+            </Field>
+            <p className="mt-1 text-xs text-muted">
+              4 z progresją +2,5 kg = cztery nowe tygodnie, każdy cięższy od poprzedniego.
+            </p>
+          </div>
+
           <div className="mt-4 flex justify-end gap-2">
             <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>
               Anuluj
@@ -143,11 +161,12 @@ export function CopyWeekPopover({
                     mode,
                     amount: mode === "none" ? 0 : parsedAmount,
                   },
+                  copies: parsedCopies,
                 });
                 setOpen(false);
               }}
             >
-              Kopiuj jako Tydzień {nextWeek}
+              Kopiuj {parsedCopies > 1 ? `${parsedCopies} tygodnie` : `jako Tydzień ${nextWeek}`}
             </Button>
           </div>
         </div>

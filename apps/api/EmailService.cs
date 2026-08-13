@@ -57,4 +57,42 @@ public sealed class EmailService(IHttpClientFactory httpFactory, IConfiguration 
 
     public static string ReminderHtml(string clientName, string portalUrl, string reason) =>
         PortalLinkHtml(clientName, portalUrl, reason);
+
+    public static string TrainerSessionHtml(string firstName, string dayLabel, string url) =>
+        TrainerActionHtml(
+            $"{Html(firstName)} skończył trening ({Html(dayLabel)}).",
+            "Otwórz sesję",
+            url);
+
+    public static string TrainerPrHtml(string firstName, string exercises, string url) =>
+        TrainerActionHtml(
+            $"{Html(firstName)} ma nowy rekord: {Html(exercises)}.",
+            "Zobacz rekord",
+            url);
+
+    public static string TrainerReplyHtml(string firstName, string preview, string url) =>
+        TrainerActionHtml(
+            $"{Html(firstName)} odpisał: „{Html(preview)}”",
+            "Otwórz wiadomość",
+            url);
+
+    public static string TrainerDigestHtml(int trained, int sessions, int attention, int prs, string origin) =>
+        $"""
+        <div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;color:#1a1a1a">
+          <p>Tydzień u Twoich klientów.</p>
+          <p>Trenowało {trained} {(trained == 1 ? "osoba" : "osób")} · {sessions} treningów · {prs} rekordów.</p>
+          <p>W kolejce uwagi: {attention}.</p>
+          <p><a href="{origin}" style="display:inline-block;padding:12px 20px;background:#0B0C0D;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Otwórz panel</a></p>
+        </div>
+        """;
+
+    static string TrainerActionHtml(string body, string cta, string url) =>
+        $"""
+        <div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;color:#1a1a1a">
+          <p>{body}</p>
+          <p><a href="{url}" style="display:inline-block;padding:12px 20px;background:#0B0C0D;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">{Html(cta)}</a></p>
+        </div>
+        """;
+
+    static string Html(string s) => System.Net.WebUtility.HtmlEncode(s);
 }

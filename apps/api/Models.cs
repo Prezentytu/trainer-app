@@ -8,6 +8,16 @@ public class Trainer
     public string Email { get; set; } = "";
     public string Name { get; set; } = "";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>free / starter / pro / studio / founding / dev.</summary>
+    public string PlanKey { get; set; } = "free";
+    public string? StripeCustomerId { get; set; }
+    public string? StripeSubscriptionId { get; set; }
+    public bool NotifySessionComplete { get; set; } = true;
+    public bool NotifyClientReply { get; set; } = true;
+    public bool NotifyPr { get; set; } = true;
+    public bool NotifyWeeklyDigest { get; set; } = true;
+    public DateOnly? LastDigestSentOn { get; set; }
 }
 
 public class Client
@@ -20,6 +30,8 @@ public class Client
     public string? Note { get; set; }
     /// <summary>Cel masy ciała (kg) — opcjonalny; widoczny w portalowych pomiarach.</summary>
     public double? GoalWeightKg { get; set; }
+    public string? PortalPinHash { get; set; }
+    public string? PortalPinSalt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public List<Assignment> Assignments { get; set; } = [];
@@ -32,6 +44,7 @@ public class Client
     public List<TrainerNote> TrainerNotes { get; set; } = [];
     public ClientIntake? Intake { get; set; }
     public List<ClientHistoryImport> HistoryImports { get; set; } = [];
+    public List<ClientProgressPhoto> ProgressPhotos { get; set; } = [];
 }
 
 /// <summary>Prywatna notatka trenera o kliencie. NIGDY nie wystawiana w /api/portal/*.</summary>
@@ -113,6 +126,21 @@ public class ClientMeasurement
     public double? ChestCm { get; set; }
     public double? HipsCm { get; set; }
     public string? Note { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>Zdjęcie sylwetki (blob w DB, kompresja po stronie klienta).</summary>
+public class ClientProgressPhoto
+{
+    public int Id { get; set; }
+    public int ClientId { get; set; }
+    public Client? Client { get; set; }
+    public DateOnly TakenOn { get; set; }
+    /// <summary>front | side | back | other</summary>
+    public string View { get; set; } = "front";
+    public string? Note { get; set; }
+    public string ContentType { get; set; } = "image/jpeg";
+    public byte[] Bytes { get; set; } = [];
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 

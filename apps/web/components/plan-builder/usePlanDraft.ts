@@ -95,67 +95,76 @@ export function usePlanDraft({
         keepSets?: boolean;
         reapplyPresets?: boolean;
         progression?: { mode: "none" | "kg" | "percent" | "reps"; amount: number };
+        copies?: number;
       }
     ) => {
       const keepSets = options?.keepSets ?? true;
       const reapplyPresets = options?.reapplyPresets ?? false;
       const progression = options?.progression ?? { mode: "none" as const, amount: 0 };
+      const copies = Math.max(1, Math.min(12, options?.copies ?? 1));
       setDays((prev) => {
-        const target = (prev.length ? Math.max(...prev.map((d) => d.weekNumber)) : 0) + 1;
-        const clones = prev
-          .filter((d) => d.weekNumber === weekNumber)
-          .map((d) => ({
-            ...d,
-            key: newKey(),
-            weekNumber: target,
-            items: d.items.map((it) => {
-              let prescribedSets = it.prescribedSets.map((s) => ({ ...s, key: newKey() }));
-              let setScheme = it.setScheme;
-              let loadKg = it.loadKg;
-              let reps = it.reps;
-              let repsMax = it.repsMax;
-              if (!keepSets) {
-                prescribedSets = [];
-                setScheme = null;
-              } else if (reapplyPresets && it.setScheme) {
-                const preset = PLAN_PRESETS.find((p) => p.label === it.setScheme || it.setScheme?.includes(p.id));
-                const byLabel = PLAN_PRESETS.find((p) => it.setScheme?.includes("6-4-2") && p.id === "642531");
-                const match = preset ?? byLabel;
-                if (match) {
-                  prescribedSets = match.build(target).map((s) => ({ ...s, key: newKey() }));
-                  setScheme = match.label;
+        let next = prev;
+        let sourceWeek = weekNumber;
+        for (let i = 0; i < copies; i++) {
+          const target = (next.length ? Math.max(...next.map((d) => d.weekNumber)) : 0) + 1;
+          const clones = next
+            .filter((d) => d.weekNumber === sourceWeek)
+            .map((d) => ({
+              ...d,
+              key: newKey(),
+              weekNumber: target,
+              items: d.items.map((it) => {
+                let prescribedSets = it.prescribedSets.map((s) => ({ ...s, key: newKey() }));
+                let setScheme = it.setScheme;
+                let loadKg = it.loadKg;
+                let reps = it.reps;
+                let repsMax = it.repsMax;
+                if (!keepSets) {
+                  prescribedSets = [];
+                  setScheme = null;
+                } else if (reapplyPresets && it.setScheme) {
+                  const preset = PLAN_PRESETS.find((p) => p.label === it.setScheme || it.setScheme?.includes(p.id));
+                  const byLabel = PLAN_PRESETS.find((p) => it.setScheme?.includes("6-4-2") && p.id === "642531");
+                  const match = preset ?? byLabel;
+                  if (match) {
+                    prescribedSets = match.build(target).map((s) => ({ ...s, key: newKey() }));
+                    setScheme = match.label;
+                  }
                 }
-              }
-              if (progression.mode === "kg" && progression.amount !== 0) {
-                if (loadKg != null) loadKg = Math.round((loadKg + progression.amount) * 2) / 2;
-                prescribedSets = prescribedSets.map((s) =>
-                  s.loadKg != null
-                    ? { ...s, loadKg: Math.round((s.loadKg + progression.amount) * 2) / 2 }
-                    : s
-                );
-              } else if (progression.mode === "percent" && progression.amount !== 0) {
-                const factor = 1 + progression.amount / 100;
-                if (loadKg != null) loadKg = Math.round(loadKg * factor * 2) / 2;
-                prescribedSets = prescribedSets.map((s) =>
-                  s.loadKg != null ? { ...s, loadKg: Math.round(s.loadKg * factor * 2) / 2 } : s
-                );
-              } else if (progression.mode === "reps" && progression.amount !== 0) {
-                if (reps != null) reps = Math.max(1, reps + progression.amount);
-                if (repsMax != null) repsMax = Math.max(reps ?? 1, repsMax + progression.amount);
-                prescribedSets = prescribedSets.map((s) => ({
-                  ...s,
-                  reps: s.reps != null ? Math.max(1, s.reps + progression.amount) : s.reps,
-                  repsMax:
-                    s.repsMax != null
-                      ? Math.max(s.reps ?? 1, s.repsMax + progression.amount)
-                      : s.repsMax,
-                }));
-              }
-              return { ...it, key: newKey(), prescribedSets, setScheme, loadKg, reps, repsMax };
-            }),
-          }));
-        setActiveWeek(target);
-        return [...prev, ...clones];
+                if (progression.mode === "kg" && progression.amount !== 0) {
+                  if (loadKg != null) loadKg = Math.round((loadKg + progression.amount) * 2) / 2;
+                  prescribedSets = prescribedSets.map((s) =>
+                    s.loadKg != null
+                      ? { ...s, loadKg: Math.round((s.loadKg + progression.amount) * 2) / 2 }
+                      : s
+                  );
+                } else if (progression.mode === "percent" && progression.amount !== 0) {
+                  const factor = 1 + progression.amount / 100;
+                  if (loadKg != null) loadKg = Math.round(loadKg * factor * 2) / 2;
+                  prescribedSets = prescribedSets.map((s) =>
+                    s.loadKg != null ? { ...s, loadKg: Math.round(s.loadKg * factor * 2) / 2 } : s
+                  );
+                } else if (progression.mode === "reps" && progression.amount !== 0) {
+                  if (reps != null) reps = Math.max(1, reps + progression.amount);
+                  if (repsMax != null) repsMax = Math.max(reps ?? 1, repsMax + progression.amount);
+                  prescribedSets = prescribedSets.map((s) => ({
+                    ...s,
+                    reps: s.reps != null ? Math.max(1, s.reps + progression.amount) : s.reps,
+                    repsMax:
+                      s.repsMax != null
+                        ? Math.max(s.reps ?? 1, s.repsMax + progression.amount)
+                        : s.repsMax,
+                  }));
+                }
+                return { ...it, key: newKey(), prescribedSets, setScheme, loadKg, reps, repsMax };
+              }),
+            }));
+          next = [...next, ...clones];
+          sourceWeek = target;
+        }
+        const lastWeek = next.length ? Math.max(...next.map((d) => d.weekNumber)) : weekNumber;
+        setActiveWeek(lastWeek);
+        return next;
       });
     },
     []

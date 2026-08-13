@@ -32,6 +32,7 @@ public static class TrainerAccess
                 ClerkUserId = LocalClerkUserId,
                 Email = "trener@localhost",
                 Name = "Trener lokalny",
+                PlanKey = "dev",
             };
             db.Trainers.Add(local);
             await db.SaveChangesAsync();

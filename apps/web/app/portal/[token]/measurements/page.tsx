@@ -17,6 +17,7 @@ import { Icon } from "@/components/Icon";
 import { PortalPageSkeleton } from "@/components/skeletons";
 import { WeightTrendSparkline } from "@/components/WeightTrendSparkline";
 import { formatKg } from "@/lib/plates";
+import { ProgressPhotoGallery } from "@/components/ProgressPhotoGallery";
 
 function formatDay(iso: string): string {
   const d = new Date(`${iso}T12:00:00`);
@@ -102,7 +103,7 @@ export default function PortalMeasurementsPage() {
           Profil
         </Link>
         <h1 className="t-title mt-2">Pomiary</h1>
-        <p className="t-small mt-1">Waga i obwody — trener je widzi w Twoim profilu.</p>
+        <p className="t-small mt-1">Waga, obwody i zdjęcia sylwetki — trener to widzi w Twoim profilu.</p>
       </header>
       <ErrorBanner message={error} />
 
@@ -205,6 +206,11 @@ export default function PortalMeasurementsPage() {
           </div>
         </>
       )}
+
+      <section className="space-y-3">
+        <h2 className="t-heading m-0">Zdjęcia</h2>
+        <ProgressPhotoGallery mode="portal" token={token} onError={setError} />
+      </section>
     </div>
   );
 }

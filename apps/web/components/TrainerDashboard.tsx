@@ -419,7 +419,9 @@ export function TrainerDashboard() {
           title="Do zrobienia"
           pending
           headerAction={
-            <span className="font-mono text-xs tabular-nums text-muted">{inbox.length}</span>
+            <Link href="/inbox" className="font-mono text-xs tabular-nums text-muted underline-offset-2 hover:underline">
+              Wszystkie
+            </Link>
           }
         >
           <ul className="divide-y divide-border">

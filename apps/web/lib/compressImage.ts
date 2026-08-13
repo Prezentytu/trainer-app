@@ -3,9 +3,12 @@
 export const HISTORY_IMPORT_MAX_IMAGES = 15;
 const MAX_EDGE = 1600;
 const JPEG_QUALITY = 0.82;
+const PHOTO_MAX_EDGE = 1200;
+const PHOTO_QUALITY = 0.72;
+const PHOTO_MAX_BYTES = 512 * 1024;
 
 export async function fileToHistoryImage(file: File): Promise<{ mimeType: string; base64: string }> {
-  const drawn = await drawToJpeg(file);
+  const drawn = await drawToJpeg(file, MAX_EDGE, JPEG_QUALITY);
   if (drawn) return drawn;
   const mime = file.type || "image/jpeg";
   if (!/^image\/(jpeg|jpg|png|webp|gif)$/i.test(mime)) {
@@ -14,11 +17,29 @@ export async function fileToHistoryImage(file: File): Promise<{ mimeType: string
   return { mimeType: mime === "image/jpg" ? "image/jpeg" : mime, base64: await blobToBase64(file) };
 }
 
-async function drawToJpeg(file: File): Promise<{ mimeType: string; base64: string } | null> {
+/** Zdjęcie sylwetki: JPEG, max 1200 px, ~500 KB. */
+export async function compressImageFile(file: File): Promise<{ base64: string; contentType: string }> {
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Wybierz zdjęcie (JPEG, PNG albo WebP).");
+  }
+  const drawn = await drawToJpeg(file, PHOTO_MAX_EDGE, PHOTO_QUALITY);
+  if (!drawn) throw new Error("Nie udało się przygotować zdjęcia.");
+  const raw = atob(drawn.base64);
+  if (raw.length > PHOTO_MAX_BYTES) {
+    throw new Error("Zdjęcie jest nadal za duże. Wybierz inne albo zrób zdjęcie z mniejszą rozdzielczością.");
+  }
+  return { base64: drawn.base64, contentType: "image/jpeg" };
+}
+
+async function drawToJpeg(
+  file: File,
+  maxEdge: number,
+  quality: number,
+): Promise<{ mimeType: string; base64: string } | null> {
   if (typeof window === "undefined") return null;
   const bitmap = await createImageBitmap(file).catch(() => null);
   if (!bitmap) return null;
-  const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+  const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
   const w = Math.max(1, Math.round(bitmap.width * scale));
   const h = Math.max(1, Math.round(bitmap.height * scale));
   const canvas = document.createElement("canvas");
@@ -31,9 +52,7 @@ async function drawToJpeg(file: File): Promise<{ mimeType: string; base64: strin
   }
   ctx.drawImage(bitmap, 0, 0, w, h);
   bitmap.close();
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, "image/jpeg", JPEG_QUALITY),
-  );
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
   if (!blob) return null;
   return { mimeType: "image/jpeg", base64: await blobToBase64(blob) };
 }

@@ -14,7 +14,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Dla kogo to jest?",
-    a: "Dla trenera personalnego, który układa plany i wysyła je klientom na telefon. Nie do zarządzania klubem i nie do diet.",
+    a: "Dla trenera personalnego, który układa plany siłowe i wysyła je klientom na telefon. Nie do zarządzania klubem, grafikiem sesji ani bieganiem. Jadłospis zostaw w swoim PDF — my robimy trening.",
   },
   {
     q: "Co z moimi danymi?",

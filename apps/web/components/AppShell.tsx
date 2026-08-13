@@ -14,6 +14,7 @@ const NAV_SHELL_SSR = { clients: null, plans: null, trainerName: "Trener" } as c
 
 const NAV: { href: string; label: string; icon: IconName }[] = [
   { href: "/", label: "Panel", icon: "home" },
+  { href: "/inbox", label: "Od klientów", icon: "chat" },
   { href: "/clients", label: "Klienci", icon: "clients" },
   { href: "/plans", label: "Plany", icon: "plans" },
   { href: "/exercises", label: "Ćwiczenia", icon: "dumbbell" },
