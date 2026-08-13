@@ -15,6 +15,27 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Nie rezerwuj gutera na treść, której nie ma
+
+**Kontekst**: Nazwy ćwiczeń na liście Dziś były wcięte o 56 px (miniatura 44 px + gap), choć żadne ćwiczenie w planie nie miało filmu — `DemoThumbButton` zwracał `null`, ale kontener `h-11 w-11` zostawał.
+**Problem**: Nazwy nie trzymały lewej krawędzi kolumny (nagłówek, `SUPERSERIA`, CTA) i wisiały na pustym wcięciu. Próba doklejenia rozpisu do nazwy (`flex-wrap`) tylko pogorszyła sprawę: krótka nazwa dawała schemat w tej samej linii, długa — pod spodem.
+**Zasada**: Wyrównanie to własność listy, nie wiersza — gutter (miniatura, ikona, checkbox) rezerwuj tylko wtedy, gdy **którykolwiek** wiersz ma czym go wypełnić; inaczej flush left. Liczby zostawiaj w jednej prawej kolumnie (`justify-between`), żeby dały się skanować w pionie.
+**Dotyczy**: `ExercisePreviewList.tsx`, każda lista z opcjonalnym leading slotem
+
+## Lista Dziś: rozpis, nie ułamek; superseria bez numeru i bez unikalnego meta
+
+**Kontekst**: W treningu w toku wiersze pokazywały `1/3`. Nagłówek grupy to „Superseria 2” z `3 serie · 1 min 30 s`, których solo ćwiczenia nie mają.
+**Problem**: `1/3` nie mówi ćwiczącemu co robić (ciężar, powtórzenia, czas). Numer grupy dubluje 2a/2b. Czas tylko przy superserii łamie rytm listy.
+**Zasada**: Na liście dnia zawsze schemat jak w Styrka/Strong/Hevy (`3 × 10 @ 70 kg`, `3 × 45 s`). Postęp sesji = nagłówek (`3/12 serii`) + wyciszenie skończonej nazwy. Etykieta grupy = „Superseria”. Serie i przerwa nie wiszą tylko na nagłówku grupy — przerwa żyje w loggerze.
+**Dotyczy**: `portal/[token]/page.tsx` (`heroItems`), `ExercisePreviewList.tsx`
+
+## Sheet: portal do body; superseria to wiersz, nie box
+
+**Kontekst**: Karta dnia z paska tygodnia nie dawała zobaczyć całego treningu; pod treścią była martwa strefa. Superseria na liście Dziś była w ramce.
+**Problem**: `Sheet` renderował się w drzewie strony — tab bar (`z-40`) zasłaniał dół karty, a scroll tła przejmował gest. Obramowany box superserii łamał rytm hairline rows.
+**Zasada**: Overlay (`Sheet`) idzie przez `createPortal` na `document.body`, z `overflow: hidden` na `html` i `overscroll-contain` na treści. Listy ćwiczeń = hairline rows; grupa superserii to caps label + te same wiersze, bez ramki.
+**Dotyczy**: `ui.tsx` (`Sheet`), `ExercisePreviewList.tsx`, portal Dziś / DaySheet
+
 ## Szczegóły klienta: setup-once na dół, hero dla statusu
 
 **Kontekst**: Profil klienta otwierał się kartą „Link i WhatsApp” (PIN, ważność, szablony wiadomości) nad aktywnym planem i zakładkami.

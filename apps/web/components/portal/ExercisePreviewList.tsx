@@ -1,46 +1,26 @@
 "use client";
 
 import { PortalExercise } from "@/lib/api";
-import { formatRest } from "@/components/ui";
 import { DemoThumbButton } from "@/components/portal/DemoThumbButton";
 import {
   previewBlocksFromItems,
   type PreviewItem,
-  type PreviewBlock,
 } from "@/lib/supersetPreview";
-import { polishSetCount } from "@/lib/plural";
-
-function ThumbGutter({
-  exercise,
-  fallbackYoutubeId,
-  title,
-}: {
-  exercise?: PortalExercise;
-  fallbackYoutubeId?: string | null;
-  title: string;
-}) {
-  return (
-    <div className="flex h-11 w-11 shrink-0 items-center justify-center">
-      <DemoThumbButton
-        exercise={exercise}
-        fallbackYoutubeId={fallbackYoutubeId}
-        title={title}
-      />
-    </div>
-  );
-}
+import { demoMedia } from "@/lib/youtube";
 
 function ItemRow({
   item,
   label,
   exerciseById,
   fallbackYoutubeId,
+  showThumbs,
   onRowClick,
 }: {
   item: PreviewItem;
   label: string | null;
   exerciseById: Map<number, PortalExercise>;
   fallbackYoutubeId?: (exerciseId: number) => string | null;
+  showThumbs: boolean;
   onRowClick?: () => void;
 }) {
   const ex = item.exerciseId != null ? exerciseById.get(item.exerciseId) : undefined;
@@ -69,7 +49,11 @@ function ItemRow({
 
   return (
     <div className="flex min-h-11 items-start gap-3 py-3.5">
-      <ThumbGutter exercise={ex} fallbackYoutubeId={yt} title={name} />
+      {showThumbs ? (
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center">
+          <DemoThumbButton exercise={ex} fallbackYoutubeId={yt} title={name} />
+        </div>
+      ) : null}
       {onRowClick ? (
         <button
           type="button"
@@ -89,15 +73,6 @@ function ItemRow({
   );
 }
 
-function supersetMeta(block: Extract<PreviewBlock, { kind: "superset" }>): string {
-  const parts: string[] = [];
-  if (block.setCount > 0) parts.push(polishSetCount(block.setCount));
-  if (block.restSeconds != null && block.restSeconds > 0) {
-    parts.push(formatRest(block.restSeconds));
-  }
-  return parts.join(" · ");
-}
-
 export function ExercisePreviewList({
   items,
   exerciseById,
@@ -113,6 +88,13 @@ export function ExercisePreviewList({
 
   if (blocks.length === 0) return null;
 
+  // Gutter miniatur to własność listy, nie wiersza — inaczej nazwy wiszą na pustym wcięciu.
+  const showThumbs = items.some((item) => {
+    if (item.exerciseId == null) return false;
+    const fromLibrary = demoMedia(exerciseById.get(item.exerciseId)).youtubeId;
+    return Boolean(fromLibrary ?? fallbackYoutubeId?.(item.exerciseId));
+  });
+
   return (
     <ul className="divide-y divide-border">
       {blocks.map((block) => {
@@ -124,37 +106,31 @@ export function ExercisePreviewList({
                 label={block.label}
                 exerciseById={exerciseById}
                 fallbackYoutubeId={fallbackYoutubeId}
+                showThumbs={showThumbs}
                 onRowClick={onRowClick}
               />
             </li>
           );
         }
-        const meta = supersetMeta(block);
         return (
-          <li key={block.key} className="py-3">
-            <div className="overflow-hidden rounded-lg border border-border">
-              <div className="flex items-baseline justify-between gap-3 px-3 py-2">
-                <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
-                  Superseria {block.position}
-                </p>
-                {meta ? (
-                  <p className="shrink-0 font-mono text-xs tabular-nums text-muted">{meta}</p>
-                ) : null}
-              </div>
-              <ul className="divide-y divide-border border-t border-border">
-                {block.items.map((item, idx) => (
-                  <li key={String(item.id)} className="px-3">
-                    <ItemRow
-                      item={item}
-                      label={block.labels[idx] || null}
-                      exerciseById={exerciseById}
-                      fallbackYoutubeId={fallbackYoutubeId}
-                      onRowClick={onRowClick}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </div>
+          <li key={block.key}>
+            <p className="pt-3 font-mono text-xs font-medium uppercase tracking-caps text-muted">
+              Superseria
+            </p>
+            <ul className="divide-y divide-border">
+              {block.items.map((item, idx) => (
+                <li key={String(item.id)}>
+                  <ItemRow
+                    item={item}
+                    label={block.labels[idx] || null}
+                    exerciseById={exerciseById}
+                    fallbackYoutubeId={fallbackYoutubeId}
+                    showThumbs={showThumbs}
+                    onRowClick={onRowClick}
+                  />
+                </li>
+              ))}
+            </ul>
           </li>
         );
       })}

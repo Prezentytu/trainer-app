@@ -8,7 +8,6 @@ import {
   ClientIntake,
   ClientCheckIn,
   hasEssentialIntake,
-  LoggedExercise,
   PortalExercise,
   PortalHome,
   PortalSessionSummary,
@@ -53,7 +52,7 @@ function schemeLine(
 }
 
 function schemeFromLogged(
-  ex: LoggedExercise,
+  ex: SessionDetail["exercises"][number],
   exerciseMeta?: Pick<PortalExercise, "equipment" | "isUnilateral"> | null,
 ): string {
   const working = ex.sets.filter((s) => !s.isWarmup);
@@ -346,23 +345,19 @@ export default function PortalTodayPage() {
   const heroItems = useMemo((): PreviewItem[] => {
     if (fresh && liveSession && liveSession.id === fresh.id) {
       return liveSession.exercises.map((ex) => {
-        const doneCount = ex.sets.filter((s) => s.completed).length;
-        const total = ex.sets.length;
+        const working = ex.sets.filter((s) => !s.isWarmup);
+        const tracked = working.length > 0 ? working : ex.sets;
+        const doneCount = tracked.filter((s) => s.completed).length;
+        const total = tracked.length;
         const done = total > 0 && doneCount === total;
         const partial = doneCount > 0 && !done;
-        const meta = exerciseById.get(ex.exerciseId);
-        const detail = done
-          ? "✓"
-          : partial
-            ? `${doneCount}/${total}`
-            : schemeFromLogged(ex, meta);
         return {
           id: ex.id,
           name: ex.exerciseName,
-          detail,
+          detail: schemeFromLogged(ex, exerciseById.get(ex.exerciseId)),
           supersetGroup: ex.supersetGroup ?? null,
           restSeconds: ex.restSeconds,
-          setCount: ex.sets.filter((s) => !s.isWarmup).length,
+          setCount: working.length,
           done,
           partial,
           exerciseId: ex.exerciseId,

@@ -53,3 +53,4 @@ Profil portalu, sekcja „Aplikacja”: siatka 5 swatchy — Grafit, Mech, Piase
 
 - 2026-08-13 — utworzono spec i wdrożono palety portalu.
 - 2026-08-13 — picker także w ustawieniach panelu trenera (ten sam `PalettePicker` i `repmaxer-palette`).
+- 2026-08-13 — Pink Pony: delikatnie jaśniejsze powierzchnie (dark i light); swatch `#ff4d94` bez zmian.

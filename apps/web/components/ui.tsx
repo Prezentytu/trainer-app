@@ -12,6 +12,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { createPortal } from "react-dom";
 import { SESSION_EXPIRED_MESSAGE, clerkEnabled } from "@/lib/api";
 import { Icon } from "@/components/Icon";
 
@@ -1132,7 +1133,17 @@ export function Sheet({
   const { mounted, entered } = usePresence(!!open);
   useFocusTrap(!!open && mounted, panelRef, onClose);
 
-  if (!mounted) return null;
+  useEffect(() => {
+    if (!mounted) return;
+    const root = document.documentElement;
+    const prev = root.style.overflow;
+    root.style.overflow = "hidden";
+    return () => {
+      root.style.overflow = prev;
+    };
+  }, [mounted]);
+
+  if (!mounted || typeof document === "undefined") return null;
   const ease = OVERLAY_EASE(entered);
   const panelMotion = center
     ? entered
@@ -1142,7 +1153,7 @@ export function Sheet({
       ? "opacity-100 motion-safe:translate-y-0"
       : "opacity-0 motion-safe:translate-y-3";
 
-  return (
+  return createPortal(
     <div
       className={`fixed inset-0 z-50 flex justify-center ${
         center ? "items-center p-4" : "items-end"
@@ -1170,12 +1181,13 @@ export function Sheet({
             {title}
           </h2>
         ) : null}
-        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
         {footer ? (
-          <div className="mt-5 shrink-0 pb-[env(safe-area-inset-bottom)]">{footer}</div>
+          <div className="mt-5 shrink-0 pb-[max(0.25rem,env(safe-area-inset-bottom))]">{footer}</div>
         ) : null}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

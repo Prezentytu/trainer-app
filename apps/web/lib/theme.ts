@@ -27,7 +27,7 @@ const THEME_COLOR: Record<Palette, Record<Theme, string>> = {
   forest: { dark: "#0c1610", light: "#e7f3ea" },
   calm: { dark: "#16120e", light: "#f6efe4" },
   sea: { dark: "#0a141c", light: "#e4f1f8" },
-  pony: { dark: "#1f0a14", light: "#ffd6e8" },
+  pony: { dark: "#2c121c", light: "#ffe8f2" },
 };
 
 const listeners = new Set<() => void>();

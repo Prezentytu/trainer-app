@@ -76,15 +76,11 @@ export function PerformedExerciseList({
       <ul className="divide-y divide-border">
         {sessionBlocks.map((block) => {
           const indices = block.kind === "single" ? [block.exIdx] : block.members;
-          const pos =
-            block.kind === "superset"
-              ? session.exercises[block.members[0]]?.supersetLabel?.replace(/[a-z]+$/i, "") ?? ""
-              : "";
           return (
             <li key={block.kind === "single" ? `ex-${block.exIdx}` : `ss-${block.group}`}>
               {block.kind === "superset" ? (
                 <p className="pt-3 font-mono text-xs font-medium uppercase tracking-caps text-muted">
-                  Superseria {pos}
+                  Superseria
                 </p>
               ) : null}
               {indices.map((exIdx) => {
