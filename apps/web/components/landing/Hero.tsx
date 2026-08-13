@@ -38,7 +38,7 @@ export function Hero() {
             className="landing-stagger mt-10 flex flex-wrap items-center gap-x-6 gap-y-3"
             style={{ ["--i" as string]: 3 }}
           >
-            <LandingCta href="/wdrozenie">Umów 30 min wdrożenia</LandingCta>
+            <LandingCta href="/wdrozenie">Umów 30 minut wdrożenia</LandingCta>
             <LandingCta href="/sign-up" variant="ghost">
               Załóż darmowe konto
             </LandingCta>

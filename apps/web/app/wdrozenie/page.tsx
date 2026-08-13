@@ -27,18 +27,21 @@ export default function WdrozeniePage() {
       <main className="mx-auto max-w-[1200px] px-5 py-16 sm:px-8 sm:py-24">
         <p className="t-label m-0 tracking-[0.16em]">14 dni do pełnego wglądu</p>
         <h1 className="mt-6 max-w-[16ch] text-[clamp(2.25rem,5vw,4.5rem)] font-semibold leading-[1.05] tracking-[-0.03em]">
-          W 30 min wpinamy plan w link bez konta.
+          W 30 minut przenosisz plan do linku bez konta.
         </h1>
         <p className="mt-6 max-w-[46ch] text-[17px] leading-[1.6] text-muted">
-          Import jednego planu, trzech klientów i linki wysłane na callu. Jeśli w 14 dni
+          Jeden plan, trzech klientów i linki wysłane na rozmowie. Jeśli w 14 dni
           żaden podopieczny nie dokończy treningu — zostajesz na 0 zł. Warunek: wysłałeś
-          link do co najmniej trzech osób na callu. 10 miejsc w miesiącu.
+          link do co najmniej trzech osób na rozmowie. 10 miejsc w miesiącu.
         </p>
         <ul className="mt-10 max-w-[46ch] space-y-3 text-[15px] leading-relaxed text-foreground-secondary">
-          <li>Przeprowadzka z Excela na callu.</li>
-          <li>Protokół ciszy: trzy gotowce wiadomości (dzień 7 / 14 / pierwszy trening).</li>
-          <li>Szablony metod i eksport JSON/CSV.</li>
-          <li>Founding 490 zł: trzy miesiące Solo i cena zamknięta, gdy skończą się miejsca white-glove.</li>
+          <li>Przeniesienie planu z Excela na rozmowie.</li>
+          <li>Trzy gotowe wiadomości, gdy klient nie trenował.</li>
+          <li>Szablony serii i eksport danych (JSON i CSV).</li>
+          <li>
+            Albo 490 zł raz: trzy miesiące przy 15 osobach. Ta stawka zostaje, gdy skończą
+            się miejsca na 90 dni za 0 zł.
+          </li>
         </ul>
         <Suspense fallback={<p className="mt-12 text-sm text-muted">Wczytuję formularz…</p>}>
           <WdrozenieForm />
@@ -59,7 +62,7 @@ function WdrozenieForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(
-    status === "ok" ? "Płatność przyjęta. Oddzwonimy w sprawie calla." : null,
+    status === "ok" ? "Płatność przyjęta. Oddzwonimy w sprawie rozmowy wdrożeniowej." : null,
   );
 
   const onSubmit = async (e: FormEvent) => {
@@ -126,7 +129,7 @@ function WdrozenieForm() {
         />
       </Field>
       <fieldset className="space-y-2">
-        <legend className="t-label">Ścieżka</legend>
+        <legend className="t-label">Co wybierasz</legend>
         <label className="flex min-h-11 items-center gap-2 text-sm">
           <input
             type="radio"
@@ -134,7 +137,7 @@ function WdrozenieForm() {
             checked={track === "whiteglove"}
             onChange={() => setTrack("whiteglove")}
           />
-          Wdrożenie 0 zł / 90 dni (10 miejsc)
+          90 dni za 0 zł — 10 miejsc w miesiącu
         </label>
         <label className="flex min-h-11 items-center gap-2 text-sm">
           <input
@@ -143,11 +146,11 @@ function WdrozenieForm() {
             checked={track === "founding"}
             onChange={() => setTrack("founding")}
           />
-          Founding 490 zł — Solo locked
+          490 zł raz — trzy miesiące, do 15 osób. Ta stawka zostaje.
         </label>
       </fieldset>
       <Button type="submit" loading={busy} disabled={busy}>
-        {track === "founding" ? "Zgłoś founding" : "Umów wdrożenie"}
+        {track === "founding" ? "Zapłać 490 zł" : "Umów rozmowę"}
       </Button>
     </form>
   );

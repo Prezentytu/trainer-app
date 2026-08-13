@@ -12,7 +12,7 @@ Aktualizacja researchu (sierpień 2026) + strategia wyjścia na rynek. Produkt t
 4. **Cennik PL**: darmowe wejście (0 zł / 5 klientów) to standard rynkowy (CoachGuru, WodGuru). Flat 149 zł odstaje — rekomendacja: progi + founding price.
 5. **Launch**: Faza A (5–10 design partnerów, white-glove) → Faza B (founding billing, 5+ płacących) → Faza C (publiczny launch PL + SEO „alternatywa dla…").
 
-> Nie kodować z tego pliku poza P0 z [`2026-08-12-hormozi-oferta-i-gtm.md`](2026-08-12-hormozi-oferta-i-gtm.md). Q1–Q4 **zamknięte** (Hormozi, 12.08).
+> Nie kodować z tego pliku poza P0 z [`2026-08-12-hormozi-oferta-i-gtm.md`](2026-08-12-hormozi-oferta-i-gtm.md). Q1–Q4 **zamknięte** (Hormozi, 12.08). Ujawniona preferencja, stos haków i money math: [`2026-08-12-hormozi-research-haki-i-skuszenie.md`](2026-08-12-hormozi-research-haki-i-skuszenie.md).
 
 ## Decyzje Q1–Q4 (zamknięte 2026-08-12)
 
@@ -21,7 +21,7 @@ Aktualizacja researchu (sierpień 2026) + strategia wyjścia na rynek. Produkt t
 - **Q3:** warm outreach jako jedyny kanał Fazy A (100 dni). Znajomi, grupy FB PT PL, siłownie, DM value-first. Nie ads. Playbook: `.ai/gtm/`.
 - **Q4:** **RepMaxer** na zewnątrz. Workout Alchemist nie używać w outreachu.
 
-Oferta Fazy A, gwarancja, founding: [`2026-08-12-hormozi-oferta-i-gtm.md`](2026-08-12-hormozi-oferta-i-gtm.md).
+Oferta Fazy A, gwarancja, founding: [`2026-08-12-hormozi-oferta-i-gtm.md`](2026-08-12-hormozi-oferta-i-gtm.md). Haki i ujawniona preferencja: [`2026-08-12-hormozi-research-haki-i-skuszenie.md`](2026-08-12-hormozi-research-haki-i-skuszenie.md).
 
 ---
 
@@ -153,7 +153,7 @@ Legenda: **OK** wdrożone · **~** częściowo · **—** brak · **biz** roadma
 
 ### 2.1 Pozycjonowanie
 
-**Jedno zdanie:** Aplikacja, dzięki której trener **reaguje pierwszy** — widzi, kto odpadł, kto stoi w miejscu i co klient realnie zrobił — bez konta dla podopiecznego i bez ukrytych opłat.
+**Jedno zdanie:** Aplikacja, dzięki której trener **reaguje pierwszy** — widzi, kto nie trenował, kto stoi w miejscu i co klient realnie zrobił — bez konta dla podopiecznego i bez ukrytych opłat.
 
 **Nie jesteśmy:**
 

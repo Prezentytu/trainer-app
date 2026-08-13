@@ -18,7 +18,7 @@ export default function TermsPage() {
           </p>
           <h1 className="t-title">Regulamin</h1>
           <p className="t-small">
-            Szkic dla early access (design partners). Wypełnij przed szerszą premierą —
+            Szkic na start, dla pierwszych trenerów. Wypełnij przed szerszą premierą —
             nie stanowi finalnej porady prawnej.
           </p>
         </header>
@@ -28,9 +28,9 @@ export default function TermsPage() {
             <h2 className="t-heading text-foreground">1. Usługa</h2>
             <p>
               RepMaxer to narzędzie dla trenerów personalnych: plany treningowe, portal
-              klienta bez konta (link) oraz podgląd postępów. Wczesny dostęp trwa 90 dni
-              albo founding (490 zł). Cennik po tym okresie: 0 zł / do 5 podopiecznych,
-              potem od 39 zł / 15. Podopieczny nie płaci.
+              klienta bez konta (link) oraz podgląd postępów. Na start: 90 dni za 0 zł
+              po rozmowie wdrożeniowej, albo 490 zł raz za trzy miesiące przy 15 osobach.
+              Potem: 0 zł / do 5 podopiecznych, od 39 zł / 15. Podopieczny nie płaci.
             </p>
           </section>
 

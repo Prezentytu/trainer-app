@@ -78,6 +78,10 @@ Pytania: czy da się zrozumieć bez zgadywania? czy to słowa trenera/klienta? c
 | …nie kasujemy mu tożsamości w sklepie z aplikacjami. | …po współpracy nie zostaje mu aplikacja w sklepie. | Sprytna metafora zamiast faktu. |
 | Wychwytujemy je automatycznie. | Widzisz je od razu, bez pytania klienta. | *My* o produkcie. Skill: nigdy *my*. |
 | Wysyłasz link. Widzisz każdy trening. | *(zostaje)* | Pełne, naturalne zdania. |
+| Founding 490 zł — Solo locked | 490 zł raz: trzy miesiące, do 15 osób. Ta stawka zostaje. | Żargon briefu. Kwota + osoby + czas. |
+| White-glove / Zgłoś founding | Umów rozmowę / Zapłać 490 zł | CTA = czasownik + obiekt, nie nazwa ścieżki z planu. |
+| na callu | na rozmowie | Kalka. Trener umawia rozmowę, nie call. |
+| odpad / odpadający klient | odchodzi / skończył współpracę | Wstyd i żargon. Trener tak nie mówi. |
 
 ## Słownik
 
@@ -85,6 +89,7 @@ Pytania: czy da się zrozumieć bez zgadywania? czy to słowa trenera/klienta? c
 |---|---|
 | do zrobienia | wymaga ciebie, wymaga Cię |
 | kto nie trenował | kto milczy, cisza (w copy użytkownika) |
+| odchodzi / skończył współpracę | odpad, odpadający, odpadnie |
 | bez konta | magic-link, token (w UI) |
 | odhacza serie | loguje sety, trackuje |
 | bez progresu | warto ruszyć, zalegasz |
@@ -93,6 +98,9 @@ Pytania: czy da się zrozumieć bez zgadywania? czy to słowa trenera/klienta? c
 | klub / siłownia | studio z recepcją |
 | dieta | coaching dietetyczny |
 | podopieczny / klient | user, lead |
+| 490 zł raz / 15 osób / 3 miesiące | founding, Solo locked, Solo, Pro |
+| 90 dni za 0 zł / rozmowa wdrożeniowa | white-glove, call, callu |
+| 0 zł do 5 osób | unlimited, early access, Wczesny dostęp |
 
 W kodzie nazwy angielskie (`portalToken`, `fromClients`) mogą zostać. W UI — polski trenera.
 
@@ -103,4 +111,5 @@ W kodzie nazwy angielskie (`portalToken`, `fromClients`) mogą zostać. W UI —
 - [ ] Landing: pełne zdania. Panel: dosłowna etykieta
 - [ ] CTA = czasownik + obiekt, nie slogan i nie samo „OK”
 - [ ] Zero kalek, telegrafu, żargonu ICP, wstydu, wykrzykników, emoji
+- [ ] Cennik: kwota + osoby + czas — nigdy founding / Solo / white-glove / call / unlimited
 - [ ] Spójne słowo na tę samą rzecz w całym produkcie

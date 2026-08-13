@@ -26,6 +26,29 @@ export function silenceMessage(kind: SilenceKind, name: string, portalUrl: strin
   return `Cześć ${first}. Jak idzie z planem w tym tygodniu? Jeśli coś nie pasuje na siłowni — napisz, podmienimy ćwiczenie.\n${portalUrl}`;
 }
 
+/** Publiczne gotowce (landing) — bez URL portalu. Te same zdania co `silenceMessage`, z `{imię}`. */
+export const PUBLIC_SILENCE_TEMPLATES: readonly {
+  kind: SilenceKind;
+  label: string;
+  body: string;
+}[] = [
+  {
+    kind: "day7",
+    label: "7 dni bez treningu",
+    body: "Cześć {imię}. Jak idzie z planem w tym tygodniu? Jeśli coś nie pasuje na siłowni — napisz, podmienimy ćwiczenie.",
+  },
+  {
+    kind: "day14",
+    label: "14 dni bez treningu",
+    body: "Cześć {imię}. Nie widziałem treningu od dwóch tygodni. Jak wrócisz, zacznij od lżejszego dnia — plan nadal czeka.",
+  },
+  {
+    kind: "never",
+    label: "Nie trenował w ogóle",
+    body: "Cześć {imię}. Plan jest pod linkiem — otwierasz w przeglądarce, bez konta. Wystarczy odhaczyć serie na pierwszym treningu.",
+  },
+];
+
 export function canWriteSilence(item: AttentionItem | null | undefined): boolean {
   if (!item) return false;
   return (

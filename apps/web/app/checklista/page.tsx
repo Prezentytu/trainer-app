@@ -4,9 +4,10 @@ import { Wordmark } from "@/components/Wordmark";
 import { LandingThemeLock } from "@/components/landing/LandingThemeLock";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LandingCta } from "@/components/landing/primitives";
+import { PUBLIC_SILENCE_TEMPLATES } from "@/lib/silenceProtocol";
 
 export const metadata: Metadata = {
-  title: "Checklista: kto odpadnie w 14 dni",
+  title: "Checklista: kto odejdzie w 14 dni",
   description:
     "Piętnaście osób, cztery pytania. Napisz dziś do tych, którzy mają dwa lub więcej tak.",
 };
@@ -26,7 +27,7 @@ export default function ChecklistPage() {
       <main className="mx-auto max-w-[720px] px-5 py-16 sm:px-8 sm:py-24">
         <p className="t-label m-0 tracking-[0.16em]">Jedna strona</p>
         <h1 className="mt-6 text-[clamp(1.875rem,4vw,3rem)] font-semibold leading-[1.08] tracking-[-0.028em]">
-          Kto z Twoich 15 klientów odpadnie w 14 dni
+          Kto z Twoich 15 klientów odejdzie w 14 dni
         </h1>
         <p className="mt-6 text-[17px] leading-[1.6] text-muted">
           Weź listę aktywnych podopiecznych. Przy każdym odhacz, co jest prawdą dziś.
@@ -72,26 +73,26 @@ export default function ChecklistPage() {
 
         <h2 className="t-heading mt-16">Co napisać</h2>
         <div className="mt-6 space-y-6 text-[15px] leading-relaxed text-foreground-secondary">
-          <p>
-            <span className="t-label block text-muted">7 dni bez treningu</span>
-            Cześć {"{imię}"}. Jak idzie z planem w tym tygodniu? Jeśli coś nie pasuje na
-            siłowni — napisz, podmienimy ćwiczenie.
-          </p>
-          <p>
-            <span className="t-label block text-muted">14 dni bez treningu</span>
-            Cześć {"{imię}"}. Nie widziałem treningu od dwóch tygodni. Jak wrócisz, zacznij
-            od lżejszego dnia — plan nadal czeka.
-          </p>
-          <p>
-            <span className="t-label block text-muted">Nie trenował w ogóle</span>
-            Cześć {"{imię}"}. Plan jest pod linkiem — otwierasz w przeglądarce, bez konta.
-            Wystarczy odhaczyć serie na pierwszym treningu.
-          </p>
+          {PUBLIC_SILENCE_TEMPLATES.map((item) => (
+            <p key={item.kind}>
+              <span className="t-label block text-muted">{item.label}</span>
+              {item.body}
+            </p>
+          ))}
         </div>
+        <p className="mt-6 text-[15px] leading-relaxed text-muted">
+          <Link href="/gotowce" className="text-foreground underline-offset-4 hover:underline">
+            Skopiuj wiadomość
+          </Link>
+          {" · "}
+          <Link href="/ile-tracisz" className="text-foreground underline-offset-4 hover:underline">
+            Policz, ile tracisz
+          </Link>
+        </p>
 
-        <p className="mt-12 text-[15px] leading-relaxed text-muted">
-          W panelu RepMaxer ta lista układa się sama. Na callu 30 min wpinamy Twój plan w
-          link bez konta.{" "}
+        <p className="mt-12 text-[15px] leading-[1.6] text-muted">
+          W panelu RepMaxer ta lista układa się sama. Na 30-minutowej rozmowie przenosisz plan
+          do linku bez konta.{" "}
           <Link href="/wdrozenie" className="text-foreground underline-offset-4 hover:underline">
             Umów wdrożenie
           </Link>

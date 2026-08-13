@@ -30,7 +30,7 @@ public sealed class FoundingService(IHttpClientFactory httpFactory, IConfigurati
         var founderTo = config["Email:FounderInbox"] ?? config["Email:From"];
         var origin = (config["WEB_ORIGIN"] ?? "http://localhost:3000").TrimEnd('/');
         var html = $"""
-            <p>Nowe zgłoszenie RepMaxer ({track})</p>
+            <p>Nowe zgłoszenie RepMaxer ({(track == "founding" ? "490 zł, 3 miesiące, 15 osób" : "90 dni za 0 zł")})</p>
             <p>Imię: {System.Net.WebUtility.HtmlEncode(name)}<br/>
             E-mail: {System.Net.WebUtility.HtmlEncode(mail)}<br/>
             Telefon: {System.Net.WebUtility.HtmlEncode(phone ?? "—")}</p>
@@ -40,7 +40,7 @@ public sealed class FoundingService(IHttpClientFactory httpFactory, IConfigurati
             var toAddr = founderTo.Contains('<')
                 ? founderTo[(founderTo.IndexOf('<') + 1)..].TrimEnd('>')
                 : founderTo;
-            await email.SendAsync(toAddr, $"Zgłoszenie {track}: {name}", html, ct);
+            await email.SendAsync(toAddr, $"Zgłoszenie {(track == "founding" ? "490 zł" : "wdrożenie 0 zł")}: {name}", html, ct);
         }
 
         if (track == "founding" && StripeConfigured)
@@ -52,8 +52,8 @@ public sealed class FoundingService(IHttpClientFactory httpFactory, IConfigurati
         }
 
         var message = track == "founding"
-            ? "Zapisaliśmy zgłoszenie founding. Oddzwonimy w sprawie 490 zł i calla wdrożenia."
-            : "Zapisaliśmy Cię na wdrożenie. Oddzwonimy w jeden dzień roboczy — 10 miejsc w miesiącu.";
+            ? "Zapisaliśmy zgłoszenie. Oddzwonimy w sprawie 490 zł i rozmowy wdrożeniowej."
+            : "Zapisaliśmy Cię na wdrożenie. Oddzwonimy w jeden dzień roboczy. 10 miejsc w miesiącu.";
         return (true, null, message);
     }
 
@@ -75,7 +75,7 @@ public sealed class FoundingService(IHttpClientFactory httpFactory, IConfigurati
             ["line_items[0][quantity]"] = "1",
             ["line_items[0][price_data][currency]"] = "pln",
             ["line_items[0][price_data][unit_amount]"] = FoundingAmountGrosze.ToString(CultureInfo.InvariantCulture),
-            ["line_items[0][price_data][product_data][name]"] = "RepMaxer Founding — 3 miesiące Solo",
+            ["line_items[0][price_data][product_data][name]"] = "RepMaxer — trzy miesiące, do 15 osób",
             ["metadata[name]"] = name,
             ["metadata[track]"] = "founding",
         };

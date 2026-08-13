@@ -18,7 +18,7 @@ export default function PrivacyPage() {
           </p>
           <h1 className="t-title">Polityka prywatności</h1>
           <p className="t-small">
-            Szkic dla early access (design partners). Wypełnij przed szerszą premierą —
+            Szkic dla pierwszych trenerów. Wypełnij przed szerszą premierą —
             nie stanowi finalnej porady prawnej.
           </p>
         </header>

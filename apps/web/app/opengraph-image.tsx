@@ -58,7 +58,7 @@ export default function OpenGraphImage() {
             color: "#9AA1A8",
           }}
         >
-          <span>Wczesny dostęp za darmo</span>
+          <span>0 zł do 5 osób</span>
           <span>·</span>
           <span>Bez karty</span>
           <span>·</span>

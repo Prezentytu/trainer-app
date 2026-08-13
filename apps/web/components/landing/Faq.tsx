@@ -10,7 +10,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Ile to kosztuje?",
-    a: "Do 5 podopiecznych: 0 zł na zawsze, bez karty. Potem Solo 39 zł / 15 osób, Pro 99 zł / 30. Płacisz Ty. Podopieczny zawsze 0 zł. Wczesny dostęp: 90 dni albo founding 490 zł — bez wiecznego unlimited.",
+    a: "Do 5 podopiecznych: 0 zł na zawsze, bez karty. Przy większej liczbie: 39 zł za 15 osób albo 99 zł za 30. Płacisz Ty. Podopieczny zawsze 0 zł. Na start możesz umówić rozmowę: 90 dni za 0 zł (10 miejsc w miesiącu) albo 490 zł raz za trzy miesiące przy 15 osobach.",
   },
   {
     q: "Dla kogo to jest?",

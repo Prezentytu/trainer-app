@@ -15,6 +15,20 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Nigdy „odpad” w copy
+
+**Kontekst**: Hak kalkulatora i checklista używały „odpad”, „odpadający”, „odpadnie”.
+**Problem**: Brzmi jak śmieć i wstyd, nie jak rozmowa trenera. Trener mówi, że klient odchodzi albo kończy współpracę.
+**Zasada**: W UI i outreachu: „odchodzi”, „skończył współpracę”, „ile tracisz”. Zakaz: odpad, odpadający, odpadnie, odpadasz. Strona: `/ile-tracisz` (redirect z `/odpad`).
+**Dotyczy**: `ile-tracisz/`, `checklista/`, `LandingFooter.tsx`, skill `ux-writing`, `.ai/gtm/`.
+
+## Cennik w UI: kwota, osoby, czas — bez żargonu briefu
+
+**Kontekst**: Landing i `/wdrozenie` używały founding, Solo locked, white-glove, unlimited, Solo/Pro, „callu”.
+**Problem**: Trener nie wie, co to znaczy. To skróty z planu GTM, nie język oferty.
+**Zasada**: W UI (landing, formularze, Stripe, e-maile do użytkownika, OG, regulamin) mów kwotę, ile osób i na ile czasu. Zakaz: founding, Solo locked, white-glove, unlimited, Solo/Pro jako nazwy planów, call/callu. CTA: „Umów rozmowę”, „Zapłać 490 zł”. Nazwy w kodzie (`/api/founding`, `track: "founding"`) mogą zostać.
+**Dotyczy**: `wdrozenie/`, `Faq.tsx`, `PricingSection.tsx`, `FoundingService.cs`, `opengraph-image.tsx`, skill `ux-writing`.
+
 ## Portal: jeden CTA, tab bar nie jak Styrka
 
 **Kontekst**: Dziś miało invert nad listą i drugi sticky nad floating pill; aktywny tab = biała pigułka.

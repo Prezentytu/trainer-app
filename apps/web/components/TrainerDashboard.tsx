@@ -419,7 +419,7 @@ export function TrainerDashboard() {
       {hasCompletedSession && !referralDismissed && !showOnboarding ? (
         <Card className="mb-6" title="Znasz trenera, który wciąż wysyła PDF-y?">
           <p className="text-sm text-foreground-secondary">
-            Miesiąc Solo za polecenie, które dojdzie do zalogowanego treningu — nie do rejestracji.
+            Miesiąc przy limicie 15 osób za polecenie, które dojdzie do zalogowanego treningu — nie do rejestracji.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Button size="sm" onClick={() => void copyReferral()}>

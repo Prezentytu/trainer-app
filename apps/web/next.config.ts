@@ -20,6 +20,9 @@ const nextConfig: NextConfig = {
     webpackMemoryOptimizations: true,
     preloadEntriesOnStart: false,
   },
+  async redirects() {
+    return [{ source: "/odpad", destination: "/ile-tracisz", permanent: true }];
+  },
   async headers() {
     return [
       {
