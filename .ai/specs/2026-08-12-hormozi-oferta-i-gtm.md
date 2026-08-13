@@ -23,7 +23,7 @@ Kolejność: oferta → model pieniądza → jeden kanał Core Four → kod, kt�
 **Stack (10 miejsc / miesiąc):**
 
 - Call 30–45 min: import 1 planu + 3 klientów + linki wysłane na callu.
-- Early access 90 dni (white-glove) albo Founding 490 zł (3 miesiące Solo + cena locked).
+- Early access 90 dni (white-glove) albo Founding 490 zł (12 miesięcy / 15 osób + 39 zł locked).
 - Szablon planu siłowego + szablony metod.
 - Protokół ciszy: 3 gotowce (nigdy nie trenował / dzień 7 / dzień 14).
 - Kanał founderski 90 dni.
@@ -88,7 +88,7 @@ Typy w `apps/web/lib/api.ts` lustrzane.
 |---|---|
 | Stripe bez klucza na early access | Checkout no-op; zgłoszenie idzie e-mailem; UI nie obiecuje natychmiastowej płatności |
 | Gwarancja spalona >20% | Onboarding na callu; kill signal Fazy A |
-| 490 zł za wysoko na PL | Alternatywa 190 zł setup w copy founding; white-glove zostaje 0 zł |
+| 490 zł za wysoko na PL | 490 = 12 miesięcy / 15 osób (≈ 39 × 12) + lock 39 zł; nie 3 miesiące i nie setup 190 zł |
 | Feature factory wraca | Anty-scope: Grupa 3, nutrition, ads, native |
 
 ## Relacja
@@ -99,3 +99,4 @@ Typy w `apps/web/lib/api.ts` lustrzane.
 
 - 2026-08-12 — utworzono spec: Grand Slam Offer, Q1–Q4, kontrakt activation/founding, fazy P0.
 - 2026-08-12 — wdrożono P0: aha = sesja, protokół ciszy, Peak-End 3 fakty, `/checklista`, `/wdrozenie`, founding apply, FAQ bez unlimited.
+- 2026-08-13 — 490 zł = 12 miesięcy / 15 osób + 39 zł locked; cennik 0/39/99 na `/`, karty startu na `/wdrozenie`.

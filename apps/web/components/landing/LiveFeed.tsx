@@ -15,10 +15,6 @@ type FeedRow = {
   mark: string;
 };
 
-/**
- * Szeroki cast — cykl 5 widocznych wierszy nie wraca do tych samych osób co chwilę.
- * Michał Dąbrowski zostaje (spójność z PanelMock).
- */
 const FEED: FeedRow[] = [
   { id: "1", name: "Michał Dąbrowski", lift: "Martwy ciąg", value: "142,5 kg × 3", tone: "pr", mark: "PR" },
   { id: "2", name: "Marta Lewicka", lift: "Wyciskanie", value: "62,5 kg × 8", tone: "gain", mark: "+2,5" },
@@ -51,7 +47,6 @@ const STEP = [
   "text-muted",
   "text-fg-faint",
   "text-fg-ghost",
-  "text-fg-ghost",
 ] as const;
 
 const STEP_Q = [
@@ -59,10 +54,9 @@ const STEP_Q = [
   "text-fg-faint",
   "text-fg-ghost",
   "text-fg-ghost",
-  "text-fg-ghost",
 ] as const;
 
-const VISIBLE = 5;
+const VISIBLE = 4;
 
 export function LiveFeed() {
   const [head, setHead] = useState(0);
@@ -108,30 +102,29 @@ export function LiveFeed() {
         if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setPaused(false);
       }}
     >
-      <div className="flex items-baseline justify-between border-b border-border-strong pb-3">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4 border-b border-border-strong pb-3 sm:grid-cols-3">
         <span className="t-label tracking-[0.16em]">Podgląd</span>
-        <span className="t-label tracking-[0.16em] text-fg-ghost">Dane przykładowe</span>
+        <span className="t-label hidden tracking-[0.16em] text-fg-ghost sm:block">Ćwiczenie</span>
+        <span className="t-label tracking-[0.16em] text-right text-fg-ghost">Dane przykładowe</span>
       </div>
       <ul className="m-0 list-none p-0" aria-label="Przykładowe wyniki klientów">
         {rows.map((r, i) => (
           <li
             key={r.id}
             ref={i === 0 ? firstRowRef : undefined}
-            className="grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-border sm:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_auto]"
+            className="grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-border sm:grid-cols-3"
           >
-            <span className="grid min-w-0 gap-0.5">
+            <span className="grid min-w-0 gap-0.5 text-left">
               <span className={`break-words text-[15px] font-medium ${STEP[i]}`}>{r.name}</span>
               <span className={`t-label ${STEP_Q[i]} sm:hidden`}>{r.lift}</span>
             </span>
-            <span className={`t-label hidden min-w-0 break-words sm:block ${STEP_Q[i]}`}>
+            <span className={`t-label hidden min-w-0 break-words text-left sm:block ${STEP_Q[i]}`}>
               {r.lift}
             </span>
-            <span className="flex items-center justify-end gap-3">
-              <span className={`t-num text-[15px] ${STEP[i]}`}>{r.value}</span>
-              <span className="flex w-16 justify-end">
-                {i < 2 && r.tone !== "flat" ? (
-                  <Marker tone={r.tone}>{r.mark}</Marker>
-                ) : null}
+            <span className="flex w-full items-center justify-end gap-3">
+              <span className={`t-num text-[15px] tabular-nums ${STEP[i]}`}>{r.value}</span>
+              <span className="flex w-16 shrink-0 justify-end">
+                {i < 2 && r.tone !== "flat" ? <Marker tone={r.tone}>{r.mark}</Marker> : null}
               </span>
             </span>
           </li>

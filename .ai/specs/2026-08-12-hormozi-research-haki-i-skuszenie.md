@@ -56,7 +56,7 @@ Pitch (język trenera — kwota, osoby, czas):
 | 1 Diagnoza | Ile tracisz, gdy klient odchodzi | `N × stawka × 8 = zł` | 39 zł vs strata | `/ile-tracisz` |
 | 2 Próbka | 3 gotowce WhatsApp | Wkleja dziś, bez konta | Przycisk Napisz | `/gotowce` |
 | 2 Próbka | Szablon 4×3 | Plan na jutro | Kreator + link | `.ai/gtm/szablon-4x3.md` |
-| 3 One-off | Rozmowa 30 min | Plan w linku | 90 dni / 490 zł | `/wdrozenie` |
+| 3 One-off | Rozmowa 30 min | Plan w linku | 90 dni / 490 zł rok | `/wdrozenie` |
 | 3 One-off | 0 zł / 5 osób | Produkt, nie trial | Próg 15 osób | cennik — reklamować jako hak |
 
 Give:ask 3:1. Nie: ebook, webinar, „50 szablonów”, ads.
@@ -79,10 +79,10 @@ Landing light (`LandingThemeLock`), tokeny mono v2, copy skill `ux-writing`.
 
 | Ścieżka | Rola |
 |---|---|
-| `/ile-tracisz` | Dwa pola (stawka, ile osób skończyło współpracę w roku). Wynik = N × stawka × 8. Kontrast: 39 zł / 15 osób. CTA → `/wdrozenie`. |
-| `/gotowce` | Trzy wiadomości z `silenceProtocol` (bez URL portalu). „Skopiuj wiadomość”. CTA → `/wdrozenie`. |
-| `/checklista` | Zostaje; gotowce wskazują `/gotowce`; zero „callu” i zero „odpad”. |
-| Stopka | Linki: Checklista, Ile tracisz, Gotowce, Wdrożenie. |
+| `/ile-tracisz` | Jedyny hak na homepage (embed). Dwa pola; wynik = N × stawka × 8. Kontrast: 39 zł / 15. CTA → `/wdrozenie`. |
+| `/gotowce` | Tylko DM (follow-up). Nie w nav/stopce landingu. |
+| `/checklista` | Tylko DM (pierwsza wiadomość). Nie w nav/stopce landingu. |
+| Stopka | Regulamin · Prywatność · Kontakt · Zaloguj się. |
 
 NAV panelu trenera **bez** tych stron (to marketing).
 
@@ -104,3 +104,4 @@ NAV panelu trenera **bez** tych stron (to marketing).
 ## Changelog
 
 - 2026-08-12 — utworzono spec; strony `/ile-tracisz` i `/gotowce`; GTM: stos haków, money math, walidacja 10 rozmów. Copy: nigdy „odpad” w UI.
+- 2026-08-13 — homepage = 1 hak (kalkulator). Checklista i gotowce zostają URL-ami do outreachu, bez chrome landingu.

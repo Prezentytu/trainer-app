@@ -6,7 +6,7 @@ import { lockLightTheme } from "@/lib/theme";
 /**
  * Landing zawsze light na `<html>` (preferencja localStorage nietknięta).
  * Bez drugiego `useServerInsertedHTML` — koliduje z ThemeBoot i psuje hydrację.
- * SSR: `data-theme="light"` na root landingu (LandingPage).
+ * SSR: `data-theme="light"` na root landingu (`MarketingShell`).
  */
 export function LandingThemeLock() {
   useEffect(() => lockLightTheme(), []);

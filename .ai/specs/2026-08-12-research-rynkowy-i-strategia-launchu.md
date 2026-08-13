@@ -186,7 +186,7 @@ Zastępuje flat 149 zł z wcześniejszych założeń.
 | Pro | do 30 | **99 zł** | Tańszy niż CoachGuru Growing (119) przy głębszym programowaniu siłowym |
 | Studio | do 50 | **199 zł** | Przed custom; multi-trener później |
 
-**Founding members (Faza A→B):** cena „locked forever" (−30–50% vs lista lub zamrożony Solo) dla pierwszych 10–20 trenerów w zamian za feedback i case study. Minimum 3 miesiące commitment przy płatnym pilocie.
+**Founding members (Faza A→B):** 490 zł raz = 12 miesięcy / 15 osób + 39 zł locked forever dla pierwszych 10–20 trenerów w zamian za feedback i case study.
 
 **Komunikat:** „Płacisz tylko Ty. Podopieczni — zawsze 0 zł."
 

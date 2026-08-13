@@ -77,16 +77,18 @@ export function LandingCta({
   href = "/sign-up",
   variant = "primary",
   className = "",
+  full,
 }: {
   size?: "sm" | "md" | "lg";
   children?: ReactNode;
   href?: string;
   variant?: "primary" | "secondary" | "ghost" | "danger";
   className?: string;
+  full?: boolean;
 }) {
   return (
-    <Link href={href} className={className}>
-      <Button size={size} variant={variant}>
+    <Link href={href} className={full ? `block ${className}` : className}>
+      <Button size={size} variant={variant} full={full}>
         {children}
       </Button>
     </Link>

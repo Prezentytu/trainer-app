@@ -1,10 +1,6 @@
 import Link from "next/link";
 
 const FOOTER_LINKS = [
-  { href: "/checklista", label: "Checklista" },
-  { href: "/ile-tracisz", label: "Ile tracisz" },
-  { href: "/gotowce", label: "Gotowce" },
-  { href: "/wdrozenie", label: "Wdrożenie" },
   { href: "/regulamin", label: "Regulamin" },
   { href: "/prywatnosc", label: "Prywatność" },
   { href: "mailto:kontakt@repmaxer.pl", label: "Kontakt" },

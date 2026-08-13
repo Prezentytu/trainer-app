@@ -15,6 +15,34 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## H1: wynik + mechanizm, nie zagadka o churnie
+
+**Kontekst**: Hero było „Wiesz, kto nie trenował. / Zanim zrezygnuje.”
+**Problem**: Wynik bez mechanizmu. Test 5 sekund: nie wiadomo, *co* to jest. „Zrezygnuje” jest niejasne. CoachGuru/TrueCoach piszą kategorię — my nie kopiujemy ich, ale H1 musi dać się ukraść tylko nam (plan jako link).
+**Zasada**: H1 to dwa krótkie takty tej samej wagi słów (Wysyłasz / Widzisz). Typografia jest kompozycją — bez `text-balance`, bez owijania w 18ch. Wyjaśnienie i churn w podtytule. Zakaz: zrezygnuje, milczy, all-in-one, „aplikacja dla trenerów”.
+**Dotyczy**: `Hero.tsx`, `app/page.tsx` metadata, skill `ux-writing`
+
+## 0 zł i 490 zł to nie ten sam wybór
+
+**Kontekst**: Cennik i `/wdrozenie` sklejały freemium, kolejkę 90 dni i prepaid 490 w jednym zdaniu. „Ta stawka zostaje” nie mówiła, jaka.
+**Problem**: 490 zł za 3 miesiące = 163 zł/msc wobec 39 zł Mini; radio 0 vs 490, każdy bierze 0.
+**Zasada**: Homepage cennik = 0 / 39 / 99. 490 tylko na `/wdrozenie` jako rok / 15 osób, potem 39 zł zamknięte. Dwie równe karty, nie jedno radio. Zakaz: „ta stawka zostaje”.
+**Dotyczy**: `PricingSection.tsx`, `Faq.tsx`, `wdrozenie/`, `FoundingService.cs`, skill `ux-writing`
+
+## Feed: równe kolumny, ćwiczenie do lewej
+
+**Kontekst**: LiveFeed na hero miał środkową kolumnę o zmiennej szerokości; krótkie „OHP” vs długie „MARTWY RUMUŃSKI” nie tworzyły jednej krawędzi.
+**Problem**: Wiersze wyglądają na rozjechane, nie na tabelę.
+**Zasada**: `sm:grid-cols-3` — trzy równe tory, `text-left` na nazwie ćwiczenia, stały slot markera (`w-16`), `tabular-nums` na wyniku. Nie `text-center` na tekście o zmiennej długości.
+**Dotyczy**: `LiveFeed.tsx`
+
+## Kalkulator straty: suwaki w jednej osi, animowana kwota
+
+**Kontekst**: Dwa `Field` w `grid-cols-2` — prawa etykieta dłuższa, pola i CTA na różnych krawędziach.
+**Problem**: Niesymetryczne; pola liczbowe słabsze niż gest suwaka.
+**Zasada**: Dwa suwaki pełnej szerokości, stacked. Kwota interpolowana (RAF, ease-out, interruptible; `prefers-reduced-motion` = snap). Jedna lewa krawędź: etykiety, wynik, CTA na pełną kolumnę. Track/thumb = invert, bez hue.
+**Dotyczy**: `IleTraciszCalculator.tsx`, `.landing-range` w `globals.css`
+
 ## Nigdy „odpad” w copy
 
 **Kontekst**: Hak kalkulatora i checklista używały „odpad”, „odpadający”, „odpadnie”.
@@ -26,7 +54,7 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 **Kontekst**: Landing i `/wdrozenie` używały founding, Solo locked, white-glove, unlimited, Solo/Pro, „callu”.
 **Problem**: Trener nie wie, co to znaczy. To skróty z planu GTM, nie język oferty.
-**Zasada**: W UI (landing, formularze, Stripe, e-maile do użytkownika, OG, regulamin) mów kwotę, ile osób i na ile czasu. Zakaz: founding, Solo locked, white-glove, unlimited, Solo/Pro jako nazwy planów, call/callu. CTA: „Umów rozmowę”, „Zapłać 490 zł”. Nazwy w kodzie (`/api/founding`, `track: "founding"`) mogą zostać.
+**Zasada**: W UI (landing, formularze, Stripe, e-maile do użytkownika, OG, regulamin) mów kwotę, ile osób i na ile czasu. 490 zł = rok / 15 osób, potem 39 zł zamknięte — nigdy „ta stawka zostaje”. Zakaz: founding, Solo locked, white-glove, unlimited, Solo/Pro jako nazwy planów, call/callu. CTA: „Umów rozmowę”, „Zapłać 490 zł”. Nazwy w kodzie (`/api/founding`, `track: "founding"`) mogą zostać.
 **Dotyczy**: `wdrozenie/`, `Faq.tsx`, `PricingSection.tsx`, `FoundingService.cs`, `opengraph-image.tsx`, skill `ux-writing`.
 
 ## Portal: jeden CTA, tab bar nie jak Styrka

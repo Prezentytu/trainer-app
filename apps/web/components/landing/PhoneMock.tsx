@@ -13,12 +13,6 @@ const SETS = [
   { n: "4", weight: "105,0", reps: "3" },
 ] as const;
 
-const POINTS = [
-  { n: "04", title: "Jeden link", body: "Bez konta i bez instalacji." },
-  { n: "05", title: "Ciężary już wpisane", body: "Poprawia tylko to, co się zmieniło." },
-  { n: "06", title: "Działa bez zasięgu", body: "Wynik dosyła się, gdy wróci internet." },
-] as const;
-
 function subscribeReducedMotion(onChange: () => void) {
   const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
   mql.addEventListener("change", onChange);
@@ -50,26 +44,22 @@ export function PhoneMock() {
   return (
     <LandingReveal
       as="section"
-      className="mx-auto max-w-[1200px] px-5 pt-[clamp(6rem,12vw,10rem)] sm:px-8"
+      id="produkt"
+      className="mx-auto max-w-[1200px] scroll-mt-24 px-5 pt-[clamp(8rem,18vw,12rem)] sm:px-8"
     >
-      <p
-        className="landing-stagger t-label m-0 tracking-[0.16em]"
-        style={{ ["--i" as string]: 0 }}
-      >
-        02 — Dla twojego klienta
-      </p>
-      <h2
-        className="landing-stagger mt-6 max-w-[16ch] text-[clamp(1.875rem,4.2vw,3.25rem)] font-semibold leading-[1.08] tracking-[-0.028em] text-balance"
-        style={{ ["--i" as string]: 1 }}
-      >
-        Otwiera link i odhacza serie.
-      </h2>
+      <div className="landing-stagger grid grid-cols-1 items-center gap-12 md:grid-cols-[minmax(0,1fr)_380px] md:gap-16">
+        <div>
+          <h2 className="m-0 max-w-[16ch] text-[clamp(2.25rem,5vw,4rem)] font-semibold leading-[1.08] tracking-[-0.028em] text-balance">
+            Klient otwiera link i odhacza serie.
+          </h2>
+          <p className="mt-6 max-w-[42ch] text-[17px] font-normal leading-[1.6] text-muted text-pretty">
+            Bez konta i bez instalacji. Ciężary już wpisane. Wynik dosyła się,
+            gdy wróci internet.
+          </p>
+        </div>
 
-      {/* Prawa kolumna ma szerokość mocka — telefon siada na linii siatki, nie pływa. */}
-      <div className="mt-12 grid grid-cols-1 items-center gap-12 md:mt-16 md:grid-cols-[minmax(0,1fr)_380px] md:gap-16">
         <div
-          className="landing-stagger w-full max-w-[380px] justify-self-center rounded-3xl border border-border-strong bg-surface-sunken px-6 py-7 md:order-2"
-          style={{ ["--i" as string]: 2 }}
+          className="w-full max-w-[380px] justify-self-center rounded-3xl border border-border-strong bg-surface-sunken px-6 py-7 md:justify-self-stretch"
           aria-label="Podgląd portalu klienta"
         >
           <div className="flex items-center justify-between">
@@ -121,20 +111,6 @@ export function PhoneMock() {
             </Button>
           </div>
         </div>
-
-        <ol className="m-0 grid list-none content-center divide-y divide-border p-0 md:order-1">
-          {POINTS.map((p, i) => (
-            <li
-              key={p.n}
-              className="landing-stagger grid content-start gap-3 py-7 first:pt-0 last:pb-0"
-              style={{ ["--i" as string]: 3 + i }}
-            >
-              <span className="t-num text-[13px] text-fg-ghost">{p.n}</span>
-              <h3 className="t-heading m-0">{p.title}</h3>
-              <p className="t-small m-0 leading-[1.6]">{p.body}</p>
-            </li>
-          ))}
-        </ol>
       </div>
     </LandingReveal>
   );
