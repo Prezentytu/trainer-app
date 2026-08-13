@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { api, CLIENT_GOALS, ClientSummary } from "@/lib/api";
 import { daysAgo, relativeDayLabel } from "@/lib/dates";
 import { refreshNavCounts } from "@/lib/navCounts";
@@ -16,6 +17,7 @@ import {
   inputClass,
   PageHeader,
   Pill,
+  Switch,
   Tabs,
   useUndoToast,
 } from "@/components/ui";
@@ -48,6 +50,7 @@ function buildClientNote(goals: string[], daysPerWeek: number | null): string | 
 }
 
 export default function ClientsPage() {
+  const router = useRouter();
   const [clients, setClients] = useState<ClientSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,6 +59,7 @@ export default function ClientsPage() {
   const [email, setEmail] = useState("");
   const [goals, setGoals] = useState<string[]>([]);
   const [daysPerWeek, setDaysPerWeek] = useState<number | null>(null);
+  const [hasScreens, setHasScreens] = useState(false);
   const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<TabFilter>("all");
@@ -76,6 +80,7 @@ export default function ClientsPage() {
     setEmail("");
     setGoals([]);
     setDaysPerWeek(null);
+    setHasScreens(false);
   };
 
   const toggleGoal = (g: string) => {
@@ -104,8 +109,12 @@ export default function ClientsPage() {
     resetForm();
     setShowForm(false);
     try {
-      await api.clients.create(payload);
+      const created = await api.clients.create(payload);
       void refreshNavCounts();
+      if (hasScreens && created.id > 0) {
+        router.push(`/clients/${created.id}/import`);
+        return;
+      }
       load();
     } catch (err) {
       setClients((prev) => prev.filter((c) => c.id !== tempId));
@@ -199,6 +208,11 @@ export default function ClientsPage() {
               ))}
             </div>
           </Field>
+          <Switch
+            label="Mam zdjęcia z poprzedniej apki"
+            checked={hasScreens}
+            onChange={setHasScreens}
+          />
         </div>
       </Dialog>
 

@@ -6,7 +6,7 @@ namespace TrainerApp.Api;
 public static class Stats
 {
     /// <summary>
-    /// Powyżej tej liczby powtórzeń e1RM jest zbyt niedokładny (Strong odcina przy 12).
+    /// Powyżej tej liczby powtórzeń e1RM jest zbyt niedokładny (odcinamy przy 12).
     /// Serie wykończeniowe nie mogą blokować prawdziwych rekordów.
     /// </summary>
     public const int MaxRepsFor1Rm = 12;

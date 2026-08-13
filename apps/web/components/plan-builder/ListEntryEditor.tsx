@@ -435,6 +435,7 @@ export function ListEntryEditor({
             onRemove={onRemoveSet}
             onApplyPreset={onApplyPreset}
             onClear={onClearSets}
+            onReplaceSets={(next) => onPatch({ prescribedSets: next, sets: next.length })}
           />
         </div>
       )}

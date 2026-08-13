@@ -14,11 +14,12 @@ export function formatPairWeight(kg: number, opts?: { unit?: boolean }): string 
   return opts?.unit === false ? `2×${n}` : `2×${n} kg`;
 }
 
-/** Ciężar z jednostką — dla pary hantli z prefiksem 2×. */
+/** Ciężar z jednostką — 0 kg = masa ciała (BW); para hantli z prefiksem 2×. */
 export function formatLoadDisplay(
   kg: number,
   ex?: { equipment?: string[] | null; isUnilateral?: boolean | null } | null,
 ): string {
+  if (kg === 0) return "BW";
   if (ex && isDumbbellPair(ex)) return formatPairWeight(kg);
   return `${formatKg(kg)} kg`;
 }

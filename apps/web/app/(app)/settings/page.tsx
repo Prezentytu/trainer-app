@@ -85,7 +85,7 @@ export default function SettingsPage() {
       <ErrorBanner message={error} />
 
       {loadingCounts ? (
-        <div className="max-w-2xl space-y-3 rounded-[var(--r-card)] border border-border bg-surface p-4">
+        <div className="space-y-3 rounded-[var(--r-card)] border border-border bg-surface p-4">
           <Skeleton className="h-4 w-40" />
           <Skeleton className="h-3 w-64" />
           <Skeleton className="h-10 w-full" />
@@ -93,7 +93,6 @@ export default function SettingsPage() {
       ) : null}
 
       <Card
-        className="max-w-2xl"
         icon={<Icon name="sliders-horizontal" size={16} decorative />}
         title="Wygląd"
         meta="Motyw zapisuje się w tej przeglądarce."
@@ -109,7 +108,6 @@ export default function SettingsPage() {
       </Card>
 
       <Card
-        className="max-w-2xl"
         icon={<Icon name="download" size={16} decorative />}
         title="Pobierz swoje dane"
         meta="Wszystko, co zapisałeś w aplikacji, możesz w każdej chwili pobrać na swój komputer."
@@ -141,7 +139,6 @@ export default function SettingsPage() {
       </Card>
 
       <Card
-        className="max-w-2xl"
         icon={<Icon name="warning-circle" size={16} decorative />}
         title="Usuń konto"
         meta="Nieodwracalne — kasuje klientów, plany i historię treningów."

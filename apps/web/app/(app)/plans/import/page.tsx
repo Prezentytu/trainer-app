@@ -320,7 +320,7 @@ export default function PlanImportPage() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div>
       <PageHeader
         title="Import planu"
         subtitle="Wklej tekst lub wrzuć plik — AI zbuduje strukturę, Ty dopasujesz ćwiczenia"

@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { PLAN_PRESETS } from "@/lib/planPresets";
+import { parseSetList } from "@/lib/setList";
 import { SetRow, editorChipOff, editorChipOn } from "./SetRow";
-import { BuilderSet } from "./types";
+import { BuilderSet, newKey } from "./types";
+import { Field, inputClass } from "@/components/ui";
 
 const BO_PERCENT_CHIPS = [60, 70, 80, 90] as const;
 
@@ -19,6 +21,7 @@ export function SetSchemeEditor({
   onRemove,
   onApplyPreset,
   onClear,
+  onReplaceSets,
 }: {
   sets: BuilderSet[];
   weekNumber?: number;
@@ -28,8 +31,11 @@ export function SetSchemeEditor({
   onRemove: (setKey: string) => void;
   onApplyPreset: (presetId: string) => void;
   onClear: () => void;
+  onReplaceSets?: (sets: BuilderSet[]) => void;
 }) {
   const [focusKey, setFocusKey] = useState<string | null>(null);
+  const [paste, setPaste] = useState("");
+  const [pasteError, setPasteError] = useState<string | null>(null);
   if (open === false) return null;
 
   const focused = sets.find((s) => s.key === focusKey) ?? sets[sets.length - 1] ?? null;
@@ -75,6 +81,52 @@ export function SetSchemeEditor({
           </button>
         )}
       </div>
+
+      {onReplaceSets ? (
+        <Field label="Wklej serie">
+          <input
+            className={inputClass}
+            value={paste}
+            placeholder="8x30, 8x35, 5x50kg"
+            onChange={(e) => {
+              setPaste(e.target.value);
+              setPasteError(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter") return;
+              e.preventDefault();
+              const parsed = parseSetList(paste);
+              if (!parsed) {
+                setPasteError("Nie rozpoznano serii. Wklej np. 8x30, 8x35, 5x50kg.");
+                return;
+              }
+              onReplaceSets(
+                parsed.map((s, i) => ({
+                  key: newKey(),
+                  order: i + 1,
+                  reps: s.reps,
+                  repsMax: null,
+                  durationSeconds: null,
+                  distanceMeters: null,
+                  loadKg: s.loadKg,
+                  loadPercent: null,
+                  percentOf: null,
+                  targetRpe: null,
+                  targetRir: null,
+                  tempo: null,
+                  role: "work",
+                  note: s.isBodyweight ? "BW" : null,
+                })),
+              );
+              setPaste("");
+              setPasteError(null);
+            }}
+          />
+          {pasteError ? <p className="mt-1 text-sm text-danger">{pasteError}</p> : (
+            <p className="mt-1 text-xs text-muted">Enter wkleja listę. Format: powtórzenia × kg, przecinek = kolejna seria.</p>
+          )}
+        </Field>
+      ) : null}
 
       {sets.length > 0 && (
         <div>

@@ -22,6 +22,7 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
     public DbSet<ClientCheckIn> ClientCheckIns => Set<ClientCheckIn>();
     public DbSet<ClientPushSubscription> ClientPushSubscriptions => Set<ClientPushSubscription>();
     public DbSet<TrainerNote> TrainerNotes => Set<TrainerNote>();
+    public DbSet<ClientHistoryImport> ClientHistoryImports => Set<ClientHistoryImport>();
     public DbSet<WorkoutSession> WorkoutSessions => Set<WorkoutSession>();
     public DbSet<LoggedExercise> LoggedExercises => Set<LoggedExercise>();
     public DbSet<LoggedSet> LoggedSets => Set<LoggedSet>();
@@ -224,6 +225,15 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
 
         modelBuilder.Entity<TrainerNote>()
             .HasIndex(n => new { n.ClientId, n.CreatedAt });
+
+        modelBuilder.Entity<ClientHistoryImport>()
+            .HasOne(h => h.Client)
+            .WithMany(c => c.HistoryImports)
+            .HasForeignKey(h => h.ClientId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ClientHistoryImport>()
+            .HasIndex(h => new { h.ClientId, h.Status, h.CreatedAt });
 
         modelBuilder.Entity<LoggedSet>()
             .HasOne(s => s.LoggedExercise)

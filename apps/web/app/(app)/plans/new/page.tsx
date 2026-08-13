@@ -136,7 +136,7 @@ function NewPlanWizard({ assignTo }: { assignTo: AssignTo | null }) {
   const firstName = assignTo?.name.split(/\s+/)[0] ?? null;
 
   return (
-    <div className="mx-auto w-full max-w-2xl lg:max-w-5xl">
+    <div>
       <PageHeader
         title="Nowy plan"
         subtitle={
@@ -297,7 +297,7 @@ function NewPlanPageInner() {
 
   if (error && hasClientId && !assignTo) {
     return (
-      <div className="mx-auto w-full max-w-2xl">
+      <div>
         <PageHeader title="Nowy plan" subtitle="Nie udało się wczytać klienta" />
         <ErrorBanner message={error} />
         <Link href="/plans/new">

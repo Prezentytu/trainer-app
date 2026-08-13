@@ -556,21 +556,29 @@ function ClientDetailsPage() {
     return days.find((d) => !doneDayIds.has(d.id)) ?? days[0];
   };
 
-  const openLogBehalf = async (assignment: ClientDetails["assignments"][number]) => {
+  const openLogBehalf = async (assignment?: ClientDetails["assignments"][number] | null) => {
     setError(null);
+    setLogBehalfDate(new Date().toISOString().slice(0, 10));
+    if (!assignment) {
+      setLogBehalfDays([]);
+      setLogBehalfDayId("");
+      setLogBehalfOpen(true);
+      return;
+    }
     try {
       const plan = await api.plans.get(assignment.planId, clientId);
       const days = [...plan.days]
         .sort((a, b) => a.weekNumber - b.weekNumber || a.order - b.order)
         .map((d) => ({ id: d.id, label: d.label, weekNumber: d.weekNumber }));
       if (days.length === 0) {
-        setError("Plan nie ma dni treningowych.");
+        setLogBehalfDays([]);
+        setLogBehalfDayId("");
+        setLogBehalfOpen(true);
         return;
       }
       const next = await resolveNextDayId(assignment);
       setLogBehalfDays(days);
       setLogBehalfDayId(next?.id ?? days[0].id);
-      setLogBehalfDate(new Date().toISOString().slice(0, 10));
       setLogBehalfOpen(true);
     } catch (err) {
       setError((err as Error).message);
@@ -578,15 +586,14 @@ function ClientDetailsPage() {
   };
 
   const confirmLogBehalf = async () => {
-    if (!activeAssignment || logBehalfDayId === "") return;
     setLogBehalfStarting(true);
     setError(null);
     try {
       const session = await api.sessions.start({
         clientId,
-        assignmentId: activeAssignment.id,
-        planId: activeAssignment.planId,
-        planDayId: logBehalfDayId,
+        assignmentId: activeAssignment?.id ?? null,
+        planId: activeAssignment?.planId ?? null,
+        planDayId: logBehalfDayId === "" ? null : logBehalfDayId,
         performedOn: logBehalfDate,
       });
       setLogBehalfOpen(false);
@@ -741,12 +748,27 @@ function ClientDetailsPage() {
             <Button variant="ghost" onClick={() => void openLogBehalf(activeAssignment)}>
               Wpisz trening za klienta
             </Button>
+            <Link href={`/clients/${clientId}/import`}>
+              <Button variant="ghost">Wgraj stare treningi</Button>
+            </Link>
           </div>
         </div>
       ) : (
         <div className="mb-6">
-          <EmptyState action={<Button onClick={openAssignTab}>Przypisz plan</Button>}>
-            Przypisz plan, żeby klient mógł zacząć trenować.
+          <EmptyState
+            action={
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button onClick={openAssignTab}>Przypisz plan</Button>
+                <Link href={`/clients/${clientId}/import`}>
+                  <Button variant="ghost">Wgraj stare treningi</Button>
+                </Link>
+                <Button variant="ghost" onClick={() => void openLogBehalf(null)}>
+                  Wpisz trening za klienta
+                </Button>
+              </div>
+            }
+          >
+            Przypisz plan, żeby klient mógł zacząć trenować — albo wrzuć screeny z poprzedniej apki.
           </EmptyState>
         </div>
       )}
@@ -911,16 +933,17 @@ function ClientDetailsPage() {
               <EmptyState
                 title="Tu pojawią się treningi klienta"
                 action={
-                  activeAssignment ? (
-                    <Button onClick={() => void openLogBehalf(activeAssignment)}>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <Link href={`/clients/${clientId}/import`}>
+                      <Button>Wgraj stare treningi</Button>
+                    </Link>
+                    <Button variant="ghost" onClick={() => void openLogBehalf(activeAssignment)}>
                       Wpisz trening za klienta
                     </Button>
-                  ) : (
-                    <Button onClick={openAssignTab}>Przypisz plan</Button>
-                  )
+                  </div>
                 }
               >
-                Klient loguje sesje w portalu. Możesz też wpisać wynik za niego — np. po treningu na sali.
+                Wrzuć screeny z poprzedniej apki — albo wpisz trening ręcznie, także bez planu.
               </EmptyState>
             ) : (
               <div className="grid gap-2">
@@ -1552,21 +1575,30 @@ function ClientDetailsPage() {
         onCancel={() => setLogBehalfOpen(false)}
       >
         <div className="space-y-3">
-          <Field label="Dzień planu">
-            <SearchPicker
-              size="sm"
-              ariaLabel="Dzień planu"
-              searchPlaceholder="Szukaj dnia…"
-              emptyHint="Brak dnia o tej nazwie."
-              value={logBehalfDayId === "" ? "" : String(logBehalfDayId)}
-              onChange={(v) => setLogBehalfDayId(v ? Number(v) : "")}
-              items={logBehalfDays.map((d) => ({
-                value: String(d.id),
-                label: d.label,
-                meta: `Tydz. ${d.weekNumber}`,
-              }))}
-            />
-          </Field>
+          {logBehalfDays.length > 0 ? (
+            <Field label="Dzień planu">
+              <SearchPicker
+                size="sm"
+                ariaLabel="Dzień planu"
+                searchPlaceholder="Szukaj dnia…"
+                emptyHint="Brak dnia o tej nazwie."
+                value={logBehalfDayId === "" ? "" : String(logBehalfDayId)}
+                onChange={(v) => setLogBehalfDayId(v ? Number(v) : "")}
+                items={[
+                  { value: "", label: "Bez dnia planu", meta: "trening spoza planu" },
+                  ...logBehalfDays.map((d) => ({
+                    value: String(d.id),
+                    label: d.label,
+                    meta: `Tydz. ${d.weekNumber}`,
+                  })),
+                ]}
+              />
+            </Field>
+          ) : (
+            <p className="text-sm text-muted-strong">
+              Trening bez dnia planu — dodasz ćwiczenia w loggerze.
+            </p>
+          )}
           <Field label="Data treningu">
             <input
               type="date"

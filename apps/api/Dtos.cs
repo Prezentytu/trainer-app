@@ -217,3 +217,62 @@ public record PlanImportItem(
     double? LoadPercent = null,
     string? Notes = null,
     List<PlanSetInput>? PrescribedSets = null);
+
+public record HistoryImportImage(string MimeType, string Base64);
+
+public record HistoryImportRequest(string? Text = null, List<HistoryImportImage>? Images = null);
+
+public record HistoryImportSet(int Reps = 0, double? WeightKg = null, bool IsBodyweight = false);
+
+public record HistoryImportExercise(
+    string ExerciseName = "",
+    int? MatchedExerciseId = null,
+    int Order = 0,
+    List<HistoryImportSet>? Sets = null);
+
+public record HistoryImportSession(
+    string? PerformedOn = null,
+    string? Label = null,
+    string? StartedAt = null,
+    string? EndedAt = null,
+    int? DurationSeconds = null,
+    int? SummarySets = null,
+    int? SummaryReps = null,
+    double? SummaryVolumeKg = null,
+    List<HistoryImportExercise>? Exercises = null);
+
+public record HistoryImportDraft(
+    List<HistoryImportSession>? Sessions = null,
+    List<string>? Warnings = null);
+
+public record HistoryImportApplyInput(
+    bool SaveHistory = true,
+    bool SaveMaxes = false,
+    List<WorkoutSessionInput>? Sessions = null,
+    List<ClientMaxInput>? Maxes = null);
+
+public record HistoryImportAnalyzeInput(
+    List<HistoryImportSession>? Sessions = null,
+    string? ClientName = null,
+    double TopKgDelta = 2.5);
+
+public record HistoryImportSuggestedMax(
+    int ExerciseId,
+    string ExerciseName,
+    double MaxKg,
+    string MeasuredOn);
+
+public record HistoryImportClusterDto(
+    string Key,
+    string Label,
+    List<string> ExerciseNames,
+    bool LastIsTest,
+    string? LatestFullDate,
+    int SessionCount);
+
+public record HistoryImportAnalyzeResult(
+    List<HistoryImportClusterDto> Clusters,
+    List<HistoryImportSuggestedMax> SuggestedMaxes,
+    bool HasTestWeek,
+    PlanImportDraft PlanDraft);
+

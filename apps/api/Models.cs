@@ -31,6 +31,7 @@ public class Client
     public List<ClientPushSubscription> PushSubscriptions { get; set; } = [];
     public List<TrainerNote> TrainerNotes { get; set; } = [];
     public ClientIntake? Intake { get; set; }
+    public List<ClientHistoryImport> HistoryImports { get; set; } = [];
 }
 
 /// <summary>Prywatna notatka trenera o kliencie. NIGDY nie wystawiana w /api/portal/*.</summary>
@@ -126,6 +127,17 @@ public class ClientMax
     public double MaxKg { get; set; }
     public DateOnly MeasuredOn { get; set; }
     public string? Note { get; set; }
+}
+
+/// <summary>Draft historii ze screenów / CSV — pending aż trener zatwierdzi. Bez obrazów.</summary>
+public class ClientHistoryImport
+{
+    public int Id { get; set; }
+    public int ClientId { get; set; }
+    public Client? Client { get; set; }
+    public string Status { get; set; } = "pending";
+    public string DraftJson { get; set; } = "";
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
 /// <summary>Magic-link do PWA klienta (token w URL).</summary>

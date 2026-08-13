@@ -18,6 +18,7 @@ import { MethodTemplateDialog } from "./MethodTemplateDialog";
 import { ExerciseFormDialog } from "@/components/ExerciseFormDialog";
 import { PlanToolbar, AssignedClientInfo } from "./PlanToolbar";
 import { PlanTable } from "./PlanTable";
+import { ProgressionView } from "./ProgressionView";
 import { estimateDaysMinutes, formatDurationApprox } from "./summaryText";
 import { useBuilderDnd } from "./useBuilderDnd";
 import { useExerciseLibrary } from "./useExerciseLibrary";
@@ -28,13 +29,15 @@ import { WeekTabs } from "./WeekTabs";
 
 type ActiveItem = { dayKey: string; itemKey: string };
 
-type ViewMode = "list" | "board" | "table";
+type ViewMode = "list" | "board" | "table" | "progression";
 const VIEW_MODE_STORAGE_KEY = "trainer-app:plan-builder-view-mode:v2";
 
 function loadInitialViewMode(): ViewMode {
   if (typeof window === "undefined") return "list";
   const stored = window.localStorage.getItem(VIEW_MODE_STORAGE_KEY);
-  if (stored === "board" || stored === "table" || stored === "list") return stored;
+  if (stored === "board" || stored === "table" || stored === "list" || stored === "progression") {
+    return stored;
+  }
   return "list";
 }
 
@@ -277,13 +280,14 @@ export default function PlanBuilder({
             onSelect={handleWeekSelect}
             onAddWeek={draft.addWeek}
             onCopyWeek={draft.copyWeek}
-            metaLabel={viewMode === "list" ? undefined : weekMeta}
+            metaLabel={viewMode === "list" || viewMode === "progression" ? undefined : weekMeta}
             right={
               <SegmentedControl
                 items={[
                   { value: "list", label: "Lista" },
                   { value: "board", label: "Tablica" },
                   { value: "table", label: "Arkusz" },
+                  { value: "progression", label: "Progresja" },
                 ]}
                 value={viewMode}
                 onChange={handleViewModeChange}
@@ -419,6 +423,8 @@ export default function PlanBuilder({
               }}
             />
           </div>
+        ) : viewMode === "progression" ? (
+          <ProgressionView days={draft.days} />
         ) : (
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
             <PlanTable days={draft.visibleDays} exercises={library.exercises} {...boardCallbacks} />

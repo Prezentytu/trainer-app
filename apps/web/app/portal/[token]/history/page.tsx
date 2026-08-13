@@ -151,15 +151,23 @@ export default function PortalHistoryPage() {
         <EmptyState
           title="Historia pojawi się po pierwszym treningu"
           action={
-            <Link
-              href={`/portal/${token}`}
-              className="inline-flex min-h-11 items-center text-sm font-medium text-foreground underline-offset-4 hover:underline"
-            >
-              Idź do dzisiejszego treningu
-            </Link>
+            <div className="flex flex-col items-center gap-2">
+              <Link
+                href={`/portal/${token}/import`}
+                className="inline-flex min-h-11 items-center text-sm font-medium text-foreground underline-offset-4 hover:underline"
+              >
+                Wrzuć screeny z poprzedniej apki
+              </Link>
+              <Link
+                href={`/portal/${token}`}
+                className="inline-flex min-h-11 items-center text-sm font-medium text-muted underline-offset-4 hover:underline"
+              >
+                Idź do dzisiejszego treningu
+              </Link>
+            </div>
           }
         >
-          Tu zobaczysz ukończone treningi — od najnowszego. Wejdź, żeby sprawdzić serie i rekordy.
+          Tu zobaczysz ukończone treningi — od najnowszego. Jeśli trenowałeś w innej apce, wrzuć screeny, a trener przepisze je za Ciebie.
         </EmptyState>
       ) : (
         <div className="space-y-8">

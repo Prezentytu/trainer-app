@@ -15,6 +15,27 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Panel: jedna szerokość contentu
+
+**Kontekst**: Import historii dostał własną kolumnę `max-w-2xl` / `max-w-xl`, podczas gdy Klienci i profil klienta biorą szerokość z AppShell (`max-w-[1080px]`).
+**Problem**: Ta sama aplikacja, inna szerokość — wygląda jak inny produkt.
+**Zasada**: Strony panelu trenera nie wprowadzają drugiej max-width. Dropzone i karty rozciągają się do kolumny AppShell. Węższa kolumna tylko tam, gdzie już jest konwencja (portal `max-w-lg`, landing).
+**Dotyczy**: import historii, import planu, nowy plan, ustawienia, AppShell, nowe strony w `(app)`
+
+## Etykieta akcji musi mówić sama za siebie
+
+**Kontekst**: Przycisk importu historii na profilu klienta brzmiał „Przyjmij z historii”.
+**Problem**: Trener widzi ekran pierwszy raz i nie zna kontekstu sesji projektowej. „Przyjąć” nie mówi, co przybędzie ani skąd — myślenie o zdjęciach albo o zatwierdzaniu historii.
+**Zasada**: Etykieta akcji = czasownik + obiekt, zrozumiała bez briefu. Test: czy trener powie to koledze? „Przyjmij z historii” → „Wgraj stare treningi”.
+**Dotyczy**: profil klienta, import historii, skill `ux-writing`
+
+## Bez nazw innych aplikacji w produkcie
+
+**Kontekst**: Import historii ze screenów opisywał konkretne dzienniki w UI, promptach AI, komentarzach i nazwach funkcji.
+**Problem**: Wymienianie marek obcych apek w produkcie nie jest wskazane, dozwolone ani bezpieczne.
+**Zasada**: W UI, kodzie (identyfikatory, komentarze, prompty) i specu funkcji pisz „poprzednia apka”, „dziennik”, „screeny”, „CSV”. Nie nazywaj konkurencji. Wykrywanie formatu CSV po nagłówkach kolumn, nie po nazwie źródła.
+**Dotyczy**: import historii, kreator (wklejka serii), portal, `HistoryImport.cs`, `setList.ts`
+
 ## H1: wynik + mechanizm, nie zagadka o churnie
 
 **Kontekst**: Hero było „Wiesz, kto nie trenował. / Zanim zrezygnuje.”
@@ -589,5 +610,12 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Problem**: To skrót z researchu (ICP), nie zdanie dla trenera. „Siłowy 1:1” nic nie znaczy bez slajdu. To samo: „tożsamość w sklepie z aplikacjami", „Wychwytujemy".
 **Zasada**: W UI mów kim jest człowiek i co robi. Zakaz skrótów ICP / 1:1 / studio z recepcją. Nigdy *my* o produkcie. Skill `ux-writing`.
 **Dotyczy**: `components/landing/Faq.tsx`, `PanelMock.tsx`, każdy tekst „dla kogo".
+
+## Import historii: język trenera, nie OCR
+
+**Kontekst**: Krok przeglądu importu mówił „odczyt”, „BW”, „zmapowane”, „01/02/03”, „Karta / odczyt”, ISO daty i surowy string serii.
+**Problem**: To żargon apki / OCR. Trener nie musi znać odczytu ani BW na tym ekranie — ma sprawdzić, czy trening ze zdjęcia się zgadza.
+**Zasada**: Etykieta nazywa rzecz tak, jak trener mówi do kolegi. Hierarchia: trening → ćwiczenie → serie (`t-num`, masa ciała nie BW). Combobox za „Zmień”; nazwa ze zdjęcia tylko gdy inna. Checksum tylko przy rozjechaniu. Jeden CTA. SQLite `EnsureCreated` nie migruje istniejącego `trainer.db` — nowa tabela wymaga usunięcia pliku; dashboard nie może padać na brak tabeli.
+**Dotyczy**: `HistoryImportReview.tsx`, `clients/[id]/import`, `HistoryImport.cs`, dashboard
 
 ---

@@ -101,6 +101,14 @@ export function formatDayShort(iso: string): string {
   return d.toLocaleDateString("pl-PL", { day: "numeric", month: "short" });
 }
 
+/** `2024-05-30` → `30 maja 2024`. */
+export function formatDayLong(iso: string | null | undefined): string {
+  if (!iso) return "bez daty";
+  const d = new Date(`${iso}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("pl-PL", { day: "numeric", month: "long", year: "numeric" });
+}
+
 export function withinLastDays(iso: string, days: number): boolean {
   return daysAgo(iso) <= days;
 }

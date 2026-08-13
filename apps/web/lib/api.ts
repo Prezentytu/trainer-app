@@ -559,6 +559,67 @@ export type PlanImportDraft = {
   failedWeeks?: number[] | null;
 };
 
+export type HistoryImportImage = { mimeType: string; base64: string };
+
+export type HistoryImportSet = {
+  reps: number;
+  weightKg: number | null;
+  isBodyweight: boolean;
+};
+
+export type HistoryImportExercise = {
+  exerciseName: string;
+  matchedExerciseId: number | null;
+  order: number;
+  sets: HistoryImportSet[];
+};
+
+export type HistoryImportSession = {
+  performedOn: string | null;
+  label: string | null;
+  startedAt?: string | null;
+  endedAt?: string | null;
+  durationSeconds?: number | null;
+  summarySets?: number | null;
+  summaryReps?: number | null;
+  summaryVolumeKg?: number | null;
+  exercises: HistoryImportExercise[];
+};
+
+export type HistoryImportDraft = {
+  sessions: HistoryImportSession[];
+  warnings?: string[] | null;
+};
+
+export type HistoryImportPending = {
+  id: number;
+  draft: HistoryImportDraft;
+  createdAt: string;
+};
+
+export type HistoryImportCluster = {
+  key: string;
+  label: string;
+  exerciseNames: string[];
+  lastIsTest: boolean;
+  latestFullDate: string | null;
+  sessionCount: number;
+};
+
+export type HistoryImportSuggestedMax = {
+  exerciseId: number;
+  exerciseName: string;
+  maxKg: number;
+  measuredOn: string;
+};
+
+export type HistoryImportAnalyzeResult = {
+  clusters: HistoryImportCluster[];
+  suggestedMaxes: HistoryImportSuggestedMax[];
+  hasTestWeek: boolean;
+  planDraft: PlanImportDraft;
+};
+
 export type PlanItemInput = {
   exerciseId: number;
   order: number;
@@ -855,7 +916,7 @@ export type AttentionItem = {
 
 /** Sygnały od klientów na Panelu (wiadomości + niskie check-iny). */
 export type DashboardFromClientItem = {
-  kind: "session_reply" | "session_note" | "low_checkin" | "out_of_order";
+  kind: "session_reply" | "session_note" | "low_checkin" | "out_of_order" | "history_import";
   clientId: number;
   clientName: string;
   sessionId?: number | null;
@@ -1167,7 +1228,7 @@ export const api = {
       email: string | null;
       note: string | null;
       goalWeightKg?: number | null;
-    }) => request("/api/clients", { method: "POST", body: JSON.stringify(input) }),
+    }) => request<{ id: number }>("/api/clients", { method: "POST", body: JSON.stringify(input) }),
     update: (
       id: number,
       input: {
@@ -1215,6 +1276,31 @@ export const api = {
       request(`/api/clients/${clientId}/send-reminder`, {
         method: "POST",
         body: JSON.stringify({ message }),
+      }),
+    historyImportPending: (clientId: number) =>
+      request<HistoryImportPending | undefined>(`/api/clients/${clientId}/history-imports/pending`),
+    saveHistoryImport: (clientId: number, draft: HistoryImportDraft) =>
+      request<{ id: number }>(`/api/clients/${clientId}/history-imports`, {
+        method: "POST",
+        body: JSON.stringify(draft),
+      }),
+    applyHistoryImport: (
+      clientId: number,
+      importId: number,
+      input: {
+        saveHistory: boolean;
+        saveMaxes: boolean;
+        sessions?: WorkoutSessionInput[];
+        maxes?: { exerciseId: number; maxKg: number; measuredOn: string; note?: string | null }[];
+      },
+    ) =>
+      request<{ sessionIds: number[]; maxIds: number[] }>(
+        `/api/clients/${clientId}/history-imports/${importId}/apply`,
+        { method: "POST", body: JSON.stringify(input) },
+      ),
+    dismissHistoryImport: (clientId: number, importId: number) =>
+      request<void>(`/api/clients/${clientId}/history-imports/${importId}/dismiss`, {
+        method: "POST",
       }),
     checkIns: (clientId: number) => request<ClientCheckIn[]>(`/api/clients/${clientId}/check-ins`),
     sessions: (clientId: number) => request<SessionSummary[]>(`/api/clients/${clientId}/sessions`),
@@ -1277,6 +1363,20 @@ export const api = {
       request<PlanImportDraft>("/api/ai/plan-import", {
         method: "POST",
         body: JSON.stringify({ text, weeks: weeks?.length ? weeks : undefined }),
+      }),
+    importHistory: (input: { text?: string; images?: HistoryImportImage[] }) =>
+      request<HistoryImportDraft>("/api/ai/history-import", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    analyzeHistory: (input: {
+      sessions: HistoryImportSession[];
+      clientName?: string;
+      topKgDelta?: number;
+    }) =>
+      request<HistoryImportAnalyzeResult>("/api/ai/history-import/analyze", {
+        method: "POST",
+        body: JSON.stringify(input),
       }),
   },
   plans: {
@@ -1455,6 +1555,11 @@ export const api = {
     saveIntake: (token: string, input: ClientIntakeInput) =>
       request<ClientIntake>(`/api/portal/${token}/intake`, {
         method: "PUT",
+        body: JSON.stringify(input),
+      }),
+    importHistory: (token: string, input: { text?: string; images?: HistoryImportImage[] }) =>
+      request<{ id: number }>(`/api/portal/${token}/history-import`, {
+        method: "POST",
         body: JSON.stringify(input),
       }),
     muscleVolume: (token: string, weeks = 4) =>

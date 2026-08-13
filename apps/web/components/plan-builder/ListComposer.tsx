@@ -8,7 +8,12 @@ import {
   exerciseInputFromQuickEntry,
 } from "@/lib/exerciseDraft";
 import { formatMeasureCore, measureOverridesFromParsed } from "@/lib/measure";
-import { matchExercises, parseQuickEntry, rampOverridesFromParsed } from "@/lib/quickEntry";
+import {
+  loggedSetsOverridesFromParsed,
+  matchExercises,
+  parseQuickEntry,
+  rampOverridesFromParsed,
+} from "@/lib/quickEntry";
 import { demoMedia } from "@/lib/youtube";
 import { ComposerHelp, markComposerHelpSeen, useComposerHelpOpen } from "./ComposerHelp";
 import { CreateExerciseRow } from "@/components/CreateExerciseRow";
@@ -68,6 +73,8 @@ export function ListComposer({
   const groups = buildListGroups(day.items);
 
   const overridesFromParsed = (exercise: Exercise): Partial<BuilderItem> => {
+    const logged = loggedSetsOverridesFromParsed(parsed);
+    if (logged) return logged;
     const ramp = rampOverridesFromParsed(parsed);
     if (ramp) {
       return {

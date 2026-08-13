@@ -48,6 +48,7 @@ export type IconName =
   | "note-blank"
   | "chat-text"
   | "calculator"
+  | "image"
   // English aliases
   | "copy"
   | "lock"

@@ -84,6 +84,16 @@ export default function PortalIntakePage() {
           </Link>
           .
         </p>
+        <p className="t-small mt-3 max-w-[48ch]">
+          Trenowałeś już w innej apce?{" "}
+          <Link
+            href={`/portal/${token}/import`}
+            className="text-foreground underline-offset-2 hover:underline"
+          >
+            Wrzuć screeny z poprzedniej apki
+          </Link>
+          — trener zobaczy je u siebie.
+        </p>
       </header>
       <ErrorBanner message={error} />
       <ClientIntakeForm

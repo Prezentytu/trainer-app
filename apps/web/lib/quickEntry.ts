@@ -3,7 +3,9 @@ import {
   buildRampPrescribedSets,
   formatRampScheme,
 } from "@/components/plan-builder/listGroups";
-import type { BuilderItem } from "@/components/plan-builder/types";
+import type { BuilderItem, BuilderSet } from "@/components/plan-builder/types";
+import { newKey } from "@/components/plan-builder/types";
+import { extractSetList, type ParsedLoggedSet } from "@/lib/setList";
 
 // Composer „szybkie wpisywanie" — parsuje jedną linię tekstu na dopasowanie ćwiczenia
 // + opcjonalne nadpisania parametrów. Patrz .ai/specs/2026-07-29-composer-units-and-help.md.
@@ -25,6 +27,8 @@ export type ParsedQuickEntry = {
   rampTarget: number | null;
   /** % topu dla BO (kolejność = serie), null = rampa bez BO */
   rampBackoffPercents: number[] | null;
+  /** Serie `8x30kg, 8x35kg` — jedna pozycja, wiele serii. */
+  loggedSets: ParsedLoggedSet[] | null;
 };
 
 function cut(text: string, match: RegExpMatchArray): string {
@@ -62,6 +66,12 @@ function parseUnit(unitRaw: string): { kind: UnitKind; scale: number } | null {
  */
 export function parseQuickEntry(raw: string): ParsedQuickEntry {
   let text = normalizeSetsPhrase(raw);
+  let loggedSets: ParsedLoggedSet[] | null = null;
+  const extracted = extractSetList(text);
+  if (extracted) {
+    loggedSets = extracted.sets;
+    text = extracted.rest;
+  }
   let supersetPrefix: ParsedQuickEntry["supersetPrefix"] = null;
 
   const prefixMatch = text.match(/^\s*(\d+)([a-zA-Z])(?=\s|$)/);
@@ -103,67 +113,75 @@ export function parseQuickEntry(raw: string): ParsedQuickEntry {
   }
 
   let loadKg: number | null = null;
-  const kgMatch = text.match(/\b(\d+(?:[.,]\d+)?)\s*kg\b/i);
-  if (kgMatch) {
-    loadKg = Number(kgMatch[1].replace(",", "."));
-    text = cut(text, kgMatch);
-  }
-
   let loadPercent: number | null = null;
-  // NN% ale nie „bo 80%” (już wycięte) i nie tempo-like
-  const pctMatch = text.match(/\b(\d+(?:[.,]\d+)?)\s*%(?!\s*RM)/i);
-  if (pctMatch && loadKg == null) {
-    loadPercent = Number(pctMatch[1].replace(",", "."));
-    text = cut(text, pctMatch);
-  }
-
   let sets: number | null = null;
   let measure: ExerciseType | null = null;
   let value: number | null = null;
   let valueMax: number | null = null;
 
-  // Token z jednostką: [Sx]V[-Vmax]unit — min przed m
-  const unitToken =
-    /\b(?:(\d+)\s*[xX×]\s*)?(\d+(?:\.\d+)?)(?:\s*[-–]\s*(\d+(?:\.\d+)?))?\s*(s|sek(?:und[ay]?)?|min(?:ut[ay]?)?|km|kilometr[oyw]?|m|metr[oyw]?)\b/i;
-  const unitMatch = text.match(unitToken);
-  if (unitMatch) {
-    const unit = parseUnit(unitMatch[4]);
-    if (unit) {
-      if (unitMatch[1]) sets = Number(unitMatch[1]);
-      const v = Number(unitMatch[2]);
-      const vmax = unitMatch[3] ? Number(unitMatch[3]) : null;
-      if (Number.isFinite(v)) {
-        measure = unit.kind;
-        value = Math.round(v * unit.scale);
-        valueMax = vmax != null && Number.isFinite(vmax) ? Math.round(vmax * unit.scale) : null;
-        text = cut(text, unitMatch);
+  if (loggedSets == null) {
+    const kgMatch = text.match(/\b(\d+(?:[.,]\d+)?)\s*kg\b/i);
+    if (kgMatch) {
+      loadKg = Number(kgMatch[1].replace(",", "."));
+      text = cut(text, kgMatch);
+    }
+
+    // NN% ale nie „bo 80%” (już wycięte) i nie tempo-like
+    const pctMatch = text.match(/\b(\d+(?:[.,]\d+)?)\s*%(?!\s*RM)/i);
+    if (pctMatch && loadKg == null) {
+      loadPercent = Number(pctMatch[1].replace(",", "."));
+      text = cut(text, pctMatch);
+    }
+
+    // Token z jednostką: [Sx]V[-Vmax]unit — min przed m
+    const unitToken =
+      /\b(?:(\d+)\s*[xX×]\s*)?(\d+(?:\.\d+)?)(?:\s*[-–]\s*(\d+(?:\.\d+)?))?\s*(s|sek(?:und[ay]?)?|min(?:ut[ay]?)?|km|kilometr[oyw]?|m|metr[oyw]?)\b/i;
+    const unitMatch = text.match(unitToken);
+    if (unitMatch) {
+      const unit = parseUnit(unitMatch[4]);
+      if (unit) {
+        if (unitMatch[1]) sets = Number(unitMatch[1]);
+        const v = Number(unitMatch[2]);
+        const vmax = unitMatch[3] ? Number(unitMatch[3]) : null;
+        if (Number.isFinite(v)) {
+          measure = unit.kind;
+          value = Math.round(v * unit.scale);
+          valueMax = vmax != null && Number.isFinite(vmax) ? Math.round(vmax * unit.scale) : null;
+          text = cut(text, unitMatch);
+        }
       }
     }
-  }
 
-  // mm:ss jako czas (z lub bez serii): 3x1:30 / 1:30
-  if (measure == null) {
-    const clockMatch = text.match(/\b(?:(\d+)\s*[xX×]\s*)?(\d+):(\d{1,2})(?:\s*[-–]\s*(\d+):(\d{1,2}))?\b/);
-    if (clockMatch) {
-      if (clockMatch[1]) sets = Number(clockMatch[1]);
-      measure = "time";
-      value = Number(clockMatch[2]) * 60 + Number(clockMatch[3]);
-      if (clockMatch[4] != null) {
-        valueMax = Number(clockMatch[4]) * 60 + Number(clockMatch[5]);
+    // mm:ss jako czas (z lub bez serii): 3x1:30 / 1:30
+    if (measure == null) {
+      const clockMatch = text.match(/\b(?:(\d+)\s*[xX×]\s*)?(\d+):(\d{1,2})(?:\s*[-–]\s*(\d+):(\d{1,2}))?\b/);
+      if (clockMatch) {
+        if (clockMatch[1]) sets = Number(clockMatch[1]);
+        measure = "time";
+        value = Number(clockMatch[2]) * 60 + Number(clockMatch[3]);
+        if (clockMatch[4] != null) {
+          valueMax = Number(clockMatch[4]) * 60 + Number(clockMatch[5]);
+        }
+        text = cut(text, clockMatch);
       }
-      text = cut(text, clockMatch);
     }
-  }
 
-  // SxR bez jednostki (tylko gdy nie złapano tokenu z jednostką / czasem)
-  if (measure == null) {
-    const setsRepsMatch = text.match(/\b(\d+)\s*[xX×]\s*(\d+)(?:-(\d+))?\b/);
-    if (setsRepsMatch) {
-      sets = Number(setsRepsMatch[1]);
-      value = Number(setsRepsMatch[2]);
-      valueMax = setsRepsMatch[3] ? Number(setsRepsMatch[3]) : null;
-      text = cut(text, setsRepsMatch);
+    // SxR bez jednostki (tylko gdy nie złapano tokenu z jednostką / czasem)
+    if (measure == null) {
+      const setsRepsMatch = text.match(/\b(\d+)\s*[xX×]\s*(\d+)(?:-(\d+))?\b/);
+      if (setsRepsMatch) {
+        sets = Number(setsRepsMatch[1]);
+        value = Number(setsRepsMatch[2]);
+        valueMax = setsRepsMatch[3] ? Number(setsRepsMatch[3]) : null;
+        text = cut(text, setsRepsMatch);
+      }
     }
+  } else {
+    sets = loggedSets.length;
+    measure = "reps";
+    const first = loggedSets[0];
+    value = first?.reps ?? null;
+    loadKg = loggedSets.every((s) => s.loadKg === first?.loadKg) ? (first?.loadKg ?? null) : null;
   }
 
   let tempo: string | null = null;
@@ -188,6 +206,7 @@ export function parseQuickEntry(raw: string): ParsedQuickEntry {
     loadPercent,
     rampTarget,
     rampBackoffPercents,
+    loggedSets,
   };
 }
 
@@ -247,4 +266,49 @@ export function rampOverridesFromParsed(parsed: ParsedQuickEntry): Partial<Build
     loadKg: parsed.loadKg,
     loadPercent: parsed.loadKg != null ? null : parsed.loadPercent,
   };
+}
+
+/** Overrides z listy serii `8x30kg, 8x35`. */
+export function loggedSetsOverridesFromParsed(parsed: ParsedQuickEntry): Partial<BuilderItem> | null {
+  if (parsed.loggedSets == null || parsed.loggedSets.length === 0) return null;
+  const prescribedSets: BuilderSet[] = parsed.loggedSets.map((s, i) => ({
+    key: newKey(),
+    order: i + 1,
+    reps: s.reps,
+    repsMax: null,
+    durationSeconds: null,
+    distanceMeters: null,
+    loadKg: s.loadKg,
+    loadPercent: null,
+    percentOf: null,
+    targetRpe: null,
+    targetRir: parsed.targetRir,
+    tempo: parsed.tempo,
+    role: inferSetRole(parsed.loggedSets!, i),
+    note: s.isBodyweight ? "BW" : null,
+  }));
+  return {
+    measureType: "reps",
+    sets: prescribedSets.length,
+    reps: prescribedSets[0]?.reps ?? null,
+    repsMax: null,
+    prescribedSets,
+    loadKg: null,
+    loadPercent: null,
+    tempo: parsed.tempo ?? null,
+    targetRir: parsed.targetRir ?? null,
+  };
+}
+
+function inferSetRole(sets: ParsedLoggedSet[], index: number): string {
+  if (sets.length < 3) return "work";
+  const loads = sets.map((s) => s.loadKg ?? 0);
+  const max = Math.max(...loads);
+  const maxIdx = loads.lastIndexOf(max);
+  if (index < maxIdx && loads[index] < max) return "ramp";
+  if (index === maxIdx) return "top";
+  if (index > maxIdx && (sets[index].reps > (sets[maxIdx].reps || 0) || (sets[index].loadKg ?? 0) < max)) {
+    return "backoff";
+  }
+  return "work";
 }

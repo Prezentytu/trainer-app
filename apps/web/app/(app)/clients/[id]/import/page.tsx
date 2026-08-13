@@ -1,0 +1,607 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import {
+  api,
+  ClientDetails,
+  Exercise,
+  HistoryImportDraft,
+  HistoryImportAnalyzeResult,
+  HistoryImportSession,
+} from "@/lib/api";
+import { DEFAULT_EXERCISE_INPUT } from "@/lib/exerciseDraft";
+import { createOrReuseExercise } from "@/lib/exerciseLibrary";
+import { foldDiacritics } from "@/lib/exerciseSearch";
+import { fileToHistoryImage, HISTORY_IMPORT_MAX_IMAGES } from "@/lib/compressImage";
+import {
+  countUnmappedSessions,
+  resolvedExerciseId,
+  sessionExKey,
+  toWorkoutSessions,
+} from "@/lib/historyImportMap";
+import { parseSetList } from "@/lib/setList";
+import {
+  draftToBuilderHandoff,
+  ExerciseIdMap,
+  itemMapKey,
+  saveImportHandoff,
+} from "@/lib/planImportHandoff";
+import { HistoryImportReview } from "@/components/HistoryImportReview";
+import { Icon } from "@/components/Icon";
+import {
+  Button,
+  ErrorBanner,
+  Field,
+  IconButton,
+  PageHeader,
+  SegmentedControl,
+  Switch,
+  inputClass,
+} from "@/components/ui";
+
+type Step = "upload" | "review" | "save";
+
+type PickedImage = { file: File; url: string };
+
+function readTextFile(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () => reject(new Error("Nie udało się odczytać pliku."));
+    reader.readAsText(file);
+  });
+}
+
+function firstNameOf(name: string | undefined): string | null {
+  const first = name?.trim().split(/\s+/)[0];
+  return first || null;
+}
+
+function polishPlural(n: number, one: string, few: string, many: string): string {
+  const abs = Math.abs(n) % 100;
+  const last = abs % 10;
+  if (abs === 1) return one;
+  if (last >= 2 && last <= 4 && (abs < 12 || abs > 14)) return few;
+  return many;
+}
+
+export default function ClientHistoryImportPage() {
+  const params = useParams<{ id: string }>();
+  const clientId = Number(params.id);
+  const router = useRouter();
+
+  const [step, setStep] = useState<Step>("upload");
+  const [client, setClient] = useState<ClientDetails | null>(null);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [text, setText] = useState("");
+  const [images, setImages] = useState<PickedImage[]>([]);
+  const imagesRef = useRef<PickedImage[]>([]);
+  const [pendingId, setPendingId] = useState<number | null>(null);
+  const [sessions, setSessions] = useState<HistoryImportSession[]>([]);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [idMap, setIdMap] = useState<Record<string, number>>({});
+  const [saveHistory, setSaveHistory] = useState(true);
+  const [saveMaxes, setSaveMaxes] = useState(true);
+  const [savePlan, setSavePlan] = useState(true);
+  const [topKgDelta, setTopKgDelta] = useState("2.5");
+  const [analyze, setAnalyze] = useState<HistoryImportAnalyzeResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [textOpen, setTextOpen] = useState(false);
+
+  useEffect(() => {
+    if (!Number.isFinite(clientId)) return;
+    Promise.all([api.clients.get(clientId), api.exercises.list()])
+      .then(([c, ex]) => {
+        setClient(c);
+        setExercises(ex);
+      })
+      .catch((e: Error) => setError(e.message));
+  }, [clientId]);
+
+  const applyDraft = (draft: HistoryImportDraft) => {
+    const list = draft.sessions ?? [];
+    setSessions(list);
+    setWarnings(draft.warnings ?? []);
+    const next: Record<string, number> = {};
+    list.forEach((s, si) => {
+      s.exercises.forEach((e, ei) => {
+        if (e.matchedExerciseId != null) next[sessionExKey(si, ei)] = e.matchedExerciseId;
+      });
+    });
+    setIdMap(next);
+  };
+
+  useEffect(() => {
+    if (!Number.isFinite(clientId)) return;
+    api.clients
+      .historyImportPending(clientId)
+      .then((row) => {
+        if (!row?.draft?.sessions?.length) return;
+        setPendingId(row.id);
+        applyDraft(row.draft);
+        setStep("review");
+      })
+      .catch(() => undefined);
+  }, [clientId]);
+
+  useEffect(() => {
+    imagesRef.current = images;
+  }, [images]);
+
+  useEffect(() => {
+    return () => {
+      imagesRef.current.forEach((item) => URL.revokeObjectURL(item.url));
+    };
+  }, []);
+
+  const unmapped = useMemo(() => countUnmappedSessions(sessions, idMap), [sessions, idMap]);
+
+  const mapExercise = (sessionIdx: number, exerciseIdx: number, exercise: Exercise) => {
+    const source = foldDiacritics(sessions[sessionIdx]?.exercises[exerciseIdx]?.exerciseName ?? "");
+    setIdMap((prev) => {
+      const next = { ...prev, [sessionExKey(sessionIdx, exerciseIdx)]: exercise.id };
+      if (!source) return next;
+      sessions.forEach((s, si) => {
+        s.exercises.forEach((e, ei) => {
+          if (si === sessionIdx && ei === exerciseIdx) return;
+          const key = sessionExKey(si, ei);
+          if (next[key] != null || e.matchedExerciseId != null) return;
+          if (foldDiacritics(e.exerciseName) === source) next[key] = exercise.id;
+        });
+      });
+      return next;
+    });
+    setExercises((prev) => {
+      if (prev.some((e) => e.id === exercise.id)) return prev;
+      return [...prev, exercise].sort((a, b) => a.name.localeCompare(b.name, "pl"));
+    });
+  };
+
+  const createMissing = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const next = { ...idMap };
+      for (let si = 0; si < sessions.length; si++) {
+        for (let ei = 0; ei < sessions[si].exercises.length; ei++) {
+          if (resolvedExerciseId(sessions[si], si, ei, next) != null) continue;
+          const name = sessions[si].exercises[ei].exerciseName.trim();
+          if (!name) continue;
+          const { exercise } = await createOrReuseExercise({
+            ...DEFAULT_EXERCISE_INPUT,
+            name,
+          });
+          next[sessionExKey(si, ei)] = exercise.id;
+          setExercises((prev) =>
+            prev.some((e) => e.id === exercise.id)
+              ? prev
+              : [...prev, exercise].sort((a, b) => a.name.localeCompare(b.name, "pl")),
+          );
+        }
+      }
+      setIdMap(next);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleParse = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const encoded = [];
+      for (const { file } of images.slice(0, HISTORY_IMPORT_MAX_IMAGES)) {
+        encoded.push(await fileToHistoryImage(file));
+      }
+      const draft = await api.ai.importHistory({
+        text: text.trim() || undefined,
+        images: encoded.length ? encoded : undefined,
+      });
+      if (!draft.sessions?.length) {
+        setError("Nie wczytałem żadnego treningu. Sprawdź zdjęcia albo wklej tekst.");
+        return;
+      }
+      applyDraft(draft);
+      const saved = await api.clients.saveHistoryImport(clientId, draft);
+      setPendingId(saved.id);
+      setStep("review");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleFiles = (list: FileList | null) => {
+    if (!list?.length) return;
+    const incoming = [...list];
+    const csv = incoming.find((f) => f.name.toLowerCase().endsWith(".csv"));
+    if (csv) {
+      void readTextFile(csv)
+        .then((t) => {
+          setText(t);
+          setTextOpen(true);
+          setError(null);
+        })
+        .catch((e: Error) => setError(e.message));
+      return;
+    }
+    const incomingImages = incoming
+      .filter((f) => f.type.startsWith("image/"))
+      .map((file) => ({ file, url: URL.createObjectURL(file) }));
+    setImages((prev) => {
+      const merged = [...prev, ...incomingImages];
+      if (merged.length > HISTORY_IMPORT_MAX_IMAGES) {
+        merged.slice(HISTORY_IMPORT_MAX_IMAGES).forEach((item) => URL.revokeObjectURL(item.url));
+      }
+      return merged.slice(0, HISTORY_IMPORT_MAX_IMAGES);
+    });
+    setError(null);
+  };
+
+  const removeFile = (idx: number) => {
+    setImages((prev) => {
+      const victim = prev[idx];
+      if (victim) URL.revokeObjectURL(victim.url);
+      return prev.filter((_, i) => i !== idx);
+    });
+  };
+
+  const patchSession = (idx: number, patch: Partial<HistoryImportSession>) => {
+    setSessions((prev) => prev.map((s, i) => (i === idx ? { ...s, ...patch } : s)));
+  };
+
+  const patchSets = (si: number, ei: number, raw: string) => {
+    const parsed = parseSetList(raw);
+    if (!parsed) return;
+    setSessions((prev) =>
+      prev.map((s, i) => {
+        if (i !== si) return s;
+        const exercises = s.exercises.map((e, j) =>
+          j === ei
+            ? {
+                ...e,
+                sets: parsed.map((p) => ({
+                  reps: p.reps,
+                  weightKg: p.loadKg,
+                  isBodyweight: p.isBodyweight,
+                })),
+              }
+            : e,
+        );
+        return { ...s, exercises };
+      }),
+    );
+  };
+
+  const goSave = async () => {
+    if (unmapped > 0) {
+      setError("Dodaj brakujące ćwiczenia do biblioteki, zanim zapiszesz.");
+      return;
+    }
+    const missingDate = sessions.some((s) => !s.performedOn);
+    if (saveHistory && missingDate) {
+      setError("Każdy trening potrzebuje daty.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await api.ai.analyzeHistory({
+        sessions: sessions.map((s, si) => ({
+          ...s,
+          exercises: s.exercises.map((e, ei) => ({
+            ...e,
+            matchedExerciseId: resolvedExerciseId(s, si, ei, idMap),
+          })),
+        })),
+        clientName: client?.name,
+        topKgDelta: Number(topKgDelta) || 0,
+      });
+      setAnalyze(result);
+      setStep("save");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleConfirm = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      let importId = pendingId;
+      if (importId == null) {
+        const saved = await api.clients.saveHistoryImport(clientId, { sessions, warnings });
+        importId = saved.id;
+        setPendingId(importId);
+      }
+      const mappedSessions = sessions.map((s, si) => ({
+        ...s,
+        exercises: s.exercises.map((e, ei) => ({
+          ...e,
+          matchedExerciseId: resolvedExerciseId(s, si, ei, idMap),
+        })),
+      }));
+      if (saveHistory || saveMaxes) {
+        await api.clients.applyHistoryImport(clientId, importId, {
+          saveHistory,
+          saveMaxes,
+          sessions: saveHistory ? toWorkoutSessions(clientId, mappedSessions, idMap) : [],
+          maxes: saveMaxes
+            ? (analyze?.suggestedMaxes ?? []).map((m) => ({
+                exerciseId: m.exerciseId,
+                maxKg: m.maxKg,
+                measuredOn: m.measuredOn,
+                note: "z historii",
+              }))
+            : [],
+        });
+      } else if (importId != null) {
+        await api.clients.dismissHistoryImport(clientId, importId);
+      }
+
+      if (savePlan && analyze?.planDraft) {
+        const planMap: ExerciseIdMap = {};
+        analyze.planDraft.days?.forEach((day, di) => {
+          day.items?.forEach((it, ii) => {
+            if (it.matchedExerciseId != null) planMap[itemMapKey(di, ii)] = it.matchedExerciseId;
+          });
+        });
+        saveImportHandoff(
+          draftToBuilderHandoff(analyze.planDraft, planMap, exercises, { isTemplate: false }),
+        );
+        router.push(`/plans/new?clientId=${clientId}`);
+        return;
+      }
+      router.push(`/clients/${clientId}`);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const firstName = firstNameOf(client?.name);
+  const title =
+    step === "upload"
+      ? "Wrzuć zdjęcia treningów"
+      : step === "review"
+        ? "Czy to się zgadza?"
+        : firstName
+          ? `Co zapisać u ${firstName}`
+          : "Co zapisać";
+  const subtitle =
+    step === "review"
+      ? `${client?.name ?? "Klient"} · ${sessions.length} ${polishPlural(sessions.length, "trening", "treningi", "treningów")}. Popraw to, co nie pasuje do zdjęcia.`
+      : client
+        ? `${client.name} — historia z poprzedniej apki.`
+        : "Historia klienta z poprzedniej apki.";
+  const stepLabel = step === "upload" ? "Krok 1 z 3" : step === "review" ? "Krok 2 z 3" : "Krok 3 z 3";
+
+  return (
+    <div>
+      <p className="t-label mb-2 text-muted">{stepLabel}</p>
+      <PageHeader
+        title={title}
+        subtitle={subtitle}
+        action={
+          <Link href={`/clients/${clientId}`}>
+            <Button variant="ghost">Wróć do profilu</Button>
+          </Link>
+        }
+      />
+      <ErrorBanner message={error} />
+
+      {step === "upload" ? (
+        <div className="grid gap-6">
+          <label
+            className={`flex min-h-64 cursor-pointer flex-col items-center justify-center gap-3 rounded-[10px] border border-dashed px-6 py-12 text-center transition-[border-color,background-color,box-shadow] duration-[var(--dur-fast)] ease-[var(--ease-out)] has-[:focus-visible]:shadow-[var(--focus-ring)] sm:min-h-80 ${
+              dragOver
+                ? "border-foreground bg-surface-hover"
+                : "border-border-strong bg-surface hover:border-foreground hover:bg-surface-hover"
+            }`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={(e) => {
+              if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+              setDragOver(false);
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragOver(false);
+              handleFiles(e.dataTransfer.files);
+            }}
+          >
+            <input
+              className="sr-only"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif,.csv"
+              multiple
+              onChange={(e) => {
+                handleFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
+            <span className="text-muted">
+              <Icon name="image" size={36} decorative />
+            </span>
+            <span className="text-base font-medium text-foreground">
+              Przeciągnij screeny albo kliknij i wybierz z dysku
+            </span>
+            <span className="text-sm text-muted">
+              JPG, PNG, WebP albo CSV z dziennika · maks. {HISTORY_IMPORT_MAX_IMAGES} zdjęć
+            </span>
+          </label>
+
+          {images.length > 0 ? (
+            <div>
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                {images.map((item, i) => (
+                  <div
+                    key={`${item.file.name}-${item.url}`}
+                    className="relative aspect-square overflow-hidden rounded-[10px] bg-surface-raised"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element -- blob URL z createObjectURL */}
+                    <img src={item.url} alt="" className="h-full w-full object-cover" />
+                    <div className="absolute right-1 top-1">
+                      <IconButton title="Usuń zdjęcie" size="sm" variant="outline" onClick={() => removeFile(i)}>
+                        <Icon name="x" size={14} decorative />
+                      </IconButton>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 text-sm text-muted">
+                {images.length} {polishPlural(images.length, "zdjęcie", "zdjęcia", "zdjęć")}
+                {images.length >= HISTORY_IMPORT_MAX_IMAGES ? ` · maks. ${HISTORY_IMPORT_MAX_IMAGES}` : ""}
+              </p>
+            </div>
+          ) : null}
+
+          {textOpen || text.trim().length > 0 ? (
+            <Field label="Wklej tekst (8 x 30kg, 8 x 35kg)">
+              <textarea
+                className={`${inputClass} min-h-40 font-mono text-sm`}
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder="02.07.2026 · nogi&#10;Wyciskanie żołnierskie&#10;8 x 30kg, 8 x 35kg, 8 x 40kg"
+              />
+            </Field>
+          ) : (
+            <div>
+              <Button variant="ghost" onClick={() => setTextOpen(true)}>
+                Nie masz screenów? Wklej tekst albo CSV
+              </Button>
+            </div>
+          )}
+
+          <div className="grid gap-2">
+            <p className="text-sm text-muted">
+              {images.length === 0 && text.trim().length < 10
+                ? "Dodaj zdjęcia albo wklej tekst, żeby zacząć."
+                : images.length > 0
+                  ? "Odczytam treningi ze zdjęć — przed zapisem wszystko sprawdzisz."
+                  : "Odczytam treningi z wklejki — przed zapisem wszystko sprawdzisz."}
+            </p>
+            <div>
+              <Button
+                onClick={() => void handleParse()}
+                disabled={busy || (images.length === 0 && text.trim().length < 10)}
+              >
+              {busy ? (images.length > 0 ? "Czytam zdjęcia…" : "Czytam treningi…") : "Wczytaj treningi"}
+            </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {step === "review" ? (
+        <HistoryImportReview
+          sessions={sessions}
+          exercises={exercises}
+          idMap={idMap}
+          warnings={warnings}
+          unmapped={unmapped}
+          busy={busy}
+          onMapExercise={mapExercise}
+          onCreateExercise={async (input) => {
+            const { exercise } = await createOrReuseExercise(input);
+            return exercise;
+          }}
+          onCreateMissing={() => void createMissing()}
+          onPatchSession={patchSession}
+          onPatchSets={patchSets}
+          onBack={() => setStep("upload")}
+          onContinue={() => void goSave()}
+        />
+      ) : null}
+
+      {step === "save" ? (
+        <div className="grid gap-6">
+          {analyze?.hasTestWeek ? (
+            <p className="text-sm text-foreground-secondary">
+              Ostatnie treningi wyglądają na tydzień testu (mało ćwiczeń, singlety). Kolejny plan biorę z
+              ostatniego pełnego dnia, nie z testu.
+            </p>
+          ) : null}
+          <div className="grid gap-4">
+            <Switch
+              label="Zapisz historię jako ukończone treningi"
+              checked={saveHistory}
+              onChange={setSaveHistory}
+            />
+            <Switch
+              label={
+                analyze?.suggestedMaxes.length
+                  ? `Zapisz rekordy (${analyze.suggestedMaxes.length})`
+                  : "Zapisz rekordy"
+              }
+              checked={saveMaxes}
+              onChange={setSaveMaxes}
+              disabled={!analyze?.suggestedMaxes.length}
+            />
+            <Switch
+              label="Złóż kolejny plan na podstawie tych treningów"
+              checked={savePlan}
+              onChange={setSavePlan}
+            />
+          </div>
+          {savePlan ? (
+            <Field label="Na najcięższej serii">
+              <SegmentedControl
+                value={topKgDelta}
+                onChange={(v) => {
+                  setTopKgDelta(v);
+                  if (analyze) {
+                    void api.ai
+                      .analyzeHistory({
+                        sessions,
+                        clientName: client?.name,
+                        topKgDelta: Number(v) || 0,
+                      })
+                      .then(setAnalyze)
+                      .catch((e: Error) => setError(e.message));
+                  }
+                }}
+                items={[
+                  { value: "0", label: "Bez zmian" },
+                  { value: "2.5", label: "+2,5 kg" },
+                ]}
+              />
+            </Field>
+          ) : null}
+          {analyze?.clusters.length ? (
+            <p className="text-sm text-muted">
+              {analyze.clusters.length}{" "}
+              {polishPlural(analyze.clusters.length, "dzień", "dni", "dni")} w tygodniu
+              {analyze.clusters.map((c) => ` · ${c.label}`).join("")}
+            </p>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            <Button variant="ghost" onClick={() => setStep("review")} disabled={busy}>
+              Wróć do treningów
+            </Button>
+            <Button
+              onClick={() => void handleConfirm()}
+              disabled={busy || (!saveHistory && !saveMaxes && !savePlan)}
+            >
+              {busy ? "Zapisuję…" : savePlan ? "Zatwierdź i złóż plan" : "Zatwierdź"}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}

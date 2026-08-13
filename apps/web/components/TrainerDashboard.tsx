@@ -164,9 +164,11 @@ export function TrainerDashboard() {
 
     for (const item of dash.fromClients ?? []) {
       const href =
-        item.sessionId != null
-          ? `/clients/${item.clientId}/sessions/${item.sessionId}`
-          : `/clients/${item.clientId}`;
+        item.kind === "history_import"
+          ? `/clients/${item.clientId}/import`
+          : item.sessionId != null
+            ? `/clients/${item.clientId}/sessions/${item.sessionId}`
+            : `/clients/${item.clientId}`;
       take({
         key: fromClientKey(item),
         clientId: item.clientId,
@@ -174,7 +176,12 @@ export function TrainerDashboard() {
         label: item.preview,
         href,
         rank: inboxRank(item.kind),
-        ctaLabel: item.sessionId != null ? "Otwórz" : "Przejdź do klienta",
+        ctaLabel:
+          item.kind === "history_import"
+            ? "Czy to się zgadza?"
+            : item.sessionId != null
+              ? "Otwórz"
+              : "Przejdź do klienta",
         ctaKind: "link",
         ctaHref: href,
       });
@@ -727,11 +734,12 @@ function fromClientKey(item: DashboardFromClientItem): string {
 
 function inboxRank(kind: string, reason?: string): number {
   if (kind === "session_reply") return 0;
-  if (kind === "low_checkin") return 1;
-  if (kind === "session_note") return 2;
-  if (kind === "no_plan" || reason === "no_plan") return 3;
-  if (kind === "out_of_order") return 4;
-  return 5;
+  if (kind === "history_import") return 1;
+  if (kind === "low_checkin") return 2;
+  if (kind === "session_note") return 3;
+  if (kind === "no_plan" || reason === "no_plan") return 4;
+  if (kind === "out_of_order") return 5;
+  return 6;
 }
 
 function OnboardingStep({ done, children }: { done: boolean; children: ReactNode }) {

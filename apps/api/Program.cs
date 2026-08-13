@@ -1,4 +1,5 @@
 using System.ClientModel;
+using System.Text.Json;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
@@ -971,6 +972,22 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
             var label = string.IsNullOrWhiteSpace(s.DayLabel) ? "trening" : s.DayLabel!;
             var preview = $"Zrobił {label} poza kolejką — {s.PerformedOn:yyyy-MM-dd}";
             fromClientRows.Add(("out_of_order", s.ClientId, s.ClientName, s.Id, null, ClipPreview(preview), s.CreatedAt));
+        }
+
+        try
+        {
+            var pendingHistory = await db.ClientHistoryImports
+                .Where(h => h.Client!.TrainerId == trainerId && h.Status == "pending")
+                .OrderByDescending(h => h.CreatedAt)
+                .Take(8)
+                .Select(h => new { h.ClientId, ClientName = h.Client!.Name, h.CreatedAt })
+                .ToListAsync();
+            foreach (var h in pendingHistory)
+                fromClientRows.Add(("history_import", h.ClientId, h.ClientName, null, null, "Klient wrzucił zdjęcia treningów — sprawdź, czy się zgadzają.", h.CreatedAt));
+        }
+        catch (Exception ex) when (IsMissingClientHistoryImportsTable(ex))
+        {
+            // SQLite EnsureCreated nie migruje istniejącej bazy — panel ma działać bez tej tabeli.
         }
 
         var fromClients = fromClientRows
@@ -2438,6 +2455,55 @@ app.MapPost("/api/portal/{token}/check-ins", async (string token, ClientCheckInI
     return Results.Ok(new { existing.Id, existing.Date, existing.MoodScore, existing.SleepScore, existing.Note, existing.CreatedAt });
 }).RequireRateLimiting("portal");
 
+app.MapPost("/api/portal/{token}/history-import", async (
+    string token,
+    HistoryImportRequest input,
+    AppDb db,
+    IChatClient chatClient,
+    ILoggerFactory loggerFactory,
+    CancellationToken ct) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    var client = await db.Clients.AsNoTracking().FirstOrDefaultAsync(c => c.Id == access.ClientId, ct);
+    if (client is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+
+    var library = await db.Exercises
+        .Where(e => e.TrainerId == null || e.TrainerId == client.TrainerId)
+        .OrderBy(e => e.Name)
+        .Select(e => new { e.Id, e.Name, e.Type })
+        .ToListAsync(ct);
+    var libTuples = library.Select(e => (e.Id, e.Name, e.Type)).ToList();
+    var logger = loggerFactory.CreateLogger("HistoryImport");
+    try
+    {
+        var (draft, error) = await HistoryImport.ImportAsync(input, libTuples, chatClient, logger, ct);
+        if (error is not null) return error;
+        if (draft is null)
+            return Results.Json(new { message = "Nie rozpoznałem treningów. Spróbuj inne zdjęcie albo wklej tekst." }, statusCode: 422);
+        var row = new ClientHistoryImport
+        {
+            ClientId = access.ClientId,
+            Status = "pending",
+            DraftJson = JsonSerializer.Serialize(draft, HistoryImport.JsonOptions),
+        };
+        db.ClientHistoryImports.Add(row);
+        await db.SaveChangesAsync(ct);
+        return Results.Created($"/api/portal/{token}/history-import", new { row.Id });
+    }
+    catch (InvalidOperationException ex) when (
+        ex.Message.Contains("OpenRouterApiKey", StringComparison.Ordinal)
+        || ex.Message == UnavailableChatClient.Message)
+    {
+        return Results.Json(new { message = UnavailableChatClient.Message }, statusCode: 503);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Portal history import AI call failed");
+        return Results.Json(new { message = "Nie rozpoznałem treningów. Spróbuj ponownie za chwilę." }, statusCode: 502);
+    }
+}).RequireRateLimiting("portal");
+
 app.MapPost("/api/portal/{token}/push-subscription", async (string token, PushSubscriptionInput input, AppDb db) =>
 {
     var access = await ResolvePortalToken(db, token);
@@ -2827,6 +2893,187 @@ app.MapPost("/api/ai/plan-import", async (
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
+
+app.MapPost("/api/ai/history-import", async (
+    HistoryImportRequest input,
+    HttpContext http,
+    AppDb db,
+    IConfiguration config,
+    IChatClient chatClient,
+    ILoggerFactory loggerFactory,
+    CancellationToken ct) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (chatClient is UnavailableChatClient)
+            return Results.Json(new { message = UnavailableChatClient.Message }, statusCode: 503);
+
+        var library = await db.Exercises
+            .Where(e => e.TrainerId == null || e.TrainerId == trainerId)
+            .OrderBy(e => e.Name)
+            .Select(e => new { e.Id, e.Name, e.Type })
+            .ToListAsync(ct);
+        var libTuples = library.Select(e => (e.Id, e.Name, e.Type)).ToList();
+        var logger = loggerFactory.CreateLogger("HistoryImport");
+        try
+        {
+            var (draft, error) = await HistoryImport.ImportAsync(input, libTuples, chatClient, logger, ct);
+            if (error is not null) return error;
+            return Results.Ok(draft);
+        }
+        catch (InvalidOperationException ex) when (
+            ex.Message.Contains("OpenRouterApiKey", StringComparison.Ordinal)
+            || ex.Message == UnavailableChatClient.Message)
+        {
+            return Results.Json(new { message = UnavailableChatClient.Message }, statusCode: 503);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "History import AI call failed");
+            return Results.Json(new { message = "Nie udało się połączyć z AI. Spróbuj ponownie za chwilę." }, statusCode: 502);
+        }
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapGet("/api/clients/{id:int}/history-imports/pending", async (int id, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, id)) return Results.NotFound();
+        var row = await db.ClientHistoryImports
+            .Where(h => h.ClientId == id && h.Status == "pending")
+            .OrderByDescending(h => h.CreatedAt)
+            .FirstOrDefaultAsync();
+        if (row is null) return Results.NoContent();
+        var draft = JsonSerializer.Deserialize<HistoryImportDraft>(row.DraftJson, HistoryImport.JsonOptions);
+        return Results.Ok(new { row.Id, draft, createdAt = row.CreatedAt });
+    }
+    catch (Exception ex) when (IsMissingClientHistoryImportsTable(ex))
+    {
+        return Results.NoContent();
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapPost("/api/clients/{id:int}/history-imports", async (
+    int id, HistoryImportDraft draft, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, id)) return Results.NotFound();
+        var row = new ClientHistoryImport
+        {
+            ClientId = id,
+            Status = "pending",
+            DraftJson = JsonSerializer.Serialize(draft, HistoryImport.JsonOptions),
+        };
+        db.ClientHistoryImports.Add(row);
+        await db.SaveChangesAsync();
+        return Results.Created($"/api/clients/{id}/history-imports/{row.Id}", new { row.Id });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapPost("/api/clients/{id:int}/history-imports/{importId:int}/dismiss", async (
+    int id, int importId, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, id)) return Results.NotFound();
+        var row = await db.ClientHistoryImports.FirstOrDefaultAsync(h => h.Id == importId && h.ClientId == id);
+        if (row is null) return Results.NotFound();
+        row.Status = "dismissed";
+        await db.SaveChangesAsync();
+        return Results.NoContent();
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapPost("/api/clients/{id:int}/history-imports/{importId:int}/apply", async (
+    int id, int importId, HistoryImportApplyInput input, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, id)) return Results.NotFound();
+        var row = await db.ClientHistoryImports.FirstOrDefaultAsync(h => h.Id == importId && h.ClientId == id);
+        if (row is null) return Results.NotFound();
+
+        var sessionIds = new List<int>();
+        if (input.SaveHistory && input.Sessions is { Count: > 0 })
+        {
+            foreach (var sess in input.Sessions)
+            {
+                if ((sess.Exercises ?? []).Any(e => e.ExerciseId <= 0))
+                    return Results.BadRequest(new { message = "Każde ćwiczenie musi być w bibliotece — zmapuj albo utwórz brakujące." });
+                var built = Sessions.BuildFromInput(sess with { ClientId = id, Status = "completed" });
+                foreach (var ex in built.Exercises)
+                    foreach (var set in ex.Sets)
+                        set.Completed = true;
+                db.WorkoutSessions.Add(built);
+                await db.SaveChangesAsync();
+                sessionIds.Add(built.Id);
+            }
+        }
+
+        var maxIds = new List<int>();
+        if (input.SaveMaxes && input.Maxes is { Count: > 0 })
+        {
+            foreach (var m in input.Maxes)
+            {
+                var max = new ClientMax
+                {
+                    ClientId = id,
+                    ExerciseId = m.ExerciseId,
+                    MaxKg = m.MaxKg,
+                    MeasuredOn = m.MeasuredOn,
+                    Note = m.Note ?? "z historii",
+                };
+                db.ClientMaxes.Add(max);
+                await db.SaveChangesAsync();
+                maxIds.Add(max.Id);
+            }
+        }
+
+        row.Status = "applied";
+        await db.SaveChangesAsync();
+        return Results.Ok(new { sessionIds, maxIds });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapPost("/api/ai/history-import/analyze", async (
+    HistoryImportAnalyzeInput input,
+    HttpContext http,
+    AppDb db,
+    IConfiguration config) =>
+{
+    try
+    {
+        await TrainerAccess.TrainerIdAsync(http, db, config);
+        var sessions = input.Sessions ?? [];
+        if (sessions.Count == 0)
+            return Results.BadRequest(new { message = "Brak sesji do analizy." });
+        var result = HistoryImport.Analyze(sessions, input.ClientName ?? "klient", input.TopKgDelta);
+        return Results.Ok(result);
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+static bool IsMissingClientHistoryImportsTable(Exception ex)
+{
+    for (var e = (Exception?)ex; e != null; e = e.InnerException)
+    {
+        if (e.Message.Contains("no such table: ClientHistoryImports", StringComparison.OrdinalIgnoreCase))
+            return true;
+    }
+    return false;
+}
 
 app.Run();
 

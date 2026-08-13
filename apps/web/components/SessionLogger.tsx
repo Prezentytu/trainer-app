@@ -417,6 +417,7 @@ export function SessionLogger({
   const [sleepScore, setSleepScore] = useState<number | null>(null);
   const [energyScore, setEnergyScore] = useState<number | null>(null);
   const [swapExIdx, setSwapExIdx] = useState<number | null>(null);
+  const [addingExercise, setAddingExercise] = useState(false);
   const [swapSearch, setSwapSearch] = useState("");
   const [menuExIdx, setMenuExIdx] = useState<number | null>(null);
   const [setRowMenu, setSetRowMenu] = useState<{ exIdx: number; setIdx: number } | null>(null);
@@ -1216,6 +1217,39 @@ export function SessionLogger({
       ),
     }));
     setSwapExIdx(null);
+    setSwapSearch("");
+  };
+
+  const addExercise = (picked: Exercise | PortalExercise) => {
+    const nextLocalId = draft.exercises.reduce((min, e) => (e.id < min ? e.id : min), 0) - 1;
+    const newEx: LocalExercise = {
+      id: nextLocalId,
+      exerciseId: picked.id,
+      substitutedFromExerciseId: null,
+      substitutedFromName: null,
+      exerciseName: picked.name,
+      exerciseType: picked.type,
+      category: picked.category,
+      equipment: picked.equipment ?? [],
+      isUnilateral: picked.isUnilateral ?? false,
+      media: picked.media ?? [],
+      order: draft.exercises.length,
+      note: null,
+      restSeconds: 90,
+      supersetGroup: null,
+      supersetLabel: null,
+      targetRir: null,
+      tempo: null,
+      planNote: null,
+      prevPerformedOn: (picked as PortalExercise).lastPerformedOn ?? null,
+      prevSets: [],
+      sets: [blankSet(undefined, 1, picked.isUnilateral ? "left" : null, Math.abs(nextLocalId), null)],
+    };
+    updateDraft((prev) => ({
+      ...prev,
+      exercises: [...prev.exercises, newEx],
+    }));
+    setAddingExercise(false);
     setSwapSearch("");
   };
 
@@ -2148,6 +2182,62 @@ export function SessionLogger({
           </SessionKlamra>
         );
       })}
+
+      {libraryExercises.length > 0 && resolvedMode !== "client" ? (
+        addingExercise ? (
+          <div className="border-t border-border pt-4">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-[13px] font-medium text-foreground-secondary">Dodaj ćwiczenie</p>
+              <button
+                type="button"
+                className="text-[13px] text-muted hover:text-foreground"
+                onClick={() => {
+                  setAddingExercise(false);
+                  setSwapSearch("");
+                }}
+              >
+                Anuluj
+              </button>
+            </div>
+            <input
+              className={`${inputClass} mb-2 w-full px-2 py-1.5`}
+              placeholder="Szukaj ćwiczenia…"
+              value={swapSearch}
+              onChange={(e) => setSwapSearch(e.target.value)}
+              autoFocus
+            />
+            <ul className="max-h-56 space-y-1 overflow-y-auto">
+              {filteredSwapExercises.all.length === 0 ? (
+                <li className="px-2 py-2 text-sm text-muted">Brak wyników.</li>
+              ) : (
+                filteredSwapExercises.all.slice(0, 20).map((ex) => (
+                  <li key={ex.id}>
+                    <button
+                      type="button"
+                      className="flex w-full items-baseline justify-between gap-2 rounded-[8px] px-2 py-2.5 text-left text-[15px] hover:bg-surface-hover"
+                      onClick={() => addExercise(ex)}
+                    >
+                      <span className="min-w-0 break-words">{ex.name}</span>
+                    </button>
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className={`${iconBtn} border-t border-border pt-4`}
+            onClick={() => {
+              setAddingExercise(true);
+              setSwapSearch("");
+            }}
+          >
+            <Icon name="plus" size={16} decorative />
+            Dodaj ćwiczenie
+          </button>
+        )
+      ) : null}
 
       {sessionNoteOpen || draft.note ? (
         <div className="border-t border-border pt-4">
