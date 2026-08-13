@@ -342,21 +342,33 @@ export function SessionSummaryView({
           <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
             Twój progres
           </p>
-          <ul className="mt-3 space-y-2">
-            {highlightFacts.map((fact, index) => (
-              <li
-                key={`${fact.kind}-${index}`}
-                className={`text-[15px] leading-snug ${
-                  fact.kind === "pr" ? "font-medium text-pr" : "text-foreground-secondary"
-                }`}
-              >
-                {fact.kind === "pr" && !String(fact.text).includes("★")
+          <ul className="mt-3 space-y-3">
+            {highlightFacts.map((fact, index) => {
+              const isHero = !hasPrs && index === 0;
+              const prTone = fact.kind === "pr";
+              const gainTone =
+                fact.kind === "gain" || (fact.deltaKg != null && fact.deltaKg > 0);
+              const text =
+                prTone && !String(fact.text).includes("★")
                   ? `★ ${fact.text}`
-                  : fact.kind === "gain" || (fact.deltaKg != null && fact.deltaKg > 0)
+                  : gainTone
                     ? `▲ ${fact.text}`
-                    : fact.text}
-              </li>
-            ))}
+                    : fact.text;
+              return (
+                <li
+                  key={`${fact.kind}-${index}`}
+                  className={
+                    isHero
+                      ? "text-[1.375rem] font-semibold leading-snug tracking-tight text-foreground"
+                      : prTone
+                        ? "text-[15px] font-medium leading-snug text-pr"
+                        : "text-[15px] leading-snug text-foreground-secondary"
+                  }
+                >
+                  {text}
+                </li>
+              );
+            })}
           </ul>
         </section>
       ) : null}

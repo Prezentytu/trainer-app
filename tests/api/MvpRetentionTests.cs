@@ -68,6 +68,10 @@ public class MvpRetentionTests : IClassFixture<TestWebAppFactory>
         Assert.True(json.TryGetProperty("prsLast7Days", out var prs));
         Assert.Equal(JsonValueKind.Number, prs.ValueKind);
         Assert.False(json.TryGetProperty("complianceDates", out _));
+        Assert.True(json.TryGetProperty("activation", out var activation));
+        Assert.True(activation.TryGetProperty("hasCompletedSession", out _));
+        Assert.True(activation.TryGetProperty("clientsWithSessionLast14Days", out _));
+        Assert.True(activation.TryGetProperty("trainerCreatedAt", out _));
     }
 
     [Fact]
@@ -104,7 +108,12 @@ public class MvpRetentionTests : IClassFixture<TestWebAppFactory>
         res.EnsureSuccessStatusCode();
         var json = await res.Content.ReadFromJsonAsync<JsonElement>();
         Assert.True(json.TryGetProperty("facts", out var facts));
-        Assert.True(facts.GetArrayLength() >= 1);
+        Assert.True(facts.GetArrayLength() <= 3);
+        foreach (var fact in facts.EnumerateArray())
+        {
+            var text = fact.GetProperty("text").GetString() ?? "";
+            Assert.DoesNotContain("Brak ukończonych", text, StringComparison.Ordinal);
+        }
     }
 
     [Fact]
@@ -120,6 +129,38 @@ public class MvpRetentionTests : IClassFixture<TestWebAppFactory>
         res.EnsureSuccessStatusCode();
         var json = await res.Content.ReadFromJsonAsync<JsonElement>();
         Assert.True(json.TryGetProperty("facts", out var facts));
-        Assert.True(facts.GetArrayLength() >= 1);
+        Assert.True(facts.GetArrayLength() <= 3);
+        foreach (var fact in facts.EnumerateArray())
+        {
+            var text = fact.GetProperty("text").GetString() ?? "";
+            Assert.DoesNotContain("Brak ukończonych", text, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public async Task FoundingApply_Whiteglove_ReturnsOk()
+    {
+        var res = await _client.PostAsJsonAsync("/api/founding/apply", new
+        {
+            name = "Anna Test",
+            email = "anna@example.com",
+            track = "whiteglove",
+        });
+        res.EnsureSuccessStatusCode();
+        var json = await res.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(json.GetProperty("ok").GetBoolean());
+        Assert.False(string.IsNullOrWhiteSpace(json.GetProperty("message").GetString()));
+    }
+
+    [Fact]
+    public async Task FoundingApply_RejectsEmptyName()
+    {
+        var res = await _client.PostAsJsonAsync("/api/founding/apply", new
+        {
+            name = "A",
+            email = "a@b.c",
+            track = "whiteglove",
+        });
+        Assert.Equal(HttpStatusCode.Conflict, res.StatusCode);
     }
 }

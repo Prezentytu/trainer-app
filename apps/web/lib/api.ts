@@ -912,6 +912,14 @@ export type ClientActivityItem = {
   portalToken: string | null;
 };
 
+export type DashboardActivation = {
+  hasCompletedSession: boolean;
+  firstCompletedSessionOn: string | null;
+  clientsWithActivePlan: number;
+  clientsWithSessionLast14Days: number;
+  trainerCreatedAt: string;
+};
+
 export type DashboardData = {
   clients: number;
   plans: number;
@@ -925,6 +933,7 @@ export type DashboardData = {
   sessionsLast7Days: number;
   sessionsPrev7Days: number;
   prsLast7Days: number;
+  activation?: DashboardActivation;
 };
 
 export type ProgressReport = {
@@ -974,6 +983,10 @@ export type PlanInput = {
   days: PlanDayInput[];
 };
 
+function isPublicApiPath(path: string): boolean {
+  return path.startsWith("/api/portal/") || path.startsWith("/api/founding/");
+}
+
 async function buildHeaders(
   path: string,
   init?: RequestInit,
@@ -984,12 +997,12 @@ async function buildHeaders(
     ...(withJsonContentType ? { "Content-Type": "application/json" } : {}),
     ...(init?.headers as Record<string, string> | undefined),
   };
-  const needsAuth = clerkEnabled && !path.startsWith("/api/portal/");
+  const needsAuth = clerkEnabled && !isPublicApiPath(path);
   if (needsAuth) {
     // Efekty dzieci biegną przed efektem AuthTokenBridge — czekamy na markAuthReady().
     await Promise.race([authReady, sleep(AUTH_READY_TIMEOUT_MS)]);
   }
-  if (authTokenGetter && !path.startsWith("/api/portal/")) {
+  if (authTokenGetter && !isPublicApiPath(path)) {
     const token = await authTokenGetter(tokenOpts);
     if (token) headers.Authorization = `Bearer ${token}`;
   }
@@ -1054,7 +1067,7 @@ async function sendRequest(
 ): Promise<Response> {
   const headers = await buildHeaders(path, init, withJsonContentType);
   let res = await fetchWithRetry(path, init, headers);
-  if (res.status === 401 && authTokenGetter && !path.startsWith("/api/portal/")) {
+  if (res.status === 401 && authTokenGetter && !isPublicApiPath(path)) {
     const retryHeaders = await buildHeaders(path, init, withJsonContentType, { skipCache: true });
     res = await fetchWithRetry(path, init, retryHeaders);
   }
@@ -1125,6 +1138,18 @@ export const api = {
   counts: () => request<NavCounts>("/api/counts"),
   dashboard: () => request<DashboardData>("/api/dashboard"),
   me: () => request<TrainerMe>("/api/me"),
+  founding: {
+    apply: (input: {
+      name: string;
+      email: string;
+      phone?: string;
+      track: "whiteglove" | "founding";
+    }) =>
+      request<{ ok: boolean; checkoutUrl?: string | null; message: string }>("/api/founding/apply", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+  },
   export: () => request<unknown>("/api/export"),
   exportCsv: () => requestText("/api/export/csv"),
   deleteAccount: () => request<void>("/api/account", { method: "DELETE" }),

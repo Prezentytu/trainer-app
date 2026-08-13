@@ -24,7 +24,9 @@ export function LandingNav() {
               </a>
             ))}
           </div>
-          <LandingCta size="sm" />
+          <LandingCta href="/wdrozenie" size="sm">
+            Umów wdrożenie
+          </LandingCta>
         </nav>
       </div>
     </header>

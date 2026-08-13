@@ -12,14 +12,16 @@ Aktualizacja researchu (sierpień 2026) + strategia wyjścia na rynek. Produkt t
 4. **Cennik PL**: darmowe wejście (0 zł / 5 klientów) to standard rynkowy (CoachGuru, WodGuru). Flat 149 zł odstaje — rekomendacja: progi + founding price.
 5. **Launch**: Faza A (5–10 design partnerów, white-glove) → Faza B (founding billing, 5+ płacących) → Faza C (publiczny launch PL + SEO „alternatywa dla…").
 
-> Nie kodować z tego pliku. Decyzje cenowe / billing / partnerzy → Open Questions. Każdy większy ficzer produktowy dostaje osobny spec.
+> Nie kodować z tego pliku poza P0 z [`2026-08-12-hormozi-oferta-i-gtm.md`](2026-08-12-hormozi-oferta-i-gtm.md). Q1–Q4 **zamknięte** (Hormozi, 12.08).
 
-## Open Questions (bramka przed Faza B / billing)
+## Decyzje Q1–Q4 (zamknięte 2026-08-12)
 
-- Q1: Model cenowy — **progi jak CoachGuru** (0/5 → 39/15 → 99/30 → 199/50) czy **per-klient jak WodGuru** (5 zł/os., cap)?
-- Q2: Billing — **Stripe** (szybszy launch) czy **Autopay / BLIK** (wyższa konwersja PL)? Patrz też [`2026-07-30-roadmap-auth-i-biznes.md`](2026-07-30-roadmap-auth-i-biznes.md).
-- Q3: Skąd pierwsi design partnerzy — dostęp do trenerów (siłownia, znajomi, grupy FB)? Kanał #1 na Fazę A?
-- Q4: Nazwa / brand w komunikacji zewnętrznej (RepMaxer vs Workout Alchemist vs inne) na landing i outreach?
+- **Q1:** progi jak CoachGuru — Start 0 zł / 5, Solo 39 zł / 15, Pro 99 zł / 30, Studio 199 zł / 50. Nie per-klient.
+- **Q2:** Stripe na founding (Checkout 490 zł). Autopay / BLIK gdy >20 płatnych self-serve. Patrz też [`2026-07-30-roadmap-auth-i-biznes.md`](2026-07-30-roadmap-auth-i-biznes.md).
+- **Q3:** warm outreach jako jedyny kanał Fazy A (100 dni). Znajomi, grupy FB PT PL, siłownie, DM value-first. Nie ads. Playbook: `.ai/gtm/`.
+- **Q4:** **RepMaxer** na zewnątrz. Workout Alchemist nie używać w outreachu.
+
+Oferta Fazy A, gwarancja, founding: [`2026-08-12-hormozi-oferta-i-gtm.md`](2026-08-12-hormozi-oferta-i-gtm.md).
 
 ---
 
@@ -329,3 +331,4 @@ flowchart TD
 | Data | Zmiana |
 |---|---|
 | 2026-08-12 | Pierwsza wersja: research v2 (Trainerize trust crisis, generation vs consolidation, Excel overwhelm, cennik PL), aktualizacja gap analysis, strategia launchu A–B–C, cennik freemium, metryki, anty-scope, priorytety L0–L7, Open Questions Q1–Q4. |
+| 2026-08-12 | Q1–Q4 zamknięte (progi, Stripe, warm outreach, brand RepMaxer). Oferta: [`2026-08-12-hormozi-oferta-i-gtm.md`](2026-08-12-hormozi-oferta-i-gtm.md). |

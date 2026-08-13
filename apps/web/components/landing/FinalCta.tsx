@@ -20,8 +20,8 @@ export function FinalCta() {
           className="landing-stagger mt-10 flex flex-wrap items-center gap-x-6 gap-y-3"
           style={{ ["--i" as string]: 1 }}
         >
-          <LandingCta />
-          <span className="t-label tracking-[0.16em] text-muted">0 zł · bez karty</span>
+          <LandingCta href="/wdrozenie">Umów 30 min wdrożenia</LandingCta>
+          <span className="t-label tracking-[0.16em] text-muted">10 miejsc · 0 zł / 90 dni</span>
         </div>
       </div>
     </LandingReveal>

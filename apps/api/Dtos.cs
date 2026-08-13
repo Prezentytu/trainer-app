@@ -151,6 +151,12 @@ public record RecoverPortalLinkInput(string Email);
 
 public record SendReminderInput(string? Message = null);
 
+public record FoundingApplyInput(
+    string Name,
+    string Email,
+    string? Phone = null,
+    string Track = "whiteglove");
+
 public record PushSubscriptionInput(string Endpoint, string P256dh, string Auth);
 
 public record WorkoutSessionInput(

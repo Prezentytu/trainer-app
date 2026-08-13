@@ -18,19 +18,36 @@ public static class ProgressReports
             .ToListAsync();
 
         var sessionsWeek = sessions30.Count(s => s.PerformedOn >= weekAgo);
-        var lastSession = sessions30.FirstOrDefault()?.PerformedOn;
 
         var prs = await CountRecentPrsAsync(db, clientId, monthAgo);
 
         var strengthFacts = await BuildStrengthDeltasAsync(db, clientId, fourWeeksAgo);
 
         var facts = new List<object>();
-        if (sessionsWeek > 0)
-            facts.Add(new { kind = "compliance", text = $"{sessionsWeek} trening{(sessionsWeek == 1 ? "" : sessionsWeek < 5 ? "i" : "ów")} w tym tygodniu" });
-        else if (sessions30.Count > 0)
-            facts.Add(new { kind = "compliance", text = $"{sessions30.Count} trening{(sessions30.Count == 1 ? "" : sessions30.Count < 5 ? "i" : "ów")} w ostatnich 30 dniach" });
-        else
-            facts.Add(new { kind = "compliance", text = "Brak ukończonych treningów w ostatnich 30 dniach" });
+
+        var lastSession = await db.WorkoutSessions
+            .Where(s => s.ClientId == clientId && s.Status == "completed")
+            .OrderByDescending(s => s.PerformedOn)
+            .ThenByDescending(s => s.Id)
+            .Select(s => new
+            {
+                s.PerformedOn,
+                VolumeKg = s.Exercises.SelectMany(e => e.Sets)
+                    .Where(x => !x.IsWarmup && x.Completed && x.WeightKg != null && x.Reps != null)
+                    .Select(x => x.WeightKg!.Value * x.Reps!.Value)
+                    .Sum(),
+                Sets = s.Exercises.SelectMany(e => e.Sets).Count(x => !x.IsWarmup && x.Completed),
+            })
+            .FirstOrDefaultAsync();
+
+        if (lastSession is not null && lastSession.PerformedOn == today && lastSession.Sets > 0)
+        {
+            var setWord = lastSession.Sets == 1 ? "seria" : lastSession.Sets is >= 2 and <= 4 ? "serie" : "serii";
+            var vol = Math.Round(lastSession.VolumeKg);
+            facts.Add(vol > 0
+                ? new { kind = "session", text = $"Dziś {lastSession.Sets} {setWord} · {vol:0} kg" }
+                : new { kind = "session", text = $"Dziś {lastSession.Sets} {setWord}" });
+        }
 
         if (prs > 0)
             facts.Add(new { kind = "pr", text = $"{prs} now{(prs == 1 ? "y" : "e")} PR w ostatnich 30 dniach" });
@@ -38,10 +55,18 @@ public static class ProgressReports
         foreach (var f in strengthFacts.Take(3))
             facts.Add(f);
 
+        if (sessionsWeek > 0)
+            facts.Add(new { kind = "compliance", text = $"{sessionsWeek} trening{(sessionsWeek == 1 ? "" : sessionsWeek < 5 ? "i" : "ów")} w tym tygodniu" });
+        else if (sessions30.Count > 0)
+            facts.Add(new { kind = "compliance", text = $"{sessions30.Count} trening{(sessions30.Count == 1 ? "" : sessions30.Count < 5 ? "i" : "ów")} w ostatnich 30 dniach" });
+
+        if (facts.Count > 3)
+            facts = facts.Take(3).ToList();
+
         return new
         {
             clientId,
-            lastSessionOn = lastSession,
+            lastSessionOn = lastSession?.PerformedOn ?? sessions30.FirstOrDefault()?.PerformedOn,
             sessionsLast7Days = sessionsWeek,
             sessionsLast30Days = sessions30.Count,
             newPrsLast30Days = prs,

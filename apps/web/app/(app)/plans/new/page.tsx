@@ -49,6 +49,7 @@ function NewPlanWizard({ assignTo }: { assignTo: AssignTo | null }) {
   const [boot, setBoot] = useState<Boot>({ status: "loading" });
   const [isTemplate, setIsTemplate] = useState(false);
   const [presetId, setPresetId] = useState<string>("4x3");
+  const [firstPlan, setFirstPlan] = useState(false);
   const [name, setName] = useState(() =>
     assignTo ? `Plan — ${assignTo.name} — ${todayLabel()}` : `Nowy plan — ${todayLabel()}`,
   );
@@ -57,7 +58,14 @@ function NewPlanWizard({ assignTo }: { assignTo: AssignTo | null }) {
 
   useEffect(() => {
     let cancelled = false;
-    // Asynchronicznie — unika synchronicznego setState w efekcie (eslint react-hooks/set-state-in-effect).
+    void api.plans
+      .list()
+      .then((plans) => {
+        if (!cancelled) setFirstPlan(plans.length === 0);
+      })
+      .catch(() => {
+        /* zostaw pełną listę presetów */
+      });
     queueMicrotask(() => {
       if (cancelled) return;
       const handoff = consumeImportHandoff();
@@ -72,7 +80,10 @@ function NewPlanWizard({ assignTo }: { assignTo: AssignTo | null }) {
     };
   }, []);
 
-  const preset = STRUCTURE_PRESETS.find((p) => p.id === presetId) ?? STRUCTURE_PRESETS[0];
+  const visiblePresets = firstPlan
+    ? STRUCTURE_PRESETS.filter((p) => p.id === "4x3")
+    : STRUCTURE_PRESETS;
+  const preset = visiblePresets.find((p) => p.id === presetId) ?? visiblePresets[0] ?? STRUCTURE_PRESETS[0];
 
   if (boot.status === "loading") {
     return <PlanWizardSkeleton />;
@@ -160,7 +171,7 @@ function NewPlanWizard({ assignTo }: { assignTo: AssignTo | null }) {
             <Card>
               <p className="t-label mb-3">Struktura</p>
               <div className="grid gap-2 sm:grid-cols-2" role="group" aria-label="Struktura planu">
-                {STRUCTURE_PRESETS.map((p) => {
+                {visiblePresets.map((p) => {
                   const selected = p.id === presetId;
                   return (
                     <button
@@ -195,10 +206,10 @@ function NewPlanWizard({ assignTo }: { assignTo: AssignTo | null }) {
             <Card>
               <div
                 className={`grid gap-4 ${
-                  assignTo ? "" : "sm:grid-cols-[auto_minmax(0,1fr)] sm:items-end"
+                  assignTo || firstPlan ? "" : "sm:grid-cols-[auto_minmax(0,1fr)] sm:items-end"
                 }`}
               >
-                {assignTo ? null : (
+                {assignTo || firstPlan ? null : (
                   <div>
                     <p className="t-label mb-1.5">Rodzaj</p>
                     <div className="inline-flex flex-wrap items-center gap-1 rounded-full bg-surface-hover p-1">

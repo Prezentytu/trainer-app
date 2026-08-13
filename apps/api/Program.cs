@@ -70,11 +70,19 @@ builder.Services.AddRateLimiter(o =>
         opt.Window = TimeSpan.FromMinutes(1);
         opt.QueueLimit = 0;
     });
+    o.AddFixedWindowLimiter("founding", opt =>
+    {
+        opt.PermitLimit = 8;
+        opt.Window = TimeSpan.FromMinutes(10);
+        opt.QueueLimit = 0;
+    });
     o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
 
 builder.Services.AddHttpClient("resend");
+builder.Services.AddHttpClient("stripe");
 builder.Services.AddSingleton<EmailService>();
+builder.Services.AddSingleton<FoundingService>();
 builder.Services.AddScoped<PushService>();
 
 var app = builder.Build();
@@ -179,6 +187,13 @@ app.MapPost("/api/cron/reminders", async (HttpContext http, IConfiguration confi
     var (sent, skipped) = await push.SendDailyRemindersAsync(webOrigin);
     return Results.Ok(new { sent, skipped, utc = DateTime.UtcNow });
 });
+
+app.MapPost("/api/founding/apply", async (FoundingApplyInput input, FoundingService founding) =>
+{
+    var (ok, checkoutUrl, message) = await founding.ApplyAsync(input);
+    if (!ok) return Results.Conflict(new { message });
+    return Results.Ok(new { ok = true, checkoutUrl, message });
+}).RequireRateLimiting("founding");
 
 app.MapGet("/api/me", async (HttpContext http, AppDb db, IConfiguration config) =>
 {
@@ -973,6 +988,21 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
             })
             .ToList();
 
+        var trainerCreatedAt = await db.Trainers
+            .Where(t => t.Id == trainerId)
+            .Select(t => t.CreatedAt)
+            .FirstAsync();
+        var firstCompletedOn = await db.WorkoutSessions
+            .Where(s => s.Status == "completed" && s.Client!.TrainerId == trainerId)
+            .OrderBy(s => s.PerformedOn)
+            .ThenBy(s => s.Id)
+            .Select(s => (DateOnly?)s.PerformedOn)
+            .FirstOrDefaultAsync();
+        var window14 = today.AddDays(-14);
+        var clientsWithActivePlan = clientActivity.Count(c => c.activePlans > 0);
+        var clientsWithSessionLast14Days = clientActivity.Count(c =>
+            c.lastSessionOn != null && c.lastSessionOn >= window14);
+
         return Results.Ok(new
         {
             clients,
@@ -986,6 +1016,14 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
             sessionsLast7Days,
             sessionsPrev7Days,
             prsLast7Days,
+            activation = new
+            {
+                hasCompletedSession = firstCompletedOn != null,
+                firstCompletedSessionOn = firstCompletedOn,
+                clientsWithActivePlan,
+                clientsWithSessionLast14Days,
+                trainerCreatedAt,
+            },
         });
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }

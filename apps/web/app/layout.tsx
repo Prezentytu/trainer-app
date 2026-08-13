@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     template: "%s · RepMaxer",
   },
   description:
-    "Wysyłasz link. Widzisz każdy trening. Klient odhacza serie w telefonie. Bez aplikacji, bez konta.",
+    "Klient otwiera link w przeglądarce — bez konta. Po treningu widzisz serie i rekordy. Od razu wiesz, kto nie trenował.",
   openGraph: {
     type: "website",
     locale: "pl_PL",

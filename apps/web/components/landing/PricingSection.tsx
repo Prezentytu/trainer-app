@@ -40,7 +40,7 @@ export function PricingSection() {
           <p className="m-0 text-[17px] font-normal leading-[1.6] text-muted text-pretty">
             Płacisz od{" "}
             <span className="t-num text-[17px] text-foreground">39 zł</span>
-            {" / 15 osób — nie za klienta. Podopieczny zawsze 0 zł, bez konta. Dane zawsze do eksportu."}
+            {" / 15 osób — nie za klienta. Podopieczny zawsze 0 zł, bez konta. Dane zawsze do eksportu. Wczesny dostęp: 90 dni albo founding 490 zł."}
           </p>
           <div className="mt-8">
             <LandingCta />

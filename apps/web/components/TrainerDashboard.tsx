@@ -25,13 +25,10 @@ import {
 } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { DashboardSkeleton } from "@/components/skeletons";
-import {
-  getPortalLinkSent,
-  markPortalLinkSent,
-  subscribePortalLinkSent,
-} from "@/lib/portalLinkSent";
+import { markPortalLinkSent } from "@/lib/portalLinkSent";
 import { formatKg } from "@/lib/plates";
 import { formatTrainingsFraction } from "@/lib/plural";
+import { canWriteSilence, silenceKind, silenceLabel, silenceMessage } from "@/lib/silenceProtocol";
 
 type RowStatus = {
   kind: "no_plan" | "attention" | "ok";
@@ -49,7 +46,7 @@ type InboxRow = {
   href: string;
   rank: number;
   ctaLabel: string;
-  ctaKind: "link" | "copy" | "assign";
+  ctaKind: "link" | "copy" | "assign" | "remind";
   ctaHref?: string;
   portalToken?: string | null;
   attention?: AttentionItem | null;
@@ -62,7 +59,12 @@ export function TrainerDashboard() {
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [reminder, setReminder] = useState<AttentionItem | null>(null);
   const [sendingReminder, setSendingReminder] = useState(false);
-  const portalLinkSent = useSyncExternalStore(subscribePortalLinkSent, getPortalLinkSent, () => false);
+  const [copiedMessage, setCopiedMessage] = useState(false);
+  const referralDismissed = useSyncExternalStore(
+    subscribeReferralDismissed,
+    getReferralDismissed,
+    () => false,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -92,23 +94,14 @@ export function TrainerDashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Klient już trenował / ma PR → link musiał dotrzeć; zsynchronizuj flagę onboardingu.
-  useEffect(() => {
-    if (portalLinkSent || !dash) return;
-    const evidence =
-      dash.recentSessions.length > 0 ||
-      dash.sessionsLast7Days > 0 ||
-      dash.prsLast7Days > 0 ||
-      dash.recentPrs.length > 0;
-    if (evidence) markPortalLinkSent();
-  }, [dash, portalLinkSent]);
-
   const recentSessions = dash?.recentSessions ?? [];
   const recentPrs = dash?.recentPrs ?? [];
+  const hasCompletedSession =
+    dash?.activation?.hasCompletedSession ?? (dash?.sessionsLast7Days ?? 0) > 0;
   const onboardingSteps = [
     (dash?.clients ?? 0) > 0,
     (dash?.clientActivity.some((client) => client.activePlans > 0) ?? false),
-    portalLinkSent,
+    Boolean(hasCompletedSession),
   ];
   const onboardingDone = onboardingSteps.filter(Boolean).length;
   const onboardingPct = Math.round((onboardingDone / onboardingSteps.length) * 100);
@@ -147,6 +140,9 @@ export function TrainerDashboard() {
   /** Bez duplikacji z kolejką „Do zrobienia". */
   const weeklyOkRows = rows.filter((r) => !attentionIds.has(r.client.clientId));
   const trainedCount = clientActivity.filter((c) => c.sessions7d > 0).length;
+  const silent14 = (dash?.attention ?? []).filter(
+    (a) => a.reason === "silent" && (a.daysSilent ?? 0) >= 14,
+  ).length;
   const sessionsThisWeek = dash?.sessionsLast7Days ?? 0;
   const sessionsPrevWeek = dash?.sessionsPrev7Days ?? 0;
   const sessionsDelta = sessionsThisWeek - sessionsPrevWeek;
@@ -186,7 +182,8 @@ export function TrainerDashboard() {
 
     for (const { client, status } of needsAttention) {
       const assign = status.kind === "no_plan";
-      const copy = status.action === "copy_portal_link";
+      const remind = canWriteSilence(status.attention);
+      const copy = status.action === "copy_portal_link" && !remind;
       take({
         key: `att-${client.clientId}`,
         clientId: client.clientId,
@@ -194,8 +191,8 @@ export function TrainerDashboard() {
         label: status.label,
         href: `/clients/${client.clientId}`,
         rank: inboxRank(status.kind, status.attention?.reason),
-        ctaLabel: assign ? "Przypisz plan" : copy ? "Skopiuj link" : "Przejdź do klienta",
-        ctaKind: assign ? "assign" : copy ? "copy" : "link",
+        ctaLabel: assign ? "Przypisz plan" : remind ? "Napisz" : copy ? "Skopiuj link" : "Przejdź do klienta",
+        ctaKind: assign ? "assign" : remind ? "remind" : copy ? "copy" : "link",
         ctaHref: `/clients/${client.clientId}`,
         portalToken: status.portalToken,
         attention: status.attention ?? null,
@@ -220,16 +217,55 @@ export function TrainerDashboard() {
     }
   };
 
+  const reminderKind = reminder ? silenceKind(reminder) : "day7";
+  const reminderUrl =
+    reminder?.portalToken && typeof window !== "undefined"
+      ? `${window.location.origin}/portal/${reminder.portalToken}`
+      : "";
+  const reminderText = reminder ? silenceMessage(reminderKind, reminder.clientName, reminderUrl) : "";
+
+  const copyReminderMessage = async () => {
+    if (!reminderText) return;
+    try {
+      await navigator.clipboard.writeText(reminderText);
+      setCopiedMessage(true);
+      setTimeout(() => setCopiedMessage(false), 2000);
+    } catch {
+      setError("Nie udało się skopiować wiadomości.");
+    }
+  };
+
   const sendReminder = async () => {
     if (!reminder) return;
     setSendingReminder(true);
     try {
-      await api.clients.sendReminder(reminder.clientId);
+      await api.clients.sendReminder(reminder.clientId, reminderText);
       setReminder(null);
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setSendingReminder(false);
+    }
+  };
+
+  const dismissReferral = () => {
+    try {
+      localStorage.setItem(REFERRAL_DISMISSED_KEY, "1");
+      window.dispatchEvent(new Event(REFERRAL_DISMISSED_EVENT));
+    } catch {
+      /* private mode */
+    }
+  };
+
+  const copyReferral = async () => {
+    const origin = window.location.origin;
+    const text = `Prowadzę plany w RepMaxer — klient otwiera link w przeglądarce, bez konta. Jak chcesz zobaczyć, kto nie trenował: ${origin}/wdrozenie`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(-1);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      setError("Nie udało się skopiować wiadomości.");
     }
   };
 
@@ -325,10 +361,10 @@ export function TrainerDashboard() {
             </OnboardingStep>
             <OnboardingStep done={onboardingSteps[2]}>
               {onboardingSteps[2] ? (
-                <span>Link portalu wysłany</span>
+                <span>Klient dokończył trening</span>
               ) : (
                 <span className="flex flex-wrap items-center gap-2">
-                  <span>Wyślij podopiecznemu link do portalu.</span>
+                  <span>Wyślij link i poproś o jeden trening w tym tygodniu.</span>
                   <Button
                     size="sm"
                     variant="secondary"
@@ -370,6 +406,32 @@ export function TrainerDashboard() {
           />
         </div>
 
+      {silent14 > 0 ? (
+        <p className="mb-6 text-sm text-muted">
+          {silent14 === 1
+            ? "1 osoba bez treningu od 14 dni — napisz z kolejki powyżej."
+            : silent14 < 5
+              ? `${silent14} osoby bez treningu od 14 dni — napisz z kolejki powyżej.`
+              : `${silent14} osób bez treningu od 14 dni — napisz z kolejki powyżej.`}
+        </p>
+      ) : null}
+
+      {hasCompletedSession && !referralDismissed && !showOnboarding ? (
+        <Card className="mb-6" title="Znasz trenera, który wciąż wysyła PDF-y?">
+          <p className="text-sm text-foreground-secondary">
+            Miesiąc Solo za polecenie, które dojdzie do zalogowanego treningu — nie do rejestracji.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => void copyReferral()}>
+              {copiedId === -1 ? "Skopiowano" : "Skopiuj wiadomość"}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={dismissReferral}>
+              Ukryj
+            </Button>
+          </div>
+        </Card>
+      ) : null}
+
       {inbox.length > 0 ? (
         <Card
           className="mb-6"
@@ -402,6 +464,14 @@ export function TrainerDashboard() {
                     >
                       {copiedId === row.clientId ? "Skopiowano" : row.ctaLabel}
                     </Button>
+                  ) : row.ctaKind === "remind" ? (
+                    <Button
+                      size="sm"
+                      className="flex-1 sm:flex-none"
+                      onClick={() => setReminder(row.attention ?? null)}
+                    >
+                      {row.ctaLabel}
+                    </Button>
                   ) : (
                     <Link href={row.ctaHref ?? row.href} className="flex-1 sm:flex-none">
                       <Button size="sm" className="w-full">
@@ -425,14 +495,14 @@ export function TrainerDashboard() {
                             Skopiuj link
                           </OverflowMenuItem>
                         ) : null}
-                        {row.attention?.action === "copy_portal_link" ? (
+                        {canWriteSilence(row.attention) ? (
                           <OverflowMenuItem
                             onClick={() => {
                               setReminder(row.attention ?? null);
                               close();
                             }}
                           >
-                            Wyślij przypomnienie
+                            Napisz
                           </OverflowMenuItem>
                         ) : null}
                       </>
@@ -601,14 +671,49 @@ export function TrainerDashboard() {
       </div>
       <Dialog
         open={Boolean(reminder)}
-        title="Wyślij przypomnienie"
-        description={reminder ? `Do ${reminder.clientName}: „Przypomnienie od trenera — Twój trening czeka.”` : undefined}
-        confirmLabel={sendingReminder ? "Wysyłanie…" : "Wyślij przypomnienie"}
+        title={reminder ? `Napisz do ${reminder.clientName}` : "Napisz"}
+        description={reminder ? silenceLabel(reminderKind) : undefined}
+        confirmLabel={sendingReminder ? "Wysyłanie…" : "Wyślij e-mail lub push"}
+        cancelLabel="Zamknij"
+        busy={sendingReminder}
         onConfirm={() => void sendReminder()}
         onCancel={() => setReminder(null)}
-      />
+        className="max-w-md"
+      >
+        {reminder ? (
+          <div className="space-y-3">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground-secondary">
+              {reminderText}
+            </p>
+            <Button size="sm" variant="secondary" onClick={() => void copyReminderMessage()}>
+              {copiedMessage ? "Skopiowano" : "Skopiuj na WhatsApp"}
+            </Button>
+          </div>
+        ) : null}
+      </Dialog>
     </div>
   );
+}
+
+const REFERRAL_DISMISSED_KEY = "rm-referral-dismissed";
+const REFERRAL_DISMISSED_EVENT = "rm-referral-dismissed";
+
+function getReferralDismissed(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return localStorage.getItem(REFERRAL_DISMISSED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function subscribeReferralDismissed(onChange: () => void): () => void {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(REFERRAL_DISMISSED_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(REFERRAL_DISMISSED_EVENT, onChange);
+  };
 }
 
 function formatCompliance(att?: AttentionItem | null): string | null {

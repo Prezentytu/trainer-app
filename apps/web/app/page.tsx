@@ -9,13 +9,13 @@ import { LandingPage } from "@/components/landing/LandingPage";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "RepMaxer — wysyłasz link, widzisz każdy trening",
+  title: "RepMaxer — wiesz, kto nie trenował",
   description:
-    "Panel dla trenerów personalnych. Klient odhacza serie w telefonie — bez aplikacji, bez konta. Wczesny dostęp 0 zł.",
+    "Klient otwiera link w przeglądarce — bez konta. Po treningu widzisz serie i rekordy. Od razu wiesz, kto nie trenował.",
   openGraph: {
-    title: "RepMaxer — wysyłasz link, widzisz każdy trening",
+    title: "RepMaxer — wiesz, kto nie trenował",
     description:
-      "Klient odhacza serie w telefonie. Bez aplikacji, bez konta. Wczesny dostęp 0 zł.",
+      "Klient otwiera link w przeglądarce — bez konta. Po treningu widzisz serie i rekordy.",
   },
 };
 

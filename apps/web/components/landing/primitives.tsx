@@ -74,15 +74,21 @@ export function SetRowHeader() {
 export function LandingCta({
   size = "lg",
   children = "Załóż darmowe konto",
+  href = "/sign-up",
+  variant = "primary",
   className = "",
 }: {
   size?: "sm" | "md" | "lg";
   children?: ReactNode;
+  href?: string;
+  variant?: "primary" | "secondary" | "ghost" | "danger";
   className?: string;
 }) {
   return (
-    <Link href="/sign-up" className={className}>
-      <Button size={size}>{children}</Button>
+    <Link href={href} className={className}>
+      <Button size={size} variant={variant}>
+        {children}
+      </Button>
     </Link>
   );
 }

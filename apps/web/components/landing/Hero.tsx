@@ -18,13 +18,13 @@ export function Hero() {
         <div className="w-full sm:mx-auto sm:w-fit">
           <h1 className="m-0 max-w-[18ch] text-[clamp(2.75rem,7.4vw,6rem)] font-semibold leading-[1.02] tracking-[-0.035em] text-foreground text-balance">
             <span className="landing-stagger block" style={{ ["--i" as string]: 0 }}>
-              Wysyłasz link.
+              Wiesz, kto nie trenował.
             </span>
             <span
               className="landing-stagger mt-1 block text-muted"
               style={{ ["--i" as string]: 1 }}
             >
-              Widzisz każdy trening.
+              Zanim zrezygnuje.
             </span>
           </h1>
           <p
@@ -38,8 +38,10 @@ export function Hero() {
             className="landing-stagger mt-10 flex flex-wrap items-center gap-x-6 gap-y-3"
             style={{ ["--i" as string]: 3 }}
           >
-            <LandingCta />
-            <span className="t-label tracking-[0.16em] text-muted">0 zł · bez karty</span>
+            <LandingCta href="/wdrozenie">Umów 30 min wdrożenia</LandingCta>
+            <LandingCta href="/sign-up" variant="ghost">
+              Załóż darmowe konto
+            </LandingCta>
           </div>
         </div>
       </div>
