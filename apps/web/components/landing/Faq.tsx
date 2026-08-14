@@ -1,47 +1,24 @@
 "use client";
 
 import { useId, useState } from "react";
+import { FAQ_ITEMS } from "./faqItems";
 import { LandingReveal } from "./LandingReveal";
+import { SectionHead, SECTION_CTA, SECTION_GUTTER, SECTION_H2, SECTION_SHELL } from "./primitives";
 
-const FAQ_ITEMS = [
-  {
-    q: "Czy klient musi coś instalować?",
-    a: "Nie. Otwiera link w przeglądarce — bez konta i bez aplikacji.",
-  },
-  {
-    q: "Ile to kosztuje?",
-    a: "Do 5 podopiecznych: 0 zł na zawsze, bez karty. Przy większej liczbie: 39 zł za 15 osób albo 99 zł za 30. Płacisz Ty. Podopieczny zawsze 0 zł. Na start: 10 miejsc w miesiącu na rozmowę — 90 dni za 0 zł, do 15 osób. Albo 490 zł raz za rok przy 15 osobach; potem 39 zł za 15 — ta kwota nie rośnie.",
-  },
-  {
-    q: "Dla kogo to jest?",
-    a: "Dla trenera personalnego, który układa plany siłowe i wysyła je klientom na telefon. Nie do zarządzania klubem, grafikiem sesji ani bieganiem. Jadłospis zostaw w swoim PDF — my robimy trening.",
-  },
-  {
-    q: "Co z moimi danymi?",
-    a: "Są Twoje. Eksport JSON i CSV z panelu. Klient nie zakłada konta — po współpracy nie zostaje mu aplikacja w sklepie.",
-  },
-  {
-    q: "Skąd wiem, że klient trenuje?",
-    a: "Zakończony trening, serie i rekordy w panelu od razu. Kolejka pokazuje, kto nie trenował. Możesz napisać pierwszy.",
-  },
-] as const;
+export { FAQ_ITEMS };
 
 export function Faq() {
   const baseId = useId();
   const [open, setOpen] = useState<number | null>(null);
 
   return (
-    <LandingReveal
-      as="section"
-      id="pytania"
-      className="mx-auto max-w-[1200px] scroll-mt-24 px-5 pt-[clamp(7rem,14vw,10rem)] sm:px-8"
-    >
+    <LandingReveal as="section" id="pytania" className={SECTION_SHELL}>
       <div className="landing-stagger">
-        <h2 className="m-0 mb-12 text-[clamp(2.25rem,5vw,4rem)] font-semibold leading-[1.08] tracking-[-0.028em]">
-          Najczęstsze pytania
-        </h2>
+        <SectionHead n="05" label="Pytania">
+          <h2 className={SECTION_H2}>Najczęstsze pytania</h2>
+        </SectionHead>
 
-        <div className="border-t border-border">
+        <div className={`${SECTION_CTA} border-t border-border ${SECTION_GUTTER}`}>
           {FAQ_ITEMS.map((item, i) => {
             const isOpen = open === i;
             const panelId = `${baseId}-panel-${i}`;
@@ -54,10 +31,10 @@ export function Faq() {
                     id={buttonId}
                     aria-expanded={isOpen}
                     aria-controls={panelId}
-                    className="flex min-h-11 w-full cursor-pointer items-center justify-between gap-8 border-0 bg-transparent py-6 text-left text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+                    className="flex min-h-11 w-full cursor-pointer items-center gap-6 border-0 bg-transparent py-6 text-left text-foreground transition-colors duration-[var(--dur-fast)] hover:text-muted focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
                     onClick={() => setOpen(isOpen ? null : i)}
                   >
-                    <span className="t-heading">{item.q}</span>
+                    <span className="text-[20px] font-medium leading-snug">{item.q}</span>
                     <span
                       className="landing-faq-icon t-num shrink-0 text-[18px] text-fg-faint"
                       data-open={isOpen}

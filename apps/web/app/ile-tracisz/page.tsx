@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "Ile tracisz, gdy klient odchodzi",
   description:
     "Osiem sesji razy Twoja stawka razy ile osób skończyło współpracę w tym roku. 39 zł za 15 osób.",
+  alternates: { canonical: "/ile-tracisz" },
 };
 
 export default function IleTraciszPage() {

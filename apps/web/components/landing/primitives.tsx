@@ -2,71 +2,57 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui";
 
-/** Etykieta sekcji mocka — tytuł + opcjonalna akcja po prawej. */
-export function SectionLabel({
-  children,
-  action,
-}: {
-  children: ReactNode;
-  action?: ReactNode;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <span className="t-label tracking-[0.16em] text-muted">{children}</span>
-      {action ? <span className="shrink-0">{action}</span> : null}
-    </div>
-  );
-}
+/** 120 px indeks + 32 px gap — wyrównanie leadu/CTA pod H2, gdy stoją poza SectionHead. */
+export const SECTION_GUTTER = "md:ml-[152px]";
 
-/** Mały kafelek KPI w mockach landingu — delta inline w linii wartości (stały pion etykiet). */
-export function StatTile({
-  value,
+/** Jeden oddech nad każdą linią sekcji (hero → 01 włącznie). */
+export const SECTION_SPACE = "pt-[clamp(6rem,10vw,10rem)]";
+
+/** Domknięcie strony: SECTION_SPACE + 4 rem. */
+export const SECTION_CLOSE = "pb-[clamp(10rem,calc(10vw+4rem),14rem)]";
+
+export const SECTION_SHELL = `mx-auto max-w-[1200px] scroll-mt-24 px-5 sm:px-8 ${SECTION_SPACE}`;
+
+/** Lead bez górnego odstępu — gdy stoi w siatce pod H2. */
+export const SECTION_COPY =
+  "max-w-[42ch] text-[17px] font-normal leading-[1.6] text-muted text-pretty";
+
+/** H2 → lead w jednej kolumnie. */
+export const SECTION_LEAD = `mt-8 ${SECTION_COPY}`;
+
+/** Lead → CTA. */
+export const SECTION_CTA = "mt-12";
+
+/**
+ * H1 hero i H2 finału — bookend.
+ * Min 2.75 rem: obie linie H1 pojedyncze na 360 px. Max 8.5 rem / body 17 px ≈ 8:1.
+ */
+export const LANDING_DISPLAY =
+  "text-[clamp(2.75rem,9.2vw,8.5rem)] font-semibold leading-[0.94] tracking-[-0.045em]";
+
+/**
+ * H2 sekcji ≈ 0.47× H1 (4 rem / 8.5 rem).
+ * 18 ch — dwie zrównoważone linie, bez sieroty.
+ */
+export const SECTION_H2 =
+  "m-0 max-w-[18ch] text-[clamp(2.25rem,5vw,4rem)] font-semibold leading-[1.08] tracking-[-0.028em] text-balance";
+
+/** Hairline + numer w marginesie + treść (H2) — zawsze pełna szerokość kontenera. */
+export function SectionHead({
+  n,
   label,
-  unit,
-  delta,
-  tone,
-  size = "md",
+  children,
 }: {
-  value: string;
+  n: string;
   label: string;
-  unit?: string;
-  delta?: string;
-  tone?: "pr";
-  size?: "md" | "lg";
+  children: ReactNode;
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1">
-      <div className="flex items-baseline gap-1">
-        <span
-          className={`t-num leading-none ${tone === "pr" ? "text-pr" : "text-foreground"} ${
-            size === "lg" ? "text-[34px]" : "text-[25px]"
-          }`}
-        >
-          {tone === "pr" && !String(value).includes("★") ? `★ ${value}` : value}
-        </span>
-        {unit ? <span className="font-mono text-xs font-medium text-fg-faint">{unit}</span> : null}
-        {delta ? (
-          <span className="ml-1.5 inline-flex items-baseline gap-1 font-mono text-xs font-medium tabular-nums text-gain">
-            <span className="text-xs leading-none" aria-hidden>
-              ▲
-            </span>
-            {delta}
-          </span>
-        ) : null}
-      </div>
-      <div className="t-label tracking-[0.16em]">{label}</div>
-    </div>
-  );
-}
-
-/** Nagłówek kolumn tabeli serii w mocku telefonu. */
-export function SetRowHeader() {
-  return (
-    <div className="grid grid-cols-[28px_1fr_1fr_40px] gap-2 border-b border-border pb-2">
-      <span className="t-label tracking-[0.16em] text-fg-ghost">#</span>
-      <span className="t-label tracking-[0.16em] text-fg-ghost">kg</span>
-      <span className="t-label tracking-[0.16em] text-fg-ghost">powt.</span>
-      <span className="t-label tracking-[0.16em] text-right text-fg-ghost"> </span>
+    <div className="border-t border-border pt-8 md:grid md:grid-cols-[120px_minmax(0,1fr)] md:gap-8">
+      <p className="t-label m-0 tracking-[0.16em] text-fg-ghost">
+        {n} / {label}
+      </p>
+      <div className="mt-3 md:mt-0">{children}</div>
     </div>
   );
 }

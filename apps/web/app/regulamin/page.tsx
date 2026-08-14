@@ -5,6 +5,7 @@ import { Wordmark } from "@/components/Wordmark";
 export const metadata: Metadata = {
   title: "Regulamin",
   robots: { index: true, follow: true },
+  alternates: { canonical: "/regulamin" },
 };
 
 export default function TermsPage() {

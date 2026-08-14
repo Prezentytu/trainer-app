@@ -12,7 +12,14 @@ export const metadata: Metadata = {
   title: "RepMaxer — wysyłasz link",
   description:
     "Klient otwiera link w przeglądarce — bez konta i bez aplikacji. Po treningu masz serie i rekordy. Piszesz pierwszy, zanim odejdzie.",
+  alternates: { canonical: "/" },
   openGraph: {
+    title: "RepMaxer — wysyłasz link",
+    description:
+      "Widzisz trening. Klient otwiera link w przeglądarce — bez konta.",
+  },
+  twitter: {
+    card: "summary_large_image",
     title: "RepMaxer — wysyłasz link",
     description:
       "Widzisz trening. Klient otwiera link w przeglądarce — bez konta.",

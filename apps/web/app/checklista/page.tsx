@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "Checklista: kto odejdzie w 14 dni",
   description:
     "Piętnaście osób, cztery pytania. Napisz dziś do tych, którzy mają dwa lub więcej tak.",
+  alternates: { canonical: "/checklista" },
 };
 
 export default function ChecklistPage() {

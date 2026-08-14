@@ -1,24 +1,21 @@
 import { LandingReveal } from "./LandingReveal";
 import { IleTraciszCalculator } from "./IleTraciszCalculator";
+import { SectionHead, SECTION_COPY, SECTION_H2, SECTION_SHELL } from "./primitives";
 
 export function LossCalculatorSection() {
   return (
-    <LandingReveal
-      as="section"
-      id="ile-tracisz"
-      className="mx-auto max-w-[1200px] scroll-mt-24 px-5 pt-[clamp(8rem,18vw,12rem)] sm:px-8"
-    >
-      <div className="landing-stagger grid grid-cols-1 items-start gap-10 md:grid-cols-2 md:gap-16">
-        <div>
-          <h2 className="m-0 max-w-[16ch] text-[clamp(2.25rem,5vw,4rem)] font-semibold leading-[1.08] tracking-[-0.028em] text-balance">
-            Ile tracisz, gdy klient odchodzi.
-          </h2>
-          <p className="mt-6 max-w-[42ch] text-[17px] font-normal leading-[1.6] text-muted text-pretty">
-            Osiem sesji w miesiącu. Twoja stawka. Ile osób skończyło współpracę
-            w tym roku. Wynik to sesje, które nie weszły na konto.
-          </p>
-        </div>
-        <IleTraciszCalculator className="" />
+    <LandingReveal as="section" id="ile-tracisz" className={SECTION_SHELL}>
+      <div className="landing-stagger">
+        <SectionHead n="04" label="Ile tracisz">
+          <h2 className={SECTION_H2}>Ile tracisz, gdy klient odchodzi.</h2>
+          <div className="mt-8 grid grid-cols-1 items-start gap-14 lg:grid-cols-2 lg:gap-24">
+            <p className={SECTION_COPY}>
+              Osiem sesji w&nbsp;miesiącu. Twoja stawka. Ile osób skończyło współpracę
+              w&nbsp;tym roku. Wynik to sesje, które nie weszły na konto.
+            </p>
+            <IleTraciszCalculator className="md:pt-0" />
+          </div>
+        </SectionHead>
       </div>
     </LandingReveal>
   );

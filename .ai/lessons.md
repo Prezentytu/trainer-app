@@ -15,6 +15,20 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Sticky scena: tor = długość animacji, dziecko wypełnia kadr
+
+**Kontekst**: `md:min-h-[180svh]` + sticky `min-h-[100svh]` zostawiało ~560 px pustki **pod** dzieckiem po odpięciu. W telefonie drugi blok (Przysiad × 3) wypychał wyciskanie poza `overflow-hidden` — na niskim oknie widać było 4/4 i ghost serie, bez odhaczenia 105 × 3.
+**Problem**: Użytkownik scrollował przez biały kadr po climaxie; ostatniej serii nie było w kadrze.
+**Zasada**: Wysokość sekcji sticky = `100svh + tor animacji` (nie bufor po finale). Dziecko ma stałe `h-[calc(100svh-nav)]`, żeby przykrywać tor. W mockupie tylko to, co się animuje — zapowiedź kolejnego ćwiczenia to jedna linia, nie druga tabela.
+**Dotyczy**: `PhoneMock.tsx`, każda scena scrollytelling na landingu
+
+## Przestrzeń na landingu musi być ograniczona elementem
+
+**Kontekst**: Hero flush-left + LiveFeed wypychał treść poza fold; między tabelą a sceną telefonu zostawał cały pusty kadr. Animacja odhaczania ruszała dopiero przy przypięciu sticky i kończyła się w momencie odpięcia.
+**Problem**: Pusta przestrzeń wyglądała na niedokończoną, a nie artystyczną. Podpunkty wewnątrz sekcji były ściśnięte, a między blokami — martwe strefy. Scrollytelling „nic nie robił” przez pół ekranu.
+**Zasada**: Jedna myśl na viewport. Hero = wyśrodkowana deklaracja, krawędź kadru domknięta meta-rzędem. Usuń element, który nie mieści się w kadrze, zamiast dokładać padding. Scroll-driven scena startuje, gdy podmiot jest już widoczny (lead-in ~35% vh) i kończy się przed odpięciem (~80% dystansu). Wewnątrz sekcji odstępy większe niż między nimi.
+**Dotyczy**: `Hero.tsx`, `PhoneMock.tsx`, `components/landing/`
+
 ## Nie rezerwuj gutera na treść, której nie ma
 
 **Kontekst**: Nazwy ćwiczeń na liście Dziś były wcięte o 56 px (miniatura 44 px + gap), choć żadne ćwiczenie w planie nie miało filmu — `DemoThumbButton` zwracał `null`, ale kontener `h-11 w-11` zostawał.
@@ -673,5 +687,40 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Problem**: Nadpisanie `--bg` z `#0b0c0d` na `#0e0b0c` jest niewidoczne. Klient nie rozpoznaje motywu w 1 s.
 **Zasada**: Paleta musi być od razu czytelna: powierzchnie i krawędzie z wyraźnym hue, swatch = kolor tożsamości (Pony `#ff4d94`, nie dusty rose). Nazwa nazywa kolor (Mech, Piasek, Ocean), nie nastrój („Spokój”). `--pr`/`--gain`/`--loss` zostają. Nie udawaj chromatyczności 2-procentowym shiftem.
 **Dotyczy**: `globals.css` `[data-palette]`, `lib/theme.ts` `PALETTES`, profil portalu.
+
+## Mock urządzenia: proporcje urządzenia, treść wypełnia ekran
+
+**Kontekst**: Miniatura sesji na landingu była zaokrągloną kartą o wysokości czterech wierszy serii — wyglądała jak kwadrat, nie jak telefon.
+**Problem**: Ramka bez `aspect-ratio` kurczy się do treści. Pusty placeholder na dole nie udaje ekranu.
+**Zasada**: Mock telefonu ma stałe proporcje (`aspect-[9/19]`), treść w kolumnie flex, dock i home indicator dociśnięte do dołu. Zapowiedź następnego ćwiczenia wypełnia resztę, jak w prawdziwym loggerze.
+**Dotyczy**: `PhoneMock.tsx`, mockupy urządzeń na landingu
+
+## Dane przykładowe muszą być spójne domenowo
+
+**Kontekst**: Wiersz Olí Wiśniewskiej w sekcji panelu miał „Martwy ciąg” i wynikiem „nie trenowała od 5 dni”.
+**Problem**: Status (kto nie trenował) dostał kolumnę ćwiczenia i wyniku — bezsensowny rekord.
+**Zasada**: Wiersz albo pokazuje trening (ćwiczenie + kg × powt. + PR/przyrost), albo status bez treningu (podtytuł + marker dni) — nigdy obu naraz.
+**Dotyczy**: `TrainerPreview.tsx`, feedy i mocki z danymi przykładowymi
+
+## Stopka nie konkuruje z finalnym CTA
+
+**Kontekst**: Gigantyczny wordmark REPMAXER w stopce wizualnie zjadał „Zacznij z pierwszym klientem”, a dwie kolumny linków (Gotowce, Checklista, Załóż konto) dublowały CTA.
+**Problem**: Finał strony oceniany jest po ostatnim bloku (peak-end). Stopka nie może być głośniejsza niż CTA.
+**Zasada**: Stopka = jeden rząd (mały wordmark, niezbędne linki, copyright). Rejestracja zostaje w hero / cenniku / finale. Wordmark na pełną szerokość nie stoi tuż pod H2 CTA.
+**Dotyczy**: `LandingFooter.tsx`, `FinalCta.tsx`
+
+## Landing: rytm, linie i tekstura muszą mieć jedno źródło
+
+**Kontekst**: Audyt landingu: ściana zapisów 7% fg była niewidoczna; `01 Produkt` miał 80 px paddingu, reszta 160 px; `SectionHead` w lewej kolumnie dawał 5 różnych długości hairline; sticky `42svh` + wewnętrzny pt panelu zostawiał pustą klatkę.
+**Problem**: Odstępy i linie wyglądały na przypadkowe. Dekoracyjna tekstura nie czytała się jako zamierzona. Hero wchodził jedną paczką.
+**Zasada**: Jeden token `SECTION_SPACE` / `SECTION_SHELL` dla każdej sekcji; hairline `SectionHead` zawsze na pełną szerokość kontenera (wizualna kolumna wchodzi *do* children, nie owija head). Sticky: tor = kompensacja 1:1, oddech po odpięciu = ten sam token. Tekstura dekoracyjna ≥ ~13% fg, światło z miękką maską (nie `clip-path`). Skala typu z jednej drabiny (H1 = finał = max cyfry).
+**Dotyczy**: `primitives.tsx`, `LogWall.tsx`, `Hero.tsx`, `PhoneMock.tsx`, `TrainerPreview.tsx`, `globals.css` (`.landing-log-*`)
+
+## Landing: próg siatki 2-kolumnowej = szerokość realnej kolumny treści
+
+**Kontekst**: Siatki Produkt / Panel / Cennik / Ile tracisz włączały się na `md:` (768 px). Po gutterze `SectionHead` (152 px) i sztywnej kolumnie (telefon / tabela 380 px) zostawało ~76–197 px na lead i H2.
+**Problem**: Na tablecie H2 miał 5 linii, lead jedno słowo na linię. Na 360 px nav z „Cennik” + CTA dawał `scrollWidth > clientWidth`; H1 min 3 rem łamał „Widzisz trening.”. Na 1280–1920 bookend finału w kolumnie 984 px przy 8.5 rem składał się do 3 linii.
+**Zasada**: Split 2-kolumnowy i sticky/scrub dopiero od `lg:` (1024 px), gdy kolumna treści ma ≥ ~332 px. Gutter indeksu (`md:grid-cols-[120px_…]`) zostaje na `md:`. Nav < `sm:` = wordmark + logowanie + CTA (sekcje są pod scrollem). H1 min 2.75 rem. Finał może zejść z max H1 (7 rem od `lg:`), żeby zostać na 2 liniach — bookend nie wygrywa z sierotą.
+**Dotyczy**: `PhoneMock.tsx`, `TrainerPreview.tsx`, `PricingSection.tsx`, `LossCalculatorSection.tsx`, `LandingNav.tsx`, `primitives.tsx`, `FinalCta.tsx`
 
 ---

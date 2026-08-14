@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "Trzy wiadomości, gdy klient nie trenował",
   description:
     "Wklejasz do WhatsAppa dziś. Bez konta. Siedem dni, czternaście dni, pierwszy trening.",
+  alternates: { canonical: "/gotowce" },
 };
 
 export default function GotowcePage() {

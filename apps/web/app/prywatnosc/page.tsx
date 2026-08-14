@@ -5,6 +5,7 @@ import { Wordmark } from "@/components/Wordmark";
 export const metadata: Metadata = {
   title: "Polityka prywatności",
   robots: { index: true, follow: true },
+  alternates: { canonical: "/prywatnosc" },
 };
 
 export default function PrivacyPage() {
