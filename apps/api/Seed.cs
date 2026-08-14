@@ -26,19 +26,28 @@ public static class Seed
             db.SaveChanges();
         }
 
-        if (db.Exercises.Any()) return;
+        if (db.Exercises.Any())
+        {
+            SyncLibrary(db);
+            return;
+        }
 
         var trainerId = db.Trainers.First(t => t.ClerkUserId == TrainerAccess.LocalClerkUserId).Id;
         var exercises = new List<Exercise>();
         exercises.AddRange(CoreExercises());
         exercises.AddRange(LoadLibraryFiles());
 
-        // Deduplikacja case-insensitive — pliki biblioteki nie nadpisują core.
+        // Deduplikacja case-insensitive — core zostaje, biblioteka scala media.
         var byName = new Dictionary<string, Exercise>(StringComparer.OrdinalIgnoreCase);
         foreach (var ex in exercises)
         {
             var key = NormalizeName(ex.Name);
-            if (key.Length == 0 || byName.ContainsKey(key)) continue;
+            if (key.Length == 0) continue;
+            if (byName.TryGetValue(key, out var existing))
+            {
+                MergeMedia(existing, ex.Media);
+                continue;
+            }
             ex.Name = key;
             // Wspólna biblioteka (TrainerId = null).
             byName[key] = ex;
@@ -332,6 +341,75 @@ public static class Seed
             ? ""
             : string.Join(' ', name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries));
 
+    /// <summary>
+    /// Dopisuje brakujące ćwiczenia wspólne z plików biblioteki i scala media
+    /// po nazwie. Nie rusza ćwiczeń trenera, planów ani logów.
+    /// </summary>
+    private static void SyncLibrary(AppDb db)
+    {
+        var library = LoadLibraryFiles();
+        if (library.Count == 0) return;
+
+        var existing = db.Exercises.Where(e => e.TrainerId == null).ToList();
+        var byName = new Dictionary<string, Exercise>(StringComparer.OrdinalIgnoreCase);
+        foreach (var ex in existing)
+        {
+            var key = NormalizeName(ex.Name);
+            if (key.Length == 0 || byName.ContainsKey(key)) continue;
+            byName[key] = ex;
+        }
+
+        var dirty = false;
+        foreach (var incoming in library)
+        {
+            var key = NormalizeName(incoming.Name);
+            if (key.Length == 0) continue;
+            if (byName.TryGetValue(key, out var found))
+            {
+                if (MergeMedia(found, incoming.Media))
+                {
+                    db.Entry(found).Property(e => e.Media).IsModified = true;
+                    dirty = true;
+                }
+                continue;
+            }
+
+            incoming.Name = key;
+            incoming.TrainerId = null;
+            db.Exercises.Add(incoming);
+            byName[key] = incoming;
+            dirty = true;
+        }
+
+        if (dirty)
+            db.SaveChanges();
+    }
+
+    /// <summary>
+    /// Unia mediów po YoutubeId. Nie nadpisuje kind/title już zapisanych.
+    /// </summary>
+    private static bool MergeMedia(Exercise existing, IReadOnlyList<ExerciseMedia> incoming)
+    {
+        if (incoming.Count == 0) return false;
+
+        var have = new HashSet<string>(
+            existing.Media.Select(m => m.YoutubeId),
+            StringComparer.OrdinalIgnoreCase);
+        var next = existing.Media.ToList();
+        var added = false;
+        foreach (var media in incoming)
+        {
+            if (string.IsNullOrWhiteSpace(media.YoutubeId) || !have.Add(media.YoutubeId))
+                continue;
+            next.Add(media);
+            added = true;
+        }
+
+        if (!added) return false;
+        existing.Media = next;
+        return true;
+    }
+
     private static List<Exercise> CoreExercises() =>
     [
         new()
@@ -436,9 +514,11 @@ public static class Seed
     private static IEnumerable<string> ResolveLibraryPaths()
     {
         // Output dir (CopyToOutputDirectory) oraz źródło w repo przy `dotnet run` z apps/api.
+        var assemblyDir = Path.GetDirectoryName(typeof(Seed).Assembly.Location);
         var candidates = new[]
         {
             Path.Combine(AppContext.BaseDirectory, "Data", "exercises"),
+            assemblyDir is null ? "" : Path.Combine(assemblyDir, "Data", "exercises"),
             Path.Combine(Directory.GetCurrentDirectory(), "Data", "exercises"),
             Path.Combine(Directory.GetCurrentDirectory(), "apps", "api", "Data", "exercises"),
         };

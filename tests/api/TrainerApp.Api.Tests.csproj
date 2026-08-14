@@ -19,4 +19,8 @@
     <ProjectReference Include="..\..\apps\api\TrainerApp.Api.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="..\..\apps\api\Data\exercises\*.json" CopyToOutputDirectory="PreserveNewest" Link="Data\exercises\%(Filename)%(Extension)" />
+  </ItemGroup>
+
 </Project>

@@ -1,0 +1,1978 @@
+{
+  "source": "https://www.youtube.com/playlist?list=PLmhudurbOPnfm2_5sItEtzCV-iPH5ULtt",
+  "exercises": [
+    {
+      "name": "Przysiad ze sztangą",
+      "category": "legs",
+      "pattern": "squat",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda",
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "zxjNtj-Lc1U",
+          "title": "ATLAS ĆWICZEŃ - przysiad low bar!",
+          "seconds": 1184,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "2xxXr0OyfYo",
+          "title": "Team Kota - Profesjonalna analiza przysiadu - poprawna technika, diagnoza - KFD",
+          "seconds": 1335,
+          "kind": "tip"
+        },
+        {
+          "youtubeId": "fTTBzeXQ_8U",
+          "title": "Zalety gryfu typu Safety Squat Bar – przewodnik Charlesa Poliquina",
+          "seconds": 68,
+          "kind": "tip"
+        }
+      ]
+    },
+    {
+      "name": "Przysiad przedni (Front Squat)",
+      "category": "legs",
+      "pattern": "squat",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda",
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "TN6Qn3sq8sg",
+          "title": "ATLAS ĆWICZEŃ: PRZEDNI PRZYSIAS/FRONT SQUAT!",
+          "seconds": 753,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Przysiad Zerchera (Zercher Squat)",
+      "category": "legs",
+      "pattern": "squat",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda",
+        "Pośladki",
+        "Core"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "vpy4ADmlo1E",
+          "title": "How To: Zercher Squat",
+          "seconds": 112,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Przysiad kolarski (Cyclist Squat)",
+      "category": "legs",
+      "pattern": "squat",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell",
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 10,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "e5xgwNlTNHI",
+          "title": "cyclist squat",
+          "seconds": 52,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Przysiad overhead (Overhead Squat)",
+      "category": "legs",
+      "pattern": "squat",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda",
+        "Pośladki",
+        "Core"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "pn8mqlG0nkE",
+          "title": "The Overhead Squat",
+          "seconds": 80,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Przysiad na skrzynię (Box Squat)",
+      "category": "legs",
+      "pattern": "squat",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda",
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "7iw2gLZKZ0w",
+          "title": "Box Squat",
+          "seconds": 17,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Przysiad kozacki (Cossack Squat)",
+      "category": "legs",
+      "pattern": "squat",
+      "isUnilateral": true,
+      "equipment": [
+        "bodyweight",
+        "kettlebell"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda",
+        "Przywodziciele"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 10,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "tpczTeSkHz0",
+          "title": "How to Cossack Squat Mobility Exercise: Tutorial & Progressions",
+          "seconds": 181,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Przysiad z pasem (Belt Squat)",
+      "category": "legs",
+      "pattern": "squat",
+      "isUnilateral": false,
+      "equipment": [
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda",
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "hXd_nZ1ImYE",
+          "title": "Belt Squats",
+          "seconds": 49,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Hack squat",
+      "category": "legs",
+      "pattern": "squat",
+      "isUnilateral": false,
+      "equipment": [
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda",
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "bGbHOeHXnB8",
+          "title": "Hack squat 🔥",
+          "seconds": 15,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie nogami (Leg Press)",
+      "category": "legs",
+      "pattern": "squat",
+      "isUnilateral": false,
+      "equipment": [
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda",
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "ahaJTts1f3s",
+          "title": "Jak prawidłowo korzystać z maszyny do wyciskania nogami, zachowując prawidłową technikę (PRZESTAŃ...",
+          "seconds": 13,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Przysiad jednonóż z dotknięciem (Single-Leg Touchdown Squat)",
+      "category": "legs",
+      "pattern": "squat",
+      "isUnilateral": true,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda",
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 10,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "lF6DuEd1tqE",
+          "title": "Single Leg Touchdown Squats",
+          "seconds": 9,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Reverse Nordic curl",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "bodyweight",
+        "landmine"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 10,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "UbjV75yiPMU",
+          "title": "Reverse nordic curl/negative",
+          "seconds": 117,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "t10Ce0mbKSk",
+          "title": "Landmine Reverse Nordic Curl",
+          "seconds": 32,
+          "kind": "tip"
+        }
+      ]
+    },
+    {
+      "name": "Sissy squat",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "Cu2THH1IQDA",
+          "title": "Sissy Squat",
+          "seconds": 39,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Sissy squat jednonóż do skrzyni (Single-Leg Sissy Squat to Box)",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": true,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "LiPVGkYpYnw",
+          "title": "Single Leg Sissy Squat To Box (Advanced Knee Strength)",
+          "seconds": 56,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Przysiad bułgarski (Bulgarian Split Squat)",
+      "category": "legs",
+      "pattern": "squat",
+      "isUnilateral": true,
+      "equipment": [
+        "dumbbell",
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda",
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 10,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "_2n3_gIJ0H0",
+          "title": "bulgarian split squat",
+          "seconds": 37,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "Cs4hsNmRz54",
+          "title": "rfe split squat",
+          "seconds": 33,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "caA-JwqirUw",
+          "title": "Barbell Bulgarian Split Squat",
+          "seconds": 12,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "3YduT91V898",
+          "title": "Front Rack Bulgarian Split Squat",
+          "seconds": 64,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "JhJDKw-mVKY",
+          "title": "MUST TRY BULGARIAN SPLIT SQUAT GYMHACK",
+          "seconds": 12,
+          "kind": "tip"
+        }
+      ]
+    },
+    {
+      "name": "Przysiad wykroczny z przodem na podwyższeniu (Front-Foot Elevated Split Squat)",
+      "category": "legs",
+      "pattern": "squat",
+      "isUnilateral": true,
+      "equipment": [
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda",
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 10,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "VZpZZNvdyts",
+          "title": "db ffe split squat",
+          "seconds": 74,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wchodzenie na stopień (Step-Up)",
+      "category": "legs",
+      "pattern": "squat",
+      "isUnilateral": true,
+      "equipment": [
+        "bodyweight",
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda",
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 10,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "9day6RhW8XA",
+          "title": "How To Perform Step Ups",
+          "seconds": 29,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wchodzenie na wysoki stopień (High Step-Up)",
+      "category": "legs",
+      "pattern": "squat",
+      "isUnilateral": true,
+      "equipment": [
+        "bodyweight",
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda",
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 10,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "KGyVfgh0fhk",
+          "title": "High Stepup",
+          "seconds": 62,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wchodzenie bokiem na niski stopień (Low Side Step-Up)",
+      "category": "legs",
+      "pattern": "squat",
+      "isUnilateral": true,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda",
+        "Pośladkowy średni"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "oNLju6SM3WE",
+          "title": "low side step up",
+          "seconds": 31,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wchodzenie na stopień Poliquina (Poliquin Step-Up)",
+      "category": "legs",
+      "pattern": "squat",
+      "isUnilateral": true,
+      "equipment": [
+        "bodyweight",
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "CjOk-l2G6so",
+          "title": "poliquin step up",
+          "seconds": 52,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Prostowanie nóg na maszynie (Leg Extension)",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "t8--Y-pjTmg",
+          "title": "Seated Leg Extension Machine",
+          "seconds": 8,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wykrok wstecz (Reverse Lunge)",
+      "category": "legs",
+      "pattern": "squat",
+      "isUnilateral": true,
+      "equipment": [
+        "dumbbell",
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda",
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 10,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "jCmUB1g896M",
+          "title": "reverse lunge",
+          "seconds": 24,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "I2JFosVUPYs",
+          "title": "Overhead Barbell Reverse Lunge",
+          "seconds": 15,
+          "kind": "tip"
+        }
+      ]
+    },
+    {
+      "name": "Wykrok wstecz z deficytu (Deficit Reverse Lunge)",
+      "category": "legs",
+      "pattern": "squat",
+      "isUnilateral": true,
+      "equipment": [
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda",
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 10,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "WEEh3qKBF3o",
+          "title": "deficit reverse lunge",
+          "seconds": 35,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wykrok w bok (Lateral Lunge)",
+      "category": "legs",
+      "pattern": "squat",
+      "isUnilateral": true,
+      "equipment": [
+        "dumbbell",
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda",
+        "Przywodziciele"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 10,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "MQzfRqg2OYU",
+          "title": "lateral lunge",
+          "seconds": 66,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "nIk_a2H9xPc",
+          "title": "lateral lunge with slider",
+          "seconds": 61,
+          "kind": "tip"
+        }
+      ]
+    },
+    {
+      "name": "Wykrok w bok klęcząc z landmine (Landmine Kneeling Lateral Lunge)",
+      "category": "legs",
+      "pattern": "squat",
+      "isUnilateral": true,
+      "equipment": [
+        "landmine"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda",
+        "Przywodziciele"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 10,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "Pr5iPcmy8w8",
+          "title": "Landmine Kneeling Lateral Lunge",
+          "seconds": 10,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wykrok ATG (ATG Lunge)",
+      "category": "legs",
+      "pattern": "squat",
+      "isUnilateral": true,
+      "equipment": [
+        "bodyweight",
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda",
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 10,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "2UDChYZVLOE",
+          "title": "ATG Lunges",
+          "seconds": 18,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie nóg leżąc (Lying Leg Curl)",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Tył uda"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "qkHQ8P4OnUE",
+          "title": "leg curl",
+          "seconds": 53,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie nóg siedząc (Seated Leg Curl)",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Tył uda"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "ELOCsoDSmrg",
+          "title": "Jak wykonywać uginanie nóg w siadzie (maszyna Cybex)",
+          "seconds": 190,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie nóg siedząc jednonóż (Single-Leg Seated Leg Curl)",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": true,
+      "equipment": [
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Tył uda"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "i3mrtIVOoeU",
+          "title": "Uginanie nóg w siadzie na jedną nogę",
+          "seconds": 59,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie nóg na piłce (Swiss Ball Leg Curl)",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Tył uda"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "ERsOkhKt4LI",
+          "title": "ball swiss leg curl",
+          "seconds": 61,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie nóg na sliderze (Slider Hamstring Curl)",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Tył uda"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "e17hjjvQLQQ",
+          "title": "Sliding Leg Curl",
+          "seconds": 16,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "HaR-vvFwb7A",
+          "title": "Slider Hamstring Curl",
+          "seconds": 14,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "tlvc1SRHn8A",
+          "title": "Gliding Hamstring Curl",
+          "seconds": 19,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "9g5z-JqpsGg",
+          "title": "Slider Double Leg Hamstring Curl",
+          "seconds": 17,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie nóg na sliderze jednonóż (Single-Leg Slider Hamstring Curl)",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": true,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Tył uda"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "DRceLY_h_gY",
+          "title": "Single Leg Slider Hamstring Curl",
+          "seconds": 7,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie nóg na TRX (TRX Hamstring Curl)",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "trx"
+      ],
+      "primaryMuscles": [
+        "Tył uda"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "z9VRC5qWDDA",
+          "title": "Jak to zrobić: TRX – uginanie ścięgien podkolanowych",
+          "seconds": 107,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie nóg wyciągiem jednonóż (Single-Leg Cable Leg Curl)",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": true,
+      "equipment": [
+        "cable"
+      ],
+      "primaryMuscles": [
+        "Tył uda"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "Yy2woo9ljtw",
+          "title": "Workoutic - Hamstrings Exercises - SINGLE LEG CABLE BENCH SUPPORT LEG CURL",
+          "seconds": 91,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Uginanie nóg manualne (Manual Hamstring Curl)",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Tył uda"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "rYLpvcDWVt4",
+          "title": "How To Perform Manual Hamstring Curls - Exercise Tutorial",
+          "seconds": 151,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Nordic hamstring curl",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "bodyweight",
+        "band"
+      ],
+      "primaryMuscles": [
+        "Tył uda"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 10,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "X3zUmtQYRtM",
+          "title": "Ulepsz swoje ćwiczenia Nordic Two String Curling z taśmami | Tim Keeley | Fizjoterapeuta REHAB",
+          "seconds": 550,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "lykycsFr90g",
+          "title": "Nordic Hamstring Curl w/Swiss Ball",
+          "seconds": 18,
+          "kind": "tip"
+        }
+      ]
+    },
+    {
+      "name": "Glute ham raise",
+      "category": "legs",
+      "pattern": "hinge",
+      "isUnilateral": false,
+      "equipment": [
+        "ghd"
+      ],
+      "primaryMuscles": [
+        "Tył uda",
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 10,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "HUZCWF47_Ek",
+          "title": "Glute Ham Raise Machine",
+          "seconds": 29,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "r3j16CJFDXw",
+          "title": "GHRD",
+          "seconds": 19,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Hip thrust",
+      "category": "legs",
+      "pattern": "hinge",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 10,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "crdbXcSkr9A",
+          "title": "hip thrust",
+          "seconds": 40,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Hip thrust jednonóż (Single-Leg Hip Thrust)",
+      "category": "legs",
+      "pattern": "hinge",
+      "isUnilateral": true,
+      "equipment": [
+        "bodyweight",
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "wpKn6lUI2u0",
+          "title": "1-leg hip thrust",
+          "seconds": 38,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Mostek biodrowy (Glute Bridge)",
+      "category": "legs",
+      "pattern": "hinge",
+      "isUnilateral": false,
+      "equipment": [
+        "bodyweight",
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "5v--kZ8cwjs",
+          "title": "glute bridge",
+          "seconds": 24,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "beWSXr_mZXU",
+          "title": "bb fe glute bridge",
+          "seconds": 38,
+          "kind": "tip"
+        }
+      ]
+    },
+    {
+      "name": "Mostek biodrowy jednonóż (Single-Leg Glute Bridge)",
+      "category": "legs",
+      "pattern": "hinge",
+      "isUnilateral": true,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "ydG3EqORtmk",
+          "title": "1 leg glute bridge",
+          "seconds": 24,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Mostek udowy przy ścianie jednonóż (Single-Leg Wall Hamstring Bridge)",
+      "category": "legs",
+      "pattern": "hinge",
+      "isUnilateral": true,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Tył uda",
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "52yQwQtdvf4",
+          "title": "Single leg wall Hamstring Bridge with heel raise",
+          "seconds": 30,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Reverse hyper z gumą (Banded Reverse Hyperextension)",
+      "category": "legs",
+      "pattern": "hinge",
+      "isUnilateral": false,
+      "equipment": [
+        "band"
+      ],
+      "primaryMuscles": [
+        "Pośladki",
+        "Tył uda"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "tBxxWNtEW7c",
+          "title": "Banded Reverse Hyperextension",
+          "seconds": 89,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Przywodzenie biodra na maszynie (Hip Adductor)",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Przywodziciele"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "e9AqTFMmP18",
+          "title": "Hip Adductor Machine: Demo",
+          "seconds": 37,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Odwodzenie biodra wyciągiem (Cable Hip Abduction)",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": true,
+      "equipment": [
+        "cable"
+      ],
+      "primaryMuscles": [
+        "Pośladkowy średni"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "vSqhrbzZb7A",
+          "title": "Cable Standing Hip Abduction",
+          "seconds": 14,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Odwodzenie biodra leżąc (Sidelying Hip Abduction)",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": true,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Pośladkowy średni"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "9u2uo35kkhs",
+          "title": "Glute Med Gains with the Sidelying Extra-Range Hip Abduction Exercise",
+          "seconds": 18,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Odwodzenie biodra kopenhaskie (Copenhagen Plank)",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": true,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Przywodziciele",
+        "Core"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "GaKF8fyKn2o",
+          "title": "Copenhagen Hip Abduction",
+          "seconds": 7,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Unoszenie biodra bokiem (Side-Lying Hip Raise)",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": true,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Pośladkowy średni",
+        "Core"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "6C8PcopNMfs",
+          "title": "Side-Lying Hip Raise",
+          "seconds": 11,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Muszla z gumą (Banded Clamshell)",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": true,
+      "equipment": [
+        "band"
+      ],
+      "primaryMuscles": [
+        "Pośladkowy średni"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "G_uGsV3B7Gs",
+          "title": "clamshell side bridge with band",
+          "seconds": 37,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Hip hike",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": true,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Pośladkowy średni"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "V6swLhJYULg",
+          "title": "Hip Hike",
+          "seconds": 45,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Hip airplane z landmine (Landmine Hip Airplane)",
+      "category": "legs",
+      "pattern": "hinge",
+      "isUnilateral": true,
+      "equipment": [
+        "landmine"
+      ],
+      "primaryMuscles": [
+        "Pośladki",
+        "Pośladkowy średni"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "kwn-4o_fvcg",
+          "title": "Landmine Hip Airplane",
+          "seconds": 24,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wspięcia na palce stojąc (Standing Calf Raise)",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "machine",
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Łydki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "YMmgqO8Jo-k",
+          "title": "Instrukcja: Ćwiczenie na łydce w pozycji stojącej (BM)",
+          "seconds": 143,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wspięcia na palce stojąc jednonóż (Single-Leg Calf Raise)",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": true,
+      "equipment": [
+        "bodyweight"
+      ],
+      "primaryMuscles": [
+        "Łydki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "2NsM7mM2z0g",
+          "title": "1-leg calf raise",
+          "seconds": 32,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wspięcia na palce siedząc (Seated Calf Raise)",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Łydki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "E4ktXrJZUMg",
+          "title": "Seated Calf Raise - The Proper Lift - BPI Sports",
+          "seconds": 98,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wspięcia na palce siedząc jednonóż (Single-Leg Seated Calf Raise)",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": true,
+      "equipment": [
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Łydki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "ZEiUq3hLdPc",
+          "title": "Seated Calf Raise 1 Leg",
+          "seconds": 31,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wspięcia osła (Donkey Calf Raise)",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Łydki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "FtD0qv9P7O0",
+          "title": "Donkey Calf Raise",
+          "seconds": 44,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wspięcia na palce na suwnicy (Leg Press Calf Raise)",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "machine"
+      ],
+      "primaryMuscles": [
+        "Łydki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "dhRz1Ns60Zg",
+          "title": "How To Do Calf Raises On The Leg Press",
+          "seconds": 14,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Wspięcia na palce odwrotne (Tibialis Raise)",
+      "category": "legs",
+      "pattern": "isolation",
+      "isUnilateral": false,
+      "equipment": [
+        "bodyweight",
+        "kettlebell"
+      ],
+      "primaryMuscles": [
+        "Piszczel przedni"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "XW6uP70nwHc",
+          "title": "reverse calf raise",
+          "seconds": 27,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "_MN8NJSKSCo",
+          "title": "Unoszenie mięśnia piszczelowego z odważnikiem kettlebell | Marsz Fitness",
+          "seconds": 37,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Martwy ciąg",
+      "category": "legs",
+      "pattern": "hinge",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Tył uda",
+        "Pośladki",
+        "Prostownik grzbietu"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "BxRiQUd2BGk",
+          "title": "ATLAS ĆWICZEŃ: MARTWY CIĄG KLASYCZNY!",
+          "seconds": 952,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Martwy ciąg rumuński z hantlami (Dumbbell RDL)",
+      "category": "legs",
+      "pattern": "hinge",
+      "isUnilateral": false,
+      "equipment": [
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Tył uda",
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 10,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "fwvZM7bwf70",
+          "title": "DB RDL",
+          "seconds": 34,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Martwy ciąg na sztywnych nogach (Stiff-Legged Deadlift)",
+      "category": "legs",
+      "pattern": "hinge",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Tył uda",
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "CN_7cz3P-1U",
+          "title": "Stiff Legged Deadlift",
+          "seconds": 15,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Martwy ciąg sumo (Sumo Deadlift)",
+      "category": "legs",
+      "pattern": "hinge",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Pośladki",
+        "Przywodziciele",
+        "Tył uda"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "IzTrhA6X7eg",
+          "title": "Deadlift sumo",
+          "seconds": 25,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "8vpA3vUorI8",
+          "title": "Deficit Sumo Deadlift with Pause",
+          "seconds": 25,
+          "kind": "tip"
+        }
+      ]
+    },
+    {
+      "name": "Martwy ciąg chwyt rwaniowy (Snatch Grip Deadlift)",
+      "category": "legs",
+      "pattern": "hinge",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Tył uda",
+        "Pośladki",
+        "Prostownik grzbietu"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "7tnru5wQii4",
+          "title": "snatch grip deadlift",
+          "seconds": 52,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Martwy ciąg z bloków (Block Pull)",
+      "category": "legs",
+      "pattern": "hinge",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Tył uda",
+        "Pośladki",
+        "Prostownik grzbietu"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "7eKi1gOKet8",
+          "title": "block pull",
+          "seconds": 53,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "stXBbeVIkzM",
+          "title": "block pull snatch grip",
+          "seconds": 46,
+          "kind": "tip"
+        },
+        {
+          "youtubeId": "aDKDXSjEnz8",
+          "title": "Sumo Deadlift 2\" Block Pull",
+          "seconds": 40,
+          "kind": "tip"
+        }
+      ]
+    },
+    {
+      "name": "Martwy ciąg trap bar (Trap Bar Deadlift)",
+      "category": "legs",
+      "pattern": "hinge",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Czworogłowy uda",
+        "Pośladki",
+        "Tył uda"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "aPXO_Xms9oA",
+          "title": "trap bar deadlift",
+          "seconds": 49,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "F4nE95eq1OA",
+          "title": "Trap Bar Deadlift with Bands",
+          "seconds": 15,
+          "kind": "tip"
+        }
+      ]
+    },
+    {
+      "name": "Martwy ciąg jednonóż (Single-Leg Deadlift)",
+      "category": "legs",
+      "pattern": "hinge",
+      "isUnilateral": true,
+      "equipment": [
+        "dumbbell",
+        "kettlebell"
+      ],
+      "primaryMuscles": [
+        "Tył uda",
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 10,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "QwWbuH0mHWI",
+          "title": "one leg deaflift",
+          "seconds": 55,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Martwy ciąg kickstand (Kickstand Deadlift)",
+      "category": "legs",
+      "pattern": "hinge",
+      "isUnilateral": true,
+      "equipment": [
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Tył uda",
+        "Pośladki"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 10,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "Vpfjq9WHA-E",
+          "title": "Kickstand Deadlift- Smart Strength",
+          "seconds": 57,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Martwy ciąg hover (Hover Deadlift)",
+      "category": "legs",
+      "pattern": "hinge",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Tył uda",
+        "Pośladki",
+        "Prostownik grzbietu"
+      ],
+      "type": "reps",
+      "defaultSets": 4,
+      "defaultReps": 6,
+      "defaultRestBetweenSetsSeconds": 120,
+      "media": [
+        {
+          "youtubeId": "vHfAVxaMqPI",
+          "title": "Hover Deadlift",
+          "seconds": 39,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "9ejgh1k3g0U",
+          "title": "hover deadlift conventional",
+          "seconds": 16,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Good morning",
+      "category": "legs",
+      "pattern": "hinge",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Tył uda",
+        "Pośladki",
+        "Prostownik grzbietu"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 10,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "YA-h3n9L4YU",
+          "title": "The Good Morning",
+          "seconds": 55,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Good morning sumo siedząc (Seated Sumo Good Morning)",
+      "category": "legs",
+      "pattern": "hinge",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Pośladki",
+        "Prostownik grzbietu"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "enqz3_NfFtU",
+          "title": "Seated Sumo Good Mornings",
+          "seconds": 10,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Jefferson curl",
+      "category": "legs",
+      "pattern": "hinge",
+      "isUnilateral": false,
+      "equipment": [
+        "barbell",
+        "dumbbell"
+      ],
+      "primaryMuscles": [
+        "Prostownik grzbietu",
+        "Tył uda"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 12,
+      "defaultRestBetweenSetsSeconds": 60,
+      "media": [
+        {
+          "youtubeId": "nYS0R4c3qCA",
+          "title": "How to do a Jefferson Curl",
+          "seconds": 90,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Prostowanie tułowia 45° (45° Back Extension)",
+      "category": "legs",
+      "pattern": "hinge",
+      "isUnilateral": false,
+      "equipment": [
+        "machine",
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Pośladki",
+        "Tył uda",
+        "Prostownik grzbietu"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 10,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "Oqiy9nTE2v0",
+          "title": "Proper Romanian Chair Back Extension (Hip Extension)",
+          "seconds": 37,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "jjmo1SeCpx8",
+          "title": "Barbell 45 degrees back extension - Thomas Moberg Fitness",
+          "seconds": 13,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "87LvW1sCXqA",
+          "title": "Snatch Grip Barbell 45 Degree Back Extension for total posterior chain development",
+          "seconds": 14,
+          "kind": "demo"
+        }
+      ]
+    },
+    {
+      "name": "Prostowanie bioder na GHD (GHD Hip Extension)",
+      "category": "legs",
+      "pattern": "hinge",
+      "isUnilateral": false,
+      "equipment": [
+        "ghd",
+        "dumbbell",
+        "barbell"
+      ],
+      "primaryMuscles": [
+        "Pośladki",
+        "Tył uda"
+      ],
+      "type": "reps",
+      "defaultSets": 3,
+      "defaultReps": 10,
+      "defaultRestBetweenSetsSeconds": 90,
+      "media": [
+        {
+          "youtubeId": "ZQYEB20GLtc",
+          "title": "GHD Snatch Grip Barbell Hip Extensions",
+          "seconds": 14,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "w1Xga-Xf3DA",
+          "title": "110 KG GHD Zercher Hip Extension at 81 Bodyweight #hipextension João Casqueiro",
+          "seconds": 16,
+          "kind": "demo"
+        },
+        {
+          "youtubeId": "mmrKnyMqK10",
+          "title": "GHD Hip Extension with DB's",
+          "seconds": 29,
+          "kind": "demo"
+        }
+      ]
+    }
+  ]
+}
