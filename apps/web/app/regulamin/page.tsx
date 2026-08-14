@@ -30,7 +30,8 @@ export default function TermsPage() {
             <p>
               RepMaxer to narzędzie dla trenerów personalnych: plany treningowe, portal
               klienta bez konta (link) oraz podgląd postępów. Na start: 90 dni za 0 zł
-              po rozmowie wdrożeniowej, do 15 osób. Albo 490 zł raz za rok przy 15 osobach;
+              po rozmowie wdrożeniowej, do 15 osób. Albo 390 zł raz za rok przy 15 osobach
+              (dwa miesiące w cenie);
               po roku 39 zł za 15 — ta kwota nie rośnie. Cennik korzystania: 0 zł / do 5
               podopiecznych, 39 zł / 15, 99 zł / 30. Podopieczny nie płaci.
             </p>

@@ -78,9 +78,9 @@ Pytania: czy da się zrozumieć bez zgadywania? czy to słowa trenera/klienta? c
 | …nie kasujemy mu tożsamości w sklepie z aplikacjami. | …po współpracy nie zostaje mu aplikacja w sklepie. | Sprytna metafora zamiast faktu. |
 | Wychwytujemy je automatycznie. | Widzisz je od razu, bez pytania klienta. | *My* o produkcie. Skill: nigdy *my*. |
 | Wiesz, kto nie trenował. Zanim zrezygnuje. | Wysyłasz link. Widzisz trening. | H1 to dwa takty, nie zdanie wyjaśniające. Mechanizm + wynik. Churn w podtytule. |
-| Founding 490 zł — Solo locked | 490 zł raz: rok, do 15 osób. Po roku 39 zł za 15 — ta kwota nie rośnie. | Żargon briefu. Kwota + osoby + czas. Nigdy „ta stawka zostaje”. |
-| 490 zł raz za trzy miesiące | 490 zł raz za rok przy 15 osobach | Trzy miesiące przy 490 zł to 163 zł/msc — gorszy deal niż 39 zł. Rok ≈ 39 × 12. |
-| White-glove / Zgłoś founding | Umów rozmowę / Zapłać 490 zł | CTA = czasownik + obiekt, nie nazwa ścieżki z planu. |
+| Founding 490 zł — Solo locked | 390 zł raz: rok, do 15 osób (dwa miesiące w cenie). Po roku 39 zł za 15 — ta kwota nie rośnie. | Żargon briefu. Kwota + osoby + czas. Nigdy „ta stawka zostaje”. 490 > 39×12. |
+| 490 zł raz za trzy miesiące | 390 zł raz za rok przy 15 osobach | 490 było droższe niż 12×39. Rok = dwa miesiące w cenie. |
+| White-glove / Zgłoś founding | Umów 30 minut wdrożenia / Zapłać 390 zł | CTA = czasownik + obiekt, nie nazwa ścieżki z planu. |
 | na callu | na rozmowie | Kalka. Trener umawia rozmowę, nie call. |
 | odpad / odpadający klient | odchodzi / skończył współpracę | Wstyd i żargon. Trener tak nie mówi. |
 
@@ -99,7 +99,7 @@ Pytania: czy da się zrozumieć bez zgadywania? czy to słowa trenera/klienta? c
 | klub / siłownia | studio z recepcją |
 | dieta | coaching dietetyczny |
 | podopieczny / klient | user, lead |
-| 490 zł raz / 15 osób / 12 miesięcy, potem 39 zł zamknięte | founding, Solo locked, Solo, Pro, ta stawka zostaje |
+| 390 zł raz / 15 osób / 12 miesięcy (dwa miesiące w cenie), potem 39 zł zamknięte | founding, Solo locked, Solo, Pro, ta stawka zostaje, 490 zł |
 | 90 dni za 0 zł / rozmowa wdrożeniowa | white-glove, call, callu |
 | 0 zł do 5 osób | unlimited, early access, Wczesny dostęp |
 

@@ -98,5 +98,49 @@ public sealed class EmailService(IHttpClientFactory httpFactory, IConfiguration 
         </div>
         """;
 
+    public static string WdrozenieTrainerHtml(string name, string? slot, bool year, string origin)
+    {
+        var slotLine = string.IsNullOrWhiteSpace(slot)
+            ? "<p>Odpisz na tę wiadomość i podaj dwie godziny, które Ci pasują.</p>"
+            : $"<p>Wybrane okno: <strong>{Html(slot)}</strong>. Odpisz i potwierdź — albo napisz inną godzinę.</p>";
+        var yearLine = year
+            ? "<p>390 zł raz — rok, do 15 osób (dwa miesiące w cenie). Po roku 39 zł za 15 — ta kwota nie rośnie. Godzinę ustalamy w mailu.</p>"
+            : "<p>90 dni, do 15 osób, 0 zł. Jeśli w 14 dni nikt nie dokończy treningu — zostajesz na 0 zł. Warunek: trzy linki na rozmowie.</p>";
+        var yearPs = year
+            ? ""
+            : $"<p style=\"color:#666;font-size:13px\">Rok z góry: 390 zł raz (dwa miesiące w cenie). 12 miesięcy, do 15 osób. Potem 39 zł — ta kwota nie rośnie. Na rozmowie albo na <a href=\"{Html(origin)}/wdrozenie\">repmaxer.pl/wdrozenie</a>.</p>";
+        return $"""
+        <div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;color:#1a1a1a">
+          <p>Cześć {Html(name)},</p>
+          <p>Masz zapis na 30 minut wdrożenia.</p>
+          <p>Na rozmowie:</p>
+          <ol>
+            <li>Dwie minuty: czym dziś wysyłasz plan.</li>
+            <li>Przenosisz jeden plan do linku.</li>
+            <li>Trzech klientów dostaje link na Twoim WhatsAppie.</li>
+            <li>Widzisz kolejkę — kto nie trenował.</li>
+          </ol>
+          <p>Przygotuj Excel albo PDF jednego planu i imiona trzech osób.</p>
+          {slotLine}
+          {yearLine}
+          {yearPs}
+        </div>
+        """;
+    }
+
+    public static string WdrozenieFounderHtml(string name, string mail, string? phone, string? slot, bool year)
+    {
+        var offer = year ? "390 zł, rok, 15 osób" : "90 dni za 0 zł";
+        return $"""
+        <div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;color:#1a1a1a">
+          <p>Nowe zgłoszenie RepMaxer ({Html(offer)})</p>
+          <p>Imię: {Html(name)}<br/>
+          E-mail: {Html(mail)}<br/>
+          Telefon: {Html(phone ?? "—")}<br/>
+          Okno: {Html(slot ?? "—")}</p>
+        </div>
+        """;
+    }
+
     static string Html(string s) => System.Net.WebUtility.HtmlEncode(s);
 }

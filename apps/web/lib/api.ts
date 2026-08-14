@@ -1323,9 +1323,15 @@ export const api = {
       name: string;
       email: string;
       phone?: string;
+      preferredSlot?: string;
       track: "whiteglove" | "founding";
     }) =>
-      request<{ ok: boolean; checkoutUrl?: string | null; message: string }>("/api/founding/apply", {
+      request<{
+        ok: boolean;
+        checkoutUrl?: string | null;
+        message: string;
+        emailSent?: boolean;
+      }>("/api/founding/apply", {
         method: "POST",
         body: JSON.stringify(input),
       }),

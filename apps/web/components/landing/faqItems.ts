@@ -6,7 +6,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: "Ile to kosztuje?",
-    a: "Do 5 podopiecznych: 0 zł na zawsze, bez karty. Przy większej liczbie: 39 zł za 15 osób albo 99 zł za 30. Płacisz Ty. Podopieczny zawsze 0 zł. Na start: 10 miejsc w\u00A0miesiącu na rozmowę — 90 dni za 0 zł, do 15 osób. Albo 490 zł raz za rok przy 15 osobach; potem 39 zł za 15 — ta kwota nie rośnie.",
+    a: "Do 5 podopiecznych: 0 zł na zawsze, bez karty. Przy większej liczbie: 39 zł za 15 osób albo 99 zł za 30. Płacisz Ty. Podopieczny zawsze 0 zł. Na start: 10 miejsc w\u00A0miesiącu na rozmowę — 90 dni za 0 zł, do 15 osób. Albo 390 zł raz za rok przy 15 osobach (dwa miesiące w cenie); potem 39 zł za 15 — ta kwota nie rośnie.",
   },
   {
     q: "Dla kogo to jest?",

@@ -155,6 +155,7 @@ public record FoundingApplyInput(
     string Name,
     string Email,
     string? Phone = null,
+    string? PreferredSlot = null,
     string Track = "whiteglove");
 
 public record PushSubscriptionInput(string Endpoint, string P256dh, string Auth);

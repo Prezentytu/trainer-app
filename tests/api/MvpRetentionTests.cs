@@ -144,12 +144,16 @@ public class MvpRetentionTests : IClassFixture<TestWebAppFactory>
         {
             name = "Anna Test",
             email = "anna@example.com",
+            preferredSlot = "Środa 18:00",
             track = "whiteglove",
         });
         res.EnsureSuccessStatusCode();
         var json = await res.Content.ReadFromJsonAsync<JsonElement>();
         Assert.True(json.GetProperty("ok").GetBoolean());
         Assert.False(string.IsNullOrWhiteSpace(json.GetProperty("message").GetString()));
+        Assert.True(json.TryGetProperty("emailSent", out var sent));
+        Assert.False(sent.GetBoolean());
+        Assert.Contains("kontakt@repmaxer.pl", json.GetProperty("message").GetString(), StringComparison.Ordinal);
     }
 
     [Fact]

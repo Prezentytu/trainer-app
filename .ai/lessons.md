@@ -92,11 +92,11 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: H1 to dwa krótkie takty tej samej wagi słów (Wysyłasz / Widzisz). Typografia jest kompozycją — bez `text-balance`, bez owijania w 18ch. Wyjaśnienie i churn w podtytule. Zakaz: zrezygnuje, milczy, all-in-one, „aplikacja dla trenerów”.
 **Dotyczy**: `Hero.tsx`, `app/page.tsx` metadata, skill `ux-writing`
 
-## 0 zł i 490 zł to nie ten sam wybór
+## 0 zł i rok z góry to nie ten sam wybór
 
-**Kontekst**: Cennik i `/wdrozenie` sklejały freemium, kolejkę 90 dni i prepaid 490 w jednym zdaniu. „Ta stawka zostaje” nie mówiła, jaka.
-**Problem**: 490 zł za 3 miesiące = 163 zł/msc wobec 39 zł Mini; radio 0 vs 490, każdy bierze 0.
-**Zasada**: Homepage cennik = 0 / 39 / 99. 490 tylko na `/wdrozenie` jako rok / 15 osób, potem 39 zł zamknięte. Dwie równe karty, nie jedno radio. Zakaz: „ta stawka zostaje”.
+**Kontekst**: Cennik i `/wdrozenie` sklejały freemium, kolejkę 90 dni i prepaid w jednym zdaniu. „Ta stawka zostaje” nie mówiła, jaka.
+**Problem**: Równe karty 0 vs prepaid — Hick, każdy bierze 0. 490 zł > 39×12 (468) = irracjonalna przedpłata.
+**Zasada**: Homepage cennik = 0 / 39 / 99. Rok z góry tylko na `/wdrozenie`, **pod** formularzem, nie jako równa karta. 390 zł = 12 miesięcy / 15 osób (dwa miesiące w cenie). Zakaz: 490 zł, „ta stawka zostaje”.
 **Dotyczy**: `PricingSection.tsx`, `Faq.tsx`, `wdrozenie/`, `FoundingService.cs`, skill `ux-writing`
 
 ## Feed: równe kolumny, ćwiczenie do lewej
@@ -124,7 +124,7 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 **Kontekst**: Landing i `/wdrozenie` używały founding, Solo locked, white-glove, unlimited, Solo/Pro, „callu”.
 **Problem**: Trener nie wie, co to znaczy. To skróty z planu GTM, nie język oferty.
-**Zasada**: W UI (landing, formularze, Stripe, e-maile do użytkownika, OG, regulamin) mów kwotę, ile osób i na ile czasu. 490 zł = rok / 15 osób, potem 39 zł zamknięte — nigdy „ta stawka zostaje”. Zakaz: founding, Solo locked, white-glove, unlimited, Solo/Pro jako nazwy planów, call/callu. CTA: „Umów rozmowę”, „Zapłać 490 zł”. Nazwy w kodzie (`/api/founding`, `track: "founding"`) mogą zostać.
+**Zasada**: W UI (landing, formularze, Stripe, e-maile do użytkownika, OG, regulamin) mów kwotę, ile osób i na ile czasu. 390 zł = rok / 15 osób (dwa miesiące w cenie), potem 39 zł zamknięte — nigdy „ta stawka zostaje”. Zakaz: founding, Solo locked, white-glove, unlimited, Solo/Pro jako nazwy planów, call/callu, 490 zł. CTA: „Umów 30 minut wdrożenia”, „Zapłać 390 zł”. Nazwy w kodzie (`/api/founding`, `track: "founding"`) mogą zostać.
 **Dotyczy**: `wdrozenie/`, `Faq.tsx`, `PricingSection.tsx`, `FoundingService.cs`, `opengraph-image.tsx`, skill `ux-writing`.
 
 ## Portal: jeden CTA, tab bar nie jak Styrka
@@ -757,5 +757,12 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Problem**: `overflow-x: hidden` wymusza computed `overflow-y: auto` (osie nie mogą mieszać hidden+visible) — div staje się scroll containerem i sticky liczy się względem niego, a nie viewportu. Div sam się nie scrolluje, więc sticky nigdy nie odpala. Objawy wyglądały jak „za duży spacing” i były łatane symptomatycznie.
 **Zasada**: Poziome clipowanie tylko na `body { overflow-x: hidden }` — z body propaguje się na viewport i nie tworzy scroll containera. Nigdy `overflow-x-hidden` na wrapperach z layoutem, w których żyje sticky. Gdy sticky „nic nie robi”, najpierw przejdź przodków i sprawdź computed `overflow`/`transform`/`contain` (`getComputedStyle`), zamiast łatać spacing.
 **Dotyczy**: `MarketingShell.tsx`, `LandingNav.tsx`, `PhoneMock.tsx`, `globals.css`
+
+## `/wdrozenie` to sesja, nie demo — i nie „oddzwonimy”
+
+**Kontekst**: Research 2026-08-14. CTA landingu obiecywał slot; strona prosiła o 0 vs 490 i kończyła się na „Oddzwonimy”. Mail szedł tylko do foundera. 490 zł > 468 zł.
+**Problem**: Intent stygnie. Prepaid droższy niż miesięcznie nikt nie weźmie. Cal.com przy 10 miejscach / miesiąc to nowe narzędzie bez zysku.
+**Zasada**: Strona = Superhuman 1:1 (agenda, prep, jeden CTA). Mail do trenera w tym samym requeście. Sukces nie kłamie „wysłaliśmy”, gdy Resend no-op. Rok = 390 zł pod formularzem. Cal.com dopiero >15 zgłoszeń / miesiąc, i wtedy link w mailu — nie na stronie. Zakaz: „oddzwonimy” jako jedyny next step.
+**Dotyczy**: `wdrozenie/`, `FoundingService.cs`, `EmailService.cs`, `.ai/gtm/wdrozenie-maile.md`, skill `ux-writing`
 
 ---

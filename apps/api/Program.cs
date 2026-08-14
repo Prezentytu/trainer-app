@@ -270,9 +270,9 @@ app.MapPost("/api/cron/digest", async (HttpContext http, IConfiguration config, 
 
 app.MapPost("/api/founding/apply", async (FoundingApplyInput input, FoundingService founding) =>
 {
-    var (ok, checkoutUrl, message) = await founding.ApplyAsync(input);
+    var (ok, checkoutUrl, message, emailSent) = await founding.ApplyAsync(input);
     if (!ok) return Results.Conflict(new { message });
-    return Results.Ok(new { ok = true, checkoutUrl, message });
+    return Results.Ok(new { ok = true, checkoutUrl, message, emailSent });
 }).RequireRateLimiting("founding");
 
 app.MapGet("/api/me", async (HttpContext http, AppDb db, IConfiguration config, BillingService billing) =>

@@ -12,7 +12,7 @@ Haki przed prośbą o rozmowę: [lead-magnet.md](lead-magnet.md) — `/checklist
 |---|---|
 | Pass | ≥5 partnerów z sesją klienta / 14 dni |
 | Kill | <3 partnerów z sesją / 14 dni → zmień hak lub avatar, nie dodawaj ficzerów |
-| Płatność | po gate A, od 11. osoby: 490 zł raz (12 miesięcy, do 15 osób; potem 39 zł zamknięte) |
+| Płatność | po gate A, od 11. osoby: 390 zł raz (12 miesięcy, do 15 osób, dwa miesiące w cenie; potem 39 zł zamknięte) |
 
 ## Walidacja 10 rozmów (nie internet)
 
@@ -48,4 +48,4 @@ Po 10 rozmowach: zlicz narzędzia i kwoty. Nie koduj z tej tabeli diety ani kale
 
 ## Po gate A
 
-490 zł raz na `/wdrozenie` (12 miesięcy, do 15 osób; potem 39 zł za 15 — ta kwota nie rośnie). Stripe gdy klucz; inaczej e-mail. 90 dni za 0 zł, potem próg — bez wiecznego 0 zł ponad 5 osób.
+390 zł raz na `/wdrozenie` (12 miesięcy, do 15 osób, dwa miesiące w cenie; potem 39 zł za 15 — ta kwota nie rośnie). Stripe gdy klucz; inaczej e-mail. 90 dni za 0 zł, potem próg — bez wiecznego 0 zł ponad 5 osób. Szablony maili: [wdrozenie-maile.md](wdrozenie-maile.md).
