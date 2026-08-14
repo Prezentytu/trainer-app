@@ -88,7 +88,7 @@ export function LandingNav({
         scrolled ? "border-border" : "border-transparent"
       }`}
     >
-      <div className="mx-auto flex h-[72px] max-w-[1200px] items-center justify-between gap-4 px-5 sm:gap-6 sm:px-8">
+      <div className="mx-auto flex h-[72px] max-w-[1360px] items-center justify-between gap-4 px-5 sm:gap-6 sm:px-8">
         <Wordmark href={home ? "#top" : "/"} compact className="min-h-11 sm:hidden" />
         <Wordmark href={home ? "#top" : "/"} className="hidden min-h-11 sm:flex" />
         <nav className="flex min-w-0 items-center gap-3 sm:gap-8" aria-label="Sekcje strony">

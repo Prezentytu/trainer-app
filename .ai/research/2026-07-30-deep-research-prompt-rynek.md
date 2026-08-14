@@ -1,5 +1,12 @@
 # Deep Research — prompt: rynek softu dla trenerów personalnych (PL + zagranica)
 
+> **Superseded 2026-08-14.** Ten jednopromptowy brief jest nieaktualny: nazwa Workout Alchemist, niepełna lista funkcji, odbiorca = founder (nie rada), przesądzony PL-first. Użyj pakietu:
+>
+> - [`2026-08-14-brief-rady-fakty.md`](2026-08-14-brief-rady-fakty.md) — fakty o produkcie (wgraj jako kontekst)
+> - [`2026-08-14-deep-research-prompty.md`](2026-08-14-deep-research-prompty.md) — 5 runów + synteza
+>
+> Poniższy prompt zostawiony tylko jako historia.
+
 Gotowy prompt do wklejenia w tryb Deep Research (ChatGPT / Gemini / Perplexity). Zbudowany wg standardów z lipca 2026: persona → decyzja → kontekst → sub-pytania → rygor źródeł → format wyjścia → weryfikacja.
 
 **Jak użyć (ważne, nie pomijać):**

@@ -12,7 +12,7 @@ const FOOTER_LINKS = [
 export function LandingFooter() {
   return (
     <footer className="border-t border-border">
-      <div className="mx-auto flex max-w-[1200px] flex-col gap-6 px-5 py-10 sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:px-8">
+      <div className="mx-auto flex max-w-[1360px] flex-col gap-6 px-5 py-10 sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:px-8">
         <Wordmark href="/" />
         <nav className="flex flex-wrap gap-x-6 gap-y-2" aria-label="Stopka">
           {FOOTER_LINKS.map((link) => (

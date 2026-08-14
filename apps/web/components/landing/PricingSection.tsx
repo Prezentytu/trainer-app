@@ -1,11 +1,12 @@
 import { LandingReveal } from "./LandingReveal";
-import { LandingCta, SectionHead, SECTION_CTA, SECTION_SHELL } from "./primitives";
+import { LandingCta, SectionHead, SECTION_CTA, SECTION_SHELL_TIGHT } from "./primitives";
 
+/** 04 — rozwiązanie zaraz po kotwicy straty (03): 0 zł czyta się jako ulga. */
 export function PricingSection() {
   return (
-    <LandingReveal as="section" id="cennik" className={SECTION_SHELL}>
+    <LandingReveal as="section" id="cennik" className={SECTION_SHELL_TIGHT}>
       <div className="landing-stagger">
-        <SectionHead n="03" label="Cennik">
+        <SectionHead n="04" label="Cennik">
           <div className="grid grid-cols-1 items-start gap-14 lg:grid-cols-2 lg:gap-24">
             <div>
               <p className="m-0 flex flex-wrap items-baseline gap-x-2 gap-y-0">

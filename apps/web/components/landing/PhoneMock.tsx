@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type Ref } from "react";
 import { Icon } from "@/components/Icon";
 import { LandingReveal } from "./LandingReveal";
 import { SectionHead, SECTION_H2, SECTION_LEAD, SECTION_SHELL } from "./primitives";
@@ -13,6 +13,11 @@ const SETS = [
 ] as const;
 
 const REST_TOTAL = 90;
+const NAV_HEIGHT = 72;
+/** Klimaks (4/4 + PR) wypada na 85% toru — ostatnie 15% kadr trzyma finał przed odpięciem. */
+const SCRUB_TAIL = 0.85;
+/** Tempo sekwencji poniżej lg (autoplay po wejściu telefonu w kadr). */
+const STEP_MS = 900;
 
 function subscribeReducedMotion(onChange: () => void) {
   const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -57,17 +62,54 @@ export function PhoneMock() {
   const isLg = useIsLg();
   const [done, setDone] = useState(0);
   const [progress, setProgress] = useState(0);
+  const phoneRef = useRef<HTMLDivElement>(null);
 
   const scrollDriven = isLg && !reduceMotion;
 
+  // <lg: sekwencja gra raz, gdy telefon jest w kadrze; stan końcowy zostaje.
+  // Reset dopiero po pełnym wyjściu z viewportu, żeby powrót zagrał od nowa.
   useEffect(() => {
     if (reduceMotion || scrollDriven) return;
-    const id = window.setInterval(() => {
-      setDone((d) => (d >= SETS.length + 1 ? 0 : d + 1));
-    }, 1100);
-    return () => window.clearInterval(id);
+    const el = phoneRef.current;
+    if (!el) return;
+
+    let timer = 0;
+    const stop = () => {
+      if (timer) {
+        window.clearInterval(timer);
+        timer = 0;
+      }
+    };
+
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry) return;
+        if (entry.intersectionRatio >= 0.6) {
+          if (timer) return;
+          timer = window.setInterval(() => {
+            setDone((d) => {
+              const next = Math.min(SETS.length, d + 1);
+              if (next === SETS.length) stop();
+              return next;
+            });
+          }, STEP_MS);
+        } else if (!entry.isIntersecting) {
+          stop();
+          setDone(0);
+        }
+      },
+      { threshold: [0, 0.6] },
+    );
+    io.observe(el);
+
+    return () => {
+      io.disconnect();
+      stop();
+    };
   }, [reduceMotion, scrollDriven]);
 
+  // lg: scrub przypięty do toru sekcji — scroll position = stan sceny (odwracalny).
+  // Progress 0 w momencie przypięcia kadru, 1 na SCRUB_TAIL toru.
   useEffect(() => {
     if (!scrollDriven) return;
     const el = document.getElementById("produkt");
@@ -75,18 +117,29 @@ export function PhoneMock() {
 
     let raf = 0;
     let tracking = false;
+    let padTop = 0;
+
+    const readPad = () => {
+      padTop = Number.parseFloat(window.getComputedStyle(el).paddingTop) || 0;
+    };
 
     const measure = () => {
       const rect = el.getBoundingClientRect();
-      const vh = window.innerHeight;
-      const lead = vh * 0.25;
-      const total = Math.max(1, rect.height - vh);
-      const p = Math.min(1, Math.max(0, (lead - rect.top) / (total + lead)));
+      const frame = window.innerHeight - NAV_HEIGHT;
+      const track = Math.max(1, rect.height - frame - padTop);
+      const pinAt = NAV_HEIGHT - padTop;
+      const p = Math.min(1, Math.max(0, (pinAt - rect.top) / (track * SCRUB_TAIL)));
       setProgress(p);
     };
 
     const onScroll = () => {
       if (!tracking) return;
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(measure);
+    };
+
+    const onResize = () => {
+      readPad();
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(measure);
     };
@@ -100,13 +153,14 @@ export function PhoneMock() {
     );
     io.observe(el);
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll, { passive: true });
+    window.addEventListener("resize", onResize, { passive: true });
+    readPad();
     measure();
 
     return () => {
       io.disconnect();
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("resize", onResize);
       cancelAnimationFrame(raf);
     };
   }, [scrollDriven]);
@@ -127,11 +181,15 @@ export function PhoneMock() {
   const progressPct = scene * 100;
 
   return (
-    <LandingReveal as="section" id="produkt" className={`${SECTION_SHELL} lg:min-h-[calc(100svh+32svh)]`}>
-      <div className="lg:sticky lg:top-[72px] lg:z-10 lg:flex lg:h-[calc(100svh-72px)] lg:items-start lg:bg-background lg:pt-6">
+    <LandingReveal
+      as="section"
+      id="produkt"
+      className={`${SECTION_SHELL} lg:min-h-[190svh]`}
+    >
+      <div className="lg:sticky lg:top-[72px] lg:flex lg:h-[calc(100svh-72px)] lg:items-center">
         <div className="landing-stagger w-full">
           <SectionHead n="01" label="Produkt">
-            <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-16 xl:gap-24">
+            <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-16 xl:gap-24">
               <div>
                 <h2 className={SECTION_H2}>Klient otwiera link i&nbsp;odhacza serie.</h2>
                 <p className={SECTION_LEAD}>
@@ -141,6 +199,7 @@ export function PhoneMock() {
               </div>
 
               <SessionPhone
+                phoneRef={phoneRef}
                 completed={completed}
                 restLeft={restLeft}
                 restPct={restPct}
@@ -158,6 +217,7 @@ export function PhoneMock() {
 }
 
 function SessionPhone({
+  phoneRef,
   completed,
   restLeft,
   restPct,
@@ -166,6 +226,7 @@ function SessionPhone({
   scene,
   smooth,
 }: {
+  phoneRef?: Ref<HTMLDivElement>;
   completed: number;
   restLeft: number;
   restPct: number;
@@ -182,6 +243,7 @@ function SessionPhone({
 
   return (
     <div
+      ref={phoneRef}
       className="mx-auto aspect-[9/19] h-[min(72svh,640px,calc(100svh-8rem))] shrink-0 justify-self-center"
       role="img"
       aria-label="Podgląd portalu klienta: trening wyciskania sztangi, cztery serie odhaczane po kolei, timer przerwy na dole."

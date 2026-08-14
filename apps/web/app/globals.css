@@ -803,14 +803,46 @@ html[data-theme="light"] textarea {
   color: color-mix(in srgb, var(--fg) 13%, var(--bg));
 }
 
+/* Drift tylko na treści ściany — maski (elipsa, wiązka) zostają nieruchome na warstwach. */
+.landing-log-drift {
+  transform: translate3d(0, var(--drift, 0px), 0);
+}
+
+/* Jedna elipsa liczona z bloku H1 (--hole-*). Bez drugiej maski: WebKit source-in zerował całą warstwę. */
 .landing-log-mask {
-  -webkit-mask-image: radial-gradient(ellipse 60% 56% at 50% 46%, transparent 0 64%, #000 100%);
-  mask-image: radial-gradient(ellipse 60% 56% at 50% 46%, transparent 0 64%, #000 100%);
+  -webkit-mask-image: radial-gradient(
+    ellipse var(--hole-rx, 18rem) var(--hole-ry, 8rem) at var(--hole-x, 50%) var(--hole-y, 42%),
+    transparent 0 64%,
+    #000 100%
+  );
+  mask-image: radial-gradient(
+    ellipse var(--hole-rx, 18rem) var(--hole-ry, 8rem) at var(--hole-x, 50%) var(--hole-y, 42%),
+    transparent 0 64%,
+    #000 100%
+  );
+}
+
+/* Fade nad closerem — overlay, nie mask-composite (Safari). */
+.landing-log-fade {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 5.5rem;
+  background: linear-gradient(to bottom, transparent, var(--bg));
+  pointer-events: none;
 }
 
 .landing-log-beam {
-  -webkit-mask-image: radial-gradient(circle 200px at var(--x) var(--y), #000 0 55%, transparent 100%);
-  mask-image: radial-gradient(circle 200px at var(--x) var(--y), #000 0 55%, transparent 100%);
+  -webkit-mask-image: radial-gradient(
+    circle clamp(280px, 32vw, 560px) at var(--x) var(--y),
+    #000 0 35%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    circle clamp(280px, 32vw, 560px) at var(--x) var(--y),
+    #000 0 35%,
+    transparent 100%
+  );
 }
 
 /* Suwak kalkulatora — invert fill, bez hue, tap 44px. */

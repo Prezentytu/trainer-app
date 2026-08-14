@@ -16,8 +16,8 @@ export function LandingPage() {
         <Hero />
         <PhoneMock />
         <TrainerPreview />
-        <PricingSection />
         <LossCalculatorSection />
+        <PricingSection />
         <Faq />
         <FinalCta />
       </main>

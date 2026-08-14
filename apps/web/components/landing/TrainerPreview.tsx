@@ -1,6 +1,6 @@
 import { Marker } from "@/components/ui";
 import { LandingReveal } from "./LandingReveal";
-import { SectionHead, SECTION_COPY, SECTION_H2, SECTION_SPACE } from "./primitives";
+import { SectionHead, SECTION_H2, SECTION_LEAD, SECTION_SHELL_TIGHT } from "./primitives";
 
 const ROWS = [
   {
@@ -26,21 +26,20 @@ const ROWS = [
   },
 ];
 
+/** 02 — para z 01 (ta sama historia), stąd TIGHT zamiast pełnego rozdziału. */
 export function TrainerPreview() {
   return (
-    <LandingReveal
-      as="section"
-      id="panel"
-      className="relative z-0 scroll-mt-24 bg-background lg:-mt-[32svh]"
-    >
-      <div className={`landing-stagger mx-auto max-w-[1200px] px-5 sm:px-8 ${SECTION_SPACE}`}>
+    <LandingReveal as="section" id="panel" className={SECTION_SHELL_TIGHT}>
+      <div className="landing-stagger">
         <SectionHead n="02" label="Panel">
-          <h2 className={SECTION_H2}>Widzisz każdy zakończony trening.</h2>
-          <div className="mt-8 grid grid-cols-1 items-center gap-14 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-24">
-            <p className={SECTION_COPY}>
-              Serie i&nbsp;rekordy wpadają do panelu od razu. Gdy ktoś nie trenuje,
-              widzisz to od razu i&nbsp;możesz napisać pierwszy.
-            </p>
+          <div className="grid grid-cols-1 items-start gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.9fr)] lg:gap-24">
+            <div>
+              <h2 className={SECTION_H2}>Widzisz każdy zakończony trening.</h2>
+              <p className={SECTION_LEAD}>
+                Serie i&nbsp;rekordy wpadają do panelu od razu. Gdy ktoś nie trenuje,
+                widzisz to od razu i&nbsp;możesz napisać pierwszy.
+              </p>
+            </div>
 
             <div aria-label="Podgląd panelu trenera">
               <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4 border-b border-border-strong pb-3">

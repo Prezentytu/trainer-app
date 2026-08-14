@@ -5,13 +5,23 @@ import { Button } from "@/components/ui";
 /** 120 px indeks + 32 px gap — wyrównanie leadu/CTA pod H2, gdy stoją poza SectionHead. */
 export const SECTION_GUTTER = "md:ml-[152px]";
 
-/** Jeden oddech nad każdą linią sekcji (hero → 01 włącznie). */
-export const SECTION_SPACE = "pt-[clamp(6rem,10vw,10rem)]";
+/** Nowy rozdział — 4rem+8vw rośnie od telefonu, cap 12 rem. */
+export const SECTION_SPACE = "pt-[clamp(5rem,calc(4rem+8vw),12rem)]";
 
-/** Domknięcie strony: SECTION_SPACE + 4 rem. */
+/** Para w rozdziale (01→02, 03→04) — ciaśniej niż chapter. */
+export const SECTION_SPACE_TIGHT = "pt-[clamp(3rem,calc(2rem+5vw),6rem)]";
+
+/** Domknięcie strony: chapter + zapas. */
 export const SECTION_CLOSE = "pb-[clamp(10rem,calc(10vw+4rem),14rem)]";
 
-export const SECTION_SHELL = `mx-auto max-w-[1200px] scroll-mt-24 px-5 sm:px-8 ${SECTION_SPACE}`;
+/** Nav, hero treść, sekcje, stopka — jedna miara. */
+export const LANDING_MEASURE = "mx-auto max-w-[1360px] px-5 sm:px-8";
+
+const SECTION_BOX = `${LANDING_MEASURE} scroll-mt-24`;
+
+export const SECTION_SHELL = `${SECTION_BOX} ${SECTION_SPACE}`;
+
+export const SECTION_SHELL_TIGHT = `${SECTION_BOX} ${SECTION_SPACE_TIGHT}`;
 
 /** Lead bez górnego odstępu — gdy stoi w siatce pod H2. */
 export const SECTION_COPY =
@@ -35,9 +45,9 @@ export const LANDING_DISPLAY =
  * 18 ch — dwie zrównoważone linie, bez sieroty.
  */
 export const SECTION_H2 =
-  "m-0 max-w-[18ch] text-[clamp(2.25rem,5vw,4rem)] font-semibold leading-[1.08] tracking-[-0.028em] text-balance";
+  "m-0 max-w-[18ch] overflow-visible text-[clamp(2.25rem,5vw,4rem)] font-semibold leading-[1.12] tracking-[-0.028em] text-balance";
 
-/** Hairline + numer w marginesie + treść (H2) — zawsze pełna szerokość kontenera. */
+/** Numer w marginesie + treść (H2) — bez stempla hairline; kreska = dane albo chrome. */
 export function SectionHead({
   n,
   label,
@@ -48,7 +58,7 @@ export function SectionHead({
   children: ReactNode;
 }) {
   return (
-    <div className="border-t border-border pt-8 md:grid md:grid-cols-[120px_minmax(0,1fr)] md:gap-8">
+    <div className="md:grid md:grid-cols-[120px_minmax(0,1fr)] md:gap-8">
       <p className="t-label m-0 tracking-[0.16em] text-fg-ghost">
         {n} / {label}
       </p>

@@ -723,4 +723,39 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: Split 2-kolumnowy i sticky/scrub dopiero od `lg:` (1024 px), gdy kolumna treści ma ≥ ~332 px. Gutter indeksu (`md:grid-cols-[120px_…]`) zostaje na `md:`. Nav < `sm:` = wordmark + logowanie + CTA (sekcje są pod scrollem). H1 min 2.75 rem. Finał może zejść z max H1 (7 rem od `lg:`), żeby zostać na 2 liniach — bookend nie wygrywa z sierotą.
 **Dotyczy**: `PhoneMock.tsx`, `TrainerPreview.tsx`, `PricingSection.tsx`, `LossCalculatorSection.tsx`, `LandingNav.tsx`, `primitives.tsx`, `FinalCta.tsx`
 
+## Landing: kreska enumeruje albo zamyka kadr — nie stempluje H2
+
+**Kontekst**: `SectionHead` dawał identyczny `border-t` nad 01–06. Między closerem hero a `01` była kanapka (linia → pustka → linia). `SECTION_SPACE` (`10vw` vs min `6rem`) był płaski do 959 px. FAQ miał trzecią linię.
+**Problem**: Sześć stempli czytało się jak faktura. 01→02 (ta sama historia) i 02→03 (nowy rozdział) miały ten sam oddech. Telefon i tablet dostawały 96 px.
+**Zasada**: Hairline = dane (wiersze listy/FAQ/kalkulator) albo chrome (nav po scrollu, closer hero, stopka). Indeks + skok H2 zaczynają rozdział — bez `border-t` na `SectionHead`. Dwa tokeny: `SECTION_SPACE` (`clamp(5rem, 4rem+8vw, 12rem)`) na nowy rozdział, `SECTION_SPACE_TIGHT` na parę (01→02, 03→04). Fallback: jedna linia między trzema grupami, nie powrót do 6 stempli. Sticky `32svh` zostaje 1:1.
+**Dotyczy**: `primitives.tsx`, `SectionHead`, `Faq.tsx`, `TrainerPreview.tsx`, `LossCalculatorSection.tsx`
+
+## Landing: sticky nie tnie H2; latarka wychodzi poza 1200
+
+**Kontekst**: Ultrawide — H2 „Widzisz każdy zakończony trening” ucięty od góry; dół telefonu nad tytułem. Panel: H2 nad siatką, lista 380 px z `items-center`. LogWall w `max-w-[1200px]`, wiązka 200 px, ghost 13%.
+**Problem**: `lg:-mt-[32svh]` wjeżdżał pod nieprzezroczystą płytę sticky (`z-10`, `h-[100svh-72px]`). Treść tonęła w 1200. Waga L/P wyglądała na przypadek. `data-cursor-ref` w hydracji to injekcja przeglądarki Cursora — nie łatać `Button`.
+**Zasada**: Miara `1360`. Hero full-bleed, LogWall `inset-0` na sekcji. Bez overlap `32svh` — 02 startuje czysto z `SECTION_SPACE`. Split = H2+lead | artefakt, `items-start`. Ghost ~20% fg, wiązka `clamp(280px, 32vw, 560px)`. H2 `leading-[1.12]`.
+**Dotyczy**: `Hero.tsx`, `LogWall.tsx`, `PhoneMock.tsx`, `TrainerPreview.tsx`, `LossCalculatorSection.tsx`, `primitives.tsx`, `globals.css` (`.landing-log-*`)
+
+## Latarka / tekstura nie może konkurować z chrome (closer, H1)
+
+**Kontekst**: LogWall full-bleed pod hero. Closer „Dla trenerów personalnych” / „Przewiń” bez tła. Kolumny `max-content` + `justify-between`; warstwa reveal dopisywała `★ `, więc była szersza niż ghost.
+**Problem**: Wiązka odsłaniała druk w tych samych pikselach co etykiety — dwa napisy na sobie. Sąsiednie wpisy nachodziły, bo `★` rozpychał tylko jedną warstwę, a `max-content` nie trzymał toru.
+**Zasada**: Tekstura dekoracyjna ustępuje chrome. Closer ma `bg-background`. Fade dołu = overlay `::after` / `.landing-log-fade`, **nie** druga maska. Gutter glifu zarezerwowany na obu warstwach. Gdy dwa napisy się zlewają, najpierw sprawdź czy warstwy mają ten sam layout, nie tylko z-index.
+**Dotyczy**: `LogWall.tsx`, `Hero.tsx`, `globals.css` (`.landing-log-mask`)
+
+## Latarka RWD: szyny przy krawędziach, dziura = blok H1, nigdy `1fr` + `overflow-hidden`
+
+**Kontekst**: MacBook 14 (~1512 CSS px) — ściana niewidoczna. Ultrawide — wpisy „ucięte” w połowie słowa.
+**Problem**: Siatka 4×`1fr` od `lg:` wkładała wewnętrzne kolumny w dziurę maski (wyglądało jak ucięcie). `overflow-hidden` + `nowrap` ucinał długie frazy w wąskiej `1fr`. Dziura `ellipse 48% 44%` zjadała boki laptopa. `data-hero-copy` na `w-full` mierzyło miarę 1360, nie H1 — dziura była za szeroka. Dwie maski + `-webkit-mask-composite: source-in` na WebKicie potrafią wyzerować całą warstwę (Safari / 14").
+**Zasada**: Tekstura = szyny L/P `max-content`, bez `overflow-hidden` na wpisie. 1+1 kolumna do 2199 px; 2+2 dopiero od `min-[2200px]` (H1 ~1000 px + 2×~220 px). Dziura liczona z `w-fit` bloku H1+lead+CTA (`--hole-rx/ry`). Jedna elipsa, fade closeru osobnym overlayem. Ghost ≥ ~46% fg na light, żeby czytać się na 14".
+**Dotyczy**: `LogWall.tsx`, `Hero.tsx`, `globals.css` (`.landing-log-*`)
+
+## `overflow-x-hidden` na przodku zabija każdy `position: sticky` w środku
+
+**Kontekst**: Landing — nav „sticky” znikał przy scrollu, a przypięta scena telefonu nigdy nie działała. Po dodaniu toru 190svh objaw eskalował do ~ekranu pustki między 01 a 02, bo ramka nie podążała za scrollem. Wrapper `MarketingShell` miał `overflow-x-hidden`.
+**Problem**: `overflow-x: hidden` wymusza computed `overflow-y: auto` (osie nie mogą mieszać hidden+visible) — div staje się scroll containerem i sticky liczy się względem niego, a nie viewportu. Div sam się nie scrolluje, więc sticky nigdy nie odpala. Objawy wyglądały jak „za duży spacing” i były łatane symptomatycznie.
+**Zasada**: Poziome clipowanie tylko na `body { overflow-x: hidden }` — z body propaguje się na viewport i nie tworzy scroll containera. Nigdy `overflow-x-hidden` na wrapperach z layoutem, w których żyje sticky. Gdy sticky „nic nie robi”, najpierw przejdź przodków i sprawdź computed `overflow`/`transform`/`contain` (`getComputedStyle`), zamiast łatać spacing.
+**Dotyczy**: `MarketingShell.tsx`, `LandingNav.tsx`, `PhoneMock.tsx`, `globals.css`
+
 ---

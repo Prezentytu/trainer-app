@@ -18,7 +18,7 @@ export function Faq() {
           <h2 className={SECTION_H2}>Najczęstsze pytania</h2>
         </SectionHead>
 
-        <div className={`${SECTION_CTA} border-t border-border ${SECTION_GUTTER}`}>
+        <div className={`${SECTION_CTA} ${SECTION_GUTTER}`}>
           {FAQ_ITEMS.map((item, i) => {
             const isOpen = open === i;
             const panelId = `${baseId}-panel-${i}`;
