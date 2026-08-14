@@ -50,6 +50,13 @@ export const metadata: Metadata = {
     description:
       "Klient odhacza serie w telefonie. Bez aplikacji, bez konta.",
   },
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icons/192", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/180", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export const viewport: Viewport = {

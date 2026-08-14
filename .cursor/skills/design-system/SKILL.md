@@ -67,7 +67,7 @@ Focus: `box-shadow: var(--focus-ring)` (2px bg + 4px fg). Press: `scale(0.97)`.
 - Desktop panel trenera: **lewy sidebar** (jak Linear/Stripe) — wordmark, linki z invert gdy active, konto na dole. W kreatorze planu: wąski rail (ikony), pełny po hover.
 - Mobile panel trenera: **floating pill** 20px od dołu, aktywny = invert.
 - Portal klienta: **tab bar na pełną szerokość** (hairline u góry, flush do safe area) — nie floating pill. Active = kreska invert + `font-semibold` + `text-foreground`; inactive = muted. Nigdy invert fill na tabie (sygnatura Styrki).
-- Wordmark: sam tekst (`display-caps`), bez lime tile. PWA/ikony: mono `#0B0C0D` + wordmark „RM” (RepMaxer).
+- Wordmark: sam tekst (`display-caps`), bez lime tile. Compact w UI: „RM”. Favicon/PWA: mono `#0B0C0D` + znak R (Instrument Sans, `lib/brandMark.tsx`).
 
 ## Zakazy
 

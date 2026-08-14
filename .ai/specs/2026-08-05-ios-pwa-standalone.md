@@ -42,7 +42,7 @@ Brak zmian. Service worker cache'uje istniejące GET-y portalu.
 | `app/portal/offline/page.tsx` | Fallback offline |
 | `components/portal/PwaInstallPrompt.tsx` | iOS + Android install UX |
 | `public/sw.js` | App shell + push |
-| `public/icon.svg` | Acid (lime na tle ink) |
+| `public/icon.svg` / `app/icon.svg` | mono `#0B0C0D` + znak R (Instrument Sans) |
 
 ## Fazy implementacji
 
@@ -65,3 +65,4 @@ Brak zmian. Service worker cache'uje istniejące GET-y portalu.
 
 - 2026-08-05 — utworzono spec (plan iOS PWA standalone).
 - 2026-08-05 — wdrożono: ikony/splash Acid, manifest per token w `generateMetadata`, iOS install UX, SW app shell, `/portal/offline`. `check.sh` OK.
+- 2026-08-14 — favicon i PWA: znak R (Instrument Sans) na `#0B0C0D` zamiast trójkąta Vercela / starego „WA” lime.
