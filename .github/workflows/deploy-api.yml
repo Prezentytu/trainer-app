@@ -111,6 +111,31 @@ jobs:
           app-name: ${{ inputs.environment == 'prod' && secrets.AZURE_WEBAPP_NAME_PROD || secrets.AZURE_WEBAPP_NAME }}
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.version }}
 
+      # webapps-deploy nadpisuje obraz i gubi Private/hasło GHCR — bez tego 401 przy pullu.
+      - name: Keep GHCR pull credentials
+        env:
+          APP_NAME: ${{ inputs.environment == 'prod' && secrets.AZURE_WEBAPP_NAME_PROD || secrets.AZURE_WEBAPP_NAME }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        run: |
+          if [ -z "$APP_NAME" ] || [ -z "$GHCR_TOKEN" ]; then
+            echo "::error::Brak AZURE_WEBAPP_NAME(_PROD) albo GHCR_TOKEN."
+            exit 1
+          fi
+          RG=$(az webapp list --query "[?name=='$APP_NAME'].resourceGroup" -o tsv | head -n 1)
+          if [ -z "$RG" ]; then
+            echo "::error::Nie znaleziono Web App $APP_NAME."
+            exit 1
+          fi
+          az webapp config appsettings set \
+            --name "$APP_NAME" \
+            --resource-group "$RG" \
+            --settings \
+              DOCKER_REGISTRY_SERVER_URL=https://ghcr.io \
+              DOCKER_REGISTRY_SERVER_USERNAME="${{ github.repository_owner }}" \
+              DOCKER_REGISTRY_SERVER_PASSWORD="$GHCR_TOKEN" \
+            --output none
+          az webapp restart --name "$APP_NAME" --resource-group "$RG"
+
       - name: Health check
         run: |
           URL="${{ inputs.environment == 'prod' && secrets.API_HEALTH_URL_PROD || secrets.API_HEALTH_URL }}"
@@ -118,12 +143,12 @@ jobs:
             echo "Brak API_HEALTH_URL — pomijam health check."
             exit 0
           fi
-          for i in 1 2 3 4 5; do
+          for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
             if curl -fsS "$URL" | grep -q ok; then
               echo "Health OK"
               exit 0
             fi
-            sleep 10
+            sleep 15
           done
           echo "::error::Health check failed"
           exit 1
