@@ -5,6 +5,7 @@ import {
 } from "@/components/plan-builder/listGroups";
 import type { BuilderItem, BuilderSet } from "@/components/plan-builder/types";
 import { newKey } from "@/components/plan-builder/types";
+import { measureOverridesFromParsed } from "@/lib/measure";
 import { extractSetList, type ParsedLoggedSet } from "@/lib/setList";
 
 // Composer „szybkie wpisywanie" — parsuje jedną linię tekstu na dopasowanie ćwiczenia
@@ -224,15 +225,32 @@ export function filterExercises(query: string, exercises: Exercise[]): Exercise[
  * Dopasowuje ćwiczenia do zapytania dla dropdownu composera: `filterExercises` + priorytet dla
  * dopasowania prefiksu nazwy, potem najkrótsza nazwa, maks. 6 wyników.
  */
-export function matchExercises(query: string, exercises: Exercise[]): Exercise[] {
+export function matchExercises(
+  query: string,
+  exercises: Exercise[],
+  recentIds: number[] = [],
+): Exercise[] {
+  const recentRank = (id: number) => {
+    const i = recentIds.indexOf(id);
+    return i === -1 ? 999 : i;
+  };
   const q = query.trim().toLowerCase();
-  if (!q) return exercises.slice(0, 6);
+  if (!q) {
+    return [...exercises]
+      .sort((a, b) => recentRank(a.id) - recentRank(b.id) || a.name.localeCompare(b.name, "pl"))
+      .slice(0, 6);
+  }
   return filterExercises(query, exercises)
     .map((e) => {
       const name = e.name.toLowerCase();
       return { exercise: e, prefixRank: name.startsWith(q) ? 0 : 1, length: name.length };
     })
-    .sort((a, b) => a.prefixRank - b.prefixRank || a.length - b.length)
+    .sort(
+      (a, b) =>
+        a.prefixRank - b.prefixRank ||
+        recentRank(a.exercise.id) - recentRank(b.exercise.id) ||
+        a.length - b.length,
+    )
     .slice(0, 6)
     .map((m) => m.exercise);
 }
@@ -242,27 +260,17 @@ export function rampOverridesFromParsed(parsed: ParsedQuickEntry): Partial<Build
   if (parsed.rampTarget == null) return null;
   const targetRm = Math.min(15, Math.max(1, Math.round(parsed.rampTarget)));
   const boPcts = parsed.rampBackoffPercents;
-  if (boPcts != null && boPcts.length > 0) {
-    const prescribedSets = buildRampPrescribedSets({
-      targetRm,
-      backoffs: boPcts.map((percent) => ({ reps: 5, repsMax: 10, percent })),
-    });
-    return {
-      setScheme: formatRampScheme(targetRm, boPcts),
-      sets: parsed.sets,
-      reps: null,
-      repsMax: null,
-      prescribedSets,
-      loadKg: parsed.loadKg,
-      loadPercent: parsed.loadKg != null ? null : parsed.loadPercent,
-    };
-  }
+  const prescribedSets = buildRampPrescribedSets({
+    targetRm,
+    topKg: parsed.loadKg,
+    backoffs: (boPcts ?? []).map((percent) => ({ reps: 5, repsMax: 10, percent })),
+  });
   return {
-    setScheme: formatRampScheme(targetRm),
+    setScheme: formatRampScheme(targetRm, boPcts),
     sets: parsed.sets,
     reps: null,
     repsMax: null,
-    prescribedSets: [],
+    prescribedSets,
     loadKg: parsed.loadKg,
     loadPercent: parsed.loadKg != null ? null : parsed.loadPercent,
   };
@@ -311,4 +319,23 @@ function inferSetRole(sets: ParsedLoggedSet[], index: number): string {
     return "backoff";
   }
   return "work";
+}
+
+/** Lista serii → rampa → agregat. Jedna ścieżka dla ListComposer i QuickComposer. */
+export function itemOverridesFromParsed(
+  parsed: ParsedQuickEntry,
+  fallbackMeasure: ExerciseType,
+): Partial<BuilderItem> {
+  const logged = loggedSetsOverridesFromParsed(parsed);
+  if (logged) return logged;
+  const ramp = rampOverridesFromParsed(parsed);
+  if (ramp) {
+    return {
+      measureType: "reps",
+      ...ramp,
+      tempo: parsed.tempo ?? null,
+      targetRir: parsed.targetRir ?? null,
+    };
+  }
+  return measureOverridesFromParsed(parsed, fallbackMeasure);
 }

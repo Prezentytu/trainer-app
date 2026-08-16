@@ -456,6 +456,14 @@ public static class Sessions
     public static async Task CompleteAsync(AppDb db, WorkoutSession session)
     {
         session.Status = "completed";
+        if (session.AssignmentId is int aid && session.PlanDayId is int did)
+        {
+            var overrides = await db.AssignmentDayOverrides
+                .Where(o => o.AssignmentId == aid && o.PlanDayId == did)
+                .ToListAsync();
+            if (overrides.Count > 0)
+                db.AssignmentDayOverrides.RemoveRange(overrides);
+        }
         if (session.DurationSeconds is null)
         {
             var elapsed = (int)(DateTime.UtcNow - session.CreatedAt).TotalSeconds;

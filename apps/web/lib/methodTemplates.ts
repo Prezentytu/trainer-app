@@ -1,4 +1,4 @@
-import { PLAN_PRESETS } from "@/lib/planPresets";
+import { formatSchemeLabel, PLAN_PRESETS } from "@/lib/planPresets";
 import { PlanSetInput } from "@/lib/api";
 import { BuilderDay, BuilderItem, newKey } from "@/components/plan-builder/types";
 
@@ -79,7 +79,8 @@ export function applyMethodTemplate(days: BuilderDay[], id: MethodTemplateId): B
           order: def.order,
           label: def.label,
           notes: null,
-          items: items.map((it, idx) => cloneItem(it, sets, preset.label, idx + 1)),
+          dayOfWeek: null,
+          items: items.map((it, idx) => cloneItem(it, sets, formatSchemeLabel(sets), idx + 1)),
         });
       }
     }
@@ -99,7 +100,8 @@ export function applyMethodTemplate(days: BuilderDay[], id: MethodTemplateId): B
         order: di + 1,
         label: d.label,
         notes: d.notes,
-        items: d.items.map((it, idx) => cloneItem(it, sets, preset.label, idx + 1)),
+        dayOfWeek: d.dayOfWeek,
+        items: d.items.map((it, idx) => cloneItem(it, sets, formatSchemeLabel(sets), idx + 1)),
       });
     });
   }

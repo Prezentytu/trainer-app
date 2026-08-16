@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Exercise } from "@/lib/api";
 import { IconButton, formatRest } from "@/components/ui";
+import { DayScheduleChips } from "./DayScheduleChips";
 import { DayTabs } from "./DayTabs";
+import { DuplicateDayButton } from "./DuplicateDayButton";
 import { ListComposer } from "./ListComposer";
 import { ListEntryCard } from "./ListEntryCard";
 import { buildListGroups, countDaySets } from "./listGroups";
@@ -17,6 +19,8 @@ export function ListView({
   onPatchDay,
   onRemoveDay,
   onDuplicateDay,
+  weeks,
+  onApplyWeekdays,
   onAddItem,
   onAddItemAt,
   onPatchItem,
@@ -34,7 +38,9 @@ export function ListView({
   onAddDay: () => void;
   onPatchDay: (dayKey: string, patch: Partial<BuilderDay>) => void;
   onRemoveDay: (dayKey: string) => void;
-  onDuplicateDay: (dayKey: string) => void;
+  onDuplicateDay: (dayKey: string, targetWeek?: number) => void;
+  weeks: number[];
+  onApplyWeekdays: (sourceWeek: number) => void;
   onAddItem: (dayKey: string, exerciseId: number, overrides?: Partial<BuilderItem>) => void;
   onAddItemAt: (
     dayKey: string,
@@ -120,9 +126,11 @@ export function ListView({
               placeholder="Nazwa dnia"
             />
             <div className="ml-auto flex shrink-0 items-center gap-1">
-              <IconButton title="Duplikuj dzień" size="sm" onClick={() => onDuplicateDay(activeDay.key)}>
-                ⎘
-              </IconButton>
+              <DuplicateDayButton
+                weeks={weeks}
+                currentWeek={activeDay.weekNumber}
+                onDuplicate={(w) => onDuplicateDay(activeDay.key, w)}
+              />
               <IconButton
                 title="Usuń dzień"
                 size="sm"
@@ -133,6 +141,13 @@ export function ListView({
               </IconButton>
             </div>
           </div>
+
+          <DayScheduleChips
+            day={activeDay}
+            onPatch={(patch) => onPatchDay(activeDay.key, patch)}
+            showApply={weeks.length > 1}
+            onApplyToOtherWeeks={() => onApplyWeekdays(activeDay.weekNumber)}
+          />
 
           {/* Notatka jest drugorzędna — pełne pole wygląda jak composer i łapie przypadkowe wpisy ćwiczeń. */}
           {showNotesEditor ? (

@@ -7,13 +7,9 @@ import {
   createExercisePreviewLabel,
   exerciseInputFromQuickEntry,
 } from "@/lib/exerciseDraft";
-import { formatMeasureCore, measureOverridesFromParsed } from "@/lib/measure";
-import {
-  loggedSetsOverridesFromParsed,
-  matchExercises,
-  parseQuickEntry,
-  rampOverridesFromParsed,
-} from "@/lib/quickEntry";
+import { formatMeasureCore } from "@/lib/measure";
+import { itemOverridesFromParsed, matchExercises, parseQuickEntry } from "@/lib/quickEntry";
+import { readRecentExerciseIds, rememberExercise } from "@/lib/recentExercises";
 import { demoMedia } from "@/lib/youtube";
 import { ComposerHelp, markComposerHelpSeen, useComposerHelpOpen } from "./ComposerHelp";
 import { CreateExerciseRow } from "@/components/CreateExerciseRow";
@@ -47,13 +43,17 @@ export function ListComposer({
   const { createExercise, requestNewExercise } = useExerciseLibraryActions();
   const { open: helpOpen, onOpenChange: setHelpOpen } = useComposerHelpOpen();
   const [value, setValue] = useState("");
+  const [recentIds, setRecentIds] = useState<number[]>(readRecentExerciseIds);
   const [highlighted, setHighlighted] = useState(0);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const parsed = useMemo(() => parseQuickEntry(value), [value]);
-  const matches = useMemo(() => matchExercises(parsed.query, exercises), [parsed.query, exercises]);
+  const matches = useMemo(
+    () => matchExercises(parsed.query, exercises, recentIds),
+    [parsed.query, exercises, recentIds],
+  );
   const query = parsed.query.trim();
   const showCreate = query.length > 0;
   const optionCount = matches.length + (showCreate ? 1 : 0);
@@ -72,20 +72,8 @@ export function ListComposer({
   const hintSuper = superHintLabel(day.items);
   const groups = buildListGroups(day.items);
 
-  const overridesFromParsed = (exercise: Exercise): Partial<BuilderItem> => {
-    const logged = loggedSetsOverridesFromParsed(parsed);
-    if (logged) return logged;
-    const ramp = rampOverridesFromParsed(parsed);
-    if (ramp) {
-      return {
-        measureType: "reps",
-        ...ramp,
-        tempo: parsed.tempo ?? null,
-        targetRir: parsed.targetRir ?? null,
-      };
-    }
-    return measureOverridesFromParsed(parsed, exercise.type);
-  };
+  const overridesFromParsed = (exercise: Exercise): Partial<BuilderItem> =>
+    itemOverridesFromParsed(parsed, exercise.type);
 
   const reset = () => {
     setValue("");
@@ -130,6 +118,7 @@ export function ListComposer({
       onAdd(exercise.id, overrides);
     }
 
+    setRecentIds(rememberExercise(exercise.id));
     reset();
     afterPlace();
     inputRef.current?.focus();

@@ -494,6 +494,7 @@ export type PlanDay = {
   order: number;
   label: string;
   notes: string | null;
+  dayOfWeek?: number | null;
   items: PlanItem[];
 };
 
@@ -812,6 +813,13 @@ export type SessionDetail = SessionSummary & {
   exercises: LoggedExercise[];
 };
 
+export type ClientProgressNextDay = {
+  id: number;
+  label: string;
+  scheduledOn?: string | null;
+  movedFrom?: string | null;
+};
+
 export type ClientProgress = {
   assignmentId: number | null;
   planId?: number;
@@ -819,16 +827,33 @@ export type ClientProgress = {
   completed: number;
   total: number;
   percent: number;
+  nextDay?: ClientProgressNextDay | null;
 };
 
 export type ClientRecord = {
   exerciseId: number;
   exerciseName: string;
+  category?: string | null;
   estimated1Rm: number;
   weightKg: number | null;
   reps: number | null;
   performedOn: string;
+  lastPerformedOn?: string;
+  sessionCount?: number;
   sessionId?: number;
+};
+
+export type ExerciseUsage = {
+  sessions: number;
+  sets: number;
+  firstOn: string | null;
+  lastOn: string | null;
+};
+
+export type ExerciseRemapResult = {
+  sessions: number;
+  sets: number;
+  maxes: number;
 };
 
 export type ExerciseStats = {
@@ -860,6 +885,8 @@ export type PortalWeekDay = {
   weekNumber: number;
   order: number;
   label: string;
+  dayOfWeek?: number | null;
+  scheduledOn?: string | null;
   completed: boolean;
   isToday: boolean;
   /** Ostatnia ukończona sesja tego dnia — prefill „Powtórz”. */
@@ -894,6 +921,8 @@ export type PortalHome = {
     planId: number;
     planName: string;
     day: PlanDay;
+    scheduledOn?: string | null;
+    movedFrom?: string | null;
     completed: number;
     total: number;
     percent: number;
@@ -1089,6 +1118,7 @@ export type PlanDayInput = {
   order: number;
   label: string;
   notes: string | null;
+  dayOfWeek?: number | null;
   items: PlanItemInput[];
 };
 
@@ -1393,7 +1423,33 @@ export const api = {
         method: "POST",
         body: JSON.stringify(input),
       }),
+    updateMax: (
+      id: number,
+      input: { maxKg: number; measuredOn: string; note?: string | null },
+    ) =>
+      request<{ id: number }>(`/api/maxes/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(input),
+      }),
     removeMax: (id: number) => request(`/api/maxes/${id}`, { method: "DELETE" }),
+    planFromHistory: (
+      clientId: number,
+      input?: { topKgDelta?: number; sinceDays?: number },
+    ) =>
+      request<HistoryImportAnalyzeResult>(`/api/clients/${clientId}/plan-from-history`, {
+        method: "POST",
+        body: JSON.stringify({
+          topKgDelta: input?.topKgDelta ?? 2.5,
+          sinceDays: input?.sinceDays ?? 120,
+        }),
+      }),
+    exerciseUsage: (clientId: number, exerciseId: number) =>
+      request<ExerciseUsage>(`/api/clients/${clientId}/exercises/${exerciseId}/usage`),
+    remapExercise: (clientId: number, exerciseId: number, targetExerciseId: number) =>
+      request<ExerciseRemapResult>(`/api/clients/${clientId}/exercises/${exerciseId}/remap`, {
+        method: "POST",
+        body: JSON.stringify({ targetExerciseId }),
+      }),
     measurements: (clientId: number) =>
       request<ClientMeasurement[]>(`/api/clients/${clientId}/measurements`),
     addMeasurement: (
@@ -1427,6 +1483,11 @@ export const api = {
     saveHistoryImport: (clientId: number, draft: HistoryImportDraft) =>
       request<{ id: number }>(`/api/clients/${clientId}/history-imports`, {
         method: "POST",
+        body: JSON.stringify(draft),
+      }),
+    updateHistoryImport: (clientId: number, importId: number, draft: HistoryImportDraft) =>
+      request<{ id: number }>(`/api/clients/${clientId}/history-imports/${importId}`, {
+        method: "PUT",
         body: JSON.stringify(draft),
       }),
     applyHistoryImport: (
@@ -1637,6 +1698,11 @@ export const api = {
       ),
     day: (token: string, dayId: number) =>
       request<PortalDayPreview>(`/api/portal/${token}/days/${dayId}`),
+    rescheduleDay: (token: string, dayId: number, input: { date: string }) =>
+      request<{ date: string }>(`/api/portal/${token}/days/${dayId}/reschedule`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
     sessions: (token: string) => request<PortalSessionSummary[]>(`/api/portal/${token}/sessions`),
     records: (token: string) => request<ClientRecord[]>(`/api/portal/${token}/records`),
     mostImproved: (token: string, days = 90) =>

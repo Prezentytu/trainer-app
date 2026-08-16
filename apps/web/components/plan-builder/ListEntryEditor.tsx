@@ -3,15 +3,17 @@
 import { useState } from "react";
 import { Exercise, ExerciseType, RIR_HELP, rirFromRpe } from "@/lib/api";
 import { MEASURE_SHORT, measurePatch } from "@/lib/measure";
-import { Field, SegmentedControl, Switch, inputClass, inputNumericClass } from "@/components/ui";
+import { Field, Switch, inputClass } from "@/components/ui";
 import { isDumbbellPair } from "@/lib/weight";
 import { NumInput } from "./NumInput";
+import { RampControls } from "./RampControls";
 import { SetSchemeEditor } from "./SetSchemeEditor";
-import { SetRow, editorChipOff, editorChipOn } from "./SetRow";
+import { editorChipOff, editorChipOn } from "./editorChips";
 import {
   BackoffRow,
   buildRampPrescribedSets,
   formatRampScheme,
+  mergeRampRoles,
   parseRampSchemeInfo,
   readRampBackoffs,
 } from "./listGroups";
@@ -26,43 +28,44 @@ const RIR_OPTS = [
   { label: "3+", value: 3 },
 ] as const;
 
-const RAMP_SHORTCUTS = [6, 4, 2, 1] as const;
-const BO_PERCENT_CHIPS = [60, 70, 80, 90] as const;
 const DEFAULT_BO: BackoffRow = { reps: 5, repsMax: 10, percent: 80 };
 
+function topKgOf(item: BuilderItem): number | null {
+  return item.prescribedSets.find((s) => s.role === "top")?.loadKg ?? item.loadKg;
+}
+
 function applyRamp(
+  item: BuilderItem,
   onPatch: (patch: Partial<BuilderItem>) => void,
   opts: {
     targetRm: number;
     sets: number | null;
     backoffs: BackoffRow[];
-  }
+    topKg?: number | null;
+    replace?: boolean;
+  },
 ) {
   const targetRm = Math.min(15, Math.max(1, Math.round(opts.targetRm)));
-  if (opts.backoffs.length > 0) {
-    const prescribedSets = buildRampPrescribedSets({
+  const topKg = opts.topKg ?? topKgOf(item);
+  const generated = buildRampPrescribedSets({
+    targetRm,
+    topKg,
+    backoffs: opts.backoffs,
+  });
+  const prescribedSets = opts.replace
+    ? generated
+    : mergeRampRoles(item.prescribedSets, generated);
+  onPatch({
+    setScheme: formatRampScheme(
       targetRm,
-      backoffs: opts.backoffs,
-    });
-    onPatch({
-      setScheme: formatRampScheme(
-        targetRm,
-        opts.backoffs.map((b) => b.percent)
-      ),
-      reps: null,
-      repsMax: null,
-      sets: opts.sets,
-      prescribedSets,
-    });
-  } else {
-    onPatch({
-      setScheme: formatRampScheme(targetRm),
-      reps: null,
-      repsMax: null,
-      sets: opts.sets,
-      prescribedSets: [],
-    });
-  }
+      opts.backoffs.length > 0 ? opts.backoffs.map((b) => b.percent) : null,
+    ),
+    reps: null,
+    repsMax: null,
+    sets: opts.sets,
+    loadKg: topKg,
+    prescribedSets,
+  });
 }
 
 function seedPrescribedSets(item: BuilderItem): BuilderSet[] {
@@ -161,57 +164,62 @@ export function ListEntryEditor({
   const backoffs = readRampBackoffs(item);
   const backoffEnabled = backoffs.length > 0;
   const [moreOpen, setMoreOpen] = useState(false);
-  const [schemeWanted, setSchemeWanted] = useState(!isRamp && item.prescribedSets.length > 0);
-  const [boFocus, setBoFocus] = useState<number>(0);
+  const [schemeWanted, setSchemeWanted] = useState(item.prescribedSets.length > 0);
   const restLabel = inSuperset ? "Po superserii (s)" : "Przerwa (s)";
-  const schemeOpen = !isRamp && (schemeWanted || item.prescribedSets.length > 0);
+  const schemeOpen = isRamp || schemeWanted || item.prescribedSets.length > 0;
 
   const pickSets = () => {
-    setSchemeWanted(false);
-    onPatch({ setScheme: null, prescribedSets: [] });
+    setSchemeWanted(item.prescribedSets.length > 0);
+    onPatch({ setScheme: null });
   };
 
   const pickRamp = (target = rampInfo?.targetRm ?? 6) => {
-    setSchemeWanted(false);
-    applyRamp(onPatch, {
+    applyRamp(item, onPatch, {
       targetRm: target,
       sets: item.sets,
       backoffs,
     });
   };
 
-  const setRampTarget = (v: number | null) => {
-    if (v == null || v < 1) return;
-    applyRamp(onPatch, { targetRm: v, sets: item.sets, backoffs });
+  const setRampTarget = (v: number) => {
+    const next = item.prescribedSets.map((s) =>
+      s.role === "top" || s.role === "ramp" ? { ...s, reps: v } : s,
+    );
+    if (next.length === 0) {
+      applyRamp(item, onPatch, { targetRm: v, sets: item.sets, backoffs, replace: true });
+      return;
+    }
+    onPatch({
+      setScheme: formatRampScheme(
+        v,
+        backoffs.length > 0 ? backoffs.map((b) => b.percent) : null,
+      ),
+      reps: null,
+      repsMax: null,
+      prescribedSets: next,
+    });
+  };
+
+  const setTopKg = (v: number | null) => {
+    const next = item.prescribedSets.map((s) =>
+      s.role === "top" ? { ...s, loadKg: v, loadPercent: null, percentOf: null } : s,
+    );
+    onPatch({ loadKg: v, prescribedSets: next });
   };
 
   const setBackoffEnabled = (enabled: boolean) => {
-    applyRamp(onPatch, {
+    if (!enabled) {
+      onPatch({
+        setScheme: formatRampScheme(rampInfo?.targetRm ?? 6),
+        prescribedSets: item.prescribedSets.filter((s) => s.role !== "backoff"),
+      });
+      return;
+    }
+    applyRamp(item, onPatch, {
       targetRm: rampInfo?.targetRm ?? 6,
       sets: item.sets,
-      backoffs: enabled ? (backoffs.length > 0 ? backoffs : [{ ...DEFAULT_BO }]) : [],
+      backoffs: backoffs.length > 0 ? backoffs : [{ ...DEFAULT_BO }],
     });
-  };
-
-  const setBackoffs = (next: BackoffRow[]) => {
-    applyRamp(onPatch, {
-      targetRm: rampInfo?.targetRm ?? 6,
-      sets: item.sets,
-      backoffs: next,
-    });
-  };
-
-  const patchBackoffRow = (index: number, patch: Partial<BackoffRow>) => {
-    setBackoffs(backoffs.map((row, i) => (i === index ? { ...row, ...patch } : row)));
-  };
-
-  const addBackoffRow = () => {
-    const last = backoffs[backoffs.length - 1] ?? DEFAULT_BO;
-    setBackoffs([...backoffs, { ...last }]);
-  };
-
-  const removeBackoffRow = (index: number) => {
-    setBackoffs(backoffs.filter((_, i) => i !== index));
   };
 
   const openScheme = () => {
@@ -231,8 +239,6 @@ export function ListEntryEditor({
     return item.targetRir === v;
   };
 
-  const focusedBo = backoffs[boFocus] ?? backoffs[backoffs.length - 1];
-
   return (
     <div
       className="flex flex-col gap-3.5 rounded-2xl border border-border-strong bg-surface p-4"
@@ -249,64 +255,23 @@ export function ListEntryEditor({
         onCollapse();
       }}
     >
-      <div className="flex flex-wrap items-center gap-1.5">
-        <SegmentedControl
-          items={[
-            { value: "sets", label: "Serie × wartość" },
-            { value: "ramp", label: "Rampa" },
-          ]}
-          value={isRamp ? "ramp" : "sets"}
-          onChange={(v) => (v === "ramp" ? pickRamp() : pickSets())}
-        />
-        {isRamp && (
-          <>
-            <span className="ml-1 text-xs text-muted">do</span>
-            {RAMP_SHORTCUTS.map((t) => (
-              <button
-                key={t}
-                type="button"
-                className={rampInfo.targetRm === t ? editorChipOn : editorChipOff}
-                onClick={() => pickRamp(t)}
-              >
-                {t}RM
-              </button>
-            ))}
-          </>
-        )}
-      </div>
+      <RampControls
+        mode={isRamp ? "ramp" : "sets"}
+        targetRm={rampInfo?.targetRm ?? 6}
+        topKg={topKgOf(item)}
+        setsCount={item.sets}
+        restSeconds={item.restBetweenSetsSeconds}
+        restLabel={restLabel}
+        backoffEnabled={backoffEnabled}
+        onModeChange={(mode) => (mode === "ramp" ? pickRamp() : pickSets())}
+        onTargetRm={setRampTarget}
+        onTopKg={setTopKg}
+        onSetsCount={(v) => onPatch({ sets: v })}
+        onRest={(v) => onPatch({ restBetweenSetsSeconds: v })}
+        onBackoffEnabled={setBackoffEnabled}
+      />
 
-      {isRamp ? (
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-          <Field label="Cel rampy (xRM)">
-            <NumInput
-              value={rampInfo.targetRm}
-              min={1}
-              max={15}
-              onChange={setRampTarget}
-              placeholder="6"
-            />
-          </Field>
-          <Field label="Serie" hint="opcjonalnie">
-            <NumInput
-              value={item.sets}
-              min={1}
-              onChange={(v) => onPatch({ sets: v })}
-              placeholder="—"
-            />
-          </Field>
-          <Field label="Ciężar (kg)">
-            <div className={`${inputNumericClass} flex items-center justify-center text-muted-faint`}>—</div>
-          </Field>
-          <Field label={restLabel}>
-            <NumInput
-              value={item.restBetweenSetsSeconds}
-              min={0}
-              onChange={(v) => onPatch({ restBetweenSetsSeconds: v })}
-              placeholder="60"
-            />
-          </Field>
-        </div>
-      ) : schemeOpen ? (
+      {isRamp ? null : schemeOpen ? (
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           <div className="hidden sm:block" />
           <div className="hidden sm:block" />
@@ -365,71 +330,14 @@ export function ListEntryEditor({
         ))}
       </div>
 
-      {isRamp && (
-        <div className="border-t border-border pt-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <Switch label="Backoff (BO)" checked={backoffEnabled} onChange={setBackoffEnabled} />
-            {backoffEnabled ? (
-              <span className="font-mono text-xs tabular-nums text-muted">
-                {formatRampScheme(
-                  rampInfo.targetRm,
-                  backoffs.map((b) => b.percent)
-                )}
-              </span>
-            ) : null}
-          </div>
-          {backoffEnabled && (
-            <div className="mt-1">
-              {backoffs.map((row, index) => (
-                <SetRow
-                  key={`bo-${index}`}
-                  label={`BO ${index + 1}`}
-                  reps={row.reps}
-                  repsMax={row.repsMax}
-                  loadKg={null}
-                  loadPercent={row.percent}
-                  loadKind="percent"
-                  onReps={(v) => patchBackoffRow(index, { reps: v })}
-                  onRepsMax={(v) => patchBackoffRow(index, { repsMax: v })}
-                  onLoadKg={() => undefined}
-                  onLoadPercent={(v) => patchBackoffRow(index, { percent: v ?? 80 })}
-                  onRemove={() => removeBackoffRow(index)}
-                  onLoadFocus={() => setBoFocus(index)}
-                  removeTitle="Usuń serię BO"
-                />
-              ))}
-              {focusedBo ? (
-                <div className="flex flex-wrap items-center gap-1.5 pt-2">
-                  {BO_PERCENT_CHIPS.map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      className={focusedBo.percent === p ? editorChipOn : editorChipOff}
-                      onClick={() => patchBackoffRow(Math.min(boFocus, backoffs.length - 1), { percent: p })}
-                    >
-                      {p}%
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-              <button
-                type="button"
-                onClick={addBackoffRow}
-                className="mt-2 text-sm font-medium text-foreground-secondary hover:text-foreground"
-              >
-                + Seria BO
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
       {schemeOpen && (
         <div className="border-t border-border pt-3">
           <SetSchemeEditor
             sets={item.prescribedSets}
             weekNumber={weekNumber}
             open
+            measureType={item.measureType}
+            itemLoadKg={item.loadKg}
             onAdd={onAddSet}
             onPatch={onPatchSet}
             onRemove={onRemoveSet}

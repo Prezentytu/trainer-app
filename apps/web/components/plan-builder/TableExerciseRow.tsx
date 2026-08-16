@@ -6,7 +6,15 @@ import { Badge, IconButton, inputClass } from "@/components/ui";
 import { isDumbbellPair } from "@/lib/weight";
 import { demoMedia } from "@/lib/youtube";
 import { NumInput } from "./NumInput";
+import { RampControls } from "./RampControls";
 import { SetSchemeEditor } from "./SetSchemeEditor";
+import {
+  buildRampPrescribedSets,
+  formatRampScheme,
+  mergeRampRoles,
+  parseRampSchemeInfo,
+  readRampBackoffs,
+} from "./listGroups";
 import { BuilderItem, BuilderSet } from "./types";
 
 // Wspólna siatka kolumn dla wiersza i nagłówka tabeli (TableDay) — trzymana w jednym miejscu,
@@ -130,6 +138,9 @@ export function TableExerciseRow({
   onApplyPreset: (presetId: string) => void;
   onClearSets: () => void;
 }) {
+  const rampInfo = parseRampSchemeInfo(item.setScheme);
+  const isRamp = rampInfo != null;
+  const backoffs = readRampBackoffs(item);
   return (
     <div
       className={`rounded-[10px] border bg-surface ${
@@ -248,15 +259,82 @@ export function TableExerciseRow({
               <span className="text-xs text-muted">≈ RIR {rirFromRpe(item.targetRpe)}</span>
             )}
           </div>
+          <div className="mb-3">
+            <RampControls
+              mode={isRamp ? "ramp" : "sets"}
+              targetRm={rampInfo?.targetRm ?? 6}
+              topKg={item.prescribedSets.find((s) => s.role === "top")?.loadKg ?? item.loadKg}
+              backoffEnabled={backoffs.length > 0}
+              showSetsCount={false}
+              showRest={false}
+              onModeChange={(mode) => {
+                if (mode !== "ramp") {
+                  onPatch({ setScheme: null });
+                  return;
+                }
+                const targetRm = rampInfo?.targetRm ?? 6;
+                const generated = buildRampPrescribedSets({
+                  targetRm,
+                  topKg: item.loadKg,
+                  backoffs,
+                });
+                onPatch({
+                  setScheme: formatRampScheme(targetRm, backoffs.map((b) => b.percent)),
+                  prescribedSets: mergeRampRoles(item.prescribedSets, generated),
+                });
+              }}
+              onTargetRm={(v) => {
+                const next = item.prescribedSets.map((s) =>
+                  s.role === "top" || s.role === "ramp" ? { ...s, reps: v } : s,
+                );
+                onPatch({
+                  setScheme: formatRampScheme(v, backoffs.map((b) => b.percent)),
+                  prescribedSets:
+                    next.length > 0
+                      ? next
+                      : buildRampPrescribedSets({ targetRm: v, topKg: item.loadKg, backoffs }),
+                });
+              }}
+              onTopKg={(v) =>
+                onPatch({
+                  loadKg: v,
+                  prescribedSets: item.prescribedSets.map((s) =>
+                    s.role === "top" ? { ...s, loadKg: v, loadPercent: null, percentOf: null } : s,
+                  ),
+                })
+              }
+              onBackoffEnabled={(enabled) => {
+                if (!enabled) {
+                  onPatch({
+                    setScheme: formatRampScheme(rampInfo?.targetRm ?? 6),
+                    prescribedSets: item.prescribedSets.filter((s) => s.role !== "backoff"),
+                  });
+                  return;
+                }
+                const generated = buildRampPrescribedSets({
+                  targetRm: rampInfo?.targetRm ?? 6,
+                  topKg: item.loadKg,
+                  backoffs: [{ reps: 5, repsMax: 10, percent: 80 }],
+                });
+                onPatch({
+                  setScheme: formatRampScheme(rampInfo?.targetRm ?? 6, [80]),
+                  prescribedSets: mergeRampRoles(item.prescribedSets, generated),
+                });
+              }}
+            />
+          </div>
           <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">Rozkład serii</p>
           <SetSchemeEditor
             sets={item.prescribedSets}
             weekNumber={weekNumber}
+            measureType={item.measureType}
+            itemLoadKg={item.loadKg}
             onAdd={onAddSet}
             onPatch={onPatchSet}
             onRemove={onRemoveSet}
             onApplyPreset={onApplyPreset}
             onClear={onClearSets}
+            onReplaceSets={(next) => onPatch({ prescribedSets: next, sets: next.length })}
           />
         </div>
       )}

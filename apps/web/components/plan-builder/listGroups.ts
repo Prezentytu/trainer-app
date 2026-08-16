@@ -1,6 +1,6 @@
 import { Exercise } from "@/lib/api";
 import { formatMeasureCore } from "@/lib/measure";
-import { BuilderItem } from "./types";
+import { BuilderItem, newKey } from "./types";
 
 const LETTERS = "abcdefgh";
 
@@ -160,48 +160,83 @@ export function formatRampScheme(
   return `${base} + BO ${list.join("/")}%`;
 }
 
-/** Buduje prescribedSets: 1× ramp (cel xRM) + N× backoff (każdy z własnym %). */
+const DEFAULT_RAMP_STEPS = [50, 75, 90];
+
+function emptyRampSet(
+  order: number,
+  patch: Partial<BuilderItem["prescribedSets"][number]>,
+): BuilderItem["prescribedSets"][number] {
+  return {
+    key: newKey(),
+    order,
+    reps: null,
+    repsMax: null,
+    durationSeconds: null,
+    distanceMeters: null,
+    loadKg: null,
+    loadPercent: null,
+    percentOf: null,
+    targetRpe: null,
+    targetRir: null,
+    tempo: null,
+    role: null,
+    note: null,
+    ...patch,
+  };
+}
+
+/** Rozbieg (domyślnie 50/75/90% topu) + seria szczytowa + backoffi. */
 export function buildRampPrescribedSets(opts: {
   targetRm: number;
+  topKg?: number | null;
+  rampSteps?: number[];
   backoffs: BackoffRow[];
 }): BuilderItem["prescribedSets"] {
-  const sets: BuilderItem["prescribedSets"] = [
-    {
-      key: Math.random().toString(36).slice(2),
-      order: 1,
+  const steps = opts.rampSteps ?? DEFAULT_RAMP_STEPS;
+  const sets: BuilderItem["prescribedSets"] = [];
+  let order = 1;
+  for (const percent of steps) {
+    sets.push(
+      emptyRampSet(order++, {
+        reps: opts.targetRm,
+        loadPercent: percent,
+        percentOf: "top",
+        role: "ramp",
+      }),
+    );
+  }
+  sets.push(
+    emptyRampSet(order++, {
       reps: opts.targetRm,
-      repsMax: null,
-      durationSeconds: null,
-      distanceMeters: null,
-      loadKg: null,
-      loadPercent: null,
-      percentOf: null,
-      targetRpe: null,
-      targetRir: null,
-      tempo: null,
-      role: "ramp",
+      loadKg: opts.topKg ?? null,
+      role: "top",
       note: `ustal ${opts.targetRm}RM`,
-    },
-  ];
+    }),
+  );
   opts.backoffs.forEach((bo, i) => {
-    sets.push({
-      key: Math.random().toString(36).slice(2),
-      order: i + 2,
-      reps: bo.reps ?? DEFAULT_BACKOFF.reps,
-      repsMax: bo.repsMax ?? DEFAULT_BACKOFF.repsMax,
-      durationSeconds: null,
-      distanceMeters: null,
-      loadKg: null,
-      loadPercent: bo.percent,
-      percentOf: "top",
-      targetRpe: null,
-      targetRir: null,
-      tempo: null,
-      role: "backoff",
-      note: i === 0 ? "seria anaboliczna" : null,
-    });
+    sets.push(
+      emptyRampSet(order++, {
+        reps: bo.reps ?? DEFAULT_BACKOFF.reps,
+        repsMax: bo.repsMax ?? DEFAULT_BACKOFF.repsMax,
+        loadPercent: bo.percent,
+        percentOf: "top",
+        role: "backoff",
+        note: i === 0 ? "seria anaboliczna" : null,
+      }),
+    );
   });
   return sets;
+}
+
+/** Dopisuje brakujące role rampy, nie kasując ręcznych wierszy. */
+export function mergeRampRoles(
+  existing: BuilderItem["prescribedSets"],
+  generated: BuilderItem["prescribedSets"],
+): BuilderItem["prescribedSets"] {
+  if (existing.length === 0) return generated;
+  const have = new Set(existing.map((s) => s.role).filter(Boolean));
+  const extra = generated.filter((s) => s.role && !have.has(s.role));
+  return [...existing, ...extra].map((s, i) => ({ ...s, order: i + 1 }));
 }
 
 /** Odczyt wierszy BO z prescribedSets (+ fallback z setScheme). */
@@ -253,13 +288,11 @@ export function listEntrySummary(item: BuilderItem, exercise?: Exercise, omitRes
 }
 
 export function itemSetCount(item: BuilderItem, exercise?: Exercise): number {
+  if (item.prescribedSets.length > 0) return item.prescribedSets.length;
   const ramp = parseRampSchemeInfo(item.setScheme);
   if (ramp != null) {
-    const boCount = item.prescribedSets.filter((s) => s.role === "backoff").length;
-    const rampSets = item.sets ?? OPEN_RAMP_SET_FALLBACK;
-    return rampSets + boCount;
+    return (item.sets ?? OPEN_RAMP_SET_FALLBACK) + readRampBackoffs(item).length;
   }
-  if (item.prescribedSets.length > 0) return item.prescribedSets.length;
   return item.sets || exercise?.defaultSets || 0;
 }
 

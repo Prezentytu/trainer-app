@@ -15,6 +15,7 @@ import {
   exerciseInputFromQuickEntry,
 } from "@/lib/exerciseDraft";
 import { filterExercises } from "@/lib/quickEntry";
+import { readRecentExerciseIds, rememberExercise, sortExercisesByRecent } from "@/lib/recentExercises";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { formatRest, inputClass } from "@/components/ui";
 import { CreateExerciseRow } from "@/components/CreateExerciseRow";
@@ -67,12 +68,13 @@ function DrawerBody({
     return counts;
   }, [exercises]);
 
+  const [recentIds, setRecentIds] = useState<number[]>(readRecentExerciseIds);
   const filtered = useMemo(() => {
     let list = filterExercises(query, exercises);
     if (categoryFilter !== "all") list = list.filter((e) => e.category === categoryFilter);
     if (typeFilter !== "all") list = list.filter((e) => e.type === typeFilter);
-    return list;
-  }, [exercises, query, typeFilter, categoryFilter]);
+    return sortExercisesByRecent(list, recentIds);
+  }, [exercises, query, typeFilter, categoryFilter, recentIds]);
 
   const q = query.trim();
   const showCreate = q.length > 0 && filtered.length === 0;
@@ -85,6 +87,7 @@ function DrawerBody({
   const previewLabel = createExercisePreviewLabel(draftInput);
 
   const commit = (id: number) => {
+    setRecentIds(rememberExercise(id));
     onAdd(id);
     onClose();
   };

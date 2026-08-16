@@ -1,0 +1,96 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { api, Exercise } from "@/lib/api";
+import { draftToBuilderHandoff, saveImportHandoff } from "@/lib/planImportHandoff";
+import { Dialog, SegmentedControl } from "@/components/ui";
+
+export function PlanFromHistoryDialog({
+  open,
+  clientId,
+  clientName,
+  exercises,
+  onClose,
+  onError,
+}: {
+  open: boolean;
+  clientId: number;
+  clientName: string;
+  exercises: Exercise[];
+  onClose: () => void;
+  onError: (message: string) => void;
+}) {
+  const router = useRouter();
+  const [delta, setDelta] = useState<"0" | "2.5">("2.5");
+  const [busy, setBusy] = useState(false);
+  const [fetched, setFetched] = useState<Exercise[]>([]);
+  const library = exercises.length > 0 ? exercises : fetched;
+
+  useEffect(() => {
+    if (!open || exercises.length > 0) return;
+    let cancelled = false;
+    api.exercises
+      .list()
+      .then((list) => {
+        if (!cancelled) setFetched(list);
+      })
+      .catch((err: Error) => {
+        if (!cancelled) onError(err.message);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, exercises.length, onError]);
+
+  const confirm = async () => {
+    setBusy(true);
+    try {
+      const result = await api.clients.planFromHistory(clientId, {
+        topKgDelta: delta === "2.5" ? 2.5 : 0,
+      });
+      const planMap: Record<string, number> = {};
+      result.planDraft.days?.forEach((day, di) => {
+        day.items?.forEach((it, ii) => {
+          if (it.matchedExerciseId != null) planMap[`${di}:${ii}`] = it.matchedExerciseId;
+        });
+      });
+      saveImportHandoff(
+        draftToBuilderHandoff(result.planDraft, planMap, library, {
+          isTemplate: false,
+          clientId,
+        }),
+      );
+      router.push(`/plans/new?clientId=${clientId}`);
+    } catch (err) {
+      onError((err as Error).message);
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog
+      open={open}
+      title="Złóż plan z historii"
+      description={`Wezmę ukończone treningi ${clientName} z ostatnich 120 dni i złożę z nich draft planu.`}
+      confirmLabel="Złóż plan"
+      busy={busy}
+      onCancel={onClose}
+      onConfirm={() => void confirm()}
+      className="max-w-md"
+    >
+      <p className="t-label mb-2 text-muted">Na najcięższej serii</p>
+      <SegmentedControl
+        items={[
+          { value: "0", label: "Bez zmian" },
+          { value: "2.5", label: "+2,5 kg" },
+        ]}
+        value={delta}
+        onChange={(v) => setDelta(v === "0" ? "0" : "2.5")}
+      />
+      <p className="mt-3 text-sm text-muted-strong">
+        Sprawdzisz i zapiszesz plan w kreatorze. Cofnięcie nie kasuje draftu.
+      </p>
+    </Dialog>
+  );
+}

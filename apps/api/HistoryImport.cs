@@ -571,6 +571,42 @@ BIBLIOTEKA:
             Days: days);
     }
 
+    /// <summary>
+    /// Mapuje zapisane sesje klienta na kształt importu — tylko ukończone serie robocze.
+    /// </summary>
+    public static List<HistoryImportSession> FromWorkoutSessions(IEnumerable<WorkoutSession> sessions)
+    {
+        var result = new List<HistoryImportSession>();
+        foreach (var session in sessions)
+        {
+            var exercises = new List<HistoryImportExercise>();
+            foreach (var ex in session.Exercises.OrderBy(e => e.Order))
+            {
+                var sets = ex.Sets
+                    .Where(s => s.Completed && !s.IsWarmup)
+                    .OrderBy(s => s.SetNumber)
+                    .Select(s => new HistoryImportSet(
+                        Reps: s.Reps ?? 0,
+                        WeightKg: s.WeightKg,
+                        IsBodyweight: s.WeightKg is null or 0))
+                    .ToList();
+                if (sets.Count == 0) continue;
+                exercises.Add(new HistoryImportExercise(
+                    ExerciseName: ex.Exercise?.Name ?? "",
+                    MatchedExerciseId: ex.ExerciseId,
+                    Order: ex.Order,
+                    Sets: sets));
+            }
+            if (exercises.Count == 0) continue;
+            result.Add(new HistoryImportSession(
+                PerformedOn: session.PerformedOn.ToString("yyyy-MM-dd"),
+                Label: session.PlanDay?.Label ?? session.Note,
+                DurationSeconds: session.DurationSeconds,
+                Exercises: exercises));
+        }
+        return result;
+    }
+
     public static HistoryImportAnalyzeResult Analyze(
         IReadOnlyList<HistoryImportSession> sessions,
         string clientName,

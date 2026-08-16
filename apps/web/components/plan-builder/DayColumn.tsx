@@ -5,6 +5,7 @@ import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Exercise } from "@/lib/api";
 import { Button, EmptyState, IconButton, inputClass } from "@/components/ui";
+import { DayScheduleChips } from "./DayScheduleChips";
 import { dayContainerId } from "./dnd";
 import { DropIndicator } from "./DropIndicator";
 import { ExerciseCard } from "./ExerciseCard";
@@ -30,6 +31,8 @@ export function DayColumn({
   onPatchDay,
   onRemoveDay,
   onDuplicateDay,
+  weeks,
+  onApplyWeekdays,
   onAddItem,
   onRemoveItem,
   onMoveItem,
@@ -51,7 +54,9 @@ export function DayColumn({
   onOpenDrawer: () => void;
   onPatchDay: (patch: Partial<BuilderDay>) => void;
   onRemoveDay: () => void;
-  onDuplicateDay: () => void;
+  onDuplicateDay: (targetWeek?: number) => void;
+  weeks: number[];
+  onApplyWeekdays: () => void;
   onAddItem: (exerciseId: number, overrides?: Partial<BuilderItem>) => void;
   onRemoveItem: (itemKey: string) => void;
   onMoveItem: (itemKey: string, dir: -1 | 1) => void;
@@ -170,6 +175,14 @@ export function DayColumn({
                 {day.notes}
               </button>
             ) : null}
+            <div className="mt-2">
+              <DayScheduleChips
+                day={day}
+                onPatch={onPatchDay}
+                showApply={weeks.length > 1}
+                onApplyToOtherWeeks={onApplyWeekdays}
+              />
+            </div>
           </div>
           <div className="relative" ref={menuRef}>
             <IconButton title="Menu dnia" size="xs" onClick={() => setMenuOpen((v) => !v)}>
@@ -205,8 +218,23 @@ export function DayColumn({
                     setMenuOpen(false);
                   }}
                 >
-                  Duplikuj dzień
+                  Duplikuj w tym tygodniu
                 </button>
+                {weeks
+                  .filter((w) => w !== day.weekNumber)
+                  .map((w) => (
+                    <button
+                      key={w}
+                      type="button"
+                      className="block w-full px-3 py-2 text-left text-sm hover:bg-surface-hover"
+                      onClick={() => {
+                        onDuplicateDay(w);
+                        setMenuOpen(false);
+                      }}
+                    >
+                      Duplikuj do tygodnia {w}
+                    </button>
+                  ))}
                 <button
                   type="button"
                   className="block w-full px-3 py-2 text-left text-sm text-danger hover:bg-danger-bg"

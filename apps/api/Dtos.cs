@@ -87,7 +87,10 @@ public record PlanDayInput(
     int Order = 0,
     string Label = "",
     string? Notes = null,
+    int? DayOfWeek = null,
     List<PlanItemInput>? Items = null);
+
+public record PlanDayRescheduleInput(DateOnly Date);
 
 public record PlanInput(
     string Name,
@@ -102,6 +105,12 @@ public record DuplicateInput(string? Name, bool? IsTemplate);
 public record StatusInput(string Status);
 
 public record ClientMaxInput(int ExerciseId, double MaxKg, DateOnly MeasuredOn, string? Note = null);
+
+public record ClientMaxUpdateInput(double MaxKg, DateOnly MeasuredOn, string? Note = null);
+
+public record PlanFromHistoryInput(double TopKgDelta = 2.5, int SinceDays = 120);
+
+public record ExerciseRemapInput(int TargetExerciseId);
 
 public record ClientMeasurementInput(
     DateOnly MeasuredOn,

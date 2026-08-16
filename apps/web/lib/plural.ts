@@ -33,6 +33,14 @@ export function polishTrainingCount(n: number): string {
   return polishPlural(n, "trening", "treningi", "treningów");
 }
 
+export function polishRecordCount(n: number): string {
+  return polishPlural(n, "rekord", "rekordy", "rekordów");
+}
+
+export function polishPhotoCount(n: number): string {
+  return polishPlural(n, "zdjęcie", "zdjęcia", "zdjęć");
+}
+
 export function polishResultCount(n: number): string {
   return polishPlural(n, "wynik", "wyniki", "wyników");
 }

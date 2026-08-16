@@ -3,7 +3,7 @@
 import { useEffect, useState, Fragment } from "react";
 import { api, SessionDetail, WorkoutSessionInput } from "@/lib/api";
 import { refreshNavCounts } from "@/lib/navCounts";
-import { Button, Card, ErrorBanner, Field, formatRest, inputClass, Marker } from "@/components/ui";
+import { Button, Card, Dialog, ErrorBanner, Field, formatRest, inputClass, Marker } from "@/components/ui";
 import { formatDurationMinutes } from "@/lib/estimateDuration";
 import { formatKg } from "@/lib/plates";
 import { formatSetLoadReps, isDumbbellPair } from "@/lib/weight";
@@ -82,17 +82,21 @@ export function SessionReview({
   clientName,
   onEdit,
   onUpdated,
+  onDeleted,
 }: {
   session: SessionDetail;
   clientName?: string;
   onEdit: () => void;
   onUpdated: (session: SessionDetail) => void;
+  onDeleted: () => void;
 }) {
   const [trainerComment, setTrainerComment] = useState("");
   /** Lokalny draft daty — po udanym zapisie równa się `session.performedOn`. */
   const [performedOn, setPerformedOn] = useState(session.performedOn);
   const [saving, setSaving] = useState(false);
   const [savingDate, setSavingDate] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const inProgress = session.status === "in_progress";
@@ -134,6 +138,20 @@ export function SessionReview({
       setError((e as Error).message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const removeSession = async () => {
+    setRemoving(true);
+    setError(null);
+    try {
+      await api.sessions.remove(session.id);
+      void refreshNavCounts();
+      onDeleted();
+    } catch (e) {
+      setError((e as Error).message);
+      setRemoving(false);
+      setConfirmRemove(false);
     }
   };
 
@@ -395,7 +413,21 @@ export function SessionReview({
         <Button variant="secondary" full onClick={onEdit}>
           {inProgress ? "Wpisz wynik za klienta" : "Popraw wyniki"}
         </Button>
+        <Button variant="ghost" full onClick={() => setConfirmRemove(true)} disabled={removing}>
+          Usuń trening
+        </Button>
       </div>
+
+      <Dialog
+        open={confirmRemove}
+        title="Usuń trening"
+        description="Usunę ten trening z historii. Tego nie cofnę."
+        confirmLabel="Usuń trening"
+        danger
+        busy={removing}
+        onCancel={() => setConfirmRemove(false)}
+        onConfirm={() => void removeSession()}
+      />
     </div>
   );
 }

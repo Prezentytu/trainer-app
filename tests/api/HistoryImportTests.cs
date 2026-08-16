@@ -110,6 +110,43 @@ public class HistoryImportLogicTests
     }
 
     [Fact]
+    public void FromWorkoutSessions_KeepsCompletedWorkingSets()
+    {
+        var squat = new Exercise { Id = 7, Name = "Przysiad" };
+        var session = new WorkoutSession
+        {
+            PerformedOn = new DateOnly(2026, 7, 2),
+            Note = "A",
+            Status = "completed",
+            Exercises =
+            [
+                new LoggedExercise
+                {
+                    ExerciseId = 7,
+                    Exercise = squat,
+                    Order = 1,
+                    Sets =
+                    [
+                        new LoggedSet { SetNumber = 1, Reps = 8, WeightKg = 60, Completed = true, IsWarmup = true },
+                        new LoggedSet { SetNumber = 2, Reps = 5, WeightKg = 100, Completed = true, IsWarmup = false },
+                        new LoggedSet { SetNumber = 3, Reps = 5, WeightKg = 100, Completed = false, IsWarmup = false },
+                    ],
+                },
+            ],
+        };
+
+        var mapped = HistoryImport.FromWorkoutSessions([session]);
+        var ex = Assert.Single(Assert.Single(mapped).Exercises!);
+        Assert.Equal(7, ex.MatchedExerciseId);
+        Assert.Equal("Przysiad", ex.ExerciseName);
+        var set = Assert.Single(ex.Sets!);
+        Assert.Equal(5, set.Reps);
+        Assert.Equal(100, set.WeightKg);
+        Assert.Equal("2026-07-02", mapped[0].PerformedOn);
+        Assert.Equal("A", mapped[0].Label);
+    }
+
+    [Fact]
     public void MatchExerciseId_PolishAliases()
     {
         var lib = new List<(int Id, string Name, string Type)>
@@ -241,6 +278,110 @@ public class HistoryImportCsvEndpointTests : IClassFixture<TestWebAppFactory>
     }
 
     [Fact]
+    public async Task PlanFromHistory_ReturnsDraft_ForCompletedSessions()
+    {
+        var created = await _client.PostAsJsonAsync("/api/clients", new
+        {
+            name = "Plan z historii",
+            email = (string?)null,
+            note = (string?)null,
+        });
+        var client = await created.Content.ReadFromJsonAsync<Created>(JsonOpts);
+        var exercises = await _client.GetFromJsonAsync<List<ExRow>>("/api/exercises", JsonOpts);
+        var ex = exercises!.First(e => e.Name.Contains("ławce", StringComparison.OrdinalIgnoreCase));
+
+        var session = await _client.PostAsJsonAsync("/api/sessions", new
+        {
+            clientId = client!.Id,
+            performedOn = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd"),
+            status = "completed",
+            exercises = new[]
+            {
+                new
+                {
+                    exerciseId = ex.Id,
+                    order = 1,
+                    sets = new[]
+                    {
+                        new { setNumber = 1, weightKg = 80.0, reps = 5, completed = true, isWarmup = false },
+                    },
+                },
+            },
+        });
+        Assert.Equal(HttpStatusCode.Created, session.StatusCode);
+
+        var res = await _client.PostAsJsonAsync($"/api/clients/{client.Id}/plan-from-history", new
+        {
+            topKgDelta = 2.5,
+            sinceDays = 120,
+        });
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        using var doc = await JsonDocument.ParseAsync(await res.Content.ReadAsStreamAsync());
+        Assert.True(doc.RootElement.GetProperty("planDraft").GetProperty("days").GetArrayLength() >= 1);
+    }
+
+    [Fact]
+    public async Task PlanFromHistory_EmptyHistory_Returns400()
+    {
+        var created = await _client.PostAsJsonAsync("/api/clients", new
+        {
+            name = "Pusta historia",
+            email = (string?)null,
+            note = (string?)null,
+        });
+        var client = await created.Content.ReadFromJsonAsync<Created>(JsonOpts);
+        var res = await _client.PostAsJsonAsync($"/api/clients/{client!.Id}/plan-from-history", new
+        {
+            topKgDelta = 2.5,
+            sinceDays = 120,
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+        var body = await res.Content.ReadAsStringAsync();
+        Assert.Contains("Brak treningów w historii", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SaveHistoryImport_OverwritesPendingInsteadOfOrphan()
+    {
+        var created = await _client.PostAsJsonAsync("/api/clients", new
+        {
+            name = "Pending overwrite",
+            email = (string?)null,
+            note = (string?)null,
+        });
+        var client = await created.Content.ReadFromJsonAsync<Created>(JsonOpts);
+        var first = await _client.PostAsJsonAsync($"/api/clients/{client!.Id}/history-imports", new
+        {
+            sessions = Array.Empty<object>(),
+            warnings = Array.Empty<string>(),
+        });
+        Assert.Equal(HttpStatusCode.Created, first.StatusCode);
+        var firstRow = await first.Content.ReadFromJsonAsync<Created>(JsonOpts);
+
+        var second = await _client.PostAsJsonAsync($"/api/clients/{client.Id}/history-imports", new
+        {
+            sessions = new[]
+            {
+                new
+                {
+                    performedOn = "2026-07-02",
+                    label = "A",
+                    exercises = Array.Empty<object>(),
+                },
+            },
+            warnings = Array.Empty<string>(),
+        });
+        Assert.Equal(HttpStatusCode.OK, second.StatusCode);
+        var secondRow = await second.Content.ReadFromJsonAsync<Created>(JsonOpts);
+        Assert.Equal(firstRow!.Id, secondRow!.Id);
+
+        var pending = await _client.GetFromJsonAsync<PendingRow>(
+            $"/api/clients/{client.Id}/history-imports/pending", JsonOpts);
+        Assert.Equal(firstRow.Id, pending!.Id);
+        Assert.Single(pending.Draft.Sessions ?? []);
+    }
+
+    [Fact]
     public async Task Analyze_FlagsTestWeek()
     {
         var volume = new
@@ -278,6 +419,7 @@ public class HistoryImportCsvEndpointTests : IClassFixture<TestWebAppFactory>
     private record ExRow(int Id, string Name);
     private record ApplyResult(List<int> SessionIds, List<int> MaxIds);
     private record SessionRow(int Id, string Status, string PerformedOn, int? PlanDayId);
+    private record PendingRow(int Id, HistoryImportDraft Draft);
 }
 
 public class HistoryImportAiEndpointTests : IClassFixture<HistoryImportWebAppFactory>

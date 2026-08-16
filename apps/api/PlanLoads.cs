@@ -25,6 +25,8 @@ public static class PlanLoads
             return RoundToHalf(topKg.Value * set.LoadPercent.Value / 100.0);
         if (set.LoadPercent is not null && set.PercentOf == "1rm" && oneRmKg is not null)
             return RoundToHalf(oneRmKg.Value * set.LoadPercent.Value / 100.0);
+        if (set.Role is "ramp" or "top" && topKg is not null)
+            return topKg;
         return null;
     }
 

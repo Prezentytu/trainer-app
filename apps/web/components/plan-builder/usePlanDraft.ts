@@ -3,7 +3,8 @@
 import { useCallback, useMemo, useState } from "react";
 import { arrayMove } from "@dnd-kit/sortable";
 import { Exercise, Plan } from "@/lib/api";
-import { PLAN_PRESETS } from "@/lib/planPresets";
+import { formatSchemeLabel, matchingPresetId, PLAN_PRESETS } from "@/lib/planPresets";
+import { isDefaultDayLabel, WEEKDAY_NAMES } from "@/lib/schedule";
 import { applyMethodTemplate, MethodTemplateId } from "@/lib/methodTemplates";
 import { useUndoToast } from "@/components/ui";
 import { loadInitialDays } from "./loadInitialDays";
@@ -77,7 +78,7 @@ export function usePlanDraft({
       const inWeek = prev.filter((d) => d.weekNumber === weekNumber).length;
       return [
         ...prev,
-        { key: newKey(), weekNumber, order: inWeek + 1, label: `Dzień ${inWeek + 1}`, notes: null, items: [] },
+        { key: newKey(), weekNumber, order: inWeek + 1, label: `Dzień ${inWeek + 1}`, notes: null, dayOfWeek: null, items: [] },
       ];
     });
   }, []);
@@ -122,13 +123,12 @@ export function usePlanDraft({
                 if (!keepSets) {
                   prescribedSets = [];
                   setScheme = null;
-                } else if (reapplyPresets && it.setScheme) {
-                  const preset = PLAN_PRESETS.find((p) => p.label === it.setScheme || it.setScheme?.includes(p.id));
-                  const byLabel = PLAN_PRESETS.find((p) => it.setScheme?.includes("6-4-2") && p.id === "642531");
-                  const match = preset ?? byLabel;
+                } else if (reapplyPresets) {
+                  const matchId = matchingPresetId(it.prescribedSets, sourceWeek);
+                  const match = matchId ? PLAN_PRESETS.find((p) => p.id === matchId) : undefined;
                   if (match) {
                     prescribedSets = match.build(target).map((s) => ({ ...s, key: newKey() }));
-                    setScheme = match.label;
+                    setScheme = formatSchemeLabel(prescribedSets);
                   }
                 }
                 if (progression.mode === "kg" && progression.amount !== 0) {
@@ -191,14 +191,16 @@ export function usePlanDraft({
     [showUndoToast]
   );
 
-  const duplicateDay = useCallback((dayKey: string) => {
+  const duplicateDay = useCallback((dayKey: string, targetWeekNumber?: number) => {
     setDays((prev) => {
       const source = prev.find((d) => d.key === dayKey);
       if (!source) return prev;
-      const inWeek = prev.filter((d) => d.weekNumber === source.weekNumber).length;
+      const week = targetWeekNumber ?? source.weekNumber;
+      const inWeek = prev.filter((d) => d.weekNumber === week).length;
       const clone: BuilderDay = {
         ...source,
         key: newKey(),
+        weekNumber: week,
         order: inWeek + 1,
         label: `${source.label} (kopia)`,
         items: source.items.map((it) => ({
@@ -208,6 +210,24 @@ export function usePlanDraft({
         })),
       };
       return [...prev, clone];
+    });
+  }, []);
+
+  const applyWeekdaysToOtherWeeks = useCallback((sourceWeek: number) => {
+    setDays((prev) => {
+      const source = prev
+        .filter((d) => d.weekNumber === sourceWeek)
+        .sort((a, b) => a.order - b.order);
+      return prev.map((d) => {
+        if (d.weekNumber === sourceWeek) return d;
+        const match = source.find((s) => s.order === d.order);
+        if (!match) return d;
+        const nextLabel =
+          isDefaultDayLabel(d.label, d.order) && match.dayOfWeek
+            ? WEEKDAY_NAMES[match.dayOfWeek]
+            : d.label;
+        return { ...d, dayOfWeek: match.dayOfWeek, label: nextLabel };
+      });
     });
   }, []);
 
@@ -667,21 +687,45 @@ export function usePlanDraft({
   );
 
   const applyPreset = useCallback((dayKey: string, itemKey: string, presetId: string) => {
-    setDays((prev) =>
-      prev.map((d) => {
-        if (d.key !== dayKey) return d;
-        const preset = PLAN_PRESETS.find((p) => p.id === presetId);
-        if (!preset) return d;
-        const sets: BuilderSet[] = preset.build(d.weekNumber).map((s) => ({ ...s, key: newKey() }));
-        return {
-          ...d,
-          items: d.items.map((i) =>
-            i.key === itemKey ? { ...i, prescribedSets: sets, setScheme: preset.label } : i
-          ),
-        };
-      })
-    );
-  }, []);
+    setDays((prev) => {
+      const day = prev.find((d) => d.key === dayKey);
+      const item = day?.items.find((i) => i.key === itemKey);
+      const previousSets = item?.prescribedSets ?? [];
+      const previousScheme = item?.setScheme ?? null;
+      const preset = PLAN_PRESETS.find((p) => p.id === presetId);
+      if (!preset || !day) return prev;
+      const sets: BuilderSet[] = preset.build(day.weekNumber).map((s) => ({ ...s, key: newKey() }));
+      const setScheme = formatSchemeLabel(sets);
+      if (previousSets.length > 0) {
+        showUndoToast("Przywrócono poprzedni rozpis", () => {
+          setDays((cur) =>
+            cur.map((d) =>
+              d.key !== dayKey
+                ? d
+                : {
+                    ...d,
+                    items: d.items.map((i) =>
+                      i.key === itemKey
+                        ? { ...i, prescribedSets: previousSets, setScheme: previousScheme }
+                        : i,
+                    ),
+                  },
+            ),
+          );
+        });
+      }
+      return prev.map((d) =>
+        d.key !== dayKey
+          ? d
+          : {
+              ...d,
+              items: d.items.map((i) =>
+                i.key === itemKey ? { ...i, prescribedSets: sets, setScheme } : i,
+              ),
+            },
+      );
+    });
+  }, [showUndoToast]);
 
   const applyMethodToDraft = useCallback((id: MethodTemplateId) => {
     setDays((prev) => applyMethodTemplate(prev, id));
@@ -715,6 +759,7 @@ export function usePlanDraft({
     copyWeek,
     removeDay,
     duplicateDay,
+    applyWeekdaysToOtherWeeks,
     addItem,
     addItemAt,
     patchItem,

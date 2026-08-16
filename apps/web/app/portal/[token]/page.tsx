@@ -30,6 +30,7 @@ import {
   todayIsoLocal,
   weekdayIndexFromLabel,
 } from "@/lib/dates";
+import { formatScheduledShort } from "@/lib/schedule";
 import { formatLoadDisplay } from "@/lib/weight";
 import { previewBlocksFromItems, type PreviewItem } from "@/lib/supersetPreview";
 
@@ -37,6 +38,17 @@ function schemeLine(
   item: NonNullable<PortalHome["today"]>["day"]["items"][number],
   exerciseMeta?: Pick<PortalExercise, "equipment" | "isUnilateral"> | null,
 ): string {
+  if (item.prescribedSets.length > 0) {
+    return item.prescribedSets
+      .map((s) => {
+        const reps = s.repsMax != null && s.reps != null ? `${s.reps}–${s.repsMax}` : String(s.reps ?? "—");
+        const kg = s.computedLoadKg ?? s.loadKg;
+        if (s.durationSeconds != null) return `${s.durationSeconds} s`;
+        if (s.distanceMeters != null) return `${s.distanceMeters} m`;
+        return kg != null ? `${reps} @ ${formatLoadDisplay(kg, exerciseMeta)}` : reps;
+      })
+      .join(", ");
+  }
   const measure = item.measureType ?? "reps";
   if (measure === "time") {
     const sec = item.repDurationSeconds ?? 0;
@@ -373,7 +385,7 @@ export default function PortalTodayPage() {
         detail: schemeLine(item, exerciseById.get(item.exerciseId)),
         supersetGroup: item.supersetGroup,
         restSeconds: item.restBetweenSetsSeconds,
-        setCount: item.sets,
+        setCount: item.prescribedSets.length > 0 ? item.prescribedSets.length : item.sets,
         exerciseId: item.exerciseId,
         notes: item.notes,
       }));
@@ -403,13 +415,27 @@ export default function PortalTodayPage() {
     ? `${today.planName}${weekMeta ? ` · ${weekMeta}` : ""}`
     : null;
   const dueWeekday = today ? weekdayIndexFromLabel(today.day.label) : null;
+  const scheduledToday = today?.scheduledOn != null && today.scheduledOn === todayIso;
+  const scheduledLater = today?.scheduledOn != null && today.scheduledOn > todayIso;
+  const scheduledPast = today?.scheduledOn != null && today.scheduledOn < todayIso;
   const heroSectionLabel = fresh
     ? "Trening w toku"
     : returning
       ? "Wracamy"
-      : dueWeekday != null && dueWeekday !== localWeekdayIndex()
+      : scheduledLater || scheduledPast
         ? "Następny trening"
-        : "Dzisiejszy trening";
+        : scheduledToday
+          ? "Dzisiejszy trening"
+          : dueWeekday != null && dueWeekday !== localWeekdayIndex()
+            ? "Następny trening"
+            : "Dzisiejszy trening";
+  const scheduleHint = !fresh && today?.scheduledOn && today.scheduledOn !== todayIso
+    ? scheduledPast
+      ? relativeDayFromLabel(today.scheduledOn, todayIso)
+      : `zaplanowany na ${formatScheduledShort(today.scheduledOn)}`
+    : today?.movedFrom
+      ? `przełożony z ${today.movedFrom}`
+      : null;
   const sheetBusy = starting || repeating;
 
   const exerciseCount = previewBlocksFromItems(heroItems).length;
@@ -437,7 +463,12 @@ export default function PortalTodayPage() {
           {cardTitle || (fresh ? "Trening w toku" : "Trening")}
         </h1>
         {cardSubtitle ? (
-          <p className="mt-1.5 text-[15px] text-muted">{cardSubtitle}</p>
+          <p className="mt-1.5 text-[15px] text-muted">
+            {cardSubtitle}
+            {scheduleHint ? ` · ${scheduleHint}` : ""}
+          </p>
+        ) : scheduleHint ? (
+          <p className="mt-1.5 text-[15px] text-muted">{scheduleHint}</p>
         ) : null}
         {metaRight ? (
           <p className="mt-1 font-mono text-sm tabular-nums text-muted">{metaRight}</p>
@@ -590,7 +621,9 @@ export default function PortalTodayPage() {
                         : d.completed
                           ? "Zrobiony"
                           : "Do przodu"}
-                      {` · tydzień ${d.weekNumber}`}
+                      {d.scheduledOn
+                        ? ` · ${formatScheduledShort(d.scheduledOn)}`
+                        : ` · tydzień ${d.weekNumber}`}
                     </span>
                   </span>
                   <span className="shrink-0 font-mono text-sm tabular-nums text-muted">
@@ -623,6 +656,13 @@ export default function PortalTodayPage() {
         onContinue={(sessionId) => {
           setSelectedWeekDay(null);
           router.push(`/portal/${token}/session/${sessionId}`);
+        }}
+        rescheduleOptions={weekStrip
+          .filter((d) => d.iso >= todayIso)
+          .map((d) => ({ iso: d.iso, label: `${d.label} ${d.dayOfMonth}` }))}
+        onRescheduled={() => {
+          setSelectedWeekDay(null);
+          load();
         }}
       />
 

@@ -17,10 +17,11 @@ import {
   ClientRecord,
   ClientTrendsResponse,
   Exercise,
-  ExerciseStats,
   isIntakeBlank,
   MuscleVolumeResponse,
+  PlanDay,
   PlanSummary,
+  ProgressPhoto,
   ProgressReport,
   SessionSummary,
   StagnationResponse,
@@ -29,16 +30,14 @@ import {
 import { ClientNotesTab, countClientNotes } from "@/components/client/ClientNotesTab";
 import { PortalAccessSection } from "@/components/client/PortalAccessSection";
 import { TrainerNotesTab } from "@/components/client/TrainerNotesTab";
-import { ExerciseCombobox } from "@/components/ExerciseCombobox";
+import { ClientMaxesSection } from "@/components/ClientMaxesSection";
+import { ClientRecordsSection } from "@/components/ClientRecordsSection";
+import { PlanFromHistoryDialog } from "@/components/PlanFromHistoryDialog";
 import { SearchPicker } from "@/components/SearchPicker";
-import { daysAgo, formatDayShort, relativeDayLabel, withinLastDays } from "@/lib/dates";
-import { DEFAULT_EXERCISE_INPUT } from "@/lib/exerciseDraft";
-import { createOrReuseExercise } from "@/lib/exerciseLibrary";
+import { daysAgo, formatDayShort, relativeDayLabel, todayIsoLocal, withinLastDays } from "@/lib/dates";
 import { refreshNavCounts } from "@/lib/navCounts";
 import { markPortalLinkSent } from "@/lib/portalLinkSent";
-import { TrendSparkline } from "@/components/TrendSparkline";
 import { WeightTrendSparkline } from "@/components/WeightTrendSparkline";
-import { RepMaxList } from "@/components/RepMaxList";
 import { MuscleVolumeBars } from "@/components/MuscleVolumeBars";
 import { LineChart } from "@/components/charts/LineChart";
 import { ClientIntakeForm, ClientIntakeView } from "@/components/ClientIntakeForm";
@@ -61,6 +60,8 @@ import { ClientDetailSkeleton } from "@/components/skeletons";
 import { WeeklyActivityBar } from "@/components/WeeklyActivityBar";
 import { formatDurationMinutes } from "@/lib/estimateDuration";
 import { formatKg } from "@/lib/plates";
+import { polishPhotoCount } from "@/lib/plural";
+import { formatNextDayLine, formatSchedulePreview, nearestStartForFirstDay } from "@/lib/schedule";
 import { ProgressPhotoGallery } from "@/components/ProgressPhotoGallery";
 
 function trendChartPoints(
@@ -134,12 +135,6 @@ function ClientDetailsPage() {
   const [saving, setSaving] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
 
-  const [maxExerciseId, setMaxExerciseId] = useState<number | null>(null);
-  const [maxExerciseError, setMaxExerciseError] = useState<string | null>(null);
-  const [maxKg, setMaxKg] = useState("");
-  const [maxDate, setMaxDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [showMaxForm, setShowMaxForm] = useState(false);
-
   const [measureDate, setMeasureDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [measureWeight, setMeasureWeight] = useState("");
   const [measureWaist, setMeasureWaist] = useState("");
@@ -147,9 +142,10 @@ function ClientDetailsPage() {
   const [goalWeightDraft, setGoalWeightDraft] = useState("");
   const [goalWeightSaving, setGoalWeightSaving] = useState(false);
 
-  const [expandedRecordId, setExpandedRecordId] = useState<number | null>(null);
-  const [statsCache, setStatsCache] = useState<Record<number, ExerciseStats | "loading" | "error">>({});
-  const [nextDay, setNextDay] = useState<{ assignmentId: number; label: string } | null>(null);
+  const [planFromHistoryOpen, setPlanFromHistoryOpen] = useState(false);
+  const [photosOpen, setPhotosOpen] = useState(false);
+  const [photoCount, setPhotoCount] = useState(0);
+  const [assignDays, setAssignDays] = useState<PlanDay[]>([]);
   const [deleteClientOpen, setDeleteClientOpen] = useState(false);
   const [logBehalfOpen, setLogBehalfOpen] = useState(false);
   const [logBehalfDays, setLogBehalfDays] = useState<{ id: number; label: string; weekNumber: number }[]>([]);
@@ -188,36 +184,6 @@ function ClientDetailsPage() {
           if (prev === "client-notes") return "notes";
           return prev ?? (s.length > 0 ? "history" : "plans");
         });
-
-        const active =
-          c.assignments.find((a) => a.status === "active" && a.id === prog?.assignmentId) ??
-          c.assignments.find((a) => a.status === "active") ??
-          null;
-        if (!active) {
-          setNextDay(null);
-          return;
-        }
-        const assignmentId = active.id;
-        void api.plans
-          .get(active.planId, clientId)
-          .then((plan) => {
-            const days = [...plan.days].sort(
-              (a, b) => a.weekNumber - b.weekNumber || a.order - b.order,
-            );
-            const doneDayIds = new Set(
-              s
-                .filter(
-                  (sess) =>
-                    sess.status === "completed" &&
-                    sess.assignmentId === assignmentId &&
-                    sess.planDayId != null,
-                )
-                .map((sess) => sess.planDayId!),
-            );
-            const next = days.find((d) => !doneDayIds.has(d.id)) ?? days[0] ?? null;
-            setNextDay(next ? { assignmentId, label: next.label } : null);
-          })
-          .catch(() => setNextDay(null));
       })
       .catch((e: Error) => setError(e.message));
   }, [clientId]);
@@ -232,6 +198,26 @@ function ClientDetailsPage() {
     router.replace(`/clients/${clientId}`, { scroll: false });
   }, [searchParams, clientId, router, showUndoToast]);
 
+  const loadAssignPreview = useCallback((id: number) => {
+    api.plans
+      .get(id)
+      .then((plan) => {
+        setAssignDays(plan.days);
+        setStartDate(nearestStartForFirstDay(plan.days, todayIsoLocal()));
+      })
+      .catch((e: Error) => setError(e.message));
+  }, []);
+
+  const selectAssignPlan = (id: number) => {
+    setPlanId(id);
+    loadAssignPreview(id);
+  };
+
+  const openAssignForm = () => {
+    setAssignOpen(true);
+    if (planId !== "") loadAssignPreview(planId);
+  };
+
   // Plany: zakładka lub dialog przypisania.
   useEffect(() => {
     if (tab !== "plans" && !assignOpen) return;
@@ -244,7 +230,9 @@ function ClientDetailsPage() {
         const assignable = p.filter((plan) => !plan.isTemplate);
         setPlans(assignable);
         setPlansForClient(clientId);
-        setPlanId((prev) => (prev === "" && assignable.length > 0 ? assignable[0].id : prev));
+        const first = assignable[0]?.id;
+        setPlanId((prev) => (prev === "" && first != null ? first : prev));
+        if (first != null) loadAssignPreview(first);
       })
       .catch((e: Error) => {
         if (!cancelled) setError(e.message);
@@ -252,7 +240,7 @@ function ClientDetailsPage() {
     return () => {
       cancelled = true;
     };
-  }, [tab, assignOpen, plansLoaded, clientId]);
+  }, [tab, assignOpen, plansLoaded, clientId, loadAssignPreview]);
 
   // Historia: check-iny.
   useEffect(() => {
@@ -325,33 +313,25 @@ function ClientDetailsPage() {
   useEffect(() => {
     if (tab !== "results") return;
     let cancelled = false;
-    const tasks: Promise<unknown>[] = [
+    Promise.all([
       api.clients.maxes(clientId),
       api.clients.measurements(clientId),
       api.clients.muscleVolume(clientId, 4),
       api.clients.trends(clientId, 12),
       api.clients.stagnation(clientId),
       api.clients.progressReport(clientId).catch(() => null),
-    ];
-    if (!exercisesLoaded) tasks.push(api.exercises.list());
-    Promise.all(tasks)
-      .then((rows) => {
+      exercisesLoaded ? Promise.resolve(undefined) : api.exercises.list(),
+      api.clients.photos(clientId).catch(() => [] as ProgressPhoto[]),
+    ])
+      .then(([m, meas, mv, tr, st, report, ex, photos]) => {
         if (cancelled) return;
-        const [m, meas, mv, tr, st, report, ex] = rows as [
-          ClientMax[],
-          ClientMeasurement[],
-          MuscleVolumeResponse,
-          ClientTrendsResponse,
-          StagnationResponse,
-          ProgressReport | null,
-          Exercise[] | undefined,
-        ];
         setMaxes(m);
         setMeasurements(meas);
         setMuscleVolume(mv);
         setTrends(tr);
         setStagnation(st);
         setProgressReport(report);
+        setPhotoCount(photos.length);
         if (ex) {
           setExercises(ex);
           setExercisesForClient(clientId);
@@ -366,7 +346,10 @@ function ClientDetailsPage() {
   }, [tab, clientId, exercisesLoaded]);
 
   const nextDayLabel =
-    activeAssignment && nextDay?.assignmentId === activeAssignment.id ? nextDay.label : null;
+    activeAssignment && progress?.assignmentId === activeAssignment.id && progress.nextDay
+      ? formatNextDayLine(progress.nextDay)
+      : null;
+  const assignPreview = formatSchedulePreview(assignDays, startDate);
 
   const completedSessions = useMemo(
     () => sessions.filter((s) => s.status === "completed"),
@@ -488,24 +471,21 @@ function ClientDetailsPage() {
     }
   };
 
-  const handleAddMax = async (e: FormEvent) => {
-    e.preventDefault();
-    setMaxExerciseError(null);
-    if (maxExerciseId == null) {
-      setMaxExerciseError("Wybierz ćwiczenie.");
-      return;
-    }
-    if (!maxKg) return;
+  const handleAddMax = async (input: { exerciseId: number; maxKg: number; measuredOn: string }) => {
     try {
-      await api.clients.addMax(clientId, {
-        exerciseId: maxExerciseId,
-        maxKg: Number(maxKg.replace(",", ".")),
-        measuredOn: maxDate,
-      });
-      setMaxKg("");
-      setMaxExerciseId(null);
-      setMaxExerciseError(null);
-      setShowMaxForm(false);
+      await api.clients.addMax(clientId, input);
+      load();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
+  const handleUpdateMax = async (
+    id: number,
+    input: { maxKg: number; measuredOn: string; note: string | null },
+  ) => {
+    try {
+      await api.clients.updateMax(id, input);
       load();
     } catch (err) {
       setError((err as Error).message);
@@ -654,20 +634,6 @@ function ClientDetailsPage() {
     }
   };
 
-  const toggleRecord = (exerciseId: number) => {
-    if (expandedRecordId === exerciseId) {
-      setExpandedRecordId(null);
-      return;
-    }
-    setExpandedRecordId(exerciseId);
-    if (statsCache[exerciseId]) return;
-    setStatsCache((prev) => ({ ...prev, [exerciseId]: "loading" }));
-    api.clients
-      .exerciseStats(clientId, exerciseId)
-      .then((stats) => setStatsCache((prev) => ({ ...prev, [exerciseId]: stats })))
-      .catch(() => setStatsCache((prev) => ({ ...prev, [exerciseId]: "error" })));
-  };
-
   if (!client) {
     return (
       <div>
@@ -692,7 +658,7 @@ function ClientDetailsPage() {
 
   const openAssignTab = () => {
     setTab("plans");
-    setAssignOpen(true);
+    openAssignForm();
   };
 
   const activeTab = tab ?? "plans";
@@ -760,6 +726,11 @@ function ClientDetailsPage() {
                 <Link href={`/clients/${clientId}/import`}>
                   <Button variant="ghost">Wgraj stare treningi</Button>
                 </Link>
+                {sessions.length > 0 ? (
+                  <Button variant="ghost" onClick={() => setPlanFromHistoryOpen(true)}>
+                    Złóż plan z historii
+                  </Button>
+                ) : null}
                 <Button variant="ghost" onClick={() => void openLogBehalf(null)}>
                   Wpisz trening za klienta
                 </Button>
@@ -795,11 +766,18 @@ function ClientDetailsPage() {
           <>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <h2 className="font-display text-lg font-semibold">Przypisane plany</h2>
-              {!assignOpen ? (
-                <Button variant="secondary" onClick={() => setAssignOpen(true)}>
-                  Przypisz plan
-                </Button>
-              ) : null}
+              <div className="flex flex-wrap gap-2">
+                {sessions.length > 0 ? (
+                  <Button variant="secondary" onClick={() => setPlanFromHistoryOpen(true)}>
+                    Złóż plan z historii
+                  </Button>
+                ) : null}
+                {!assignOpen ? (
+                  <Button variant="secondary" onClick={openAssignForm}>
+                    Przypisz plan
+                  </Button>
+                ) : null}
+              </div>
             </div>
 
             {assignOpen ? (
@@ -823,7 +801,7 @@ function ClientDetailsPage() {
                             key={p.id}
                             plan={p}
                             selected={planId === p.id}
-                            onSelect={() => setPlanId(p.id)}
+                            onSelect={() => selectAssignPlan(p.id)}
                           />
                         ))}
                         <Link
@@ -855,6 +833,11 @@ function ClientDetailsPage() {
                           value={startDate}
                           onChange={(e) => setStartDate(e.target.value)}
                         />
+                        {assignPreview ? (
+                          <p className="mt-2 font-mono text-xs text-muted">
+                            Pierwsze treningi: {assignPreview}
+                          </p>
+                        ) : null}
                       </Field>
                       <Field label="Notatka">
                         <input className={inputClass} value={note} onChange={(e) => setNote(e.target.value)} />
@@ -879,7 +862,14 @@ function ClientDetailsPage() {
               <EmptyState
                 title="Jeszcze bez przypisanego planu"
                 action={
-                  <Button onClick={() => setAssignOpen(true)}>Przypisz plan</Button>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <Button onClick={openAssignForm}>Przypisz plan</Button>
+                    {sessions.length > 0 ? (
+                      <Button variant="secondary" onClick={() => setPlanFromHistoryOpen(true)}>
+                        Złóż plan z historii
+                      </Button>
+                    ) : null}
+                  </div>
                 }
               >
                 Przypisz plan z biblioteki — klient zobaczy dzień treningowy w portalu.
@@ -1040,9 +1030,6 @@ function ClientDetailsPage() {
 
         {activeTab === "results" && (
           <div className="space-y-8">
-            <Card title="Zdjęcia postępu" meta="To samo ujęcie, to samo światło.">
-              <ProgressPhotoGallery mode="trainer" clientId={clientId} onError={setError} />
-            </Card>
             {progressReport && progressReport.facts.length > 0 ? (
               <section aria-label="Ostatnio">
                 <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
@@ -1110,6 +1097,39 @@ function ClientDetailsPage() {
               </section>
             ) : null}
 
+            <ClientRecordsSection
+              clientId={clientId}
+              records={records}
+              exercises={exercises}
+              onExercisesChange={setExercises}
+              onReload={load}
+              onError={setError}
+              emptyAction={
+                activeAssignment ? (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void openLogBehalf(activeAssignment)}
+                  >
+                    Wpisz trening za klienta
+                  </Button>
+                ) : (
+                  <Button size="sm" onClick={openAssignTab}>
+                    Przypisz plan
+                  </Button>
+                )
+              }
+            />
+
+            <ClientMaxesSection
+              maxes={maxes}
+              exercises={exercises}
+              onExercisesChange={setExercises}
+              onAdd={handleAddMax}
+              onUpdate={handleUpdateMax}
+              onRemove={(m) => void handleRemoveMax(m)}
+            />
+
             <section>
               <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-semibold">
                 <Icon name="activity" size={16} className="text-foreground-secondary" decorative />
@@ -1146,213 +1166,6 @@ function ClientDetailsPage() {
                   emptyHint="Objętość pojawi się po zapisanych seriach z przypisanymi mięśniami."
                 />
               </Card>
-            </section>
-
-            <section>
-              <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-semibold">
-                <Icon name="trophy" size={16} className="text-pr" decorative />
-                Rekordy
-              </h2>
-              {records.length === 0 ? (
-                <EmptyState
-                  title="Jeszcze bez rekordów siłowych"
-                  action={
-                    activeAssignment ? (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => void openLogBehalf(activeAssignment)}
-                      >
-                        Wpisz trening za klienta
-                      </Button>
-                    ) : (
-                      <Button size="sm" onClick={openAssignTab}>
-                        Przypisz plan
-                      </Button>
-                    )
-                  }
-                >
-                  Rekordy (est. 1RM) pojawią się po seriach z ciężarem i powtórzeniami.
-                </EmptyState>
-              ) : (
-                <div className="grid gap-2">
-                  {records.map((r) => {
-                    const open = expandedRecordId === r.exerciseId;
-                    const stats = statsCache[r.exerciseId];
-                    return (
-                      <div
-                        key={r.exerciseId}
-                        className="overflow-hidden rounded-xl border border-border bg-surface"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => toggleRecord(r.exerciseId)}
-                          className="flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                          aria-expanded={open}
-                        >
-                          <div className="min-w-0">
-                            <p className="break-words text-base font-medium">{r.exerciseName}</p>
-                            <p className="font-mono text-sm tabular-nums text-muted">
-                              {r.weightKg} × {r.reps} · {formatDayShort(r.performedOn)}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <div className="text-right">
-                              <p className="font-mono text-lg font-semibold tabular-nums text-pr">
-                                ★ {formatKg(r.estimated1Rm)} kg
-                              </p>
-                              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">
-                                Szacowany max
-                              </p>
-                            </div>
-                            <span
-                              className={`text-muted transition-transform duration-[var(--dur-fast)] ${open ? "rotate-180" : ""}`}
-                              aria-hidden
-                            >
-                              ▾
-                            </span>
-                          </div>
-                        </button>
-                        {open ? (
-                          <div className="border-t border-border px-4 py-3">
-                            {stats === "loading" || stats == null ? (
-                              <p className="text-sm text-muted">Ładowanie trendu…</p>
-                            ) : stats === "error" ? (
-                              <p className="text-sm text-danger">Nie udało się wczytać trendu.</p>
-                            ) : (
-                              <>
-                                <TrendSparkline points={stats.trend} />
-                                <p className="mt-4 font-mono text-xs font-medium uppercase tracking-caps text-muted">
-                                  Rep-maxy
-                                </p>
-                                <RepMaxList items={stats.repMaxes} />
-                              </>
-                            )}
-                          </div>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
-
-            <section>
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <h2 className="flex items-center gap-2 font-display text-lg font-semibold">
-                  <Icon name="barbell" size={16} className="text-foreground-secondary" decorative />
-                  Maxy (1RM)
-                </h2>
-                {!showMaxForm ? (
-                  <Button variant="secondary" onClick={() => setShowMaxForm(true)}>
-                    Dodaj max
-                  </Button>
-                ) : null}
-              </div>
-
-              {showMaxForm ? (
-                <Card className="mb-4" title="Dodaj max (1RM)">
-                  <form onSubmit={handleAddMax} className="grid gap-3 sm:grid-cols-4">
-                    <div className="flex flex-col gap-1.5 text-sm sm:col-span-1">
-                      <span className="t-label">Ćwiczenie</span>
-                      <ExerciseCombobox
-                        exercises={exercises}
-                        value={maxExerciseId}
-                        placeholder="Szukaj lub utwórz ćwiczenie…"
-                        onSelect={(exercise) => {
-                          setMaxExerciseId(exercise.id);
-                          setMaxExerciseError(null);
-                          setExercises((prev) => {
-                            if (prev.some((e) => e.id === exercise.id)) return prev;
-                            return [...prev, exercise].sort((a, b) =>
-                              a.name.localeCompare(b.name, "pl")
-                            );
-                          });
-                        }}
-                        onCreate={async (input) => {
-                          const { exercise } = await createOrReuseExercise({
-                            ...DEFAULT_EXERCISE_INPUT,
-                            ...input,
-                          });
-                          setExercises((prev) => {
-                            if (prev.some((e) => e.id === exercise.id)) return prev;
-                            return [...prev, exercise].sort((a, b) =>
-                              a.name.localeCompare(b.name, "pl")
-                            );
-                          });
-                          return exercise;
-                        }}
-                      />
-                      {maxExerciseError ? (
-                        <p className="mt-1 text-xs text-danger">{maxExerciseError}</p>
-                      ) : null}
-                    </div>
-                    <Field label="Kg">
-                      <input
-                        className={inputClass}
-                        value={maxKg}
-                        onChange={(e) => setMaxKg(e.target.value)}
-                        inputMode="decimal"
-                        placeholder="100"
-                      />
-                    </Field>
-                    <Field label="Data">
-                      <input
-                        className={inputClass}
-                        type="date"
-                        value={maxDate}
-                        onChange={(e) => setMaxDate(e.target.value)}
-                      />
-                    </Field>
-                    <div className="flex flex-wrap items-end gap-2">
-                      <Button type="submit">Dodaj max</Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => {
-                          setShowMaxForm(false);
-                          setMaxExerciseError(null);
-                        }}
-                      >
-                        Anuluj
-                      </Button>
-                    </div>
-                  </form>
-                </Card>
-              ) : null}
-
-              {latestMaxes.length === 0 ? (
-                <EmptyState
-                  title="Dodaj 1RM do planów procentowych"
-                  action={
-                    <Button size="sm" onClick={() => setShowMaxForm(true)}>
-                      Dodaj max
-                    </Button>
-                  }
-                >
-                  Bez maxów plany oparte o %1RM nie wyliczą kilogramów na serie.
-                </EmptyState>
-              ) : (
-                <div className="grid gap-2">
-                  {latestMaxes.map((m) => (
-                    <Card key={m.id} className="flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="break-words text-base font-medium">{m.exerciseName}</p>
-                        <p className="text-sm text-muted">
-                          {formatDayShort(m.measuredOn)}
-                          {m.note ? ` · ${m.note}` : ""}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="font-mono text-lg font-semibold tabular-nums text-foreground">{m.maxKg} kg</span>
-                        <Button variant="ghost" onClick={() => void handleRemoveMax(m)}>
-                          Usuń
-                        </Button>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
             </section>
 
             <section>
@@ -1480,6 +1293,22 @@ function ClientDetailsPage() {
                 </div>
               )}
             </section>
+
+            <Card
+              title="Zdjęcia postępu"
+              meta={photoCount > 0 ? polishPhotoCount(photoCount) : "Jeszcze bez zdjęć"}
+              headerAction={
+                <Button variant="ghost" size="sm" onClick={() => setPhotosOpen((v) => !v)}>
+                  {photosOpen ? "Zwiń" : "Pokaż"}
+                </Button>
+              }
+            >
+              {photosOpen ? (
+                <ProgressPhotoGallery mode="trainer" clientId={clientId} onError={setError} />
+              ) : (
+                <p className="text-sm text-muted-strong">To samo ujęcie, to samo światło.</p>
+              )}
+            </Card>
           </div>
         )}
 
@@ -1639,6 +1468,16 @@ function ClientDetailsPage() {
           </Field>
         </div>
       </Dialog>
+
+
+      <PlanFromHistoryDialog
+        open={planFromHistoryOpen}
+        clientId={clientId}
+        clientName={client.name}
+        exercises={exercises}
+        onClose={() => setPlanFromHistoryOpen(false)}
+        onError={setError}
+      />
 
       {toastNode}
     </div>

@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, Plan, PlanInput } from "@/lib/api";
+import { clearImportHandoff } from "@/lib/planImportHandoff";
 import { refreshNavCounts } from "@/lib/navCounts";
 import { computeGroupsFromLinks } from "@/lib/supersets";
 import { BuilderDay } from "./types";
@@ -24,6 +25,7 @@ export function buildPlanInput(
         order: d.order,
         label: d.label.trim() || `Dzień ${d.order}`,
         notes: d.notes?.trim() || null,
+        dayOfWeek: d.dayOfWeek,
         items: d.items.map((it, idx) => ({
           exerciseId: it.exerciseId,
           order: idx + 1,
@@ -139,12 +141,14 @@ export function usePlanPersistence({
           await api.plans.update(plan.id, input);
           lastSavedPayloadRef.current = JSON.stringify(input);
           setIsDirty(false);
+          clearImportHandoff();
           router.push(`/plans/${plan.id}`);
         } else {
           const created = await api.plans.create(input);
           void refreshNavCounts();
           lastSavedPayloadRef.current = JSON.stringify(input);
           setIsDirty(false);
+          clearImportHandoff();
           if (assignTo) {
             const startDate = new Date().toISOString().slice(0, 10);
             try {

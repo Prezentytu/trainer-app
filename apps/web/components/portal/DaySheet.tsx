@@ -8,7 +8,7 @@ import {
   PortalExercise,
   SessionDetail,
 } from "@/lib/api";
-import { Button, ErrorBanner, Sheet } from "@/components/ui";
+import { Button, ErrorBanner, inputClass, Sheet } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { ExercisePreviewList } from "@/components/portal/ExercisePreviewList";
 import { PerformedExerciseList } from "@/components/session/PerformedExerciseList";
@@ -16,6 +16,7 @@ import { estimateDayMinutes, formatDurationApprox, formatDurationMinutes } from 
 import { polishExerciseCount, polishTrainingCount } from "@/lib/plural";
 import type { WeekStripDay } from "@/lib/portalWeekStrip";
 import type { PreviewItem } from "@/lib/supersetPreview";
+import { todayIsoLocal } from "@/lib/dates";
 import { formatLoadDisplay } from "@/lib/weight";
 
 function schemeLine(
@@ -67,9 +68,11 @@ export type DaySheetProps = {
   exerciseById: Map<number, PortalExercise>;
   inProgressSessionId: number | null;
   busy: boolean;
+  rescheduleOptions?: { iso: string; label: string }[];
   onStart: (dayId: number, opts: { outOfOrder: boolean; label: string }) => void;
   onRepeat: (sessionId: number) => void;
   onContinue: (sessionId: number) => void;
+  onRescheduled?: () => void;
 };
 
 export function DaySheet({
@@ -80,9 +83,11 @@ export function DaySheet({
   exerciseById,
   inProgressSessionId,
   busy,
+  rescheduleOptions = [],
   onStart,
   onRepeat,
   onContinue,
+  onRescheduled,
 }: DaySheetProps) {
   const iso = slot?.iso ?? null;
   const planDayId = slot?.planDay?.id ?? null;
@@ -91,6 +96,9 @@ export function DaySheet({
   const [details, setDetails] = useState<SessionDetail[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmAhead, setConfirmAhead] = useState(false);
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
+  const [rescheduleBusy, setRescheduleBusy] = useState(false);
+  const [otherDate, setOtherDate] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -140,6 +148,22 @@ export function DaySheet({
   const lastSessionId = sessionIds.length > 0 ? sessionIds[sessionIds.length - 1] : null;
   const estMin = day ? estimateDayMinutes(day.items) : null;
   const items = day?.items ?? [];
+  const todayIso = todayIsoLocal();
+
+  const moveTo = async (date: string) => {
+    const id = day?.id ?? slot?.planDay?.id;
+    if (id == null || date === iso) return;
+    setRescheduleBusy(true);
+    setError(null);
+    try {
+      await api.portal.rescheduleDay(token, id, { date });
+      onRescheduled?.();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setRescheduleBusy(false);
+    }
+  };
 
   const planItems: PreviewItem[] = items.map((item) => ({
     id: item.id,
@@ -299,6 +323,64 @@ export function DaySheet({
           </>
         ) : !error ? (
           <p className="text-sm text-muted">Tego dnia nie trenowałeś.</p>
+        ) : null}
+
+        {!hasSessions && !inProgressSessionId && (day || slot?.planDay) ? (
+          <div className="border-t border-border pt-4">
+            {rescheduleOpen ? (
+              <div className="space-y-3">
+                <p className="text-sm text-muted">
+                  Wybierz dzień. Trening w inny termin bez przekładania też jest w porządku.
+                </p>
+                {rescheduleOptions.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {rescheduleOptions.map((opt) => {
+                      const selected = opt.iso === iso;
+                      return (
+                        <button
+                          key={opt.iso}
+                          type="button"
+                          disabled={rescheduleBusy || selected}
+                          onClick={() => void moveTo(opt.iso)}
+                          className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-[10px] px-3 font-mono text-xs font-medium tabular-nums transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${
+                            selected
+                              ? "bg-invert-bg text-invert-fg"
+                              : "border border-border-strong text-foreground-secondary hover:bg-surface-hover"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
+                <label className="block">
+                  <span className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
+                    Inna data
+                  </span>
+                  <input
+                    type="date"
+                    className={`${inputClass} mt-1`}
+                    value={otherDate}
+                    min={todayIso}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setOtherDate(value);
+                      if (value) void moveTo(value);
+                    }}
+                    disabled={rescheduleBusy}
+                  />
+                </label>
+                <Button variant="ghost" full disabled={rescheduleBusy} onClick={() => setRescheduleOpen(false)}>
+                  Anuluj
+                </Button>
+              </div>
+            ) : (
+              <Button variant="ghost" full disabled={busy} onClick={() => setRescheduleOpen(true)}>
+                Przełóż na inny dzień
+              </Button>
+            )}
+          </div>
         ) : null}
       </div>
     </Sheet>

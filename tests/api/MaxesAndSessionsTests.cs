@@ -79,6 +79,9 @@ public class MaxesAndSessionsTests : IClassFixture<TestWebAppFactory>
         Assert.Equal("Jan Kowalski", doc.RootElement.GetProperty("client").GetProperty("name").GetString());
         Assert.True(doc.RootElement.TryGetProperty("today", out var today) && today.ValueKind != JsonValueKind.Null);
         Assert.True(doc.RootElement.TryGetProperty("week", out var week) && week.ValueKind == JsonValueKind.Array);
+        Assert.True(week.GetArrayLength() == 0 || week[0].TryGetProperty("scheduledOn", out _));
+        if (today.ValueKind == JsonValueKind.Object)
+            Assert.True(today.TryGetProperty("scheduledOn", out _));
     }
 
     [Fact]

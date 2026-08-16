@@ -65,6 +65,7 @@ export default function ClientSessionPage() {
         clientName={clientName}
         onUpdated={setSession}
         onEdit={() => router.push(`/clients/${clientId}/sessions/${sessionId}/edit`)}
+        onDeleted={() => router.replace(`/clients/${clientId}`)}
       />
     </div>
   );

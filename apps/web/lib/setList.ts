@@ -2,7 +2,9 @@
 
 export type ParsedLoggedSet = {
   reps: number;
+  repsMax?: number | null;
   loadKg: number | null;
+  loadPercent?: number | null;
   isBodyweight: boolean;
 };
 
@@ -11,6 +13,11 @@ const SET_TOKEN =
 
 const SET_TOKEN_ANCHORED =
   /^(\d+)\s*[x×]\s*(\d+(?:[.,]\d+)?)(?:\s*kg)?$/i;
+
+const SET_RANGE_ANCHORED =
+  /^(\d+)\s*[-–]\s*(\d+)\s*[x×]\s*(\d+(?:[.,]\d+)?)(?:\s*(kg|%))?$/i;
+
+const SET_PERCENT_ANCHORED = /^(\d+)\s*[x×]\s*(\d+(?:[.,]\d+)?)\s*%$/i;
 
 const SET_BW_ANCHORED = /^(\d+)\s*[x×]\s*(?:bw|masa\s+ciała)$/i;
 
@@ -36,6 +43,29 @@ function parsePart(part: string, hadKgInText: boolean): ParsedLoggedSet | null {
     if (!Number.isFinite(reps) || reps < 1 || reps > 100) return null;
     return { reps, loadKg: 0, isBodyweight: true };
   }
+  const pct = part.match(SET_PERCENT_ANCHORED);
+  if (pct) {
+    const reps = Number(pct[1]);
+    const loadPercent = parseNumber(pct[2]);
+    if (!Number.isFinite(reps) || reps < 1 || reps > 100) return null;
+    if (!Number.isFinite(loadPercent) || loadPercent <= 0 || loadPercent > 100) return null;
+    return { reps, loadKg: null, loadPercent, isBodyweight: false };
+  }
+  const range = part.match(SET_RANGE_ANCHORED);
+  if (range) {
+    const reps = Number(range[1]);
+    const repsMax = Number(range[2]);
+    const load = parseNumber(range[3]);
+    const unit = (range[4] ?? "").toLowerCase();
+    if (!Number.isFinite(reps) || reps < 1 || reps > 100) return null;
+    if (!Number.isFinite(repsMax) || repsMax < reps || repsMax > 100) return null;
+    if (unit === "%") {
+      if (!Number.isFinite(load) || load <= 0 || load > 100) return null;
+      return { reps, repsMax, loadKg: null, loadPercent: load, isBodyweight: false };
+    }
+    if (!Number.isFinite(load) || load < 0 || load > 1000) return null;
+    return { ...toSet(reps, load, unit === "kg" || hadKgInText), repsMax };
+  }
   const m = part.match(SET_TOKEN_ANCHORED);
   if (!m) return null;
   const reps = Number(m[1]);
@@ -58,10 +88,17 @@ export function looksLikeRepsTimesLoadList(raw: string): boolean {
   const parts = splitSetParts(text);
   if (
     parts.length >= 2 &&
-    parts.every((p) => SET_TOKEN_ANCHORED.test(p) || SET_BW_ANCHORED.test(p))
+    parts.every(
+      (p) =>
+        SET_TOKEN_ANCHORED.test(p) ||
+        SET_BW_ANCHORED.test(p) ||
+        SET_RANGE_ANCHORED.test(p) ||
+        SET_PERCENT_ANCHORED.test(p),
+    )
   ) {
     return true;
   }
+  if (SET_RANGE_ANCHORED.test(text) || SET_PERCENT_ANCHORED.test(text)) return true;
   return false;
 }
 

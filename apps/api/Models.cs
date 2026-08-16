@@ -262,6 +262,8 @@ public class PlanDay
     public int Order { get; set; }             // kolejność dnia w tygodniu
     public string Label { get; set; } = "";    // „Poniedziałek", „Trening A"
     public string? Notes { get; set; }         // rozgrzewka / wskazówki dnia
+    /// <summary>ISO 1=poniedziałek … 7=niedziela. Null = bez zalecenia.</summary>
+    public int? DayOfWeek { get; set; }
 
     public List<PlanItem> Items { get; set; } = [];
 }
@@ -340,6 +342,19 @@ public class Assignment
 
     // "active" | "completed" | "cancelled"
     public string Status { get; set; } = "active";
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public List<AssignmentDayOverride> DayOverrides { get; set; } = [];
+}
+
+public class AssignmentDayOverride
+{
+    public int Id { get; set; }
+    public int AssignmentId { get; set; }
+    public Assignment? Assignment { get; set; }
+    public int PlanDayId { get; set; }
+    public PlanDay? PlanDay { get; set; }
+    public DateOnly Date { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 

@@ -311,6 +311,8 @@ export default function PlanBuilder({
               onPatchDay={draft.patchDay}
               onRemoveDay={draft.removeDay}
               onDuplicateDay={draft.duplicateDay}
+              weeks={draft.weeks}
+              onApplyWeekdays={draft.applyWeekdaysToOtherWeeks}
               onAddItem={draft.addItem}
               onAddItemAt={draft.addItemAt}
               onPatchItem={draft.patchItem}
@@ -356,6 +358,8 @@ export default function PlanBuilder({
                   onPatchDay={boardCallbacks.onPatchDay}
                   onRemoveDay={boardCallbacks.onRemoveDay}
                   onDuplicateDay={boardCallbacks.onDuplicateDay}
+                  weeks={draft.weeks}
+                  onApplyWeekdays={draft.applyWeekdaysToOtherWeeks}
                   onAddItem={boardCallbacks.onAddItem}
                   onRemoveItem={(dayKey, itemKey) => {
                     if (activeItem?.dayKey === dayKey && activeItem.itemKey === itemKey) {
@@ -427,7 +431,13 @@ export default function PlanBuilder({
           <ProgressionView days={draft.days} />
         ) : (
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-            <PlanTable days={draft.visibleDays} exercises={library.exercises} {...boardCallbacks} />
+            <PlanTable
+              days={draft.visibleDays}
+              exercises={library.exercises}
+              weeks={draft.weeks}
+              onApplyWeekdays={draft.applyWeekdaysToOtherWeeks}
+              {...boardCallbacks}
+            />
           </div>
         )}
 

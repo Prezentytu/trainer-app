@@ -76,13 +76,109 @@ export function rampToWorkingSet(variant: 15 | 10 | 5): PlanSetInput[] {
 export type PlanPreset = {
   id: string;
   label: string;
+  chipLabel: string;
+  title: string;
   // week jest przekazywany dla presetów periodyzowanych (6-4-2-5-3-1).
   build: (week: number) => PlanSetInput[];
 };
 
+export function poliquinWeekHint(week: number): string {
+  switch (((week - 1) % 6) + 1) {
+    case 1:
+      return "T1 · 6RM";
+    case 2:
+      return "T2 · 4RM";
+    case 3:
+      return "T3 · 2RM";
+    case 4:
+      return "T4 · 5";
+    case 5:
+      return "T5 · 3";
+    case 6:
+      return "T6 · 1RM";
+    default:
+      return `T${week}`;
+  }
+}
+
 export const PLAN_PRESETS: PlanPreset[] = [
-  { id: "642531", label: "Metoda 6-4-2-5-3-1 (wg tygodnia)", build: (week) => poliquin642531(week) },
-  { id: "ramp15", label: "Rampa do serii roboczej — 15 powt. (50/75/100%)", build: () => rampToWorkingSet(15) },
-  { id: "ramp10", label: "Rampa do serii roboczej — 10 powt. (40/60/80/100%)", build: () => rampToWorkingSet(10) },
-  { id: "ramp5", label: "Rampa do serii roboczej — 5 powt. (40/60/80/90/100%)", build: () => rampToWorkingSet(5) },
+  {
+    id: "642531",
+    label: "Metoda 6-4-2-5-3-1 (wg tygodnia)",
+    chipLabel: "6-4-2-5-3-1",
+    title: "Metoda 6-4-2-5-3-1 — rozpis zależy od tygodnia",
+    build: (week) => poliquin642531(week),
+  },
+  {
+    id: "ramp15",
+    label: "Rampa do serii roboczej — 15 powt. (50/75/100%)",
+    chipLabel: "Rampa 15",
+    title: "Rampa do serii roboczej — 15 powt., 50/75/100%",
+    build: () => rampToWorkingSet(15),
+  },
+  {
+    id: "ramp10",
+    label: "Rampa do serii roboczej — 10 powt. (40/60/80/100%)",
+    chipLabel: "Rampa 10",
+    title: "Rampa do serii roboczej — 10 powt., 40/60/80/100%",
+    build: () => rampToWorkingSet(10),
+  },
+  {
+    id: "ramp5",
+    label: "Rampa do serii roboczej — 5 powt. (40/60/80/90/100%)",
+    chipLabel: "Rampa 5",
+    title: "Rampa do serii roboczej — 5 powt., 40/60/80/90/100%",
+    build: () => rampToWorkingSet(5),
+  },
 ];
+
+type SignatureSet = {
+  role?: string | null;
+  reps?: number | null;
+  repsMax?: number | null;
+  loadPercent?: number | null;
+  percentOf?: string | null;
+};
+
+export function presetSignature(sets: SignatureSet[]): string {
+  return sets
+    .map((s) =>
+      [s.role ?? "", s.reps ?? "", s.repsMax ?? "", s.loadPercent ?? "", s.percentOf ?? ""].join("/"),
+    )
+    .join("|");
+}
+
+export function matchingPresetId(sets: SignatureSet[], weekNumber: number): string | null {
+  if (sets.length === 0) return null;
+  const actual = presetSignature(sets);
+  for (const preset of PLAN_PRESETS) {
+    if (presetSignature(preset.build(weekNumber)) === actual) return preset.id;
+  }
+  return null;
+}
+
+export function formatSchemeLabel(sets: SignatureSet[]): string {
+  if (sets.length === 0) return "";
+  const top = sets.find((s) => s.role === "top") ?? sets.find((s) => s.role === "ramp");
+  const backoffs = sets.filter((s) => s.role === "backoff");
+  const percents = sets
+    .map((s) => s.loadPercent)
+    .filter((p): p is number => p != null);
+  if (top?.reps != null && sets.some((s) => s.role === "ramp" || s.role === "top")) {
+    const bo = backoffs
+      .map((s) => s.loadPercent)
+      .filter((p): p is number => p != null);
+    const base = `rampa → ${top.reps}RM`;
+    return bo.length > 0 ? `${base} + BO ${bo.join("/")} %` : base;
+  }
+  const reps = [...new Set(sets.map((s) => s.reps).filter((r): r is number => r != null))];
+  const repPart =
+    reps.length === 1 ? `${sets.length} × ${reps[0]}` : `${sets.length} serii`;
+  if (percents.length > 0) {
+    const min = Math.min(...percents);
+    const max = Math.max(...percents);
+    const of = sets.some((s) => s.percentOf === "1rm") ? "1RM" : "topu";
+    return min === max ? `${repPart} · ${min}% ${of}` : `${repPart} · ${min}–${max}% ${of}`;
+  }
+  return repPart;
+}

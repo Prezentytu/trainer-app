@@ -155,6 +155,7 @@ function SessionChapter({
   onCreate,
   onPatchSession,
   onPatchSets,
+  onRemoveSession,
 }: {
   session: HistoryImportSession;
   sessionIdx: number;
@@ -164,6 +165,7 @@ function SessionChapter({
   onCreate: (input: ExerciseInput) => Promise<Exercise>;
   onPatchSession: (idx: number, patch: Partial<HistoryImportSession>) => void;
   onPatchSets: (si: number, ei: number, raw: string) => void;
+  onRemoveSession: (idx: number) => void;
 }) {
   const [editingDate, setEditingDate] = useState(false);
   const counted = session.exercises.reduce((n, e) => n + e.sets.length, 0);
@@ -195,7 +197,7 @@ function SessionChapter({
             </button>
           )}
         </div>
-        <div className="sm:w-44">
+        <div className="flex flex-col gap-2 sm:w-52">
           <Field label="Nazwa">
             <input
               className={inputClass}
@@ -204,6 +206,9 @@ function SessionChapter({
               onChange={(e) => onPatchSession(sessionIdx, { label: e.target.value || null })}
             />
           </Field>
+          <Button type="button" variant="ghost" size="sm" onClick={() => onRemoveSession(sessionIdx)}>
+            Usuń ten trening z importu
+          </Button>
         </div>
       </header>
       {mismatch ? (
@@ -246,6 +251,7 @@ export function HistoryImportReview({
   onCreateMissing,
   onPatchSession,
   onPatchSets,
+  onRemoveSession,
   onBack,
   onContinue,
 }: {
@@ -260,6 +266,7 @@ export function HistoryImportReview({
   onCreateMissing: () => void;
   onPatchSession: (idx: number, patch: Partial<HistoryImportSession>) => void;
   onPatchSets: (si: number, ei: number, raw: string) => void;
+  onRemoveSession: (idx: number) => void;
   onBack: () => void;
   onContinue: () => void;
 }) {
@@ -287,19 +294,26 @@ export function HistoryImportReview({
       ) : null}
 
       <div className="grid gap-6 pb-28 md:pb-8">
-        {sessions.map((s, si) => (
-          <SessionChapter
-            key={`${s.performedOn}-${si}`}
-            session={s}
-            sessionIdx={si}
-            exercises={exercises}
-            idMap={idMap}
-            onMap={onMapExercise}
-            onCreate={onCreateExercise}
-            onPatchSession={onPatchSession}
-            onPatchSets={onPatchSets}
-          />
-        ))}
+        {sessions.length === 0 ? (
+          <p className="text-sm text-muted-strong">
+            Nie ma już treningów w tym imporcie. Wróć i wczytaj je jeszcze raz.
+          </p>
+        ) : (
+          sessions.map((s, si) => (
+            <SessionChapter
+              key={`${s.performedOn}-${si}`}
+              session={s}
+              sessionIdx={si}
+              exercises={exercises}
+              idMap={idMap}
+              onMap={onMapExercise}
+              onCreate={onCreateExercise}
+              onPatchSession={onPatchSession}
+              onPatchSets={onPatchSets}
+              onRemoveSession={onRemoveSession}
+            />
+          ))
+        )}
       </div>
 
       <div className="sticky bottom-20 z-20 -mx-4 border-t border-border bg-background px-4 py-3 md:bottom-0 md:-mx-8 md:px-8">
@@ -307,7 +321,12 @@ export function HistoryImportReview({
           <Button variant="ghost" onClick={onBack} disabled={busy}>
             Wróć
           </Button>
-          <Button className="min-w-[12rem] flex-1 sm:flex-none" onClick={onContinue} disabled={busy} loading={busy}>
+          <Button
+            className="min-w-[12rem] flex-1 sm:flex-none"
+            onClick={onContinue}
+            disabled={busy || sessions.length === 0}
+            loading={busy}
+          >
             Zapisz te treningi
           </Button>
         </div>

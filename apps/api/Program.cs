@@ -539,6 +539,35 @@ app.MapDelete("/api/clients/{id:int}", async (int id, HttpContext http, AppDb db
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
+app.MapPost("/api/clients/{id:int}/plan-from-history", async (
+    int id, PlanFromHistoryInput input, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var client = await TrainerAccess.OwnedClientAsync(db, trainerId, id);
+        if (client is null) return Results.NotFound();
+
+        var sinceDays = Math.Clamp(input.SinceDays, 1, 3650);
+        var since = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-sinceDays));
+        var sessions = await db.WorkoutSessions
+            .AsSplitQuery()
+            .Where(s => s.ClientId == id && s.Status == "completed" && s.PerformedOn >= since)
+            .Include(s => s.PlanDay)
+            .Include(s => s.Exercises).ThenInclude(e => e.Sets)
+            .Include(s => s.Exercises).ThenInclude(e => e.Exercise)
+            .OrderBy(s => s.PerformedOn)
+            .ToListAsync();
+
+        var mapped = HistoryImport.FromWorkoutSessions(sessions);
+        if (mapped.Count == 0)
+            return Results.BadRequest(new { message = "Brak treningów w historii — wgraj je albo wpisz trening." });
+
+        return Results.Ok(HistoryImport.Analyze(mapped, client.Name, input.TopKgDelta));
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
 app.MapGet("/api/clients/{id:int}/intake", async (int id, HttpContext http, AppDb db, IConfiguration config) =>
 {
     try
@@ -861,7 +890,7 @@ static object PlanToDto(Plan plan, IReadOnlyDictionary<int, double>? maxesByExer
         plan.Id, plan.Name, plan.Description, plan.IsTemplate, plan.CreatedAt,
         Days = days.Select(d => new
         {
-            d.Id, d.WeekNumber, d.Order, d.Label, d.Notes,
+            d.Id, d.WeekNumber, d.Order, d.Label, d.Notes, d.DayOfWeek,
             Items = d.Items.OrderBy(i => i.Order).Select(i => ItemToDto(i, maxesByExercise)),
         }),
         WeeksCount = days.Select(d => d.WeekNumber).DefaultIfEmpty(0).Max(),
@@ -893,7 +922,7 @@ static PlanItem BuildItem(PlanItemInput i) => new()
 
 static PlanDay BuildDay(PlanDayInput d) => new()
 {
-    WeekNumber = d.WeekNumber, Order = d.Order, Label = d.Label, Notes = d.Notes,
+    WeekNumber = d.WeekNumber, Order = d.Order, Label = d.Label, Notes = d.Notes, DayOfWeek = d.DayOfWeek,
     Items = (d.Items ?? []).Select(BuildItem).ToList(),
 };
 
@@ -1237,7 +1266,7 @@ app.MapPost("/api/plans/{id:int}/duplicate", async (int id, DuplicateInput input
         IsTemplate = input.IsTemplate ?? source.IsTemplate,
         Days = source.Days.Select(d => new PlanDay
         {
-            WeekNumber = d.WeekNumber, Order = d.Order, Label = d.Label, Notes = d.Notes,
+            WeekNumber = d.WeekNumber, Order = d.Order, Label = d.Label, Notes = d.Notes, DayOfWeek = d.DayOfWeek,
             Items = d.Items.Select(i => new PlanItem
             {
                 ExerciseId = i.ExerciseId, Order = i.Order, SupersetGroup = i.SupersetGroup, IsWarmup = i.IsWarmup,
@@ -1321,6 +1350,23 @@ app.MapPost("/api/clients/{clientId:int}/maxes", async (int clientId, ClientMaxI
         db.ClientMaxes.Add(row);
         await db.SaveChangesAsync();
         return Results.Created($"/api/maxes/{row.Id}", new { row.Id });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapPut("/api/maxes/{id:int}", async (int id, ClientMaxUpdateInput input, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var row = await TrainerAccess.OwnedMaxAsync(db, trainerId, id);
+        if (row is null) return Results.NotFound();
+        if (input.MaxKg <= 0) return Results.BadRequest(new { message = "Max musi być większy od 0." });
+        row.MaxKg = Stats.RoundToHalf(input.MaxKg);
+        row.MeasuredOn = input.MeasuredOn;
+        row.Note = input.Note;
+        await db.SaveChangesAsync();
+        return Results.Ok(new { row.Id });
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
@@ -1688,6 +1734,76 @@ app.MapGet("/api/clients/{clientId:int}/exercises/{exerciseId:int}/stats", async
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
+app.MapGet("/api/clients/{id:int}/exercises/{exerciseId:int}/usage", async (
+    int id, int exerciseId, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, id)) return Results.NotFound();
+
+        var rows = await db.LoggedExercises
+            .AsNoTracking()
+            .Where(e => e.Session!.ClientId == id && e.ExerciseId == exerciseId)
+            .Select(e => new
+            {
+                e.WorkoutSessionId,
+                SetCount = e.Sets.Count,
+                PerformedOn = e.Session!.PerformedOn,
+            })
+            .ToListAsync();
+
+        return Results.Ok(new
+        {
+            sessions = rows.Select(r => r.WorkoutSessionId).Distinct().Count(),
+            sets = rows.Sum(r => r.SetCount),
+            firstOn = rows.Count == 0 ? (DateOnly?)null : rows.Min(r => r.PerformedOn),
+            lastOn = rows.Count == 0 ? (DateOnly?)null : rows.Max(r => r.PerformedOn),
+        });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapPost("/api/clients/{id:int}/exercises/{exerciseId:int}/remap", async (
+    int id, int exerciseId, ExerciseRemapInput input, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, id)) return Results.NotFound();
+        if (input.TargetExerciseId == exerciseId)
+            return Results.Conflict(new { message = "To to samo ćwiczenie — wybierz inne." });
+
+        var sourceOk = await db.Exercises.AnyAsync(e =>
+            e.Id == exerciseId && (e.TrainerId == null || e.TrainerId == trainerId));
+        var targetOk = await db.Exercises.AnyAsync(e =>
+            e.Id == input.TargetExerciseId && (e.TrainerId == null || e.TrainerId == trainerId));
+        if (!sourceOk || !targetOk) return Results.NotFound();
+
+        var logged = await db.LoggedExercises
+            .Include(e => e.Sets)
+            .Where(e => e.Session!.ClientId == id && e.ExerciseId == exerciseId)
+            .ToListAsync();
+        foreach (var row in logged)
+            row.ExerciseId = input.TargetExerciseId;
+
+        var maxes = await db.ClientMaxes
+            .Where(m => m.ClientId == id && m.ExerciseId == exerciseId)
+            .ToListAsync();
+        foreach (var max in maxes)
+            max.ExerciseId = input.TargetExerciseId;
+
+        await db.SaveChangesAsync();
+        return Results.Ok(new
+        {
+            sessions = logged.Select(e => e.WorkoutSessionId).Distinct().Count(),
+            sets = logged.Sum(e => e.Sets.Count),
+            maxes = maxes.Count,
+        });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
 app.MapGet("/api/clients/{clientId:int}/most-improved", async (
     int clientId, int? days, HttpContext http, AppDb db, IConfiguration config) =>
 {
@@ -1718,6 +1834,7 @@ static async Task<object> LoadClientRecordsAsync(AppDb db, int clientId)
         {
             ExerciseId = s.LoggedExercise!.ExerciseId,
             ExerciseName = s.LoggedExercise.Exercise!.Name,
+            Category = s.LoggedExercise.Exercise.Category,
             s.WeightKg,
             s.Reps,
             PerformedOn = s.LoggedExercise.Session!.PerformedOn,
@@ -1735,18 +1852,29 @@ static async Task<object> LoadClientRecordsAsync(AppDb db, int clientId)
                 .OrderByDescending(x => x.E1!.Value)
                 .ThenByDescending(x => x.Set.PerformedOn)
                 .FirstOrDefault();
-            return best;
+            return best is null
+                ? null
+                : new
+                {
+                    Best = best,
+                    Category = g.Select(s => s.Category).FirstOrDefault(c => c != null),
+                    LastPerformedOn = g.Max(s => s.PerformedOn),
+                    SessionCount = g.Select(s => s.SessionId).Distinct().Count(),
+                };
         })
-        .Where(best => best is not null)
-        .Select(best => new
+        .Where(row => row is not null)
+        .Select(row => new
         {
-            exerciseId = best!.Set.ExerciseId,
-            exerciseName = best.Set.ExerciseName ?? "",
-            estimated1Rm = Stats.RoundToHalf(best.E1!.Value),
-            weightKg = best.Set.WeightKg,
-            reps = best.Set.Reps,
-            performedOn = best.Set.PerformedOn,
-            sessionId = best.Set.SessionId,
+            exerciseId = row!.Best.Set.ExerciseId,
+            exerciseName = row.Best.Set.ExerciseName ?? "",
+            category = row.Category,
+            estimated1Rm = Stats.RoundToHalf(row.Best.E1!.Value),
+            weightKg = row.Best.Set.WeightKg,
+            reps = row.Best.Set.Reps,
+            performedOn = row.Best.Set.PerformedOn,
+            lastPerformedOn = row.LastPerformedOn,
+            sessionCount = row.SessionCount,
+            sessionId = row.Best.Set.SessionId,
         })
         .OrderByDescending(r => r.estimated1Rm)
         .ToList();
@@ -1783,6 +1911,22 @@ app.MapGet("/api/clients/{clientId:int}/progress", async (int clientId, HttpCont
             && s.AssignmentId == assignment.Id
             && s.Status == "completed");
         var percent = total > 0 ? (int)Math.Round(100.0 * Math.Min(completed, total) / total) : 0;
+        var (nextDueDayId, completionCounts) = await Sessions.NextDueDayAsync(
+            db, clientId, assignment.Id, assignment.PlanId);
+        var overrides = await db.AssignmentDayOverrides
+            .Where(o => o.AssignmentId == assignment.Id)
+            .ToDictionaryAsync(o => o.PlanDayId, o => o.Date);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var hero = Scheduling.ResolveHero(
+            assignment.Plan.Days
+                .OrderBy(d => d.WeekNumber).ThenBy(d => d.Order)
+                .Select(d => (d.Id, d.WeekNumber, d.DayOfWeek, d.Label))
+                .ToList(),
+            assignment.StartDate,
+            today,
+            completionCounts,
+            overrides,
+            nextDueDayId);
         return Results.Ok(new
         {
             assignmentId = assignment.Id,
@@ -1791,6 +1935,15 @@ app.MapGet("/api/clients/{clientId:int}/progress", async (int clientId, HttpCont
             completed,
             total,
             percent,
+            nextDay = hero is null
+                ? null
+                : new
+                {
+                    id = hero.Id,
+                    label = hero.Label,
+                    scheduledOn = hero.ScheduledOn,
+                    movedFrom = hero.MovedFrom,
+                },
         });
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
@@ -2213,21 +2366,32 @@ app.MapGet("/api/portal/{token}", async (string token, string? today, AppDb db) 
             .Where(d => d.PlanId == assignment.PlanId)
             .OrderBy(d => d.WeekNumber)
             .ThenBy(d => d.Order)
-            .Select(d => new { d.Id, d.WeekNumber, d.Order, d.Label, d.Notes })
+            .Select(d => new { d.Id, d.WeekNumber, d.Order, d.Label, d.Notes, d.DayOfWeek })
             .ToListAsync();
 
         var (nextDueDayId, completionCounts) = await Sessions.NextDueDayAsync(
             db, access.ClientId, assignment.Id, assignment.PlanId);
-
+        var overrides = await db.AssignmentDayOverrides
+            .Where(o => o.AssignmentId == assignment.Id)
+            .ToDictionaryAsync(o => o.PlanDayId, o => o.Date);
+        var weekCount = days.Count == 0 ? 1 : days.Max(d => d.WeekNumber);
         var minCompletions = days.Count == 0
             ? 0
             : days.Min(d => completionCounts.GetValueOrDefault(d.Id));
-        var nextMeta = days.FirstOrDefault(d => d.Id == nextDueDayId);
+        var todayScheduledId = Scheduling.TodayScheduledDayId(
+            days.Select(d => (d.Id, d.WeekNumber, d.DayOfWeek)).ToList(),
+            assignment.StartDate,
+            clientToday,
+            completionCounts,
+            overrides);
+        var heroDayId = todayScheduledId ?? nextDueDayId;
+        var nextMeta = days.FirstOrDefault(d => d.Id == heroDayId);
+        var dueMeta = days.FirstOrDefault(d => d.Id == nextDueDayId);
         // Cykl domknięty: każdy dzień ma ≥1 ukończenie i wracamy do pierwszego dnia nowego obiegu.
         cycleRestart = days.Count > 0
             && minCompletions > 0
-            && nextMeta != null
-            && nextMeta.Id == days[0].Id
+            && dueMeta != null
+            && dueMeta.Id == days[0].Id
             && days.All(d => completionCounts.GetValueOrDefault(d.Id) >= minCompletions);
 
         // Postęp w bieżącym cyklu: ile dni ma ukończeń > minCompletions (już „zrobione" w tej rundzie).
@@ -2253,14 +2417,21 @@ app.MapGet("/api/portal/{token}", async (string token, string? today, AppDb db) 
                 .ToListAsync())
                 .ToDictionary(x => x.DayId, x => x.SessionId);
 
-        week = days.Select(d => new
+        week = days.Select(d =>
         {
-            d.Id, d.WeekNumber, d.Order, d.Label,
-            completed = completionCounts.GetValueOrDefault(d.Id) > minCompletions,
-            isToday = nextMeta != null && d.Id == nextMeta.Id,
-            lastCompletedSessionId = lastCompletedByDay.TryGetValue(d.Id, out var sid)
-                ? (int?)sid
-                : null,
+            DateOnly? ov = overrides.TryGetValue(d.Id, out var o) ? o : null;
+            var on = Scheduling.ScheduledOn(
+                d.WeekNumber, d.DayOfWeek, assignment.StartDate, minCompletions, weekCount, ov);
+            return new
+            {
+                d.Id, d.WeekNumber, d.Order, d.Label, d.DayOfWeek,
+                scheduledOn = on,
+                completed = completionCounts.GetValueOrDefault(d.Id) > minCompletions,
+                isToday = nextMeta != null && d.Id == nextMeta.Id,
+                lastCompletedSessionId = lastCompletedByDay.TryGetValue(d.Id, out var sid)
+                    ? (int?)sid
+                    : null,
+            };
         }).ToList();
 
         if (nextMeta is not null)
@@ -2270,6 +2441,17 @@ app.MapGet("/api/portal/{token}", async (string token, string? today, AppDb db) 
                 .Include(d => d.Items).ThenInclude(i => i.PrescribedSets)
                 .FirstAsync(d => d.Id == nextMeta.Id);
             var maxes = await PlanLoads.LatestMaxesAsync(db, access.ClientId);
+            DateOnly? heroOv = overrides.TryGetValue(next.Id, out var ho) ? ho : null;
+            var heroOn = Scheduling.ScheduledOn(
+                next.WeekNumber, next.DayOfWeek, assignment.StartDate, minCompletions, weekCount, heroOv);
+            string? movedFrom = null;
+            if (heroOv is not null && next.DayOfWeek is int origDow)
+            {
+                var original = Scheduling.ScheduledOn(
+                    next.WeekNumber, origDow, assignment.StartDate, minCompletions, weekCount, null);
+                if (original is not null && original != heroOv)
+                    movedFrom = Scheduling.WeekdayShort(origDow);
+            }
             todayDto = new
             {
                 assignmentId = assignment.Id,
@@ -2277,9 +2459,11 @@ app.MapGet("/api/portal/{token}", async (string token, string? today, AppDb db) 
                 planName = assignment.Plan.Name,
                 day = new
                 {
-                    next.Id, next.WeekNumber, next.Order, next.Label, next.Notes,
+                    next.Id, next.WeekNumber, next.Order, next.Label, next.Notes, next.DayOfWeek,
                     Items = next.Items.OrderBy(i => i.Order).Select(i => ItemToDto(i, maxes)),
                 },
+                scheduledOn = heroOn,
+                movedFrom,
                 completed = completedInCycle,
                 total = days.Count,
                 percent = days.Count > 0
@@ -2323,6 +2507,45 @@ app.MapGet("/api/portal/{token}", async (string token, string? today, AppDb db) 
         staleSession,
     });
 }).RequireRateLimiting("portal");
+
+app.MapPost("/api/portal/{token}/days/{dayId:int}/reschedule", async (
+    string token, int dayId, PlanDayRescheduleInput input, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+
+    var day = await db.PlanDays.FirstOrDefaultAsync(d => d.Id == dayId);
+    if (day is null) return Results.NotFound();
+
+    var assignment = await db.Assignments
+        .Where(a => a.ClientId == access.ClientId && a.PlanId == day.PlanId && a.Status == "active")
+        .OrderByDescending(a => a.CreatedAt)
+        .FirstOrDefaultAsync();
+    if (assignment is null) return Results.NotFound();
+
+    var today = DateOnly.FromDateTime(DateTime.UtcNow);
+    if (input.Date < today)
+        return Results.BadRequest(new { message = "Wybierz dzień od dziś." });
+
+    var existing = await db.AssignmentDayOverrides
+        .FirstOrDefaultAsync(o => o.AssignmentId == assignment.Id && o.PlanDayId == dayId);
+    if (existing is null)
+    {
+        db.AssignmentDayOverrides.Add(new AssignmentDayOverride
+        {
+            AssignmentId = assignment.Id,
+            PlanDayId = dayId,
+            Date = input.Date,
+        });
+    }
+    else
+    {
+        existing.Date = input.Date;
+    }
+
+    await db.SaveChangesAsync();
+    return Results.Ok(new { date = input.Date.ToString("yyyy-MM-dd") });
+});
 
 app.MapGet("/api/portal/{token}/days/{dayId:int}", async (string token, int dayId, AppDb db) =>
 {
@@ -2800,13 +3023,7 @@ app.MapPost("/api/portal/{token}/history-import", async (
         if (error is not null) return error;
         if (draft is null)
             return Results.Json(new { message = "Nie rozpoznałem treningów. Spróbuj inne zdjęcie albo wklej tekst." }, statusCode: 422);
-        var row = new ClientHistoryImport
-        {
-            ClientId = access.ClientId,
-            Status = "pending",
-            DraftJson = JsonSerializer.Serialize(draft, HistoryImport.JsonOptions),
-        };
-        db.ClientHistoryImports.Add(row);
+        var (row, created) = await UpsertPendingHistoryImportAsync(db, access.ClientId, draft);
         await TrainerNotifications.AddAsync(
             db,
             client.TrainerId,
@@ -2814,7 +3031,9 @@ app.MapPost("/api/portal/{token}/history-import", async (
             TrainerNotifications.HistoryImport,
             "Klient wrzucił zdjęcia treningów — sprawdź, czy się zgadzają.");
         await db.SaveChangesAsync(ct);
-        return Results.Created($"/api/portal/{token}/history-import", new { row.Id });
+        return created
+            ? Results.Created($"/api/portal/{token}/history-import", new { row.Id })
+            : Results.Ok(new { row.Id });
     }
     catch (InvalidOperationException ex) when (
         ex.Message.Contains("OpenRouterApiKey", StringComparison.Ordinal)
@@ -3330,15 +3549,28 @@ app.MapPost("/api/clients/{id:int}/history-imports", async (
     {
         var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
         if (!await TrainerAccess.OwnsClientAsync(db, trainerId, id)) return Results.NotFound();
-        var row = new ClientHistoryImport
-        {
-            ClientId = id,
-            Status = "pending",
-            DraftJson = JsonSerializer.Serialize(draft, HistoryImport.JsonOptions),
-        };
-        db.ClientHistoryImports.Add(row);
+        var (row, created) = await UpsertPendingHistoryImportAsync(db, id, draft);
         await db.SaveChangesAsync();
-        return Results.Created($"/api/clients/{id}/history-imports/{row.Id}", new { row.Id });
+        return created
+            ? Results.Created($"/api/clients/{id}/history-imports/{row.Id}", new { row.Id })
+            : Results.Ok(new { row.Id });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapPut("/api/clients/{id:int}/history-imports/{importId:int}", async (
+    int id, int importId, HistoryImportDraft draft, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, id)) return Results.NotFound();
+        var row = await db.ClientHistoryImports.FirstOrDefaultAsync(h =>
+            h.Id == importId && h.ClientId == id && h.Status == "pending");
+        if (row is null) return Results.NotFound();
+        row.DraftJson = JsonSerializer.Serialize(draft, HistoryImport.JsonOptions);
+        await db.SaveChangesAsync();
+        return Results.Ok(new { row.Id });
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
@@ -3429,6 +3661,30 @@ app.MapPost("/api/ai/history-import/analyze", async (
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
+
+static async Task<(ClientHistoryImport Row, bool Created)> UpsertPendingHistoryImportAsync(
+    AppDb db, int clientId, HistoryImportDraft draft)
+{
+    var json = JsonSerializer.Serialize(draft, HistoryImport.JsonOptions);
+    var existing = await db.ClientHistoryImports
+        .Where(h => h.ClientId == clientId && h.Status == "pending")
+        .OrderByDescending(h => h.CreatedAt)
+        .FirstOrDefaultAsync();
+    if (existing is not null)
+    {
+        existing.DraftJson = json;
+        return (existing, false);
+    }
+
+    var row = new ClientHistoryImport
+    {
+        ClientId = clientId,
+        Status = "pending",
+        DraftJson = json,
+    };
+    db.ClientHistoryImports.Add(row);
+    return (row, true);
+}
 
 static bool IsMissingClientHistoryImportsTable(Exception ex)
 {

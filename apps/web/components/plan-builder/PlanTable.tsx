@@ -15,6 +15,8 @@ export function PlanTable({
   onPatchDay,
   onRemoveDay,
   onDuplicateDay,
+  weeks,
+  onApplyWeekdays,
   onAddItem,
   onPatchItem,
   onRemoveItem,
@@ -31,7 +33,9 @@ export function PlanTable({
   onAddDay: () => void;
   onPatchDay: (dayKey: string, patch: Partial<BuilderDay>) => void;
   onRemoveDay: (dayKey: string) => void;
-  onDuplicateDay: (dayKey: string) => void;
+  onDuplicateDay: (dayKey: string, targetWeek?: number) => void;
+  weeks: number[];
+  onApplyWeekdays: (sourceWeek: number) => void;
   onAddItem: (dayKey: string, exerciseId: number, overrides?: Partial<BuilderItem>) => void;
   onPatchItem: (dayKey: string, itemKey: string, patch: Partial<BuilderItem>) => void;
   onRemoveItem: (dayKey: string, itemKey: string) => void;
@@ -52,7 +56,9 @@ export function PlanTable({
           exercises={exercises}
           onPatchDay={(patch) => onPatchDay(day.key, patch)}
           onRemoveDay={() => onRemoveDay(day.key)}
-          onDuplicateDay={() => onDuplicateDay(day.key)}
+          onDuplicateDay={(w) => onDuplicateDay(day.key, w)}
+          weeks={weeks}
+          onApplyWeekdays={() => onApplyWeekdays(day.weekNumber)}
           onAddItem={(exerciseId, overrides) => onAddItem(day.key, exerciseId, overrides)}
           onPatchItem={(itemKey, patch) => onPatchItem(day.key, itemKey, patch)}
           onRemoveItem={(itemKey) => onRemoveItem(day.key, itemKey)}

@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Exercise } from "@/lib/api";
 import { buildGroupLabels, computeGroupsFromLinks } from "@/lib/supersets";
 import { Badge, EmptyState, IconButton, inputClass } from "@/components/ui";
+import { DayScheduleChips } from "./DayScheduleChips";
+import { DuplicateDayButton } from "./DuplicateDayButton";
 import { QuickComposer } from "./QuickComposer";
 import { TABLE_ROW_GRID_COLS, TableExerciseRow } from "./TableExerciseRow";
 import { BuilderDay, BuilderItem, BuilderSet } from "./types";
@@ -14,6 +16,8 @@ export function TableDay({
   onPatchDay,
   onRemoveDay,
   onDuplicateDay,
+  weeks,
+  onApplyWeekdays,
   onAddItem,
   onPatchItem,
   onRemoveItem,
@@ -29,7 +33,9 @@ export function TableDay({
   exercises: Exercise[];
   onPatchDay: (patch: Partial<BuilderDay>) => void;
   onRemoveDay: () => void;
-  onDuplicateDay: () => void;
+  onDuplicateDay: (targetWeek?: number) => void;
+  weeks: number[];
+  onApplyWeekdays: () => void;
   onAddItem: (exerciseId: number, overrides?: Partial<BuilderItem>) => void;
   onPatchItem: (itemKey: string, patch: Partial<BuilderItem>) => void;
   onRemoveItem: (itemKey: string) => void;
@@ -95,13 +101,25 @@ export function TableDay({
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Badge>{day.items.length} ćw.</Badge>
-          <IconButton title={`Powiel układ „${day.label}”`} onClick={onDuplicateDay}>
-            ⧉
-          </IconButton>
+          <DuplicateDayButton
+            weeks={weeks}
+            currentWeek={day.weekNumber}
+            title={`Powiel układ „${day.label}”`}
+            onDuplicate={onDuplicateDay}
+          />
           <IconButton title="Usuń dzień" variant="danger" onClick={onRemoveDay}>
             🗑
           </IconButton>
         </div>
+      </div>
+
+      <div className="mb-3">
+        <DayScheduleChips
+          day={day}
+          onPatch={onPatchDay}
+          showApply={weeks.length > 1}
+          onApplyToOtherWeeks={onApplyWeekdays}
+        />
       </div>
 
       {day.items.length === 0 ? (

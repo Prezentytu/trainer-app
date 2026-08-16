@@ -64,6 +64,22 @@ export function toWorkoutSessions(
     }));
 }
 
+export function shiftIdMapAfterRemove(
+  idMap: Record<string, number>,
+  removedSessionIdx: number,
+): Record<string, number> {
+  const next: Record<string, number> = {};
+  for (const [key, value] of Object.entries(idMap)) {
+    const sep = key.indexOf(":");
+    const si = Number(key.slice(0, sep));
+    const ei = Number(key.slice(sep + 1));
+    if (!Number.isFinite(si) || si === removedSessionIdx) continue;
+    const nextSi = si > removedSessionIdx ? si - 1 : si;
+    next[sessionExKey(nextSi, ei)] = value;
+  }
+  return next;
+}
+
 export function formatSetLine(ex: HistoryImportExercise): string {
   return ex.sets
     .map((s) => {

@@ -13,6 +13,7 @@ export function loadInitialDays(plan?: Plan, initialDayCount = 1, initialWeekCou
         order: idx + 1,
         label: `Dzień ${idx + 1}`,
         notes: null,
+        dayOfWeek: null,
         items: [],
       }))
     ).flat();
@@ -25,6 +26,7 @@ export function loadInitialDays(plan?: Plan, initialDayCount = 1, initialWeekCou
       order: d.order,
       label: d.label,
       notes: d.notes,
+      dayOfWeek: d.dayOfWeek ?? null,
       items: d.items.map((i, idx) => ({
         key: newKey(),
         exerciseId: i.exerciseId,

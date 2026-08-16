@@ -20,6 +20,7 @@ import {
   countUnmappedSessions,
   resolvedExerciseId,
   sessionExKey,
+  shiftIdMapAfterRemove,
   toWorkoutSessions,
 } from "@/lib/historyImportMap";
 import {
@@ -39,6 +40,7 @@ import {
 import { HistoryImportReview } from "@/components/HistoryImportReview";
 import { ImportWaitStatus } from "@/components/ImportWaitStatus";
 import { Icon } from "@/components/Icon";
+import { polishRecordCount, polishTrainingCount } from "@/lib/plural";
 import {
   Button,
   ErrorBanner,
@@ -50,7 +52,7 @@ import {
   inputClass,
 } from "@/components/ui";
 
-type Step = "upload" | "review" | "save";
+type Step = "upload" | "review" | "save" | "done";
 
 type PickedImage = { file: File; url: string };
 
@@ -96,6 +98,7 @@ export default function ClientHistoryImportPage() {
   const [savePlan, setSavePlan] = useState(true);
   const [topKgDelta, setTopKgDelta] = useState("2.5");
   const [analyze, setAnalyze] = useState<HistoryImportAnalyzeResult | null>(null);
+  const [applied, setApplied] = useState<{ sessions: number; maxes: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [parsePhase, setParsePhase] = useState<HistoryImportWaitPhase | null>(null);
@@ -172,6 +175,44 @@ export default function ClientHistoryImportPage() {
   }, [error]);
 
   const unmapped = useMemo(() => countUnmappedSessions(sessions, idMap), [sessions, idMap]);
+
+  const mappedDraft = (): HistoryImportDraft => ({
+    sessions: sessions.map((s, si) => ({
+      ...s,
+      exercises: s.exercises.map((e, ei) => ({
+        ...e,
+        matchedExerciseId: resolvedExerciseId(s, si, ei, idMap),
+      })),
+    })),
+    warnings,
+  });
+
+  const persistDraft = async () => {
+    if (pendingId == null) return;
+    try {
+      await api.clients.updateHistoryImport(clientId, pendingId, mappedDraft());
+    } catch {
+      /* review zostaje w pamięci — kolejny zapis spróbuje ponownie */
+    }
+  };
+
+  useEffect(() => {
+    if (step !== "review" || pendingId == null) return;
+    const draft: HistoryImportDraft = {
+      sessions: sessions.map((s, si) => ({
+        ...s,
+        exercises: s.exercises.map((e, ei) => ({
+          ...e,
+          matchedExerciseId: resolvedExerciseId(s, si, ei, idMap),
+        })),
+      })),
+      warnings,
+    };
+    const timer = window.setTimeout(() => {
+      void api.clients.updateHistoryImport(clientId, pendingId, draft).catch(() => undefined);
+    }, 700);
+    return () => window.clearTimeout(timer);
+  }, [step, pendingId, clientId, sessions, idMap, warnings]);
 
   const mapExercise = (sessionIdx: number, exerciseIdx: number, exercise: Exercise) => {
     const source = foldDiacritics(sessions[sessionIdx]?.exercises[exerciseIdx]?.exerciseName ?? "");
@@ -326,6 +367,11 @@ export default function ClientHistoryImportPage() {
     setSessions((prev) => prev.map((s, i) => (i === idx ? { ...s, ...patch } : s)));
   };
 
+  const removeSession = (idx: number) => {
+    setSessions((prev) => prev.filter((_, i) => i !== idx));
+    setIdMap((prev) => shiftIdMapAfterRemove(prev, idx));
+  };
+
   const patchSets = (si: number, ei: number, raw: string) => {
     const parsed = parseSetList(raw);
     if (!parsed) return;
@@ -362,6 +408,7 @@ export default function ClientHistoryImportPage() {
     setBusy(true);
     setError(null);
     try {
+      await persistDraft();
       const result = await api.ai.analyzeHistory({
         sessions: sessions.map((s, si) => ({
           ...s,
@@ -401,7 +448,7 @@ export default function ClientHistoryImportPage() {
         })),
       }));
       if (saveHistory || saveMaxes) {
-        await api.clients.applyHistoryImport(clientId, importId, {
+        const result = await api.clients.applyHistoryImport(clientId, importId, {
           saveHistory,
           saveMaxes,
           sessions: saveHistory ? toWorkoutSessions(clientId, mappedSessions, idMap) : [],
@@ -414,24 +461,44 @@ export default function ClientHistoryImportPage() {
               }))
             : [],
         });
+        setApplied({ sessions: result.sessionIds.length, maxes: result.maxIds.length });
       } else if (importId != null) {
         await api.clients.dismissHistoryImport(clientId, importId);
+        setApplied({ sessions: 0, maxes: 0 });
       }
+      setStep("done");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
 
-      if (savePlan && analyze?.planDraft) {
-        const planMap: ExerciseIdMap = {};
-        analyze.planDraft.days?.forEach((day, di) => {
-          day.items?.forEach((it, ii) => {
-            if (it.matchedExerciseId != null) planMap[itemMapKey(di, ii)] = it.matchedExerciseId;
-          });
+  const goToPlan = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      let draft = analyze?.planDraft ?? null;
+      if (!draft) {
+        const result = await api.clients.planFromHistory(clientId, {
+          topKgDelta: Number(topKgDelta) || 0,
         });
-        saveImportHandoff(
-          draftToBuilderHandoff(analyze.planDraft, planMap, exercises, { isTemplate: false }),
-        );
-        router.push(`/plans/new?clientId=${clientId}`);
+        draft = result.planDraft;
+      }
+      if (!draft) {
+        setError("Nie udało się złożyć planu z tych treningów.");
         return;
       }
-      router.push(`/clients/${clientId}`);
+      const planMap: ExerciseIdMap = {};
+      draft.days?.forEach((day, di) => {
+        day.items?.forEach((it, ii) => {
+          if (it.matchedExerciseId != null) planMap[itemMapKey(di, ii)] = it.matchedExerciseId;
+        });
+      });
+      saveImportHandoff(
+        draftToBuilderHandoff(draft, planMap, exercises, { isTemplate: false, clientId }),
+      );
+      router.push(`/plans/new?clientId=${clientId}`);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -445,16 +512,29 @@ export default function ClientHistoryImportPage() {
       ? "Wrzuć zdjęcia treningów"
       : step === "review"
         ? "Czy to się zgadza?"
-        : firstName
-          ? `Co zapisać u ${firstName}`
-          : "Co zapisać";
+        : step === "done"
+          ? "Historia zapisana"
+          : firstName
+            ? `Co zapisać u ${firstName}`
+            : "Co zapisać";
   const subtitle =
     step === "review"
-      ? `${client?.name ?? "Klient"} · ${sessions.length} ${polishPlural(sessions.length, "trening", "treningi", "treningów")}. Popraw to, co nie pasuje do zdjęcia.`
-      : client
-        ? `${client.name} — historia z poprzedniej apki.`
-        : "Historia klienta z poprzedniej apki.";
-  const stepLabel = step === "upload" ? "Krok 1 z 3" : step === "review" ? "Krok 2 z 3" : "Krok 3 z 3";
+      ? `${client?.name ?? "Klient"} · ${polishTrainingCount(sessions.length)}. Popraw to, co nie pasuje do zdjęcia.`
+      : step === "done"
+        ? client
+          ? `${client.name} — treningi są już w historii.`
+          : "Treningi są już w historii."
+        : client
+          ? `${client.name} — historia z poprzedniej apki.`
+          : "Historia klienta z poprzedniej apki.";
+  const stepLabel =
+    step === "upload"
+      ? "Krok 1 z 3"
+      : step === "review"
+        ? "Krok 2 z 3"
+        : step === "save"
+          ? "Krok 3 z 3"
+          : "Gotowe";
 
   return (
     <div>
@@ -619,7 +699,10 @@ export default function ClientHistoryImportPage() {
           onCreateMissing={() => void createMissing()}
           onPatchSession={patchSession}
           onPatchSets={patchSets}
-          onBack={() => setStep("upload")}
+          onRemoveSession={removeSession}
+          onBack={() => {
+            void persistDraft().then(() => setStep("upload"));
+          }}
           onContinue={() => void goSave()}
         />
       ) : null}
@@ -694,8 +777,30 @@ export default function ClientHistoryImportPage() {
               disabled={busy || (!saveHistory && !saveMaxes && !savePlan)}
               loading={busy}
             >
-              {busy ? "Zapisuję…" : savePlan ? "Zatwierdź i złóż plan" : "Zatwierdź"}
+              {busy ? "Zapisuję…" : "Zatwierdź"}
             </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {step === "done" ? (
+        <div className="grid gap-6">
+          <p className="text-[15px] leading-snug text-foreground-secondary">
+            {applied && applied.sessions > 0 && applied.maxes > 0
+              ? `Zapisałem ${polishTrainingCount(applied.sessions)} i ${polishRecordCount(applied.maxes)}.`
+              : applied && applied.sessions > 0
+                ? `Zapisałem ${polishTrainingCount(applied.sessions)}.`
+                : applied && applied.maxes > 0
+                  ? `Zapisałem ${polishRecordCount(applied.maxes)}.`
+                  : "Draft planu jest gotowy — historia nie została zapisana."}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => void goToPlan()} disabled={busy} loading={busy}>
+              Złóż plan z tych treningów
+            </Button>
+            <Link href={`/clients/${clientId}`}>
+              <Button variant="secondary">Wróć do profilu</Button>
+            </Link>
           </div>
         </div>
       ) : null}

@@ -46,7 +46,7 @@ function dateKey(iso: string): string {
  */
 export function planDaysMapToWeekdays(week: PortalWeekDay[] | null | undefined): boolean {
   if (!week?.length) return false;
-  return week.some((d) => weekdayIndexFromLabel(d.label) != null);
+  return week.some((d) => d.scheduledOn != null || weekdayIndexFromLabel(d.label) != null);
 }
 
 /**
@@ -77,14 +77,26 @@ export function buildWeekStrip(
 
   const due = week?.find((d) => d.isToday) ?? null;
   const focusWeekNumber = due?.weekNumber ?? week?.[0]?.weekNumber ?? null;
+  const planByIso = new Map<string, PortalWeekDay>();
   const planByWeekday = new Map<number, PortalWeekDay>();
-  if (week && focusWeekNumber != null) {
+  if (week) {
     for (const d of week) {
-      if (d.weekNumber !== focusWeekNumber) continue;
-      const idx = weekdayIndexFromLabel(d.label);
-      if (idx == null) continue;
-      // Pierwszy wygrywa — unika nadpisania przy duplikatach etykiet.
-      if (!planByWeekday.has(idx)) planByWeekday.set(idx, d);
+      if (d.scheduledOn) {
+        const key = dateKey(d.scheduledOn);
+        if (!planByIso.has(key)) planByIso.set(key, d);
+      }
+    }
+    if (focusWeekNumber != null) {
+      for (const d of week) {
+        if (d.weekNumber !== focusWeekNumber) continue;
+        if (d.scheduledOn) continue;
+        const idx = d.dayOfWeek != null && d.dayOfWeek >= 1 && d.dayOfWeek <= 7
+          ? d.dayOfWeek - 1
+          : weekdayIndexFromLabel(d.label);
+        if (idx == null) continue;
+        // Pierwszy wygrywa — unika nadpisania przy duplikatach etykiet.
+        if (!planByWeekday.has(idx)) planByWeekday.set(idx, d);
+      }
     }
   }
 
@@ -93,7 +105,7 @@ export function buildWeekStrip(
     d.setDate(monday.getDate() + i);
     const iso = toIsoLocal(d);
     const today = iso === todayIso;
-    const planDay = planByWeekday.get(i) ?? null;
+    const planDay = planByIso.get(iso) ?? planByWeekday.get(i) ?? null;
     const daySessions = byDate.get(iso) ?? [];
     return {
       label,

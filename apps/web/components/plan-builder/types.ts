@@ -39,6 +39,8 @@ export type BuilderDay = {
   order: number;
   label: string;
   notes: string | null;
+  /** ISO 1=pn … 7=nd. Null = bez zalecenia. */
+  dayOfWeek: number | null;
   items: BuilderItem[];
 };
 

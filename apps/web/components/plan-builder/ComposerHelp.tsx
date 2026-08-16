@@ -91,6 +91,8 @@ export function ComposerHelp({
               <p className="mb-1 font-semibold uppercase tracking-[0.08em] text-muted-faint">Format wpisu</p>
               <ul className="space-y-0.5 font-mono tabular-nums text-foreground-secondary">
                 <li>przysiad 3x8</li>
+                <li>przysiad 5x52.5, 5x67.5, 5x77.5</li>
+                <li>wyciskanie 8-10x60 · 5x85%</li>
                 <li>przysiad 3x8-10 60kg 3110 rir2</li>
                 <li>przysiad rampa 4 + bo 80% 47.5kg</li>
                 <li>military rampa 2 + bo 80/60%</li>
@@ -109,6 +111,8 @@ export function ComposerHelp({
                 <span className="font-mono text-muted">+ bo 80%</span> /{" "}
                 <span className="font-mono text-muted">bo 80/60%</span> = backoff % topu
                 (kolejne serie).{" "}
+                <span className="font-mono text-muted">8x30kg, 8x35kg</span> = serie
+                z różnym ciężarem (powtórzenia × kg).{" "}
                 <span className="font-mono text-muted">60kg</span> /{" "}
                 <span className="font-mono text-muted">75%</span> = ciężar. Numer{" "}
                 <span className="font-mono text-muted">0</span> = część rozgrzewkowa.

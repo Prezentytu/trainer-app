@@ -9,6 +9,7 @@ export type PlanImportHandoff = {
   description: string | null;
   isTemplate: boolean;
   days: BuilderDay[];
+  clientId?: number;
 };
 
 /** Mapowanie ćwiczeń: klucz = `${dayIdx}:${itemIdx}` → exerciseId. */
@@ -23,16 +24,27 @@ export function saveImportHandoff(payload: PlanImportHandoff): void {
   sessionStorage.setItem(PLAN_IMPORT_STORAGE_KEY, JSON.stringify(payload));
 }
 
-export function consumeImportHandoff(): PlanImportHandoff | null {
+export function readImportHandoff(): PlanImportHandoff | null {
   if (typeof window === "undefined") return null;
   const raw = sessionStorage.getItem(PLAN_IMPORT_STORAGE_KEY);
   if (!raw) return null;
-  sessionStorage.removeItem(PLAN_IMPORT_STORAGE_KEY);
   try {
     return JSON.parse(raw) as PlanImportHandoff;
   } catch {
     return null;
   }
+}
+
+export function clearImportHandoff(): void {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(PLAN_IMPORT_STORAGE_KEY);
+}
+
+/** @deprecated użyj readImportHandoff + clearImportHandoff po zapisie */
+export function consumeImportHandoff(): PlanImportHandoff | null {
+  const value = readImportHandoff();
+  clearImportHandoff();
+  return value;
 }
 
 function emptySet(order: number, patch: Partial<PlanSetInput> = {}): BuilderSet {
@@ -116,7 +128,7 @@ export function draftToBuilderHandoff(
   draft: PlanImportDraft,
   idMap: ExerciseIdMap,
   exercises: Exercise[],
-  opts?: { isTemplate?: boolean }
+  opts?: { isTemplate?: boolean; clientId?: number }
 ): PlanImportHandoff {
   const byId = new Map(exercises.map((e) => [e.id, e]));
   const days: BuilderDay[] = (draft.days ?? []).map((d, dayIdx) => {
@@ -140,6 +152,7 @@ export function draftToBuilderHandoff(
       order: d.order || dayIdx + 1,
       label: d.label || `Dzień ${dayIdx + 1}`,
       notes: d.notes,
+      dayOfWeek: null,
       items: items.map((it, o) => ({ ...it, order: o + 1 })),
     };
   });
@@ -149,6 +162,7 @@ export function draftToBuilderHandoff(
     description: draft.description,
     isTemplate: opts?.isTemplate ?? false,
     days,
+    clientId: opts?.clientId,
   };
 }
 

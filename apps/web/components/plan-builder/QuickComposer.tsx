@@ -8,8 +8,9 @@ import {
   createExercisePreviewLabel,
   exerciseInputFromQuickEntry,
 } from "@/lib/exerciseDraft";
-import { formatMeasureCore, measureOverridesFromParsed } from "@/lib/measure";
-import { matchExercises, parseQuickEntry, rampOverridesFromParsed } from "@/lib/quickEntry";
+import { formatMeasureCore } from "@/lib/measure";
+import { itemOverridesFromParsed, matchExercises, parseQuickEntry } from "@/lib/quickEntry";
+import { readRecentExerciseIds, rememberExercise } from "@/lib/recentExercises";
 import { demoMedia } from "@/lib/youtube";
 import { Icon } from "@/components/Icon";
 import { Badge, IconButton, inputClass } from "@/components/ui";
@@ -82,6 +83,7 @@ export function QuickComposer({
   const { createExercise, requestNewExercise } = useExerciseLibraryActions();
   const { open: helpOpen, onOpenChange: setHelpOpen } = useComposerHelpOpen();
   const [value, setValue] = useState("");
+  const [recentIds, setRecentIds] = useState<number[]>(readRecentExerciseIds);
   const [highlighted, setHighlighted] = useState(0);
   const [focused, setFocused] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -98,7 +100,10 @@ export function QuickComposer({
   } | null>(null);
 
   const parsed = useMemo(() => parseQuickEntry(value), [value]);
-  const matches = useMemo(() => matchExercises(parsed.query, exercises), [parsed.query, exercises]);
+  const matches = useMemo(
+    () => matchExercises(parsed.query, exercises, recentIds),
+    [parsed.query, exercises, recentIds],
+  );
   const query = parsed.query.trim();
   const showCreate = query.length > 0;
   const optionCount = matches.length + (showCreate ? 1 : 0);
@@ -150,17 +155,10 @@ export function QuickComposer({
   };
 
   const placeExercise = (exercise: Exercise) => {
-    const ramp = rampOverridesFromParsed(parsed);
-    const overrides = ramp
-      ? {
-          measureType: "reps" as const,
-          ...ramp,
-          tempo: parsed.tempo ?? null,
-          targetRir: parsed.targetRir ?? null,
-        }
-      : measureOverridesFromParsed(parsed, exercise.type);
+    const overrides = itemOverridesFromParsed(parsed, exercise.type);
     const previousItem = day.items[day.items.length - 1];
     onAdd(exercise.id, overrides);
+    setRecentIds(rememberExercise(exercise.id));
 
     if (
       parsed.supersetPrefix &&
@@ -292,7 +290,7 @@ export function QuickComposer({
                 <span className="min-w-0 break-words">{exercise.name}</span>
               </div>
               <span className="shrink-0 font-mono text-xs tabular-nums text-muted">
-                {previewSummary(exercise, measureOverridesFromParsed(parsed, exercise.type))}
+                {previewSummary(exercise, itemOverridesFromParsed(parsed, exercise.type))}
               </span>
             </button>
           </li>

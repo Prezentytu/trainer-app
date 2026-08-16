@@ -5,7 +5,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import PlanBuilder from "@/components/plan-builder/PlanBuilder";
 import { api } from "@/lib/api";
-import { consumeImportHandoff, PlanImportHandoff } from "@/lib/planImportHandoff";
+import { readImportHandoff, PlanImportHandoff } from "@/lib/planImportHandoff";
 import { Button, Card, ErrorBanner, Field, PageHeader, Pill, inputClass } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { PlanWizardSkeleton } from "@/components/skeletons";
@@ -68,7 +68,7 @@ function NewPlanWizard({ assignTo }: { assignTo: AssignTo | null }) {
       });
     queueMicrotask(() => {
       if (cancelled) return;
-      const handoff = consumeImportHandoff();
+      const handoff = readImportHandoff();
       if (handoff && handoff.days.length > 0) {
         setBoot({ status: "import", handoff });
       } else {
@@ -98,6 +98,7 @@ function NewPlanWizard({ assignTo }: { assignTo: AssignTo | null }) {
           initialIsTemplate={boot.handoff.isTemplate}
           initialDays={boot.handoff.days}
           stepLabel="Import AI · sprawdź i zapisz plan"
+          assignTo={assignTo ?? undefined}
         />
       </div>
     );
@@ -261,21 +262,27 @@ function NewPlanWizard({ assignTo }: { assignTo: AssignTo | null }) {
   );
 }
 
+function resolveAssignClientId(rawClientId: string | null): number | null {
+  const fromUrl = rawClientId ? Number(rawClientId) : NaN;
+  if (Number.isFinite(fromUrl) && fromUrl > 0) return fromUrl;
+  const fromHandoff = readImportHandoff()?.clientId;
+  return fromHandoff != null && fromHandoff > 0 ? fromHandoff : null;
+}
+
 function NewPlanPageInner() {
   const searchParams = useSearchParams();
   const rawClientId = searchParams.get("clientId");
-  const clientId = rawClientId ? Number(rawClientId) : NaN;
-  const hasClientId = Number.isFinite(clientId) && clientId > 0;
+  const wantedClientId = resolveAssignClientId(rawClientId);
 
   const [assignTo, setAssignTo] = useState<AssignTo | null>(null);
-  const [ready, setReady] = useState(!hasClientId);
+  const [ready, setReady] = useState(wantedClientId == null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!hasClientId) return;
+    if (wantedClientId == null) return;
     let cancelled = false;
     api.clients
-      .get(clientId)
+      .get(wantedClientId)
       .then((c) => {
         if (cancelled) return;
         setAssignTo({ id: c.id, name: c.name });
@@ -289,13 +296,13 @@ function NewPlanPageInner() {
     return () => {
       cancelled = true;
     };
-  }, [hasClientId, clientId]);
+  }, [wantedClientId]);
 
   if (!ready) {
     return <PlanWizardSkeleton />;
   }
 
-  if (error && hasClientId && !assignTo) {
+  if (error && wantedClientId != null && !assignTo) {
     return (
       <div>
         <PageHeader title="Nowy plan" subtitle="Nie udało się wczytać klienta" />

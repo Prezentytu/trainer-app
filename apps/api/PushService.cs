@@ -131,11 +131,14 @@ public sealed class PushService(AppDb db, IConfiguration config, ILogger<PushSer
                 .Select(s => s.PlanDayId!.Value)
                 .ToListAsync(ct)).ToHashSet();
 
-            var hasNextDay = await db.PlanDays
+            var planDays = await db.PlanDays
                 .Where(d => d.PlanId == c.PlanId)
                 .OrderBy(d => d.WeekNumber)
                 .ThenBy(d => d.Order)
-                .AnyAsync(d => !completedDayIds.Contains(d.Id), ct);
+                .Select(d => new { d.Id, d.WeekNumber, d.DayOfWeek })
+                .ToListAsync(ct);
+
+            var hasNextDay = planDays.Any(d => !completedDayIds.Contains(d.Id));
 
             if (!hasNextDay && completedDayIds.Count == 0)
             {
@@ -149,6 +152,32 @@ public sealed class PushService(AppDb db, IConfiguration config, ILogger<PushSer
             {
                 skipped++;
                 continue;
+            }
+
+            if (Scheduling.HasSchedule(planDays.Select(d => d.DayOfWeek)))
+            {
+                var assignment = await db.Assignments.AsNoTracking()
+                    .FirstOrDefaultAsync(a => a.Id == c.AssignmentId, ct);
+                if (assignment is null)
+                {
+                    skipped++;
+                    continue;
+                }
+                var (_, completionCounts) = await Sessions.NextDueDayAsync(
+                    db, c.Id, assignment.Id, assignment.PlanId);
+                var overrides = await db.AssignmentDayOverrides
+                    .Where(o => o.AssignmentId == assignment.Id)
+                    .ToDictionaryAsync(o => o.PlanDayId, o => o.Date, ct);
+                if (!Scheduling.ShouldRemindToday(
+                    planDays.Select(d => (d.Id, d.WeekNumber, d.DayOfWeek)).ToList(),
+                    assignment.StartDate,
+                    today,
+                    completionCounts,
+                    overrides))
+                {
+                    skipped++;
+                    continue;
+                }
             }
 
             var n = await SendToClientAsync(

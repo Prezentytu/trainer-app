@@ -15,6 +15,7 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
     public DbSet<PlanItem> PlanItems => Set<PlanItem>();
     public DbSet<PlanSet> PlanSets => Set<PlanSet>();
     public DbSet<Assignment> Assignments => Set<Assignment>();
+    public DbSet<AssignmentDayOverride> AssignmentDayOverrides => Set<AssignmentDayOverride>();
     public DbSet<ClientMax> ClientMaxes => Set<ClientMax>();
     public DbSet<ClientMeasurement> ClientMeasurements => Set<ClientMeasurement>();
     public DbSet<ClientAccessToken> ClientAccessTokens => Set<ClientAccessToken>();
@@ -129,6 +130,22 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
 
         modelBuilder.Entity<Assignment>()
             .HasIndex(a => new { a.ClientId, a.Status });
+
+        modelBuilder.Entity<AssignmentDayOverride>()
+            .HasOne(o => o.Assignment)
+            .WithMany(a => a.DayOverrides)
+            .HasForeignKey(o => o.AssignmentId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<AssignmentDayOverride>()
+            .HasOne(o => o.PlanDay)
+            .WithMany()
+            .HasForeignKey(o => o.PlanDayId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<AssignmentDayOverride>()
+            .HasIndex(o => new { o.AssignmentId, o.PlanDayId })
+            .IsUnique();
 
         modelBuilder.Entity<ClientMax>()
             .HasIndex(m => new { m.ClientId, m.ExerciseId });
