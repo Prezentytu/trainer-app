@@ -392,6 +392,7 @@ export default function PlanImportPage() {
             <Button
               onClick={() => void runImport()}
               disabled={loading || text.trim().length < 10}
+              loading={loading}
             >
               {loading ? loadingHint : "Analizuj z AI →"}
             </Button>

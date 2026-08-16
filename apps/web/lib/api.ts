@@ -38,19 +38,17 @@ export const SESSION_EXPIRED_MESSAGE = "Sesja wygasła. Zaloguj się ponownie.";
 
 function userMessageForStatus(status: number, bodyMessage?: string, code?: string | null): string {
   if (code === "pin_required") return bodyMessage || "Podaj PIN.";
-  if (bodyMessage && status >= 400 && status < 500 && status !== 401 && status !== 429) {
-    // Komunikaty biznesowe z backendu (Conflict, walidacja) — po polsku, przechodzą bez zmian.
+  if (status === 401) return SESSION_EXPIRED_MESSAGE;
+  if (status === 429) return "Za dużo prób. Odczekaj chwilę i spróbuj ponownie.";
+  if (bodyMessage && status >= 400) {
+    // Komunikaty z backendu (walidacja, 502/503 AI) — po polsku, przechodzą bez zmian.
     return bodyMessage;
   }
   switch (status) {
-    case 401:
-      return SESSION_EXPIRED_MESSAGE;
     case 403:
       return "Brak uprawnień do tej operacji.";
     case 404:
-      return bodyMessage || "Nie znaleziono zasobu.";
-    case 429:
-      return "Za dużo prób. Odczekaj chwilę i spróbuj ponownie.";
+      return "Nie znaleziono zasobu.";
     default:
       if (status >= 500) return "Serwer chwilowo niedostępny. Spróbuj ponownie za chwilę.";
       return bodyMessage || `Błąd ${status}`;
@@ -61,9 +59,16 @@ function isRetriableStatus(status: number): boolean {
   return status === 502 || status === 503 || status === 504;
 }
 
+export function isAbortError(err: unknown): boolean {
+  return (
+    (err instanceof DOMException && err.name === "AbortError") ||
+    (err instanceof Error && err.name === "AbortError")
+  );
+}
+
 function isNetworkError(err: unknown): boolean {
+  if (isAbortError(err)) return false;
   if (err instanceof TypeError) return true;
-  if (err instanceof DOMException && err.name === "AbortError") return false;
   const msg = err instanceof Error ? err.message : String(err);
   return /failed to fetch|networkerror|load failed|network request failed/i.test(msg);
 }
@@ -1182,6 +1187,7 @@ async function fetchWithRetry(
       }
       return res;
     } catch (err) {
+      if (isAbortError(err)) throw err;
       lastNetworkError = err;
       if (!canRetry || !isNetworkError(err) || attempt >= maxAttempts) {
         throw new ApiError(attempt > 1 ? WARMING_MESSAGE : NETWORK_MESSAGE, {
@@ -1214,12 +1220,20 @@ async function sendRequest(
   return res;
 }
 
+function messageForFailedResponse(status: number, parsedMessage: string, method: string): string {
+  const safe = method === "GET" || method === "HEAD";
+  // Cold start Azure — tylko idempotentne GET. POST 503 (np. brak klucza AI) ma własny `message`.
+  if (safe && isRetriableStatus(status)) return WARMING_MESSAGE;
+  return parsedMessage;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await sendRequest(path, init, true);
   if (!res.ok) {
     const parsed = await parseError(res);
-    const warming = isRetriableStatus(res.status) ? WARMING_MESSAGE : parsed.message;
-    throw new ApiError(warming, { status: res.status, technical: parsed.message, code: parsed.code });
+    const method = (init?.method ?? "GET").toUpperCase();
+    const message = messageForFailedResponse(res.status, parsed.message, method);
+    throw new ApiError(message, { status: res.status, technical: parsed.message, code: parsed.code });
   }
   if (res.status === 204) return undefined as T;
   // Puste body (np. Results.Ok(null) w Minimal API) — nie wywołuj res.json().
@@ -1231,9 +1245,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 async function requestText(path: string, init?: RequestInit): Promise<string> {
   const res = await sendRequest(path, init, false);
   if (!res.ok) {
-    const message = await parseErrorMessage(res);
-    const warming = isRetriableStatus(res.status) ? WARMING_MESSAGE : message;
-    throw new ApiError(warming, { status: res.status, technical: message });
+    const parsedMessage = await parseErrorMessage(res);
+    const method = (init?.method ?? "GET").toUpperCase();
+    const message = messageForFailedResponse(res.status, parsedMessage, method);
+    throw new ApiError(message, { status: res.status, technical: parsedMessage });
   }
   return res.text();
 }
@@ -1517,10 +1532,14 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ text, weeks: weeks?.length ? weeks : undefined }),
       }),
-    importHistory: (input: { text?: string; images?: HistoryImportImage[] }) =>
+    importHistory: (
+      input: { text?: string; images?: HistoryImportImage[] },
+      init?: Pick<RequestInit, "signal">,
+    ) =>
       request<HistoryImportDraft>("/api/ai/history-import", {
         method: "POST",
         body: JSON.stringify(input),
+        signal: init?.signal,
       }),
     analyzeHistory: (input: {
       sessions: HistoryImportSession[];
@@ -1729,10 +1748,15 @@ export const api = {
         method: "PUT",
         body: JSON.stringify(input),
       }),
-    importHistory: (token: string, input: { text?: string; images?: HistoryImportImage[] }) =>
+    importHistory: (
+      token: string,
+      input: { text?: string; images?: HistoryImportImage[] },
+      init?: Pick<RequestInit, "signal">,
+    ) =>
       request<{ id: number }>(`/api/portal/${token}/history-import`, {
         method: "POST",
         body: JSON.stringify(input),
+        signal: init?.signal,
       }),
     muscleVolume: (token: string, weeks = 4) =>
       request<MuscleVolumeResponse>(`/api/portal/${token}/muscle-volume?weeks=${weeks}`),

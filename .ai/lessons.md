@@ -765,4 +765,11 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: Strona = Superhuman 1:1 (agenda, prep, jeden CTA). Mail do trenera w tym samym requeście. Sukces nie kłamie „wysłaliśmy”, gdy Resend no-op. Rok = 390 zł pod formularzem. Cal.com dopiero >15 zgłoszeń / miesiąc, i wtedy link w mailu — nie na stronie. Zakaz: „oddzwonimy” jako jedyny next step.
 **Dotyczy**: `wdrozenie/`, `FoundingService.cs`, `EmailService.cs`, `.ai/gtm/wdrozenie-maile.md`, skill `ux-writing`
 
+## Długi import: stan przy CTA, nie tylko zmiana etykiety
+
+**Kontekst**: Wczytanie 10 screenów na produkcji zwracało 503 albo wisiało minutę. Przycisk zmieniał tekst na „Czytam zdjęcia…”, bez spinnera i zegara. ErrorBanner siedział nad siatką zdjęć.
+**Problem**: Trener nie wiedział, czy czekać, czy się zacięło. Błąd 503 ginął poza widokiem; POST 503 był mapowany na „Uruchamiamy serwer”.
+**Zasada**: Operacja > kilka sekund: spinner + żywy status + czas **przy CTA**. Błąd scrolluj do akcji. `message` z API na 5xx pokazuj as-is; „Uruchamiamy serwer” tylko dla GET (cold start).
+**Dotyczy**: import historii (panel + portal), `lib/api.ts` `request()`
+
 ---

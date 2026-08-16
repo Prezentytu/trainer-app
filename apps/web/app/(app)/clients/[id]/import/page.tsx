@@ -10,6 +10,7 @@ import {
   HistoryImportDraft,
   HistoryImportAnalyzeResult,
   HistoryImportSession,
+  isAbortError,
 } from "@/lib/api";
 import { DEFAULT_EXERCISE_INPUT } from "@/lib/exerciseDraft";
 import { createOrReuseExercise } from "@/lib/exerciseLibrary";
@@ -21,6 +22,13 @@ import {
   sessionExKey,
   toWorkoutSessions,
 } from "@/lib/historyImportMap";
+import {
+  historyImportFailMessage,
+  historyImportTimeoutMessage,
+  historyImportTimeoutMs,
+  historyImportWaitCopy,
+  HistoryImportWaitPhase,
+} from "@/lib/historyImportWait";
 import { parseSetList } from "@/lib/setList";
 import {
   draftToBuilderHandoff,
@@ -29,6 +37,7 @@ import {
   saveImportHandoff,
 } from "@/lib/planImportHandoff";
 import { HistoryImportReview } from "@/components/HistoryImportReview";
+import { ImportWaitStatus } from "@/components/ImportWaitStatus";
 import { Icon } from "@/components/Icon";
 import {
   Button,
@@ -89,8 +98,14 @@ export default function ClientHistoryImportPage() {
   const [analyze, setAnalyze] = useState<HistoryImportAnalyzeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [parsePhase, setParsePhase] = useState<HistoryImportWaitPhase | null>(null);
+  const [compressDone, setCompressDone] = useState(0);
+  const [elapsedSec, setElapsedSec] = useState(0);
   const [dragOver, setDragOver] = useState(false);
   const [textOpen, setTextOpen] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const cancelReasonRef = useRef<"user" | "timeout" | null>(null);
+  const actionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!Number.isFinite(clientId)) return;
@@ -137,6 +152,24 @@ export default function ClientHistoryImportPage() {
       imagesRef.current.forEach((item) => URL.revokeObjectURL(item.url));
     };
   }, []);
+
+  useEffect(() => {
+    if (!busy) return;
+    const started = Date.now();
+    const id = window.setInterval(() => {
+      setElapsedSec(Math.floor((Date.now() - started) / 1000));
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [busy]);
+
+  useEffect(() => {
+    return () => abortRef.current?.abort();
+  }, []);
+
+  useEffect(() => {
+    if (!error) return;
+    actionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [error]);
 
   const unmapped = useMemo(() => countUnmappedSessions(sessions, idMap), [sessions, idMap]);
 
@@ -193,17 +226,36 @@ export default function ClientHistoryImportPage() {
 
   const handleParse = async () => {
     if (busy) return;
+    cancelReasonRef.current = null;
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const imageCount = Math.min(images.length, HISTORY_IMPORT_MAX_IMAGES);
+    const timeoutId = window.setTimeout(() => {
+      cancelReasonRef.current = "timeout";
+      controller.abort();
+    }, historyImportTimeoutMs(imageCount));
+
     setBusy(true);
     setError(null);
+    setElapsedSec(0);
+    setCompressDone(0);
+    setParsePhase(imageCount > 0 ? "compress" : "read");
     try {
       const encoded = [];
-      for (const { file } of images.slice(0, HISTORY_IMPORT_MAX_IMAGES)) {
-        encoded.push(await fileToHistoryImage(file));
+      const slice = images.slice(0, HISTORY_IMPORT_MAX_IMAGES);
+      for (let i = 0; i < slice.length; i++) {
+        if (controller.signal.aborted) throw new DOMException("Aborted", "AbortError");
+        encoded.push(await fileToHistoryImage(slice[i].file));
+        setCompressDone(i + 1);
       }
-      const draft = await api.ai.importHistory({
-        text: text.trim() || undefined,
-        images: encoded.length ? encoded : undefined,
-      });
+      setParsePhase("read");
+      const draft = await api.ai.importHistory(
+        {
+          text: text.trim() || undefined,
+          images: encoded.length ? encoded : undefined,
+        },
+        { signal: controller.signal },
+      );
       if (!draft.sessions?.length) {
         setError("Nie wczytałem żadnego treningu. Sprawdź zdjęcia albo wklej tekst.");
         return;
@@ -213,13 +265,28 @@ export default function ClientHistoryImportPage() {
       setPendingId(saved.id);
       setStep("review");
     } catch (e) {
-      setError((e as Error).message);
+      if (isAbortError(e)) {
+        if (cancelReasonRef.current === "timeout") {
+          setError(historyImportTimeoutMessage(imageCount));
+        }
+        return;
+      }
+      setError(historyImportFailMessage(e, imageCount));
     } finally {
+      window.clearTimeout(timeoutId);
+      if (abortRef.current === controller) abortRef.current = null;
       setBusy(false);
+      setParsePhase(null);
     }
   };
 
+  const cancelParse = () => {
+    cancelReasonRef.current = "user";
+    abortRef.current?.abort();
+  };
+
   const handleFiles = (list: FileList | null) => {
+    if (busy) return;
     if (!list?.length) return;
     const incoming = [...list];
     const csv = incoming.find((f) => f.name.toLowerCase().endsWith(".csv"));
@@ -247,6 +314,7 @@ export default function ClientHistoryImportPage() {
   };
 
   const removeFile = (idx: number) => {
+    if (busy) return;
     setImages((prev) => {
       const victim = prev[idx];
       if (victim) URL.revokeObjectURL(victim.url);
@@ -400,12 +468,17 @@ export default function ClientHistoryImportPage() {
           </Link>
         }
       />
-      <ErrorBanner message={error} />
+      {step !== "upload" ? <ErrorBanner message={error} /> : null}
 
       {step === "upload" ? (
         <div className="grid gap-6">
           <label
-            className={`flex min-h-64 cursor-pointer flex-col items-center justify-center gap-3 rounded-[10px] border border-dashed px-6 py-12 text-center transition-[border-color,background-color,box-shadow] duration-[var(--dur-fast)] ease-[var(--ease-out)] has-[:focus-visible]:shadow-[var(--focus-ring)] sm:min-h-80 ${
+            aria-disabled={busy || undefined}
+            className={`flex min-h-64 flex-col items-center justify-center gap-3 rounded-[10px] border border-dashed px-6 py-12 text-center transition-[border-color,background-color,box-shadow,opacity] duration-[var(--dur-fast)] ease-[var(--ease-out)] has-[:focus-visible]:shadow-[var(--focus-ring)] sm:min-h-80 ${
+              busy
+                ? "pointer-events-none cursor-default opacity-45"
+                : "cursor-pointer"
+            } ${
               dragOver
                 ? "border-foreground bg-surface-hover"
                 : "border-border-strong bg-surface hover:border-foreground hover:bg-surface-hover"
@@ -429,6 +502,7 @@ export default function ClientHistoryImportPage() {
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif,.csv"
               multiple
+              disabled={busy}
               onChange={(e) => {
                 handleFiles(e.target.files);
                 e.target.value = "";
@@ -455,11 +529,13 @@ export default function ClientHistoryImportPage() {
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element -- blob URL z createObjectURL */}
                     <img src={item.url} alt="" className="h-full w-full object-cover" />
-                    <div className="absolute right-1 top-1">
-                      <IconButton title="Usuń zdjęcie" size="sm" variant="outline" onClick={() => removeFile(i)}>
-                        <Icon name="x" size={14} decorative />
-                      </IconButton>
-                    </div>
+                    {busy ? null : (
+                      <div className="absolute right-1 top-1">
+                        <IconButton title="Usuń zdjęcie" size="sm" variant="outline" onClick={() => removeFile(i)}>
+                          <Icon name="x" size={14} decorative />
+                        </IconButton>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -475,33 +551,53 @@ export default function ClientHistoryImportPage() {
               <textarea
                 className={`${inputClass} min-h-40 font-mono text-sm`}
                 value={text}
+                disabled={busy}
                 onChange={(e) => setText(e.target.value)}
                 placeholder="02.07.2026 · nogi&#10;Wyciskanie żołnierskie&#10;8 x 30kg, 8 x 35kg, 8 x 40kg"
               />
             </Field>
           ) : (
             <div>
-              <Button variant="ghost" onClick={() => setTextOpen(true)}>
+              <Button variant="ghost" onClick={() => setTextOpen(true)} disabled={busy}>
                 Nie masz screenów? Wklej tekst albo CSV
               </Button>
             </div>
           )}
 
-          <div className="grid gap-2">
-            <p className="text-sm text-muted">
-              {images.length === 0 && text.trim().length < 10
-                ? "Dodaj zdjęcia albo wklej tekst, żeby zacząć."
-                : images.length > 0
-                  ? "Odczytam treningi ze zdjęć — przed zapisem wszystko sprawdzisz."
-                  : "Odczytam treningi z wklejki — przed zapisem wszystko sprawdzisz."}
-            </p>
-            <div>
+          <div ref={actionRef} className="grid gap-3">
+            <ErrorBanner message={error} />
+            {busy && parsePhase ? (
+              <ImportWaitStatus
+                {...historyImportWaitCopy({
+                  phase: parsePhase,
+                  imageCount: images.length,
+                  compressDone,
+                  elapsedSec,
+                })}
+                elapsedSec={elapsedSec}
+              />
+            ) : (
+              <p className="text-sm text-muted">
+                {images.length === 0 && text.trim().length < 10
+                  ? "Dodaj zdjęcia albo wklej tekst, żeby zacząć."
+                  : images.length > 0
+                    ? "Odczytam treningi ze zdjęć — przed zapisem wszystko sprawdzisz."
+                    : "Odczytam treningi z wklejki — przed zapisem wszystko sprawdzisz."}
+              </p>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 onClick={() => void handleParse()}
                 disabled={busy || (images.length === 0 && text.trim().length < 10)}
+                loading={busy}
               >
-              {busy ? (images.length > 0 ? "Czytam zdjęcia…" : "Czytam treningi…") : "Wczytaj treningi"}
-            </Button>
+                {busy ? (images.length > 0 ? "Czytam zdjęcia…" : "Czytam treningi…") : "Wczytaj treningi"}
+              </Button>
+              {busy ? (
+                <Button variant="ghost" onClick={cancelParse}>
+                  Przerwij
+                </Button>
+              ) : null}
             </div>
           </div>
         </div>
@@ -596,6 +692,7 @@ export default function ClientHistoryImportPage() {
             <Button
               onClick={() => void handleConfirm()}
               disabled={busy || (!saveHistory && !saveMaxes && !savePlan)}
+              loading={busy}
             >
               {busy ? "Zapisuję…" : savePlan ? "Zatwierdź i złóż plan" : "Zatwierdź"}
             </Button>

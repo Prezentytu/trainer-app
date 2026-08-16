@@ -1,11 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { api } from "@/lib/api";
+import { api, isAbortError } from "@/lib/api";
 import { fileToHistoryImage, HISTORY_IMPORT_MAX_IMAGES } from "@/lib/compressImage";
+import {
+  historyImportFailMessage,
+  historyImportTimeoutMessage,
+  historyImportTimeoutMs,
+  historyImportWaitCopy,
+  HistoryImportWaitPhase,
+} from "@/lib/historyImportWait";
 import { Button, ErrorBanner, Field, inputClass } from "@/components/ui";
+import { ImportWaitStatus } from "@/components/ImportWaitStatus";
 import { Icon } from "@/components/Icon";
 
 function readTextFile(file: File): Promise<string> {
@@ -23,10 +31,29 @@ export default function PortalHistoryImportPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [parsePhase, setParsePhase] = useState<HistoryImportWaitPhase | null>(null);
+  const [compressDone, setCompressDone] = useState(0);
+  const [elapsedSec, setElapsedSec] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const cancelReasonRef = useRef<"user" | "timeout" | null>(null);
+
+  useEffect(() => {
+    if (!busy) return;
+    const started = Date.now();
+    const id = window.setInterval(() => {
+      setElapsedSec(Math.floor((Date.now() - started) / 1000));
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [busy]);
+
+  useEffect(() => {
+    return () => abortRef.current?.abort();
+  }, []);
 
   const handleFiles = (list: FileList | null) => {
+    if (busy) return;
     if (!list?.length) return;
     const incoming = [...list];
     const csv = incoming.find((f) => f.name.toLowerCase().endsWith(".csv"));
@@ -46,23 +73,57 @@ export default function PortalHistoryImportPage() {
 
   const submit = async () => {
     if (busy) return;
+    cancelReasonRef.current = null;
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const imageCount = Math.min(files.length, HISTORY_IMPORT_MAX_IMAGES);
+    const timeoutId = window.setTimeout(() => {
+      cancelReasonRef.current = "timeout";
+      controller.abort();
+    }, historyImportTimeoutMs(imageCount));
+
     setBusy(true);
     setError(null);
+    setElapsedSec(0);
+    setCompressDone(0);
+    setParsePhase(imageCount > 0 ? "compress" : "read");
     try {
       const images = [];
-      for (const file of files.slice(0, HISTORY_IMPORT_MAX_IMAGES)) {
-        images.push(await fileToHistoryImage(file));
+      const slice = files.slice(0, HISTORY_IMPORT_MAX_IMAGES);
+      for (let i = 0; i < slice.length; i++) {
+        if (controller.signal.aborted) throw new DOMException("Aborted", "AbortError");
+        images.push(await fileToHistoryImage(slice[i]));
+        setCompressDone(i + 1);
       }
-      await api.portal.importHistory(token, {
-        text: text.trim() || undefined,
-        images: images.length ? images : undefined,
-      });
+      setParsePhase("read");
+      await api.portal.importHistory(
+        token,
+        {
+          text: text.trim() || undefined,
+          images: images.length ? images : undefined,
+        },
+        { signal: controller.signal },
+      );
       setSent(true);
     } catch (e) {
-      setError((e as Error).message);
+      if (isAbortError(e)) {
+        if (cancelReasonRef.current === "timeout") {
+          setError(historyImportTimeoutMessage(imageCount));
+        }
+        return;
+      }
+      setError(historyImportFailMessage(e, imageCount));
     } finally {
+      window.clearTimeout(timeoutId);
+      if (abortRef.current === controller) abortRef.current = null;
       setBusy(false);
+      setParsePhase(null);
     }
+  };
+
+  const cancelSubmit = () => {
+    cancelReasonRef.current = "user";
+    abortRef.current?.abort();
   };
 
   if (sent) {
@@ -107,6 +168,7 @@ export default function PortalHistoryImportPage() {
             type="file"
             accept="image/jpeg,image/png,image/webp,image/gif,.csv"
             multiple
+            disabled={busy}
             onChange={(e) => {
               handleFiles(e.target.files);
               e.target.value = "";
@@ -124,16 +186,36 @@ export default function PortalHistoryImportPage() {
           <textarea
             className={`${inputClass} min-h-36 font-mono text-sm`}
             value={text}
+            disabled={busy}
             onChange={(e) => setText(e.target.value)}
             placeholder="8 x 30kg, 8 x 35kg, 8 x 40kg"
           />
         </Field>
-        <Button
-          onClick={() => void submit()}
-          disabled={busy || (files.length === 0 && text.trim().length < 10)}
-        >
-          {busy ? "Wysyłam…" : "Wyślij do trenera"}
-        </Button>
+        {busy && parsePhase ? (
+          <ImportWaitStatus
+            {...historyImportWaitCopy({
+              phase: parsePhase,
+              imageCount: files.length,
+              compressDone,
+              elapsedSec,
+            })}
+            elapsedSec={elapsedSec}
+          />
+        ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            onClick={() => void submit()}
+            disabled={busy || (files.length === 0 && text.trim().length < 10)}
+            loading={busy}
+          >
+            {busy ? "Wysyłam…" : "Wyślij do trenera"}
+          </Button>
+          {busy ? (
+            <Button variant="ghost" onClick={cancelSubmit}>
+              Przerwij
+            </Button>
+          ) : null}
+        </div>
       </div>
     </div>
   );
