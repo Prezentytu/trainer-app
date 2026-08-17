@@ -807,12 +807,19 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: Nawigację nullable wyciągnij raz (`var exercise = i.Exercise ?? throw …`) i używaj dalej. Przed PR odpal ten sam build co CI: `dotnet build apps/api/TrainerApp.Api.csproj -c Release -warnaserror`.
 **Dotyczy**: `apps/api/Program.cs`, `.github/workflows/ci.yml`
 
-## `dotnet ef` bez restore + odwrócony exit code `has-pending-model-changes`
+## `dotnet ef` bez restore; `has-pending-model-changes` = 0 gdy zgodny
 
-**Kontekst**: Job Migrations wołał `dotnet ef` zanim powstał `project.assets.json`. Potem `if ! has-pending-model-changes` traktował każdy błąd jako „brakuje migracji”.
-**Problem**: NETSDK1004 i fałszywy komunikat. Po dodaniu restore inverted check padłby na zgodnym snapshotcie: EF zwraca **0 gdy są pending changes**, 1 gdy model jest zgodny.
-**Zasada**: Przed `dotnet ef` zawsze `dotnet restore`. `if dotnet ef migrations has-pending-model-changes; then fail; fi` — nie odwrotnie.
+**Kontekst**: Job Migrations wołał `dotnet ef` zanim powstał `project.assets.json`. Potem odwróciłem check na podstawie docs, nie logu.
+**Problem**: NETSDK1004 i fałszywy „brakuje migracji”. Po restore komenda przy zgodnym modelu drukuje „No changes have been made…” i kończy się **0**. `if cmd; then fail` pada na zielonym snapshotcie.
+**Zasada**: Przed `dotnet ef` zawsze `dotnet restore`. Fail tylko przy `if ! has-pending-model-changes` (EF rzuca, gdy model się różni). Wersja `dotnet-ef` = runtime (tu 10.0.9).
 **Dotyczy**: `.github/workflows/ci.yml` job `migrations`
+
+## CSV import nie może 503-ować zanim sparsujesz CSV
+
+**Kontekst**: `HistoryImport_CsvSkipsAi` lokalnie przechodził (klucz OpenRouter w env), w CI zwracał 503.
+**Problem**: `/api/ai/history-import` sprawdzał `UnavailableChatClient` zanim `ImportAsync` zdążył wziąć ścieżkę CSV.
+**Zasada**: 503 tylko gdy AI jest naprawdę potrzebne — po nieudanym parse CSV/tekstu, wewnątrz `ImportAsync`. Testy CSV nie mogą zależeć od klucza na laptopie.
+**Dotyczy**: `apps/api/Program.cs` `POST /api/ai/history-import`, `HistoryImport.ImportAsync`
 
 ## Runbook w git: nazwy, nie cudza infra i nie sekrety
 

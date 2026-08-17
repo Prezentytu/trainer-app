@@ -3493,8 +3493,6 @@ app.MapPost("/api/ai/history-import", async (
     try
     {
         var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
-        if (chatClient is UnavailableChatClient)
-            return Results.Json(new { message = UnavailableChatClient.Message }, statusCode: 503);
 
         var library = await db.Exercises
             .Where(e => e.TrainerId == null || e.TrainerId == trainerId)
