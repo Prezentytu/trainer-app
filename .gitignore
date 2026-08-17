@@ -5,6 +5,9 @@ apps/api/trainer.db*
 tests/api/bin/
 tests/api/obj/
 
+# Vercel CLI (org/project id z CI — nie commituj)
+.vercel/
+
 # Next.js / Node
 apps/web/node_modules/
 apps/web/.next/

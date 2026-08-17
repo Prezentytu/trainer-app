@@ -6,7 +6,7 @@ set -euo pipefail
 
 BASE=""
 EXPECT=""
-RETRIES=12
+RETRIES=16
 SLEEP=15
 PROTECTED="/api/clients"
 
@@ -86,23 +86,42 @@ version_matches() {
 }
 
 echo "==> liveness ${BASE}/api/health/live"
-if ! live=$(wait_body "${BASE}/api/health/live"); then
-  echo "::error::Liveness nie zwrócił JSON-a. Sprawdź API_BASE_URL (ze schematem https://) i Log stream Web App."
-  exit 1
-fi
-status=$(printf '%s' "$live" | json_field status)
-version=$(printf '%s' "$live" | json_field version)
-if [[ "$status" != "ok" ]]; then
-  echo "::error::Liveness status=${status}"
-  exit 1
-fi
-echo "    version=${version}"
-
-if [[ -n "$EXPECT" ]]; then
-  if ! version_matches "$version" "$EXPECT"; then
-    echo "::error::Oczekiwałem version=${EXPECT}, dostałem ${version} (stary obraz?)."
-    exit 1
+live=""
+version=""
+url="${BASE}/api/health/live"
+for i in $(seq 1 "$RETRIES"); do
+  body=$(curl -fsSL --max-time 20 "$url" 2>/dev/null || true)
+  if ! is_json "$body"; then
+    code=$(curl -sSL -o /dev/null -w '%{http_code}' --max-time 20 "$url" 2>/dev/null || true)
+    echo "  próba $i/$RETRIES — HTTP ${code:-000} (nie JSON), czekam ${SLEEP}s…" >&2
+    sleep "$SLEEP"
+    continue
   fi
+  status=$(printf '%s' "$body" | json_field status)
+  version=$(printf '%s' "$body" | json_field version)
+  if [[ "$status" != "ok" ]]; then
+    echo "  próba $i/$RETRIES — status=${status}, czekam ${SLEEP}s…" >&2
+    sleep "$SLEEP"
+    continue
+  fi
+  echo "    version=${version}"
+  if [[ -z "$EXPECT" ]] || version_matches "$version" "$EXPECT"; then
+    live="$body"
+    break
+  fi
+  echo "  próba $i/$RETRIES — stary obraz (chcę ${EXPECT:0:12}…), czekam ${SLEEP}s…" >&2
+  sleep "$SLEEP"
+done
+
+if [[ -z "$live" ]]; then
+  if [[ -n "$EXPECT" && -n "$version" ]]; then
+    echo "::error::Oczekiwałem version=${EXPECT}, dostałem ${version} (stary obraz — Azure jeszcze ciągnie nowy? Log stream)."
+  else
+    echo "::error::Liveness nie zwrócił JSON-a. Sprawdź API_BASE_URL (ze schematem https://) i Log stream Web App."
+  fi
+  exit 1
+fi
+if [[ -n "$EXPECT" ]]; then
   echo "    SHA zgodny"
 fi
 

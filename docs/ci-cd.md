@@ -199,7 +199,7 @@ Bez maila/hasła: tylko landing + `/sign-in` (job zielony). Pełna ścieżka: kl
 |---|---|
 | Release: brak `AZURE_CLIENT_ID` | Environment secrets, nie repo `AZURE_CREDENTIALS` JSON |
 | `ImagePullUnauthorizedFailure` | `GHCR_TOKEN` `read:packages`; krok keep-ghcr po deployu |
-| Smoke: zły `version` | stary kontener — Log stream, Always On, 2–3 min |
+| Smoke: zły `version` | Azure jeszcze na starym obrazie — skrypt ma czekać na SHA; w przeglądarce `/api/health/live` musi mieć `version` z tego Release. Log stream / pull GHCR. |
 | Smoke: „nie zwrócił JSON-a” | `API_BASE_URL` musi mieć `https://` i pełny host (`<name>-<hash>.<region>-01.azurewebsites.net`); bez schematu curl łapie 301 z pustym ciałem |
 | Smoke: 200 na `/api/clients` | Clerk wyłączony na Web App — ustaw `Clerk__Authority` |
 | Vercel `Could not retrieve Project Settings` | `VERCEL_ORG_ID` = `team_…`, `VERCEL_PROJECT_ID` = `prj_…`, token na ten sam team |

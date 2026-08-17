@@ -835,6 +835,20 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: GitHub Environments, joby, tagi obrazu i docs mówią `dev` / `prod`. Vercel Production zostaje `--environment=production` / `--prod` — skrypt mapuje argument `prod`. Nie mieszaj `staging` w YAML z `dev.*` w URL-u.
 **Dotyczy**: `.github/workflows/`, `scripts/vercel-deploy.sh`, `docs/ci-cd.md`.
 
+## Vercel CLI w monorepo odpalaj z roota, nie z `apps/web`
+
+**Kontekst**: Projekt Vercel ma Root Directory `apps/web`. `vercel-deploy.sh` robił `cd apps/web` i potem `vercel build`.
+**Problem**: CLI dokleja Root Directory do CWD → `apps/web/apps/web/package.json` (ENOENT). Pull projektu działał, build nie.
+**Zasada**: `vercel pull` / `build` / `deploy` z katalogu repo (tam gdzie jest `apps/`). Root Directory zostaje `apps/web` w UI. Nie zmieniaj go na `/` i nie `cd` do frontu przed CLI.
+**Dotyczy**: `scripts/vercel-deploy.sh`, Vercel Settings → General → Root Directory
+
+## Smoke ze SHA: zdrowy JSON starego obrazu to nie sukces
+
+**Kontekst**: Po merge na `main` Azure zaktualizował `linuxFxVersion`, ale kontener jeszcze serwował poprzedni digest. `/api/health/live` od razu zwracał `status: ok` ze starym `version`.
+**Problem**: `wait_body` kończył się na pierwszym JSON-ie; check SHA był *po* pętli — fail w 1 s, zero retry. Re-run tego samego commita powtarzał ten sam wyścig.
+**Zasada**: Przy `--expect-version` retry dotyczy też niezgodnego SHA (stary obraz = czekaj, jak puste 200). Daj Azure 3–4 min na pull z GHCR. W przeglądarce ten sam URL + `version` z commita Release.
+**Dotyczy**: `scripts/smoke.sh`, job `Dev API` / `Prod API` w `release.yml`
+
 ## Nasz `dev` na Vercelu = Preview, nie Development i nie płatny Custom
 
 **Kontekst**: `vercel-deploy.sh` wołał `--environment=dev`. Na Hobby Custom Environment jest płatne (Pro). Użytkownik pytał, czy użyć wbudowanego Development.
