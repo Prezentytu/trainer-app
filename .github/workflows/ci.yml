@@ -2,12 +2,20 @@ name: CI
 
 on:
   pull_request:
-    branches: [main, master, dev]
-  push:
-    branches: [main, master, dev]
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  validate:
+  api:
+    name: API
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,6 +23,31 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
+          cache: true
+          cache-dependency-path: |
+            apps/api/TrainerApp.Api.csproj
+            tests/api/TrainerApp.Api.Tests.csproj
+
+      - name: Build
+        run: dotnet build apps/api/TrainerApp.Api.csproj -c Release -warnaserror -nologo
+
+      - name: Test
+        run: dotnet test TrainerApp.slnx -c Release -nologo
+
+      - name: Vulnerable NuGet packages
+        run: |
+          set -euo pipefail
+          dotnet list TrainerApp.slnx package --vulnerable --include-transitive | tee nuget-vuln.txt
+          if grep -qi "has the following vulnerable packages" nuget-vuln.txt; then
+            echo "::error::Znaleziono podatne paczki NuGet."
+            exit 1
+          fi
+
+  web:
+    name: Web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
@@ -22,17 +55,129 @@ jobs:
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
 
-      - name: Backend build + test
-        run: |
-          dotnet build apps/api/TrainerApp.Api.csproj
-          dotnet test tests/api/TrainerApp.Api.Tests.csproj --no-build || dotnet test tests/api/TrainerApp.Api.Tests.csproj
+      - name: Cache Next.js
+        uses: actions/cache@v4
+        with:
+          path: apps/web/.next/cache
+          key: next-${{ runner.os }}-${{ hashFiles('apps/web/package-lock.json') }}-${{ hashFiles('apps/web/next.config.ts') }}
+          restore-keys: |
+            next-${{ runner.os }}-${{ hashFiles('apps/web/package-lock.json') }}-
+            next-${{ runner.os }}-
 
-      - name: Web lint + typecheck + build
+      - name: Install
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Lint + typecheck + build
         working-directory: apps/web
         env:
           SKIP_ENV_VALIDATION: "true"
         run: |
-          npm ci
           npm run lint
           npm run typecheck
           npm run build
+
+      - name: npm audit
+        run: bash scripts/npm-audit-ci.sh
+
+  migrations:
+    name: Migrations
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: trainer_app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=trainer_app;Username=postgres;Password=postgres
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+          cache: true
+          cache-dependency-path: apps/api/TrainerApp.Api.csproj
+
+      - name: Install EF tools
+        run: |
+          dotnet tool install --global dotnet-ef --version 10.0.0
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      - name: Pending model changes
+        working-directory: apps/api
+        run: |
+          # Exit 0 = snapshot zgodny; ≠0 = brakuje migracji.
+          if ! dotnet ef migrations has-pending-model-changes; then
+            echo "::error::Model EF różni się od snapshotu — dodaj migrację (dotnet ef migrations add …)."
+            exit 1
+          fi
+
+      - name: Idempotent SQL script
+        working-directory: apps/api
+        run: |
+          mkdir -p "${{ github.workspace }}/artifacts"
+          dotnet ef migrations script --idempotent --output "${{ github.workspace }}/artifacts/ef.sql"
+
+      - name: Guard destructive DDL
+        env:
+          ALLOW: ${{ contains(join(github.event.pull_request.labels.*.name, ','), 'allow-destructive-ddl') || contains(github.event.head_commit.message, '[allow-destructive-ddl]') }}
+        run: bash scripts/check-migration-script.sh artifacts/ef.sql "${ALLOW}"
+
+      - name: Apply bundle on empty Postgres
+        working-directory: apps/api
+        run: |
+          dotnet restore TrainerApp.Api.csproj
+          dotnet ef migrations bundle \
+            --self-contained -r linux-x64 \
+            --configuration Release \
+            --output efbundle
+          ./efbundle
+          echo "Druga aplikacja (idempotencja)…"
+          ./efbundle
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ef-idempotent-script
+          path: artifacts/ef.sql
+          if-no-files-found: error
+
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+
+  ci-ok:
+    name: CI
+    if: always()
+    needs: [api, web, migrations, dependency-review]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require green jobs
+        run: |
+          set -euo pipefail
+          api="${{ needs.api.result }}"
+          web="${{ needs.web.result }}"
+          mig="${{ needs.migrations.result }}"
+          dep="${{ needs.dependency-review.result }}"
+          echo "api=$api web=$web migrations=$mig dependency-review=$dep"
+          if [[ "$api" != "success" || "$web" != "success" || "$mig" != "success" ]]; then
+            exit 1
+          fi
+          if [[ "$dep" != "success" && "$dep" != "skipped" ]]; then
+            exit 1
+          fi

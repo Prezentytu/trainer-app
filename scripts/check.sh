@@ -7,7 +7,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 echo "==> [1/5] Backend: build"
-dotnet build apps/api/TrainerApp.Api.csproj -nologo
+dotnet build apps/api/TrainerApp.Api.csproj -nologo -warnaserror
 
 echo "==> [2/5] Backend: testy"
 dotnet test -nologo

@@ -99,6 +99,7 @@ Dopasuj zadanie do wiersza i przeczytaj wskazany przewodnik. Jedno zadanie może
 | Pisanie/aktualizacja specyfikacji | `.ai/specs/AGENTS.md` + skill `spec-writing` |
 | Review własnych/cudzych zmian | skill `code-review` |
 | Walidacja + commit | skill `check-and-commit` |
+| CI/CD, deploy, Environments, rollback | `docs/ci-cd.md` + `docs/deploy.md` |
 | Powtarzające się błędy / wnioski | `.ai/lessons.md` |
 
 ## Konwencje
@@ -109,6 +110,7 @@ Dopasuj zadanie do wiersza i przeczytaj wskazany przewodnik. Jedno zadanie może
 - **Frontend**: strony to komponenty klienckie (`"use client"`), dane pobierane przez `api.*` w `useEffect`; wspólne prymitywy UI w `apps/web/components/ui.tsx` (`PageHeader`, `Card`, `Button`, `Field`, `ErrorBanner`, `EmptyState`, `Badge`, `inputClass`, `formatRest`).
 - **Błędy API**: backend zwraca `{ message }` przy konfliktach; wrapper `request<T>()` wyciąga `message` i rzuca `Error` — strony pokazują go przez `ErrorBanner`.
 - **Nawigacja**: nowy dział dopisz do tablicy `NAV` w `apps/web/app/layout.tsx`.
+- **Git**: `main` jest jedyną długowieczną gałęzią (trunk). Praca na `feat/*` / `fix/*`, PR, zielone CI, auto-merge. Nie zakładamy gałęzi `dev` — środowiska to `dev` / `prod` (patrz `docs/ci-cd.md`).
 
 ## Zasady przewodnie
 

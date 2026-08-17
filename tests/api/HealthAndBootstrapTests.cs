@@ -18,6 +18,7 @@ public class HealthAndBootstrapTests : IClassFixture<TestWebAppFactory>
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
         var json = await res.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("ok", json.GetProperty("status").GetString());
+        Assert.False(string.IsNullOrWhiteSpace(json.GetProperty("version").GetString()));
         Assert.False(json.TryGetProperty("database", out _), "Liveness nie powinien raportować stanu bazy.");
     }
 

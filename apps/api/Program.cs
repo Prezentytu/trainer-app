@@ -213,23 +213,24 @@ static Task<IResult> UnauthorizedTrainer(Exception _)
 // ---------- Liveness / Health / me ----------
 
 // Always On pinguje `/` — musi być 2xx bez bazy (żeby nie trzymać Neona always-on).
-app.MapGet("/", () => Results.Ok(new { service = "RepMaxer API", status = "ok" }));
-app.MapGet("/api/health/live", () => Results.Ok(new { status = "ok", utc = DateTime.UtcNow }));
+app.MapGet("/", () => Results.Ok(new { service = "RepMaxer API", status = "ok", version = BuildInfo.Version }));
+app.MapGet("/api/health/live", () => Results.Ok(new { status = "ok", utc = DateTime.UtcNow, version = BuildInfo.Version }));
 
 app.MapGet("/api/health", async (AppDb db) =>
 {
     var utc = DateTime.UtcNow;
+    var version = BuildInfo.Version;
     try
     {
         // Readiness z pingiem DB — tylko smoke po deployu / diagnostyka, NIE Azure Health check.
         var canConnect = await db.Database.CanConnectAsync();
         if (!canConnect)
-            return Results.Json(new { status = "degraded", utc, database = "unreachable" }, statusCode: 503);
-        return Results.Ok(new { status = "ok", utc, database = "ok" });
+            return Results.Json(new { status = "degraded", utc, version, database = "unreachable" }, statusCode: 503);
+        return Results.Ok(new { status = "ok", utc, version, database = "ok" });
     }
     catch (Exception)
     {
-        return Results.Json(new { status = "degraded", utc, database = "error" }, statusCode: 503);
+        return Results.Json(new { status = "degraded", utc, version, database = "error" }, statusCode: 503);
     }
 });
 

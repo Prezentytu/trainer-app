@@ -1,0 +1,36 @@
+name: Apply EF migrations
+description: Buduje efbundle i aplikuje go przez DesignTimeDbContextFactory (DB_CONNECTION_STRING).
+runs:
+  using: composite
+  steps:
+    - name: Install EF tools
+      shell: bash
+      run: |
+        if ! command -v dotnet-ef >/dev/null 2>&1; then
+          dotnet tool install --global dotnet-ef --version 10.0.0
+        fi
+        echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+    - name: Restore NuGet packages
+      shell: bash
+      working-directory: ${{ github.workspace }}/apps/api
+      run: dotnet restore TrainerApp.Api.csproj
+
+    - name: Build migration bundle
+      shell: bash
+      working-directory: ${{ github.workspace }}/apps/api
+      run: |
+        dotnet ef migrations bundle \
+          --self-contained -r linux-x64 \
+          --configuration Release \
+          --output efbundle
+
+    - name: Apply migrations
+      shell: bash
+      working-directory: ${{ github.workspace }}/apps/api
+      run: |
+        if [[ -z "${DB_CONNECTION_STRING:-}" ]]; then
+          echo "::error::Brak DB_CONNECTION_STRING (Environment secret, direct Neon)."
+          exit 1
+        fi
+        ./efbundle

@@ -1,463 +1,657 @@
-# Deploy RepMaxer — od zera do działającej produkcji (MVP)
+# Deploy RepMaxer — produkcja
 
-**Założenie MVP:** jedno środowisko (produkcja dla design partnerów).  
-Nie zakładamy osobnego Azure DEV. Vercel Preview = darmowy front do testów.
+**Cel:** izolowany stack **prod**: nowa Web App, **nowy** projekt Neon, **nowa** aplikacja Clerk, Vercel.
 
-Masz już: repo na GitHubie `Prezentytu/trainer-app` + sekret Neona.  
-Idź **po kolei** od kroku, na którym jesteś.
+Osobna resource group, osobny App Service Plan, osobny Neon, osobny Clerk. Nie współdziel bazy ani planu z innymi produktami na tej samej subskrypcji.
+
+**W git idą nazwy zmiennych i zasobów, nigdy wartości.** Connection stringi, PAT, klucze `sk_*` / `re_*`, JSON service principala, hasła Neon — tylko GitHub Environment / Azure / Vercel. Ten plik jest runbookiem, nie notatnikiem sekretów.
+
+**Release train** (dev `trainer-app-api` + `dev.repmaxer.pl` → prod `repmaxer-prod` + `repmaxer.pl`): [ci-cd.md](ci-cd.md). GitHub Environments `dev` / `prod` — **te same nazwy sekretów**, nie `DEV_*` / `*_PROD`. `deploy-api.yml` to break-glass.
+
+Vercel Preview (PR) zostaje. Production z `main` wdraża **Release**, nie gitowa integracja Vercela (`apps/web/vercel.json`).
+
+**Domeny (stan sierpień 2026):** kanoniczna produkcja frontu to [https://repmaxer.pl](https://repmaxer.pl). `repmaxer.com` jest kupione, **DNS jeszcze nieustawione** — nie wpinaj `.com` do CORS/Clerk jako działającego originu, dopóki nie zrobisz sekcji J (301 na `.pl`).
+
+Idź **po kolei**. Opcjonalnie później (nie blokuje pierwszego deploju API): Resend, VAPID, `Cron__Key`, klucze Clerk `pk_live` / `sk_live`, DNS `.com` (sekcja J).
 
 ---
+
+
+
+## Zasada nazewnictwa — nic nie przemianowujesz
+
+Kod czyta **te same** nazwy zmiennych wszędzie (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `Clerk__Authority`, `ConnectionStrings__Default`). Rozdział dev/prod jest **miejscem**, nie prefiksem w kodzie.
+
+
+| Warstwa            | Co robisz                                                                                                                                                                                                                           | Czego nie robisz                                                                           |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| **GitHub Actions** | Environments `dev` i `prod` z **tymi samymi** nazwami (`DB_CONNECTION_STRING`, `AZURE_WEBAPP_NAME`, `API_BASE_URL`, `AZURE_CLIENT_ID`…). Zobacz [ci-cd.md](ci-cd.md). | Nie tworzysz `DB_CONNECTION_STRING_PROD`. Nie wracaj do ternary `DEV_*` / `*_PROD`. |
+| **Azure**          | Nowa Web App `repmaxer-prod` ma **te same** nazwy App Settings co stara (`Clerk__Authority`, `ConnectionStrings__Default`, …), ale **inne wartości** i inna maszyna. `trainer-app-api` nie ruszasz.                                 | Nie dodajesz `Clerk__Authority_PROD` na Azure — takiej zmiennej kod nie czyta.             |
+| **Vercel**         | Te same nazwy (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `NEXT_PUBLIC_API_URL`). Rozdział = checkbox **Production** / **Preview** / **Development** przy każdej zmiennej.                                            | Nie tworzysz `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY_PROD`. Next.js tego nie widzi.             |
+| **Lokalnie**       | `apps/web/.env.local` (nie w gicie): localhost + ewentualnie `pk_test` do testów loginu.                                                                                                                                            | Nie wklejasz `pk_live` / connection stringa prod do laptopa „na stałe”.                    |
+
+
+Workflow `Release` i break-glass `Deploy API` biorą sekrety z GitHub Environment (`dev` albo `prod`). `GHCR_TOKEN` jest **jeden** (wspólny, `read:packages`) — nie duplikujesz. Push do GHCR idzie `GITHUB_TOKEN`.
+
+### Gdzie wklejasz klucze Clerk (test i live)
+
+Nazwy po stronie Vercel/Azure **się nie zmieniają**. Zmienia się tylko wartość i (na Vercel) środowisko.
+
+
+| Klucz z dashboardu Clerk                                          | Gdzie wklejasz                                        | Nazwa pola                          |
+| ----------------------------------------------------------------- | ----------------------------------------------------- | ----------------------------------- |
+| Publishable `pk_test_…` albo później `pk_live_…`                  | Vercel → Environment Variables                        | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` |
+| Secret `sk_test_…` albo później `sk_live_…`                       | Vercel → Environment Variables                        | `CLERK_SECRET_KEY`                  |
+| Frontend API / Authority `https://….clerk.accounts.dev` (bez `/`) | Azure Web App `repmaxer-prod` → Environment variables | `Clerk__Authority`                  |
+
+
+**Pierwszy deploy:** zaznacz na Vercel przy tych zmiennych **Production + Preview + Development** i wklej `pk_test` **/** `sk_test` z nowej aplikacji Clerk `RepMaxer`. Preview (PR) i prod wtedy gadają z tym samym Clerk test — prościej na start.
+
+**Gdy masz już produkcyjne** `pk_live` **/** `sk_live`**:** nie dodajesz nowych nazw. W Vercel **edytujesz** te same zmienne:
+
+1. `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` — wartość `pk_live_…`, checkbox **tylko Production** (odznacz Preview i Development, albo zrób drugą instancję zmiennej: Production = live, Preview+Development = `pk_test`).
+2. `CLERK_SECRET_KEY` — analogicznie `sk_live_…` tylko na Production.
+3. Azure `repmaxer-prod` → `Clerk__Authority` zostaje ten sam host Clerk **tej samej aplikacji** (zwykle nadal `https://xxx.clerk.accounts.dev` aż podłączysz custom domain w Clerk). Nie ruszaj `Clerk__Authority` na `trainer-app-api`.
+4. Vercel → **Redeploy** Production (zmienne `NEXT_PUBLIC_`* wchodzą dopiero po rebuild).
+
+Lokalnie (`.env.local`) zostaw `pk_test` albo puste (API `local-dev` bez Clerk).
+
+### Notatnik — co skopiować i gdzie wkleić (kolejność)
+
+Wypełniaj w miarę kroków A–E. **GitHub: tylko dodajesz wiersze. Vercel/Azure: te same nazwy, nowe albo edytowane wartości.**
+
+
+| #   | Skąd bierzesz                      | Wklejasz                                                               | Nazwa                               | Uwaga                                                             |
+| --- | ---------------------------------- | ---------------------------------------------------------------------- | ----------------------------------- | ----------------------------------------------------------------- |
+| 1   | Clerk RepMaxer → Publishable       | Vercel                                                                 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | start: `pk_test_`; potem live: ta sama nazwa, checkbox Production |
+| 2   | Clerk → Secret (Show)              | Vercel                                                                 | `CLERK_SECRET_KEY`                  | j.w. `sk_test_` / `sk_live_`                                      |
+| 3   | Clerk → Frontend API URL           | Azure `repmaxer-prod`                                                  | `Clerk__Authority`                  | bez `/`; nie na `trainer-app-api`                                 |
+| 4   | Neon `repmaxer` pooled (`-pooler`) | Azure `repmaxer-prod`                                                  | `ConnectionStrings__Default`        | nie do GitHub `DEV_*`                                             |
+| 5   | Neon `repmaxer` direct             | GitHub Environment **prod**                                            | `DB_CONNECTION_STRING`              | nie wklejaj do `dev`                                              |
+| 6   | OIDC (`az ad app federated-credential`) | GitHub Environment **prod**                                       | `AZURE_CLIENT_ID` / `TENANT_ID` / `SUBSCRIPTION_ID` | nie JSON `AZURE_CREDENTIALS` — [ci-cd.md](ci-cd.md) |
+| 7   | nazwa Web App                      | GitHub Environment **prod**                                            | `AZURE_WEBAPP_NAME`                 | wartość: `repmaxer-prod`                                          |
+| 8   | URL API                            | GitHub Environment **prod**                                            | `API_BASE_URL`                      | `https://repmaxer-prod.azurewebsites.net`                         |
+| 9   | —                                  | Vercel                                                                 | `NEXT_PUBLIC_API_URL`               | `https://repmaxer-prod.azurewebsites.net`                         |
+| 10  | kanoniczny front                   | Vercel `NEXT_PUBLIC_SITE_URL` + Azure `ALLOWED_ORIGINS` i `WEB_ORIGIN` | te same nazwy                       | **teraz:** `https://repmaxer.pl` (+ localhost). `.com` dopiero po sekcji J |
+
+
+---
+
+
 
 ## Status — odhaczaj
 
-- [x] Kod na GitHubie (`Prezentytu/trainer-app`)
-- [x] Sekret Neona w GitHub (`DEV_DB_CONNECTION_STRING`)
-- [ ] A. Clerk (aplikacja + klucze)
-- [ ] B. Azure Web App
-- [ ] C. Reszta sekretów GitHub
-- [ ] D. Vercel (web)
-- [ ] E. Dopięcie CORS + Clerk URLs
-- [ ] F. Pierwszy Deploy API
-- [ ] G. Smoke test
+- [ ] Kod na GitHubie
+- [ ] A. Clerk — nowa aplikacja `RepMaxer` (nie instancja z innego produktu)
+- [ ] A4. Neon — nowy projekt `repmaxer` (dwa connection stringi)
+- [ ] B. Azure — RG `repmaxer-prod` + plan B1 + Web App `repmaxer-prod`
+- [ ] C. GitHub Environments `dev` / `prod` ([ci-cd.md](ci-cd.md))
+- [ ] D. Vercel — weryfikacja projektu/domeny; cutover env **po F** (nie drugi projekt)
+- [ ] E. CORS + Clerk URLs
+- [ ] F. Release albo Deploy API, Environment `prod`
+- [ ] G. Smoke test na `https://repmaxer.pl`
+- [ ] J. DNS `repmaxer.com` → 301 na `.pl` (gdy będziesz gotów; nie blokuje API)
 
 ---
 
-# A. Clerk — login trenera
+
+
+## Nazwy zasobów RepMaxer
+
+
+| Zasób            | Wartość                                                                                          |
+| ---------------- | ------------------------------------------------------------------------------------------------ |
+| Subskrypcja      | Twoja subskrypcja Azure                                                                          |
+| Resource Group   | `repmaxer-prod` (**Create new**)                                                                 |
+| App Service Plan | **nowy** Linux **B1**, ten sam region co Neon. Osobny plan — nie współdziel CPU z innymi Web Appami. |
+| Web App          | `repmaxer-prod` (Container, Linux)                                                               |
+| URL API          | `https://repmaxer-prod.azurewebsites.net`                                                        |
+| Neon             | nowy projekt `repmaxer`, region **ten sam** co Web App                                           |
+| Clerk            | nowa aplikacja **RepMaxer**                                                                      |
+| Vercel           | root `apps/web`, `NEXT_PUBLIC_API_URL` = URL `repmaxer-prod`                                     |
+| GitHub Actions   | **Release** → Environment `prod` (albo break-glass **Deploy API**)                               |
+
+
+Obraz Dockera: `ghcr.io/<owner>/trainer-app-api` (owner = właściciel tego repo). Tag przy prod: `prod-latest` + `0.0.N`.
+
+---
+
+
+
+# A. Clerk — nowa aplikacja
+
+
 
 ### A1. Utwórz aplikację
 
-1. Otwórz [https://dashboard.clerk.com](https://dashboard.clerk.com)
-2. U góry przełącznik aplikacji → **Create application**
+1. [https://dashboard.clerk.com](https://dashboard.clerk.com)
+2. Przełącznik aplikacji → **Create application**
 3. **Name:** `RepMaxer`
-4. Zaznacz **Email** (reszta opcjonalnie)
-5. Kliknij **Create application**
+4. Zaznacz **Email**
+5. **Create application**
 
-### A2. Skopiuj klucze (potrzebne zaraz)
+Nie używaj instancji Clerk z innego produktu.
 
-1. W menu: **Configure** → **API keys** (albo **Developers → API keys**)
-2. Skopiuj do notatnika:
-   - **Publishable key** → zaczyna się od `pk_test_…`  
-     → to będzie `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
-   - **Secret key** → **Show** → `sk_test_…`  
-     → to będzie `CLERK_SECRET_KEY`
+### A2. Klucze
 
-### A3. Skopiuj Authority (dla Azure API)
+**Configure** → **API keys**:
 
-1. Nadal w **API keys** / stronie z Frontend API
-2. Znajdź URL w stylu: `https://something.clerk.accounts.dev`
-3. Skopiuj **bez** `/` na końcu  
-   → to będzie `Clerk__Authority` w Azure
+- **Publishable key** `pk_test_…` → Vercel `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- **Secret key** `sk_test_…` → Vercel `CLERK_SECRET_KEY`
 
-> Na razie **nie** ustawiaj redirect URL — wrócisz po Vercel (krok E).
+Na start wystarczą klucze test. Live (`pk_live` / `sk_live`) dopiero gdy domena i billing Clerk są gotowe.
+
+### A3. Authority (Azure API)
+
+URL w stylu `https://something.clerk.accounts.dev` — **bez** `/` na końcu → Azure `Clerk__Authority`.
+
+Redirect URL-e ustawiasz w kroku E (po Vercel).
 
 ---
 
-# B. Azure — Web App na kontener
 
-Cel: `https://trainer-app-api.azurewebsites.net` (nazwa musi być globalnie unikalna; jeśli zajęta, dodaj sufiks).
+
+# A4. Neon — nowy projekt
+
+Nowy projekt w [https://console.neon.tech](https://console.neon.tech): nazwa `repmaxer`.  
+Region = region Web App z kroku B (inny region = +~100 ms na każde SQL).  
+Scale to zero (5 min) zostaje włączone na start.
+
+Skopiuj **dwa** connection stringi z tego projektu (nie ze stacku **dev**):
+
+
+| Gdzie                                           | Który string                  | Po co                                    |
+| ----------------------------------------------- | ----------------------------- | ---------------------------------------- |
+| Azure App Settings `ConnectionStrings__Default` | **pooled** (host z `-pooler`) | runtime API                              |
+| GitHub Environment `prod` → `DB_CONNECTION_STRING` | **direct** (bez `-pooler`) | migracje CI (`Release` / `Deploy API`) |
+
+
+URI przechodzi przez `DbConnectionString.Normalize` na format Npgsql. Hasło ze znakami specjalnymi: URL-encode.
+
+Nie wpinaj tego stringa do Web App `trainer-app-api` ani do GitHub Environment `dev`.
+
+---
+
+
+
+# B. Azure — Web App `repmaxer-prod`
+
+
 
 ### B1. Utwórz Web App
 
-1. Otwórz [https://portal.azure.com](https://portal.azure.com)
-2. Wyszukaj u góry: **App Services** → Enter
-3. **+ Create** → **Web App**
-4. Zakładka **Basics** — ustaw dokładnie:
+1. [https://portal.azure.com](https://portal.azure.com) → **App Services** → **+ Create** → **Web App**
+2. Zakładka **Basics**:
 
-| Pole | Wartość |
-|---|---|
-| Subscription | ta sama co fizjo |
-| Resource Group | **Create new** → `trainer-app` (albo wybierz istniejącą `fizjo-app` jeśli wolisz) |
-| Name | `trainer-app-api` (jeśli zajęta: `trainer-app-api-wa`) |
-| Secure unique default hostname | domyślnie OK |
-| Publish | **Container** |
-| Operating System | **Linux** |
-| Region | jak fizjo (np. West Europe / Germany West Central) |
-| Linux Plan | **Select / Create** — najlepiej **ten sam App Service Plan co fizjo** (oszczędność). Jeśli nie widać: Create new, SKU **Basic B1** |
-| Pricing | B1 wystarczy na MVP |
 
-5. **Next** aż do końca (albo **Review + create**)
-6. **Create** → poczekaj → **Go to resource**
+| Pole             | Wartość                                                   |
+| ---------------- | --------------------------------------------------------- |
+| Subscription     | Twoja subskrypcja Azure                                   |
+| Resource Group   | **Create new** → `repmaxer-prod`                          |
+| Name             | `repmaxer-prod` (jeśli zajęta: `repmaxer-prod-api`)       |
+| Publish          | **Container**                                             |
+| Operating System | **Linux**                                                 |
+| Region           | ten sam co projekt Neon                                   |
+| Linux Plan       | **Create new**, SKU **Basic B1** (osobny plan)            |
 
-Zapisz URL z Overview, np.:
 
-`https://trainer-app-api.azurewebsites.net`
+1. **Review + create** → **Create** → **Go to resource**
 
-### B1b. Always On + Health check (cold start)
+Zapisz URL: `https://repmaxer-prod.azurewebsites.net`
 
-**Mechanizm podstawowy = Azure Always On** (darmowe na planie Basic B1+). Bez tego App Service usypia proces po ~20 min bezczynności — klient na siłowni czeka na pull obrazu + start .NET (dziesiątki sekund).
+### B1b. Always On + Health check
 
-**Nie używamy crona GitHub Actions jako keep-alive** — schedule jest best-effort (opóźnienia 10–40 min, runy bywają porzucane; w repo publicznym wyłącza się po 60 dniach bez aktywności). Ping do endpointu z bazą trzymałby też Neon aktywny 24/7 i psuł scale-to-zero.
+Bez Always On proces usypia po ~20 min — klient na siłowni czeka na pull obrazu + start .NET.
+
+**Nie** używamy crona GitHub jako keep-alive. **Nie** pinguj `/api/health` z Azure Health check — to trzyma Neon 24/7 (~+14 USD/mies. przy Launch 0.25 CU).
 
 #### General settings (Settings → Configuration → General settings)
 
-| Pole | Wartość |
-|---|---|
-| **Always On** | **On** |
-| ARR affinity | **Off** |
-| HTTP version | **2.0** |
 
-Save.
+| Pole          | Wartość |
+| ------------- | ------- |
+| **Always On** | **On**  |
+| ARR affinity  | **Off** |
+| HTTP version  | **2.0** |
 
-#### App settings (Settings → Environment variables)
 
-| Name | Value | Po co |
-|---|---|---|
-| `WEBSITES_PORT` | `8080` | port kontenera (już masz) |
-| `WEBSITES_CONTAINER_START_TIME_LIMIT` | `600` | domyślne 230 s bywa za krótkie przy pullu obrazu → restart w pętli |
-| `WEBSITES_ENABLE_APP_SERVICE_STORAGE` | `false` | bez montowania `/home` → szybszy start |
-| `WEBSITE_WARMUP_PATH` | `/api/health/live` | warmup po deployu (bez bazy) |
-| `Database__MigrateOnStartup` | `false` | migracje tylko w CI (`Deploy API` → job migrate) |
 
-#### Health check (Monitoring → Health check) — dopiero po deployu z `/api/health/live`
 
-1. Enable
-2. Ścieżka: **`/api/health/live`** (bez bazy)
+#### App settings (warmup / start)
 
-**Nigdy** nie ustawiaj tu `/api/health` — ten endpoint robi `CanConnectAsync()` do Neona. Azure Health check pinguje ~co minutę i **kasuje oszczędności scale-to-zero** (~+14 USD/mies. przy Launch 0.25 CU always-on).
 
-Rozdział endpointów:
+| Name                                  | Value              |
+| ------------------------------------- | ------------------ |
+| `WEBSITES_PORT`                       | `8080`             |
+| `WEBSITES_CONTAINER_START_TIME_LIMIT` | `600`              |
+| `WEBSITES_ENABLE_APP_SERVICE_STORAGE` | `false`            |
+| `WEBSITE_WARMUP_PATH`                 | `/api/health/live` |
+| `Database__MigrateOnStartup`          | `false`            |
 
-| Endpoint | Dotyka DB? | Do czego |
-|---|---|---|
-| `/` oraz `/api/health/live` | nie | Always On, Azure Health check, warmup |
-| `/api/health` | tak | smoke po deployu (`API_HEALTH_URL` w GitHub), diagnostyka |
 
-#### Neon (Console → Branch → Compute)
 
-- Azure App Settings `ConnectionStrings__Default` → connection string **pooled** (host z `-pooler`).
-- GitHub secret `DEV_DB_CONNECTION_STRING` (migracje CI) → **direct** (bez `-pooler`).
-- **Scale to zero** zostaje włączone (5 min) — wybudzenie bazy to ~kilkaset ms. Wyłączaj dopiero gdy po Always On różnica warm vs cold-DB > 800 ms.
-- Sprawdź **region** Neon vs Azure Web App (Overview → Location). Różne regiony = +100 ms na każde SQL.
 
-Sekrety `API_HEALTH_URL` / `API_HEALTH_URL_PROD` zostają — używa ich health check w workflow `Deploy API` (po deployu), nie keep-alive.
+#### Health check (Monitoring) — dopiero po pierwszym deployu z `/api/health/live`
 
-### B2. Ustawienia aplikacji (env) — WAŻNE, zrób przed deployem
+Ścieżka: `/api/health/live` (bez bazy).
 
-1. W Web App w lewym menu: **Settings** → **Environment variables**  
-   (w starszym UI: **Configuration** → **Application settings**)
-2. Zakładka **App settings** → **+ Add** — dodaj **każdą** pozycję osobno:
 
-| Name | Value | Skąd |
-|---|---|---|
-| `Database__Provider` | `Postgres` | wpisz ręcznie |
-| `ConnectionStrings__Default` | `postgresql://…` | **ten sam** string co w sekretcie Neona (pooled); URI jest tłumaczony na format Npgsql przez `DbConnectionString.Normalize` |
-| `Clerk__Authority` | `https://….clerk.accounts.dev` | z kroku A3 |
-| `ALLOWED_ORIGINS` | `http://localhost:3000` | na razie tylko lokal; **dopiszesz Vercel w kroku E** |
-| `ASPNETCORE_ENVIRONMENT` | `Production` | wpisz ręcznie |
-| `WEBSITES_PORT` | `8080` | wpisz ręcznie (Docker słucha na 8080) |
-| `WEB_ORIGIN` | `https://twoja-app.vercel.app` | origin frontu (linki w e-mailach) |
-| `Email__ResendApiKey` | `re_…` | klucz [Resend](https://resend.com) — opcjonalnie; bez niego wysyłka linków zwraca komunikat |
-| `Email__From` | `RepMaxer <hello@twojadomena.pl>` | nadawca Resend (zweryfikowana domena) |
-| `Push__PublicKey` | klucz VAPID publiczny | para z `web-push generate-vapid-keys`; ten sam publiczny w Vercel jako `NEXT_PUBLIC_VAPID_PUBLIC_KEY` |
-| `Push__PrivateKey` | klucz VAPID prywatny | tylko na API — nigdy na froncie |
-| `Push__Subject` | `mailto:support@…` | kontakt VAPID |
-| `Cron__Key` | losowy sekret | ten sam w GitHub secret `CRON_KEY` (workflow `reminders.yml`) |
+| Endpoint                    | DB? | Do czego                                 |
+| --------------------------- | --- | ---------------------------------------- |
+| `/` oraz `/api/health/live` | nie | Always On, Azure Health check, warmup    |
+| `/api/health`               | tak | smoke po deployu (`API_BASE_URL` + `/api/health`) |
 
-3. Kliknij **Apply** → **Confirm** (restart).
 
-> Podwójne podkreślenie `__` w nazwach jest celowe (ASP.NET mapuje `Clerk__Authority` → `Clerk:Authority`).
 
-### B3. Registry credentials (żeby Azure mógł ciągnąć obraz z GHCR)
 
-Workflow wdraża obraz `ghcr.io/prezentytu/trainer-app-api:…`. Azure musi umieć go pobrać.
+### B2. Environment variables — przed deployem
 
-1. W Web App: **Deployment** → **Deployment Center** (albo **Settings → Deployment Center**)
-2. **Source:** Container Registry / **Settings** kontenera
-3. Ustaw (nazwy pól mogą się lekko różnić):
+Settings → **Environment variables** → **+ Add** każdą osobno:
 
-| Pole | Wartość |
-|---|---|
-| Registry source / Image source | Private registry / Other |
-| Registry server URL | `https://ghcr.io` |
-| Image and tag | na razie `prezentytu/trainer-app-api:dev-latest` (powstanie przy pierwszym deployu) |
-| Continuous deployment | Off |
-| Authentication | Admin / Username + password |
-| Username | Twój login GitHub (np. `Prezentytu` / Twój user) |
-| Password | **Personal Access Token** z uprawnieniem `read:packages` |
 
-**Jak zrobić PAT (jeśli nie masz `GHCR_TOKEN`):**
+| Name                         | Value                             | Skąd                                                              |
+| ---------------------------- | --------------------------------- | ----------------------------------------------------------------- |
+| `Database__Provider`         | `Postgres`                        | ręcznie                                                           |
+| `ConnectionStrings__Default` | `postgresql://…`                  | Neon **pooled** (krok A4)                                         |
+| `Clerk__Authority`           | `https://….clerk.accounts.dev`    | krok A3 — **wymagane**, bez tego API nie wstanie                  |
+| `ALLOWED_ORIGINS`            | `https://repmaxer.pl,http://localhost:3000` | front już na `.pl`; `www` / `.com` dopiero gdy DNS (J)     |
+| `ASPNETCORE_ENVIRONMENT`     | `Production`                      | ręcznie                                                           |
+| `WEBSITES_PORT`              | `8080`                            | Docker słucha na 8080                                             |
+| `WEB_ORIGIN`                 | `https://repmaxer.pl`             | linki w e-mailach; kanoniczny origin                              |
+| `Email__ResendApiKey`        | `re_…`                            | opcjonalnie                                                       |
+| `Email__From`                | `RepMaxer <hello@twojadomena.pl>` | opcjonalnie                                                       |
+| `Push__PublicKey`            | VAPID public                      | opcjonalnie; ten sam w Vercel jako `NEXT_PUBLIC_VAPID_PUBLIC_KEY` |
+| `Push__PrivateKey`           | VAPID private                     | tylko API                                                         |
+| `Push__Subject`              | `mailto:support@…`                | opcjonalnie                                                       |
+| `Cron__Key`                  | losowy sekret                     | ten sam w GitHub `CRON_KEY` gdy włączysz cron                     |
 
-1. GitHub → avatar → **Settings** → **Developer settings** → **Personal access tokens**
-2. **Tokens (classic)** → **Generate new token (classic)**
-3. Note: `trainer-app-ghcr`
-4. Scopes: zaznacz **`write:packages`** (zawiera read) oraz **`repo`** jeśli repo private
-5. **Generate** → skopiuj token (pokazuje się raz)
-6. Ten token = secret `GHCR_TOKEN` **oraz** hasło do registry w Azure
 
-> Po pierwszym udanym workflow Azure i tak dostanie obraz przez `azure/webapps-deploy` — credentials w Deployment Center są siatką bezpieczeństwa przy restarcie.
+`__` jest celowe (`Clerk__Authority` → `Clerk:Authority`). **Apply** → restart.
 
-### B4. Service principal do GitHub Actions (`AZURE_CREDENTIALS`)
+### B3. GHCR (obraz z GitHub)
 
-**Opcja najszybsza:** jeśli w repo fizjo masz już secret `AZURE_CREDENTIALS` z dostępem do całej subskrypcji — skopiuj **tę samą wartość JSON** do repo `trainer-app`.
+Workflow pcha obraz GHCR tego repo. **Nie polegaj na Deployment Center → Private** — `Deploy API` (`azure/webapps-deploy`) nadpisuje obraz i wraca na Public (bez hasła) → `ImagePullUnauthorizedFailure`.
 
-**Opcja od zera (Cloud Shell):**
+Hasło do pulla trzymaj jako **Environment variables** (przeżyją UI; workflow i tak je wkleja po każdym deployu):
 
-1. Azure Portal → ikona **Cloud Shell** (`>_`) u góry → Bash
-2. Sprawdź subskrypcję i RG:
+
+| Name                               | Value                                      |
+| ---------------------------------- | ------------------------------------------ |
+| `DOCKER_REGISTRY_SERVER_URL`       | `https://ghcr.io`                          |
+| `DOCKER_REGISTRY_SERVER_USERNAME`  | właściciel repo (GitHub username / org)    |
+| `DOCKER_REGISTRY_SERVER_PASSWORD`  | ten sam PAT co GitHub secret `GHCR_TOKEN`  |
+
+
+**PAT** (jeśli nie masz `GHCR_TOKEN`): GitHub → Settings → Developer settings → Tokens (classic) → `read:packages` (pull na Azure; push w CI idzie `GITHUB_TOKEN`). Nie commituj tokenu.
+
+### B4. Service principal tylko na RG `repmaxer-prod`
+
+Nie kopiuj service principala z innego produktu — ten musi mieć Contributor **tylko** na RG `repmaxer-prod`.
+
+Cloud Shell (Bash), **po** utworzeniu RG. **Bez** `--sdk-auth`: ta flaga wypisuje client secret, którego przy OIDC nie potrzebujesz i którego nie wolno wklejać do gita.
 
 ```bash
-az account show --query id -o tsv
-az group list -o table
-```
-
-3. Utwórz SP (podstaw swoje ID i nazwę RG z kroku B1):
-
-```bash
-az ad sp create-for-rbac \
-  --name "github-trainer-app" \
+SUB=$(az account show --query id -o tsv)
+APP_ID=$(az ad app create --display-name "github-repmaxer-prod" --query appId -o tsv)
+az ad sp create --id "$APP_ID"
+az role assignment create \
+  --assignee "$APP_ID" \
   --role contributor \
-  --scopes /subscriptions/<SUBSCRIPTION_ID>/resourceGroups/trainer-app \
-  --sdk-auth
+  --scope "/subscriptions/${SUB}/resourceGroups/repmaxer-prod"
+
+echo "appId=$APP_ID"
+az account show --query "{tenant:tenantId, subscription:id}" -o json
 ```
 
-4. Cały JSON ze stdout (z `clientId`, `clientSecret`, `subscriptionId`, `tenantId`) → to jest `AZURE_CREDENTIALS`.  
-   Skopiuj do notatnika.
+`appId` / tenant / subscription → GitHub Environment **prod** jako `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`. Federated credential: [ci-cd.md](ci-cd.md) §2. Hasła SP nie tworzysz i nie zapisujesz.
 
 ---
 
-# C. GitHub Secrets — reszta (Neon już masz)
 
-1. Otwórz [https://github.com/Prezentytu/trainer-app](https://github.com/Prezentytu/trainer-app)
-2. **Settings** → **Secrets and variables** → **Actions**
-3. Powinieneś już mieć: `DEV_DB_CONNECTION_STRING`
-4. **New repository secret** — dodaj po kolei:
 
-| Name | Value |
-|---|---|
-| `GHCR_TOKEN` | PAT z kroku B3 |
-| `AZURE_CREDENTIALS` | cały JSON z kroku B4 (albo kopia z fizjo) |
-| `AZURE_WEBAPP_NAME` | dokładnie nazwa Web App, np. `trainer-app-api` (**bez** `.azurewebsites.net`) |
-| `API_HEALTH_URL` | `https://trainer-app-api.azurewebsites.net/api/health` (podstaw swoją nazwę) |
+# C. GitHub Environments — te same nazwy, różne miejsca
 
-**Nie dodawaj na razie** `PROD_*` — w MVP odpalasz workflow z `environment: dev`, a „dev” w nazwie sekretu = Twoja jedyna produkcja.
+Repo → **Settings → Environments**. Pełna tabela: [ci-cd.md](ci-cd.md).
 
-Checklist sekretów po tej sekcji:
+`dev` = `trainer-app-api` (stary Neon). `prod` = `repmaxer-prod` (Neon `repmaxer`). Nazwy sekretów **identyczne**: `DB_CONNECTION_STRING`, `AZURE_WEBAPP_NAME`, `API_BASE_URL`, `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `GHCR_TOKEN`, `VERCEL_*`, `CRON_KEY` (tylko prod).
 
-- [x] `DEV_DB_CONNECTION_STRING`
-- [ ] `GHCR_TOKEN`
-- [ ] `AZURE_CREDENTIALS`
-- [ ] `AZURE_WEBAPP_NAME`
-- [ ] `API_HEALTH_URL`
+Nie wklejaj connection stringa `repmaxer` do Environment `dev`.
+
+Checklist prod:
+
+- [ ] `DB_CONNECTION_STRING` (direct, nowy Neon)
+- [ ] `AZURE_CLIENT_ID` / `AZURE_TENANT_ID` / `AZURE_SUBSCRIPTION_ID` (OIDC)
+- [ ] `AZURE_WEBAPP_NAME` = `repmaxer-prod`
+- [ ] `API_BASE_URL` = `https://repmaxer-prod.azurewebsites.net`
+- [ ] `GHCR_TOKEN` (`read:packages`)
 
 ---
 
-# D. Vercel — frontend
 
-### D1. Import projektu
 
-1. [https://vercel.com/new](https://vercel.com/new)
-2. **Import** Git Repository → wybierz `Prezentytu/trainer-app`  
-   (jeśli nie widać: Connect GitHub → daj Vercelowi dostęp do org `Prezentytu`)
-3. Zanim klikniesz Deploy, ustaw:
+# D. Vercel — jeden projekt, żywe `repmaxer.pl` (nie drugi front)
 
-| Pole | Wartość |
-|---|---|
-| Project Name | `trainer-app` (lub `repmaxer`) |
-| Framework Preset | Next.js |
-| Root Directory | **Edit** → wpisz `apps/web` → **Continue** |
-| Build Command | zostaw domyślne |
-| Output Directory | zostaw domyślne |
-| Install Command | zostaw domyślne |
+Kod frontu czyta wyłącznie: `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `NEXT_PUBLIC_SITE_URL`, opcjonalnie `NEXT_PUBLIC_VAPID_PUBLIC_KEY`.
 
-### D2. Environment Variables (PRZED pierwszym Deploy)
+**Stan docelowy (sierpień 2026):** projekt Vercel już jest (`trainer-app`), Production = `main`, domena **`repmaxer.pl`** (+ `www`). **Nie zakładaj drugiego projektu.** **Nie ruszaj Domains** w kroku D. **Nie Redeployuj Production**, dopóki `repmaxer-prod` nie odpowie `GET /api/health` = ok (krok F) i CORS/Clerk (E) nie wskażą na `.pl`.
 
-W tej samej stronie importu sekcja **Environment Variables** — dodaj 3 zmienne.  
-Dla każdej zaznacz **Production**, **Preview**, **Development**:
+Landing na `.pl` może żyć na starym API (`trainer-app-api`) do momentu cutover. Podmiana `NEXT_PUBLIC_*` + Redeploy Production **od razu** zepsuje login / panel na żywej domenie.
 
-| Name | Value |
-|---|---|
-| `NEXT_PUBLIC_API_URL` | `https://trainer-app-api.azurewebsites.net` (**bez** `/` na końcu) |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `pk_test_…` z Clerk (A2) |
-| `CLERK_SECRET_KEY` | `sk_test_…` z Clerk (A2) |
-| `NEXT_PUBLIC_SITE_URL` | URL Vercel, np. `https://trainer-app.vercel.app` (**bez** `/` na końcu) — używane do `metadataBase` / Open Graph |
+### D1. Projekt i domeny — tylko weryfikacja (już zrobione)
 
-4. **Deploy**
-5. Poczekaj na Success
-6. Skopiuj URL, np. `https://trainer-app.vercel.app` (albo z Project → Domains)
+Wejdź w istniejący projekt (Overview). Senior zostawia **jeden** projekt, **jedną** Production, **jeden** kanoniczny host.
 
-> Front może jeszcze nie działać w 100% (API nie wdrożone / CORS) — to normalne. Najpierw kończymy E i F.
-
----
-
-# E. Dopięcie CORS i Clerk (po Vercel)
-
-### E1. Azure — ALLOWED_ORIGINS
-
-1. Azure → Twoja Web App → **Environment variables**
-2. Edytuj `ALLOWED_ORIGINS`
-3. Ustaw (przykład — podstaw swój Vercel URL):
-
-```text
-https://trainer-app.vercel.app,http://localhost:3000
-```
-
-4. **Apply** → Save
-
-### E2. Clerk — dozwolone URL-e
-
-Aplikacja używa **własnych** stron `/sign-in` i `/sign-up` (nie hostowanego Account Portal). Middleware przekierowuje niezalogowanych na `/sign-in`; `/` jest publiczne (landing dla gości, Panel dla zalogowanych).
-
-1. Clerk Dashboard → Twoja app **RepMaxer**
-2. **Configure** → **Domains** / **Paths** / **Redirects** (zależnie od UI)
-3. Dodaj / ustaw:
-   - Sign-in URL: `https://<twoj-vercel>/sign-in`
-   - Sign-up URL: `https://<twoj-vercel>/sign-up`
-   - Allowed redirect / after sign-in: `https://<twoj-vercel>` (root = Panel)
-   - After sign-up: `https://<twoj-vercel>`
-   - To samo dla lokalnego: `http://localhost:3000/sign-in`, `/sign-up`, root `http://localhost:3000`
-4. Save
-5. (Opcja) w Clerk wyłącz / nie używaj Account Portal jako domyślnego sign-in — żeby użytkownicy nie lądowali na `*.accounts.dev`
-
-### E3. (Opcja) tylko zaproszenia
-
-1. Clerk → **Configure** → **User & authentication** → **Restrictions** (lub Sign-up)
-2. Wyłącz publiczny sign-up / włącz **Allowlist** / **Invitations only** — jak wolisz
-3. Później: **Users** → **Invite** → email design partnera
-
----
-
-# F. Pierwszy Deploy API (GitHub Actions)
-
-### F1. Odpal workflow
-
-1. GitHub → `Prezentytu/trainer-app` → zakładka **Actions**
-2. Po lewej: **Deploy API**
-3. **Run workflow** (przycisk po prawej)
-4. Ustaw:
-   - **Use workflow from:** `main`
-   - **environment:** `dev` ← **zostaw dev** (to Twoja jedyna produkcja w MVP)
-   - **skip_migrations:** `false` ← **musi być false** za pierwszym razem
-5. **Run workflow**
-
-### F2. Co powinno się stać (3 joby)
-
-1. **Build Docker image** — buduje i pcha do `ghcr.io/prezentytu/trainer-app-api:0.0.N`
-2. **Apply EF migrations** — `dotnet restore` + bundle EF + apply na Neon (`DEV_DB_CONNECTION_STRING`)
-3. **Deploy to Azure** — ustawia kontener na Web App + health check
-
-Poczekaj aż wszystkie 3 będą zielone (5–15 min).
-
-Jeśli job migracji pada na `NETSDK1004` / brak `project.assets.json` — upewnij się, że na `main` jest workflow z krokiem **Restore NuGet packages** przed `dotnet ef migrations bundle`. Awaryjnie: **Run workflow** z `skip_migrations: true` (tylko gdy schemat Neon jest już założony).
-
-### F3. Sprawdź health
-
-W przeglądarce otwórz:
-
-```text
-https://trainer-app-api.azurewebsites.net/api/health
-```
-
-Oczekiwane: JSON z `"status":"ok"`.
-
----
-
-# G. Smoke test — że „działa”
-
-### G1. Panel trenera
-
-1. Otwórz URL Vercel
-2. Powinien przekierować na Clerk Sign-in
-3. Zaloguj się (konto, które masz w Clerk Users — albo najpierw **Invite** siebie w Clerk → **Users** → **Invite**)
-4. Po logowaniu: Panel RepMaxer
-
-Jeśli pusty ekran / CORS: wróć do E1 (`ALLOWED_ORIGINS` musi być **dokładnie** origin z paska adresu, `https://…` bez `/` na końcu).
-
-### G2. Portal klienta (bez logowania)
-
-1. W panelu: **Klienci** → dodaj klienta
-2. Przypisz plan (szablon)
-3. **Skopiuj link dla klienta**
-4. Otwórz w oknie incognito — **bez** Clerk
-5. Powinna być karta **Twój postęp**
-
-### G3. Eksport
-
-1. Panel → **Eksportuj dane** → pobiera się plik JSON
-
----
-
-# Co robić przy kolejnych zmianach kodu
-
-| Zmiana | Co odpalasz |
-|---|---|
-| Tylko frontend (`apps/web`) | push na `main` → Vercel sam redeployuje Production |
-| Backend / migracje (`apps/api`) | **Actions → Deploy API → Run** (`environment: dev`, migracje `false` tylko gdy nie było zmian schematu — inaczej zostaw migracje włączone) |
-| PR do testów UI | Vercel Preview URL (automatycznie) |
-
----
-
-# Troubleshooting (najczęstsze)
-
-| Objaw | Fix |
-|---|---|
-| Actions: `GHCR_TOKEN` / login failed | Nowy PAT z `write:packages`; secret bez spacji/enterów |
-| Actions: migracje fail `Couldn't set …/neondb?sslmode` | Npgsql nie parsuje URI — wymaga formatu `klucz=wartość`, więc URI musi przejść przez `DbConnectionString.Normalize` (`apps/api/DbConnectionString.cs`). Ten błąd oznacza, że string ominął normalizację: sprawdź, czy krok „Apply migrations" nie przekazuje `--connection` (bundle ma czytać `DB_CONNECTION_STRING` przez `DesignTimeDbContextFactory`). Hasło ze znakami specjalnymi: URL-encode. Do migracji lepiej **direct** (bez `-pooler`), do Azure App Settings możesz użyć pooled. |
-| Actions: Azure login fail | Zły JSON w `AZURE_CREDENTIALS`; SP musi mieć Contributor na RG |
-| Actions: deploy OK, health fail | Poczekaj 1–2 min; sprawdź Log stream w Azure; `WEBSITES_PORT=8080` |
-| Web: CORS | `ALLOWED_ORIGINS` = dokładny Vercel origin |
-| Web: 401 na API | `Clerk__Authority` bez `/`; te same klucze Clerk w Vercel i Authority w Azure z **tej samej** aplikacji Clerk |
-| Azure: kontener nie startuje | Log stream → często brak env lub zły obraz; odpal Deploy API jeszcze raz |
-| Clerk: redirect mismatch | Dodaj Vercel URL w Clerk Allowed redirects (krok E2) |
-
----
-
-# Szybka ściągawka sekretów (MVP = jedno środowisko)
-
-| Gdzie | Nazwa | Uwagi |
+| Sprawdź | Oczekiwane | Czego nie robisz |
 |---|---|---|
-| GitHub | `DEV_DB_CONNECTION_STRING` | Neon pooled — **już masz** |
-| GitHub | `GHCR_TOKEN` | PAT `write:packages` |
-| GitHub | `AZURE_CREDENTIALS` | JSON z `az ad sp create-for-rbac --sdk-auth` |
-| GitHub | `AZURE_WEBAPP_NAME` | np. `trainer-app-api` |
-| GitHub | `API_HEALTH_URL` | `https://….azurewebsites.net/api/health` |
-| Azure App Settings | `Database__Provider` | `Postgres` |
-| Azure App Settings | `ConnectionStrings__Default` | ten sam Neon |
-| Azure App Settings | `Clerk__Authority` | `https://….clerk.accounts.dev` — **wymagane w Production** (API nie wystartuje bez tego) |
-| Azure App Settings | `Clerk__Audience` | opcjonalnie — gdy ustawione, walidacja `aud` JWT |
-| Azure App Settings | `ALLOWED_ORIGINS` | Vercel + localhost |
-| Azure App Settings | `WEBSITES_PORT` | `8080` |
-| Vercel | `NEXT_PUBLIC_API_URL` | URL Azure API |
-| Vercel | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `pk_test_…` |
-| Vercel | `CLERK_SECRET_KEY` | `sk_test_…` |
+| Git | to samo repo, branch Production = `main` | drugi import / drugi projekt „repmaxer” |
+| Root Directory | `apps/web` (Settings → General) | nowy projekt z rootem `/` |
+| Domains | `repmaxer.pl` = **Primary** | dodawanie `repmaxer.com` (to sekcja J) |
+| `www.repmaxer.pl` | **Redirect to** `repmaxer.pl` (301/308), nie druga żywa kopia | alias bez redirectu (duplikat SEO) |
+| `*.vercel.app` | mogą zostać (Preview / alias) | nie ustawiaj ich jako `NEXT_PUBLIC_SITE_URL` |
+
+Checklist Vercel (Preview Deployment, Analytics, Speed Insights) — ignoruj. Nie jest potrzebny do deploju API.
+
+### D2. Environment Variables — najpierw podejrzyj, cutover na końcu
+
+Settings → **Environment Variables**. Nazwy **nie zmieniaj**. Zapisz sobie obecne wartości Production (stare API / stary Clerk) — to rollback: wklejasz z powrotem + Redeploy.
+
+| Name | Wartość **po** cutover | Kiedy zmieniasz Production |
+|---|---|---|
+| `NEXT_PUBLIC_SITE_URL` | `https://repmaxer.pl` (bez `/`) | **teraz**, jeśli jest `*.vercel.app` albo puste — to nie psuje API |
+| `NEXT_PUBLIC_API_URL` | `https://repmaxer-prod.azurewebsites.net` (bez `/`) | **dopiero po F** (health ok) |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `pk_test_…` z Clerk **RepMaxer**, potem `pk_live_…` (D3) | razem z API, ta sama aplikacja Clerk co Azure `Clerk__Authority` |
+| `CLERK_SECRET_KEY` | `sk_test_…` / później `sk_live_…` | j.w. |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | puste / później | nie blokuje |
+
+`NEXT_PUBLIC_*` wchodzą w **build**. Save bez Redeploy nic nie zmienia.
+
+#### Kolejność senior (żywa domena)
+
+1. **D1** — potwierdź projekt + Primary `.pl`. Opcjonalnie ustaw 301 www → apex. Stop.
+2. Dokończ **A, A4, B, C, E, F**. W przeglądarce: `https://repmaxer-prod.azurewebsites.net/api/health` → `"status":"ok"`.
+3. **Preview (opcjonalnie, bezpieczniej):** te same nazwy, checkbox **tylko Preview** (i Development) → nowe API + nowy Clerk. Otwórz URL Preview z PR / Deployments, nie `repmaxer.pl`. Smoke logowania tam.
+4. **Cutover Production:** Edit tych samych zmiennych, checkbox **Production**, wartości z tabeli. **Redeploy** najnowszego Deploymentu Production (nie nowy projekt).
+5. **G** na `https://repmaxer.pl`. Pusto / CORS → E1. Cofasz: stare wartości + Redeploy.
+
+Nie twórz `NEXT_PUBLIC_API_URL_PROD`. Nie dodawaj `.com` do env.
+
+### D3. Gdy masz już `pk_live` / `sk_live` (ta sama aplikacja Clerk)
+
+Kolejność — nic nie przemianowujesz:
+
+1. Clerk Dashboard → aplikacja **RepMaxer** → API keys → skopiuj **live** (Show przy secret).
+2. Vercel → ta sama zmienna `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`:
+  - albo jedna wartość live i checkbox **tylko Production**,
+  - albo dwie wartości o **tej samej nazwie**: Production = `pk_live_…`, Preview+Development = `pk_test_…` (Vercel na to pozwala — „Add another” / osobny wiersz z innymi środowiskami).
+3. To samo dla `CLERK_SECRET_KEY` (`sk_live` vs `sk_test`).
+4. Azure `repmaxer-prod` → `Clerk__Authority` = Authority **tej** aplikacji (zwykle bez zmiany hosta). Nie edytuj App Settings na `trainer-app-api`.
+5. Clerk → dodaj domenę produkcyjną (Vercel albo `repmaxer.pl`) w Allowed redirects / Domains — krok E2, URL-e live.
+6. Vercel → Redeploy **Production**.
+7. Smoke: logowanie na URL Production, nie na Preview.
 
 ---
 
-# H. Backup i odtworzenie (Neon)
 
-Neon trzyma automatyczne PITR w planie — to nie zwalnia z procedury.
 
-### H1. Ręczny snapshot przed ryzykowną migracją
+# E. CORS i Clerk (po Vercel)
 
-1. Neon Console → projekt → **Branches** / **Backups** (nazwa zależy od UI).
-2. Utwórz branch / point-in-time bookmark z opisem `pre-migrate-YYYY-MM-DD`.
-3. Alternatywa CLI: `pg_dump` connection string (preferuj **direct**, nie pooler) → plik `.sql.gz` poza repo.
 
-### H2. Test restore (raz przed launch design partners)
 
-1. Utwórz tymczasowy branch Neon z punktu H1.
-2. Podstaw `ConnectionStrings__Default` lokalnie / na staging Web App.
-3. `GET /api/health` → `"database":"ok"`.
-4. Zaloguj trenera, otwórz jednego klienta — dane widoczne.
-5. Usuń tymczasowy branch.
+### E1. Azure
 
-### H3. Eksport aplikacyjny (uzupełnienie, nie zamiennik)
+Na Web App `repmaxer-prod`:
 
-Trener: **Ustawienia → Pobierz pełną kopię (.json)** — zawiera klientów, plany, sesje z seriami, pomiary, wywiad, check-iny (bez surowych tokenów portalu).
+```text
+ALLOWED_ORIGINS=https://repmaxer.pl,http://localhost:3000
+WEB_ORIGIN=https://repmaxer.pl
+```
 
-RPO/RTO (MVP): RPO ≈ okno Neon PITR; RTO = odtworzenie brancha + podmiana connection string (~30–60 min).
+Dokładny origin z paska (https, bez `/` na końcu). Jeśli ludzie wchodzą też przez `www.repmaxer.pl`, dopisz `https://www.repmaxer.pl` do `ALLOWED_ORIGINS` (albo zrób 301 www → apex w Vercel — lepiej pod SEO, sekcja J).
+
+`repmaxer.com` **nie** dopisuj, dopóki DNS nie wskazuje na Vercel i nie ma 301 na `.pl`. Apply.
+
+### E2. Clerk — ta sama aplikacja co A
+
+Własne `/sign-in` i `/sign-up` (nie Account Portal). `/` publiczne (landing / Panel).
+
+- Sign-in: `https://repmaxer.pl/sign-in`
+- Sign-up: `https://repmaxer.pl/sign-up`
+- After sign-in / sign-up: `https://repmaxer.pl`
+- To samo dla `http://localhost:3000`
+- Preview Vercel (`*.vercel.app`) tylko jeśli testujesz login na Preview — wtedy dodaj ten origin osobno
+
+Opcja: Restrictions → Allowlist / Invitations only; **Users → Invite** siebie i design partnerów.
+
+### E3. Proxy Clerka na prod (Safari / telefon)
+
+`clerk.repmaxer.pl` bywa blokowany na iOS („Load failed”). Prod serwuje FAPI z tego samego originu: `https://repmaxer.pl/__clerk`.
+
+1. Wdróż kod (`frontendApiProxy` w `apps/web/proxy.ts`).
+2. Vercel → `NEXT_PUBLIC_CLERK_PROXY_URL` = `https://repmaxer.pl/__clerk` — **tylko Production**. Redeploy.
+3. Clerk Production → **Domains → Frontend API → Set proxy configuration** → `https://repmaxer.pl/__clerk`
+4. Google Cloud → Authorized redirect URI zamień na:
+
+   `https://repmaxer.pl/__clerk/v1/oauth_callback`
+
+   (stary `https://clerk.repmaxer.pl/v1/oauth_callback` możesz zostawić obok na czas przejścia.)
+
+Lokal i Preview: bez tej zmiennej.
 
 ---
 
-# I. Observability (MVP)
 
-- Liveness (bez DB): `GET /` oraz `GET /api/health/live` — Always On + Azure Health check.
-- Readiness (z DB): `GET /api/health` — smoke po deployu (`API_HEALTH_URL` w Actions).
-- Każda odpowiedź API: nagłówek `X-Correlation-Id` (przyjmujemy też z requestu).
-- Nieobsłużone wyjątki → JSON `{ "message": "…" }` + log z CorrelationId (bez stack trace w Production).
-- Sentry / analytics produktowe: poza zakresem early access (wymaga osobnej decyzji o zależności).
+
+# F. Pierwszy Deploy API (Environment `prod`)
+
+Docelowo: merge do `main` → workflow **Release** (approval na prod). Break-glass:
+
+1. GitHub → **Actions** → **Deploy API** → **Run workflow**
+2. Branch: `main`
+3. **environment:** `prod` ← nie `dev`
+4. **skip_migrations:** `false` za pierwszym razem
+5. Run
+
+Joby: build obrazu (`sha-…` + digest) → migracje na `DB_CONNECTION_STRING` z Environment → deploy na `AZURE_WEBAPP_NAME` + `scripts/smoke.sh`.
+
+Czekaj 5–15 min na zieleń.
+
+Migracje `NETSDK1004`: na `main` musi być restore NuGet przed `dotnet ef migrations bundle`. Awaryjnie `skip_migrations: true` tylko gdy schemat na **tym** Neonie już stoi.
+
+Health w przeglądarce:
+
+```text
+https://repmaxer-prod.azurewebsites.net/api/health
+```
+
+Oczekiwane: `"status":"ok"`.
 
 ---
 
-**Następny krok dla Ciebie teraz:** sekcja **A (Clerk)**, potem **B (Azure Web App)**. Jak dojdziesz do konkretnego ekranu i coś nie pasuje do opisu — wklej screenshot / nazwę pola, dopasujemy 1:1.
 
-Przykładowe zmienne: [`.env.example`](../.env.example). Deploy runbook: ten plik.
+
+# G. Smoke test
+
+1. [https://repmaxer.pl](https://repmaxer.pl) → **Zaloguj się** → Clerk (konto z Invite) → Panel.
+2. CORS / pusty ekran → E1, origin musi być `https://repmaxer.pl`.
+3. **Klienci** → dodaj → przypisz plan → skopiuj link → incognito **bez** Clerk → portal (Dziś / postęp).
+4. **Ustawienia → Pobierz pełną kopię (.json)**.
+
+---
+
+
+
+# Co robić przy kolejnych zmianach
+
+
+| Zmiana            | Co odpalasz |
+| ----------------- | ----------- |
+| Cokolwiek na `main` | **Release**: API dev → front `dev.repmaxer.pl` → approval → ten sam digest na prod + `repmaxer.pl` |
+| Awaria API        | **Rollback API** albo auto-rollback po czerwonym smoke |
+| Awaria frontu     | Vercel → Rollback |
+| PR / UI           | Vercel Preview (nie rusza `repmaxer.pl`) |
+| Poza trainem      | **Deploy API** (break-glass) |
+
+
+---
+
+
+
+# Troubleshooting
+
+
+| Objaw                                    | Fix                                                                                          |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `GHCR_TOKEN` / login failed              | PAT `read:packages` (pull); push = `GITHUB_TOKEN`. Secret bez spacji                         |
+| Migracje `Couldn't set …/neondb?sslmode` | String ominął `DbConnectionString.Normalize`; do CI **direct**, nie pooler; hasło URL-encode |
+| Azure login fail                         | Brak OIDC / zły `AZURE_CLIENT_ID` w Environment; SP = Contributor na właściwej RG            |
+| Deploy OK, health / smoke fail           | 1–2 min; Log stream; `WEBSITES_PORT=8080`; Clerk__Authority; asercja `version` = SHA         |
+| CORS                                     | `ALLOWED_ORIGINS` = dokładny origin z paska, dziś `https://repmaxer.pl`                      |
+| 401 na API                               | Authority bez `/`; Vercel i Azure z **tej samej** aplikacji Clerk                            |
+| Kontener nie startuje                    | Log stream; zły obraz / brak env; Deploy API jeszcze raz                                     |
+| Clerk redirect mismatch                  | krok E2                                                                                      |
+| Dane z innego projektu Neon              | Zły connection string — Web App prod musi mieć string z projektu `repmaxer`                  |
+
+
+---
+
+
+
+# Ściągawka — Environments, nie prefiksy
+
+**GitHub** — te same nazwy w `dev` i `prod` (wartości różne): `DB_CONNECTION_STRING`, `AZURE_WEBAPP_NAME`, `API_BASE_URL`, `AZURE_CLIENT_ID` / `TENANT_ID` / `SUBSCRIPTION_ID`, `GHCR_TOKEN`. Szczegóły: [ci-cd.md](ci-cd.md).
+
+
+**Azure** — te same nazwy settings, **inna** Web App: `repmaxer-prod` (`ConnectionStrings__Default` pooled, `Clerk__Authority`, `ALLOWED_ORIGINS`, `WEBSITES_PORT=8080`).
+
+**Vercel** — te same nazwy: `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `NEXT_PUBLIC_SITE_URL`. Test vs live = wartość + checkbox Production, nie `*_PROD`.
+
+---
+
+
+
+# H. Backup Neon (projekt `repmaxer`)
+
+PITR w planie Neona nie zwalnia z procedury.
+
+1. Przed ryzykowną migracją: bookmark / branch `pre-migrate-YYYY-MM-DD` albo `pg_dump` na **direct**.
+2. Test restore: tymczasowy branch → lokalnie / osobna Web App → `GET /api/health` → jeden klient widoczny → usuń branch.
+3. Eksport w apce: **Ustawienia → Pobierz pełną kopię (.json)** (bez surowych tokenów portalu).
+
+RPO ≈ okno PITR; RTO ≈ podmiana connection string (30–60 min).
+
+---
+
+
+
+# I. Observability
+
+- Liveness: `GET /`, `GET /api/health/live` (pole `version` = SHA commita)
+- Readiness: `GET /api/health` (`API_BASE_URL` + `/api/health`)
+- Nagłówek `X-Correlation-Id`
+- Wyjątki w Production: JSON `{ "message" }` + log z CorrelationId, bez stack trace
+- Sentry: poza early access
+
+---
+
+
+
+# Dodatek — `trainer-app-api` to dev
+
+Nie używaj tego jako produkcji design partnerów. To Environment **dev**: front `dev.repmaxer.pl`, tag `dev-latest`.
+
+Nowy Neon / Clerk live **nie** idą tutaj. Drugi plan B1 zostaje świadomie — to cena release trainu.
+
+---
+
+# J. DNS `repmaxer.com` + SEO (na końcu, nie blokuje API)
+
+**Stan (sierpień 2026):** front żyje na [https://repmaxer.pl](https://repmaxer.pl). `repmaxer.com` jest kupione, **rekordy DNS puste**. Nie odpalaj `.com` jako drugiej kopii strony — Google zindeksuje duplikat i rozmyje ranking `.pl`.
+
+**Cel:** jeden kanoniczny host `https://repmaxer.pl`. Wszystko inne (`www.repmaxer.pl`, `repmaxer.com`, `www.repmaxer.com`) → **stały redirect** (301 albo 308) na ten sam path na `.pl`.
+
+Kod już to wspiera, o ile `NEXT_PUBLIC_SITE_URL=https://repmaxer.pl`: `metadataBase` + canonical w layoutcie, `robots.ts` (panel / portal / sign-in w `disallow`), `sitemap.ts` z URL-ami na `.pl`, JSON-LD z tym samym hostem.
+
+### J1. Vercel — domeny (najpierw UI, potem DNS)
+
+1. Vercel → projekt frontu → **Settings → Domains**.
+2. `repmaxer.pl` ma być **Primary** (bez „Redirect to”).
+3. Jeśli jest `www.repmaxer.pl`: **Edit → Redirect to** `repmaxer.pl`, status **301** albo **308** (stały). Nie zostawiaj www jako drugiej żywej kopii.
+4. **Add** `repmaxer.com`, potem `www.repmaxer.com`. Dla obu: **Redirect to** `repmaxer.pl`, status **301** albo **308**. Path ma zostać (`/wdrozenie` → `https://repmaxer.pl/wdrozenie`).
+5. Nie wybieraj 302/307 — to tymczasowe, Google słabiej skleja sygnał.
+6. Z karty każdej nowej domeny **skopiuj rekordy** (A / CNAME / ewentualnie TXT weryfikacyjny). Nie zgaduj IP — bierz je z UI Vercela.
+
+Nie stawiaj drugiej instancji Next / innego hostingu na `.com`.
+
+### J2. DNS u rejestratora `.com` (nie ruszaj działającego `.pl`)
+
+W panelu, w którym kupiłeś `repmaxer.com`. Zostaw nameservery rejestratora, o ile umiesz dodać rekordy — **nie** musisz przenosić NS na Vercel.
+
+| Host | Typ | Wartość | Po co |
+|---|---|---|---|
+| `@` (apex) | jak na karcie Vercel (`A`; czasem `ALIAS`/`ANAME`) | z UI, nie z pamięci | `.com` → Vercel → 301/308 na `.pl` |
+| `www` | `CNAME` | z UI (zwykle `cname.vercel-dns.com`) | `www.com` → ten sam redirect |
+| TXT | tylko jeśli Vercel / Search Console o to poprosi | z UI | weryfikacja własności |
+
+TTL 300–3600 s na start. Poczekaj na zielony / Verified w Vercel (minuty–24 h).
+
+**Nie dodawaj na `.com`:** MX, SPF, DKIM, DMARC — mail zostaje na `repmaxer.pl` (`kontakt@repmaxer.pl`). Pusty `.com` bez MX = mniej spamu „w imieniu” domeny.
+
+Konflikt: drugi rekord `A` / stary parking / „coming soon” rejestratora — usuń, zostaw tylko to z Vercel.
+
+### J3. Po statusie Ready w Vercel
+
+W incognito (albo `curl -I`):
+
+```text
+https://repmaxer.com          →  Location: https://repmaxer.pl/
+https://www.repmaxer.com/wdrozenie → Location: https://repmaxer.pl/wdrozenie
+https://www.repmaxer.pl       → Location: https://repmaxer.pl/   (jeśli www jest w Vercel)
+```
+
+Szukaj **301** albo **308**, nie 302.
+
+Potem:
+
+1. Azure `ALLOWED_ORIGINS` — **nie dopisuj** `.com`, jeśli redirect leci zanim przeglądarka woła API. Dopisz tylko gdy ktoś otwiera `.com` bez redirectu i widzisz CORS.
+2. Clerk — wystarczy `https://repmaxer.pl` (+ localhost). Opcjonalnie dodaj `https://repmaxer.com` i `https://www.repmaxer.com` na czas propagacji DNS (ktoś wejdzie zanim 301 zadziała).
+3. `NEXT_PUBLIC_SITE_URL` **zostaje** `https://repmaxer.pl`. Nie ustawiaj `.com` — sitemap, OG i canonical poszłyby na zły host.
+4. [Google Search Console](https://search.google.com/search-console): właściwość **`https://repmaxer.pl`** (prefix URL albo cała domena). Wyślij `https://repmaxer.pl/sitemap.xml`. Nie dodawaj `.com` jako drugiej usługi do indeksowania.
+5. Opcjonalnie Bing Webmaster Tools — ta sama kanoniczna + ten sam sitemap.
+6. Gdy `.com` już odpowiada 301: w GSC możesz dodać `.com` tylko po to, żeby zobaczyć „strona przekierowuje”, nie żeby ją indeksować.
+
+### J4. SEO — co już jest w kodzie vs co robisz w DNS
+
+| Zasada | Jak u nas |
+|---|---|
+| Jeden host w indeksie | `https://repmaxer.pl` |
+| www vs apex | 301/308 www → apex (nie mieszaj w obie strony) |
+| `.com` vs `.pl` | 301/308 `.com` → `.pl`, ten sam path |
+| Canonical / OG / JSON-LD | `NEXT_PUBLIC_SITE_URL=https://repmaxer.pl` (`apps/web/app/layout.tsx`, `LandingJsonLd`) |
+| Sitemap | `https://repmaxer.pl/sitemap.xml` — tylko landing (/, wdrożenie, strony marketingowe, regulamin). Panel nie wchodzi. |
+| robots | `apps/web/app/robots.ts`: allow `/`, disallow `/portal/`, `/sign-in`, `/clients`, … |
+| HTTPS | Vercel wymusza; Azure API = HTTPS only |
+| API | `repmaxer-prod.azurewebsites.net` nie linkuj z landingu jako „strona” |
+| hreflang | nie dodawaj — jeden język (pl). `.com` to alias, nie wersja EN |
+
+### J5. Później (nie blokuje J1–J3)
+
+- Resend: `Email__From` z `repmaxer.pl`. SPF / DKIM / DMARC **tylko** w DNS `.pl`.
+- Clerk custom domain (np. `accounts.repmaxer.pl`) — osobny CNAME z dokumentacji Clerk; nie mylić z redirectem `.com`.
+- Gdybyś kiedyś chciał kanon `.com` (rynek EN): odwróć redirect i zmień `NEXT_PUBLIC_SITE_URL` + GSC Change of address. **Nie rób tego teraz** — masz już ruch i mail na `.pl`.
+
+### J6. Checklista (odhacz gdy robisz `.com`)
+
+- [ ] Vercel: `repmaxer.pl` = Primary
+- [ ] Vercel: `www.repmaxer.pl` → redirect 301/308 na `.pl`
+- [ ] Vercel: dodane `repmaxer.com` + `www.repmaxer.com` → redirect 301/308 na `.pl`
+- [ ] DNS `.com`: A/CNAME jak na karcie Vercel, bez parkingu, bez MX
+- [ ] `curl -I` / incognito: `.com` ląduje na `.pl` z 301/308
+- [ ] `NEXT_PUBLIC_SITE_URL` nadal `https://repmaxer.pl`
+- [ ] GSC: zweryfikowane `.pl` + wysłany sitemap
+- [ ] Azure CORS / Clerk: `.com` tylko jeśli naprawdę potrzeba (zwykle nie)
+
+---
+
+**Następny krok (prod API):** A (Clerk) → A4 (Neon) → B (Azure `repmaxer-prod`). Sekcja J (`.com`) dopiero gdy A–G są zielone.
+
+Zmienne-przykład: `[.env.example](../.env.example)`.

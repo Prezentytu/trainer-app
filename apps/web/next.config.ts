@@ -1,5 +1,6 @@
 import path from "node:path";
 import type { NextConfig } from "next";
+import { isPublicMarketingHost } from "./lib/siteHost";
 
 const nextConfig: NextConfig = {
   // Jawny root: watcher/Turbopack nie wychodzi poza apps/web (w korzeniu repo
@@ -24,12 +25,20 @@ const nextConfig: NextConfig = {
     return [{ source: "/odpad", destination: "/ile-tracisz", permanent: true }];
   },
   async headers() {
-    return [
+    const noindex = { key: "X-Robots-Tag", value: "noindex, nofollow" };
+    const headers: { source: string; headers: { key: string; value: string }[] }[] = [
       {
         source: "/portal/:path*",
-        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+        headers: [noindex],
       },
     ];
+    if (!isPublicMarketingHost()) {
+      headers.push({
+        source: "/:path*",
+        headers: [noindex],
+      });
+    }
+    return headers;
   },
 };
 
