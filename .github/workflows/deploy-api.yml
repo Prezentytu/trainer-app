@@ -37,7 +37,7 @@ jobs:
       image: ${{ steps.meta.outputs.ref }}
       sha: ${{ steps.meta.outputs.sha }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - id: meta
         run: |
@@ -77,7 +77,7 @@ jobs:
       group: deploy-${{ inputs.environment }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -99,7 +99,7 @@ jobs:
       group: deploy-${{ inputs.environment }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: ./.github/actions/azure-login-oidc
         with:
