@@ -15,6 +15,7 @@ import { COMPOSER_PLACEHOLDER, markComposerHelpSeen } from "./ComposerHelp";
 import { useComposerChrome } from "./ComposerChrome";
 import { CreateExerciseRow } from "@/components/CreateExerciseRow";
 import { useExerciseLibraryActions } from "./ExerciseLibraryContext";
+import { useLastPrescription } from "./lastPrescription";
 import { buildListGroups, nextPositionLabel, superHintLabel } from "./listGroups";
 import { BuilderDay, BuilderItem } from "./types";
 
@@ -42,6 +43,7 @@ export function ListComposer({
   ) => void;
 }) {
   const { createExercise, requestNewExercise } = useExerciseLibraryActions();
+  const lastPrescription = useLastPrescription();
   const { registerComposer, markFocused, helpOpen, setHelpOpen } = useComposerChrome();
   const [value, setValue] = useState("");
   const [recentIds, setRecentIds] = useState<number[]>(readRecentExerciseIds);
@@ -220,6 +222,16 @@ export function ListComposer({
       notes: null,
       prescribedSets: [],
     };
+    const last = lastPrescription.get(exercise.id);
+    if (
+      last &&
+      overrides.sets == null &&
+      overrides.reps == null &&
+      overrides.loadKg == null &&
+      overrides.setScheme == null
+    ) {
+      return last.label;
+    }
     const sets = draft.sets;
     const core = formatMeasureCore(draft, exercise);
     const parts = [`${sets}×${core}`];

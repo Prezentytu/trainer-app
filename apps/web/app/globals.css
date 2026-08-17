@@ -510,7 +510,20 @@ html {
   -webkit-text-size-adjust: 100%;
   touch-action: manipulation;
   overscroll-behavior-y: none;
+  overflow-x: hidden;
   color-scheme: dark;
+}
+
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+summary,
+label:has(input[type="checkbox"]),
+a[href] {
+  cursor: pointer;
+}
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
 }
 
 html[data-theme="light"] {

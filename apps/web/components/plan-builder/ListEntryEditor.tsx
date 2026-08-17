@@ -13,7 +13,6 @@ import {
   BackoffRow,
   buildRampPrescribedSets,
   formatRampScheme,
-  mergeRampRoles,
   parseRampSchemeInfo,
   readRampBackoffs,
 } from "./listGroups";
@@ -28,48 +27,19 @@ const RIR_OPTS = [
   { label: "3+", value: 3 },
 ] as const;
 
-const DEFAULT_BO: BackoffRow = { reps: 5, repsMax: 10, percent: 80 };
+export type EditorPartner = {
+  label: string;
+  name: string;
+  summary: string;
+  setCount: number;
+};
 
 function topKgOf(item: BuilderItem): number | null {
   return item.prescribedSets.find((s) => s.role === "top")?.loadKg ?? item.loadKg;
 }
 
-function applyRamp(
-  item: BuilderItem,
-  onPatch: (patch: Partial<BuilderItem>) => void,
-  opts: {
-    targetRm: number;
-    sets: number | null;
-    backoffs: BackoffRow[];
-    topKg?: number | null;
-    replace?: boolean;
-  },
-) {
-  const targetRm = Math.min(15, Math.max(1, Math.round(opts.targetRm)));
-  const topKg = opts.topKg ?? topKgOf(item);
-  const generated = buildRampPrescribedSets({
-    targetRm,
-    topKg,
-    backoffs: opts.backoffs,
-  });
-  const prescribedSets = opts.replace
-    ? generated
-    : mergeRampRoles(item.prescribedSets, generated);
-  onPatch({
-    setScheme: formatRampScheme(
-      targetRm,
-      opts.backoffs.length > 0 ? opts.backoffs.map((b) => b.percent) : null,
-    ),
-    reps: null,
-    repsMax: null,
-    sets: opts.sets,
-    loadKg: topKg,
-    prescribedSets,
-  });
-}
-
-function seedPrescribedSets(item: BuilderItem): BuilderSet[] {
-  const n = Math.max(1, item.sets ?? 3);
+function seedPrescribedSets(item: BuilderItem, count?: number): BuilderSet[] {
+  const n = Math.max(1, count ?? item.sets ?? 3);
   return Array.from({ length: n }, (_, i) => ({
     key: newKey(),
     order: i + 1,
@@ -130,6 +100,9 @@ export function ListEntryEditor({
   exercise,
   superLabel,
   inSuperset = false,
+  partners = [],
+  lastPrescriptionLabel,
+  onUndoLastPrescription,
   onCollapse,
   onPatch,
   onToggleWarmup,
@@ -147,6 +120,9 @@ export function ListEntryEditor({
   exercise?: Exercise;
   superLabel: string;
   inSuperset?: boolean;
+  partners?: EditorPartner[];
+  lastPrescriptionLabel?: string | null;
+  onUndoLastPrescription?: () => void;
   onCollapse: () => void;
   onPatch: (patch: Partial<BuilderItem>) => void;
   onToggleWarmup: () => void;
@@ -162,10 +138,8 @@ export function ListEntryEditor({
   const rampInfo = parseRampSchemeInfo(item.setScheme);
   const isRamp = rampInfo != null;
   const backoffs = readRampBackoffs(item);
-  const backoffEnabled = backoffs.length > 0;
   const [moreOpen, setMoreOpen] = useState(false);
   const [schemeWanted, setSchemeWanted] = useState(item.prescribedSets.length > 0);
-  const restLabel = inSuperset ? "Po superserii (s)" : "Przerwa (s)";
   const schemeOpen = isRamp || schemeWanted || item.prescribedSets.length > 0;
 
   const pickSets = () => {
@@ -174,30 +148,30 @@ export function ListEntryEditor({
   };
 
   const pickRamp = (target = rampInfo?.targetRm ?? 6) => {
-    applyRamp(item, onPatch, {
-      targetRm: target,
-      sets: item.sets,
-      backoffs,
-    });
-  };
-
-  const setRampTarget = (v: number) => {
-    const next = item.prescribedSets.map((s) =>
-      s.role === "top" || s.role === "ramp" ? { ...s, reps: v } : s,
-    );
-    if (next.length === 0) {
-      applyRamp(item, onPatch, { targetRm: v, sets: item.sets, backoffs, replace: true });
-      return;
-    }
     onPatch({
       setScheme: formatRampScheme(
-        v,
+        target,
         backoffs.length > 0 ? backoffs.map((b) => b.percent) : null,
       ),
       reps: null,
       repsMax: null,
-      prescribedSets: next,
+      prescribedSets: [],
     });
+  };
+
+  const setRampTarget = (v: number) => {
+    const scheme = formatRampScheme(
+      v,
+      backoffs.length > 0 ? backoffs.map((b) => b.percent) : null,
+    );
+    if (item.prescribedSets.length === 0) {
+      onPatch({ setScheme: scheme, reps: null, repsMax: null });
+      return;
+    }
+    const next = item.prescribedSets.map((s) =>
+      s.role === "top" || s.role === "ramp" ? { ...s, reps: v } : s,
+    );
+    onPatch({ setScheme: scheme, reps: null, repsMax: null, prescribedSets: next });
   };
 
   const setTopKg = (v: number | null) => {
@@ -207,19 +181,46 @@ export function ListEntryEditor({
     onPatch({ loadKg: v, prescribedSets: next });
   };
 
-  const setBackoffEnabled = (enabled: boolean) => {
-    if (!enabled) {
-      onPatch({
-        setScheme: formatRampScheme(rampInfo?.targetRm ?? 6),
-        prescribedSets: item.prescribedSets.filter((s) => s.role !== "backoff"),
-      });
+  const setBackoffs = (rows: BackoffRow[]) => {
+    const scheme = formatRampScheme(
+      rampInfo?.targetRm ?? 6,
+      rows.length > 0 ? rows.map((b) => b.percent) : null,
+    );
+    if (item.prescribedSets.length === 0) {
+      onPatch({ setScheme: scheme });
       return;
     }
-    applyRamp(item, onPatch, {
+    const withoutBo = item.prescribedSets.filter((s) => s.role !== "backoff");
+    const generated = buildRampPrescribedSets({
       targetRm: rampInfo?.targetRm ?? 6,
-      sets: item.sets,
-      backoffs: backoffs.length > 0 ? backoffs : [{ ...DEFAULT_BO }],
+      topKg: topKgOf(item),
+      backoffs: rows,
     });
+    const next = [...withoutBo, ...generated.filter((s) => s.role === "backoff")].map((s, i) => ({
+      ...s,
+      order: i + 1,
+    }));
+    onPatch({ setScheme: scheme, prescribedSets: next });
+  };
+
+  const fillRamp = () => {
+    const generated = buildRampPrescribedSets({
+      targetRm: rampInfo?.targetRm ?? 6,
+      topKg: topKgOf(item),
+      backoffs,
+    });
+    onPatch({
+      setScheme: formatRampScheme(
+        rampInfo?.targetRm ?? 6,
+        backoffs.length > 0 ? backoffs.map((b) => b.percent) : null,
+      ),
+      reps: null,
+      repsMax: null,
+      sets: generated.length,
+      loadKg: topKgOf(item),
+      prescribedSets: generated,
+    });
+    setSchemeWanted(true);
   };
 
   const openScheme = () => {
@@ -233,6 +234,22 @@ export function ListEntryEditor({
     onClearSets();
   };
 
+  const equalizeTo = (count: number) => {
+    if (count <= 0) return;
+    let next = [...item.prescribedSets];
+    if (next.length === 0) {
+      next = seedPrescribedSets(item, count);
+    } else if (next.length < count) {
+      const last = next[next.length - 1];
+      while (next.length < count) {
+        next.push({ ...last, key: newKey(), order: next.length + 1, note: null });
+      }
+    } else {
+      next = next.slice(0, count).map((s, i) => ({ ...s, order: i + 1 }));
+    }
+    onPatch({ prescribedSets: next, sets: next.length });
+  };
+
   const rirActive = (v: number) => {
     if (item.targetRir == null) return false;
     if (v === 3) return item.targetRir >= 3;
@@ -241,97 +258,127 @@ export function ListEntryEditor({
 
   return (
     <div
-      className="flex flex-col gap-3.5 rounded-2xl border border-border-strong bg-surface p-4"
+      className="flex flex-col gap-3 rounded-2xl border border-border-strong bg-surface p-3"
       onKeyDown={(e) => {
-        if (e.key === "Escape") {
-          e.preventDefault();
-          onCollapse();
-          return;
-        }
-        if (e.key !== "Enter" || e.shiftKey || e.nativeEvent.isComposing) return;
-        const target = e.target as HTMLElement;
-        if (target.tagName !== "INPUT" && target.tagName !== "TEXTAREA") return;
+        if (e.key !== "Escape") return;
         e.preventDefault();
         onCollapse();
       }}
     >
-      <RampControls
-        mode={isRamp ? "ramp" : "sets"}
-        targetRm={rampInfo?.targetRm ?? 6}
-        topKg={topKgOf(item)}
-        setsCount={item.sets}
-        restSeconds={item.restBetweenSetsSeconds}
-        restLabel={restLabel}
-        backoffEnabled={backoffEnabled}
-        onModeChange={(mode) => (mode === "ramp" ? pickRamp() : pickSets())}
-        onTargetRm={setRampTarget}
-        onTopKg={setTopKg}
-        onSetsCount={(v) => onPatch({ sets: v })}
-        onRest={(v) => onPatch({ restBetweenSetsSeconds: v })}
-        onBackoffEnabled={setBackoffEnabled}
-      />
-
-      {isRamp ? null : schemeOpen ? (
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-          <div className="hidden sm:block" />
-          <div className="hidden sm:block" />
-          <div className="hidden sm:block" />
-          <Field label={restLabel}>
-            <NumInput
-              value={item.restBetweenSetsSeconds}
-              min={0}
-              onChange={(v) => onPatch({ restBetweenSetsSeconds: v })}
-              placeholder="60"
-            />
-          </Field>
+      <div className="space-y-2.5 border-b border-border pb-3">
+        <p className="t-label text-muted">Ćwiczenie</p>
+        <div className="flex flex-wrap items-center gap-1.5" title={RIR_HELP}>
+          <span className="t-label mr-1 text-muted">RIR</span>
+          {RIR_OPTS.map((o) => (
+            <button
+              key={o.label}
+              type="button"
+              className={rirActive(o.value) ? editorChipOn : editorChipOff}
+              onClick={() => onPatch({ targetRir: o.value })}
+            >
+              {o.label}
+            </button>
+          ))}
         </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-          <Field label="Serie">
-            <NumInput
-              value={item.sets}
-              min={1}
-              onChange={(v) => onPatch({ sets: v })}
-              placeholder="3"
-            />
-          </Field>
-          {measureSlot(item, onPatch)}
-          <Field label={isDumbbellPair(exercise ?? {}) ? "Ciężar (kg · hantla)" : "Ciężar (kg)"}>
-            <NumInput
-              value={item.loadKg}
-              min={0}
-              step={0.5}
-              onChange={(v) => onPatch({ loadKg: v, loadPercent: v != null ? null : item.loadPercent })}
-              placeholder="—"
-            />
-          </Field>
-          <Field label={restLabel}>
-            <NumInput
-              value={item.restBetweenSetsSeconds}
-              min={0}
-              onChange={(v) => onPatch({ restBetweenSetsSeconds: v })}
-              placeholder="60"
-            />
-          </Field>
-        </div>
-      )}
 
-      <div className="flex flex-wrap items-center gap-1.5" title={RIR_HELP}>
-        <span className="t-label mr-1 text-muted">RIR</span>
-        {RIR_OPTS.map((o) => (
+        <RampControls
+          mode={isRamp ? "ramp" : "sets"}
+          targetRm={rampInfo?.targetRm ?? 6}
+          topKg={topKgOf(item)}
+          setsCount={item.sets}
+          restSeconds={item.restBetweenSetsSeconds}
+          restLabel="Przerwa (s)"
+          backoffs={backoffs}
+          showRest={!inSuperset}
+          onModeChange={(mode) => (mode === "ramp" ? pickRamp() : pickSets())}
+          onTargetRm={setRampTarget}
+          onTopKg={setTopKg}
+          onSetsCount={(v) => onPatch({ sets: v })}
+          onRest={(v) => onPatch({ restBetweenSetsSeconds: v })}
+          onBackoffsChange={setBackoffs}
+        />
+
+        {isRamp ? (
           <button
-            key={o.label}
             type="button"
-            className={rirActive(o.value) ? editorChipOn : editorChipOff}
-            onClick={() => onPatch({ targetRir: o.value })}
+            onClick={fillRamp}
+            className="text-sm font-medium text-foreground-secondary hover:text-foreground"
           >
-            {o.label}
+            Rozpisz rozbieg
           </button>
-        ))}
+        ) : null}
+
+        {lastPrescriptionLabel && onUndoLastPrescription ? (
+          <p className="text-sm text-muted">
+            {lastPrescriptionLabel}{" "}
+            <button
+              type="button"
+              onClick={onUndoLastPrescription}
+              className="font-medium text-foreground-secondary hover:text-foreground"
+            >
+              cofnij
+            </button>
+          </p>
+        ) : null}
+
+        {partners.length > 0 ? (
+          <div className="space-y-1">
+            {partners.map((p) => (
+              <div key={p.label} className="flex flex-wrap items-center gap-2 text-sm text-muted">
+                <span>
+                  {p.label} {p.name} — {p.summary}
+                </span>
+                {p.setCount > 0 && p.setCount !== (item.prescribedSets.length || item.sets || 0) ? (
+                  <button
+                    type="button"
+                    onClick={() => equalizeTo(p.setCount)}
+                    className="font-medium text-foreground-secondary hover:text-foreground"
+                  >
+                    wyrównaj serie
+                  </button>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {isRamp ? null : schemeOpen ? null : (
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+            <Field label="Serie">
+              <NumInput
+                value={item.sets}
+                min={1}
+                onChange={(v) => onPatch({ sets: v })}
+                placeholder="3"
+              />
+            </Field>
+            {measureSlot(item, onPatch)}
+            <Field label={isDumbbellPair(exercise ?? {}) ? "Ciężar (kg · hantla)" : "Ciężar (kg)"}>
+              <NumInput
+                value={item.loadKg}
+                min={0}
+                step={0.5}
+                onChange={(v) => onPatch({ loadKg: v, loadPercent: v != null ? null : item.loadPercent })}
+                placeholder="—"
+              />
+            </Field>
+            {!inSuperset ? (
+              <Field label="Przerwa (s)">
+                <NumInput
+                  value={item.restBetweenSetsSeconds}
+                  min={0}
+                  onChange={(v) => onPatch({ restBetweenSetsSeconds: v })}
+                  placeholder="60"
+                />
+              </Field>
+            ) : null}
+          </div>
+        )}
       </div>
 
-      {schemeOpen && (
-        <div className="border-t border-border pt-3">
+      <div className="space-y-2.5">
+        <p className="t-label text-muted">Serie</p>
+        {schemeOpen && (
           <SetSchemeEditor
             sets={item.prescribedSets}
             weekNumber={weekNumber}
@@ -345,38 +392,38 @@ export function ListEntryEditor({
             onClear={onClearSets}
             onReplaceSets={(next) => onPatch({ prescribedSets: next, sets: next.length })}
           />
-        </div>
-      )}
+        )}
 
-      {!isRamp && (
-        <div>
-          {schemeOpen ? (
-            <button
-              type="button"
-              onClick={closeScheme}
-              className="text-sm font-medium text-muted hover:text-foreground-secondary"
-            >
-              Zwiń rozpis
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={openScheme}
-              className="text-sm font-medium text-foreground-secondary hover:text-foreground"
-            >
-              Rozpisz serie
-            </button>
-          )}
-        </div>
-      )}
+        {!isRamp && (
+          <div>
+            {schemeOpen ? (
+              <button
+                type="button"
+                onClick={closeScheme}
+                className="text-sm font-medium text-muted hover:text-foreground-secondary"
+              >
+                Zwiń rozpis
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={openScheme}
+                className="text-sm font-medium text-foreground-secondary hover:text-foreground"
+              >
+                Rozpisz serie
+              </button>
+            )}
+          </div>
+        )}
+      </div>
 
-      <div>
+      <div className="border-t border-border pt-3">
         <button
           type="button"
           onClick={() => setMoreOpen((v) => !v)}
           className="t-label text-muted-faint"
         >
-          Więcej {moreOpen ? "▾" : "▸"}
+          Zaawansowane {moreOpen ? "▾" : "▸"}
         </button>
         {moreOpen && (
           <div className="mt-3 space-y-3">
@@ -453,7 +500,9 @@ export function ListEntryEditor({
         )}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+      <div className="space-y-2 border-t border-border pt-3">
+        <p className="t-label text-muted">Akcje</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
         <button
           type="button"
           onClick={onMakeSuper}
@@ -478,6 +527,7 @@ export function ListEntryEditor({
           >
             Usuń ćwiczenie
           </button>
+        </div>
         </div>
       </div>
     </div>

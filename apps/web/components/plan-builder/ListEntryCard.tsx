@@ -3,7 +3,7 @@
 import { Exercise } from "@/lib/api";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { demoMedia } from "@/lib/youtube";
-import { ListEntryEditor } from "./ListEntryEditor";
+import { ListEntryEditor, type EditorPartner } from "./ListEntryEditor";
 import { listEntrySummary } from "./listGroups";
 import { BuilderItem, BuilderSet } from "./types";
 
@@ -16,6 +16,9 @@ export function ListEntryCard({
   weekNumber,
   exercise,
   superLabel,
+  partners,
+  lastPrescriptionLabel,
+  onUndoLastPrescription,
   onToggleExpand,
   onPatch,
   onToggleWarmup,
@@ -36,6 +39,9 @@ export function ListEntryCard({
   weekNumber: number;
   exercise?: Exercise;
   superLabel: string;
+  partners?: EditorPartner[];
+  lastPrescriptionLabel?: string | null;
+  onUndoLastPrescription?: () => void;
   onToggleExpand: () => void;
   onPatch: (patch: Partial<BuilderItem>) => void;
   onToggleWarmup: () => void;
@@ -127,6 +133,9 @@ export function ListEntryCard({
           exercise={exercise}
           superLabel={superLabel}
           inSuperset={multi}
+          partners={partners}
+          lastPrescriptionLabel={lastPrescriptionLabel}
+          onUndoLastPrescription={onUndoLastPrescription}
           onCollapse={onToggleExpand}
           onPatch={onPatch}
           onToggleWarmup={onToggleWarmup}

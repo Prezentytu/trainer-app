@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Exercise, RIR_HELP, rirFromRpe } from "@/lib/api";
+import { editorChipOff, editorChipOn } from "./editorChips";
 import { Field, Switch, inputClass } from "@/components/ui";
 import { isDumbbellPair } from "@/lib/weight";
 import { polishSetCount } from "@/lib/plural";
@@ -9,12 +10,13 @@ import { NumInput } from "./NumInput";
 import { RampControls } from "./RampControls";
 import { SetSchemeEditor } from "./SetSchemeEditor";
 import {
+  BackoffRow,
   buildRampPrescribedSets,
   formatRampScheme,
-  mergeRampRoles,
   parseRampSchemeInfo,
   readRampBackoffs,
 } from "./listGroups";
+import { libraryDefaults } from "./lastPrescription";
 import { BuilderItem, BuilderSet } from "./types";
 
 /** Pola edycji pozycji planu — bez ramki/nagłówka (żyją w SidePanel). */
@@ -48,19 +50,38 @@ export function ExerciseEditor({
 
   const pickRamp = () => {
     const targetRm = rampInfo?.targetRm ?? 6;
-    const generated = buildRampPrescribedSets({
-      targetRm,
-      topKg: item.loadKg,
-      backoffs,
-    });
     onPatch({
-      setScheme: formatRampScheme(targetRm, backoffs.map((b) => b.percent)),
+      setScheme: formatRampScheme(targetRm, backoffs.length > 0 ? backoffs.map((b) => b.percent) : null),
       reps: null,
       repsMax: null,
       loadKg: item.loadKg,
-      prescribedSets: mergeRampRoles(item.prescribedSets, generated),
+      prescribedSets: [],
     });
     setSchemeOpen(true);
+  };
+
+  const setBackoffs = (rows: BackoffRow[]) => {
+    const scheme = formatRampScheme(
+      rampInfo?.targetRm ?? 6,
+      rows.length > 0 ? rows.map((b) => b.percent) : null,
+    );
+    if (item.prescribedSets.length === 0) {
+      onPatch({ setScheme: scheme });
+      return;
+    }
+    const withoutBo = item.prescribedSets.filter((s) => s.role !== "backoff");
+    const generated = buildRampPrescribedSets({
+      targetRm: rampInfo?.targetRm ?? 6,
+      topKg: item.loadKg,
+      backoffs: rows,
+    });
+    onPatch({
+      setScheme: scheme,
+      prescribedSets: [...withoutBo, ...generated.filter((s) => s.role === "backoff")].map((s, i) => ({
+        ...s,
+        order: i + 1,
+      })),
+    });
   };
 
   const pickSets = () => {
@@ -81,8 +102,8 @@ export function ExerciseEditor({
       s.role === "top" || s.role === "ramp" ? { ...s, reps: v } : s,
     );
     onPatch({
-      setScheme: formatRampScheme(v, backoffs.map((b) => b.percent)),
-      prescribedSets: next.length > 0 ? next : buildRampPrescribedSets({ targetRm: v, topKg: item.loadKg, backoffs }),
+      setScheme: formatRampScheme(v, backoffs.length > 0 ? backoffs.map((b) => b.percent) : null),
+      prescribedSets: next,
     });
   };
 
@@ -97,37 +118,81 @@ export function ExerciseEditor({
     return `${polishSetCount(item.prescribedSets.length)} · ${repPart} · ${loadPart}`;
   })();
 
+  const rirActive = (v: number) => {
+    if (item.targetRir == null) return false;
+    if (v === 3) return item.targetRir >= 3;
+    return item.targetRir === v;
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
+      {item.lastPrescriptionLabel ? (
+        <p className="text-sm text-muted">
+          {item.lastPrescriptionLabel}{" "}
+          {exercise ? (
+            <button
+              type="button"
+              onClick={() => onPatch(libraryDefaults(item, exercise))}
+              className="font-medium text-foreground-secondary hover:text-foreground"
+            >
+              cofnij
+            </button>
+          ) : null}
+        </p>
+      ) : null}
+      <div className="flex flex-wrap items-center gap-1.5" title={RIR_HELP}>
+        <span className="t-label mr-1 text-muted">RIR</span>
+        {([
+          { label: "0", value: 0 },
+          { label: "1", value: 1 },
+          { label: "2", value: 2 },
+          { label: "3+", value: 3 },
+        ] as const).map((o) => (
+          <button
+            key={o.label}
+            type="button"
+            className={rirActive(o.value) ? editorChipOn : editorChipOff}
+            onClick={() => onPatch({ targetRir: o.value })}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
       <RampControls
         mode={isRamp ? "ramp" : "sets"}
         targetRm={rampInfo?.targetRm ?? 6}
         topKg={item.prescribedSets.find((s) => s.role === "top")?.loadKg ?? item.loadKg}
-        backoffEnabled={backoffs.length > 0}
+        backoffs={backoffs}
         showSetsCount={false}
         showRest={false}
         onModeChange={(mode) => (mode === "ramp" ? pickRamp() : pickSets())}
         onTargetRm={setRampTarget}
         onTopKg={setTopKg}
-        onBackoffEnabled={(enabled) => {
-          if (!enabled) {
-            onPatch({
-              setScheme: formatRampScheme(rampInfo?.targetRm ?? 6),
-              prescribedSets: item.prescribedSets.filter((s) => s.role !== "backoff"),
-            });
-            return;
-          }
-          const generated = buildRampPrescribedSets({
-            targetRm: rampInfo?.targetRm ?? 6,
-            topKg: item.loadKg,
-            backoffs: [{ reps: 5, repsMax: 10, percent: 80 }],
-          });
-          onPatch({
-            setScheme: formatRampScheme(rampInfo?.targetRm ?? 6, [80]),
-            prescribedSets: mergeRampRoles(item.prescribedSets, generated),
-          });
-        }}
+        onBackoffsChange={setBackoffs}
       />
+      {isRamp ? (
+        <button
+          type="button"
+          onClick={() => {
+            const generated = buildRampPrescribedSets({
+              targetRm: rampInfo?.targetRm ?? 6,
+              topKg: item.loadKg,
+              backoffs,
+            });
+            onPatch({
+              setScheme: formatRampScheme(
+                rampInfo?.targetRm ?? 6,
+                backoffs.length > 0 ? backoffs.map((b) => b.percent) : null,
+              ),
+              prescribedSets: generated,
+              sets: generated.length,
+            });
+          }}
+          className="text-sm font-medium text-foreground-secondary hover:text-foreground"
+        >
+          Rozpisz rozbieg
+        </button>
+      ) : null}
 
       {tableOpen && summaryFromSets ? (
         <p className="text-sm text-foreground-secondary">{summaryFromSets}</p>
@@ -199,15 +264,6 @@ export function ExerciseEditor({
                 value={item.tempo ?? ""}
                 onChange={(e) => onPatch({ tempo: e.target.value || null })}
                 placeholder="3110"
-              />
-            </Field>
-            <Field label="RIR" title={RIR_HELP}>
-              <NumInput
-                value={item.targetRir}
-                min={0}
-                step={0.5}
-                onChange={(v) => onPatch({ targetRir: v })}
-                placeholder="—"
               />
             </Field>
             <Field

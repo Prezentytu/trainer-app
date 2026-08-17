@@ -1064,10 +1064,10 @@ export function Dialog({
   const { mounted, entered } = usePresence(!!open);
   useFocusTrap(!!open && mounted, panelRef, onCancel);
 
-  if (!mounted) return null;
+  if (!mounted || typeof document === "undefined") return null;
   const showDefaultFooter = footer === undefined;
   const ease = OVERLAY_EASE(entered);
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Scrim bez onClick — dialog zamyka tylko Anuluj / Escape / potwierdzenie. */}
       <div
@@ -1108,7 +1108,8 @@ export function Dialog({
           <div className="mt-5">{footer}</div>
         ) : null}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

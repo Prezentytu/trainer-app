@@ -15,6 +15,13 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Kreator i portal: jeden patch, zwięzły schemat, overlay w portalu
+
+**Kontekst**: Enter w polu kreatora zapisywał plan; baner „Dodaj ćwiczenie” wisiał po dodaniu; „Złóż plan z historii” i film w portalu nie reagowały; na telefonie nazwa ćwiczenia łamała się po literze, a strona jechała w bok.
+**Problem**: Formularz-owijka + implicit submit. Dialog bez `createPortal` lądował poza widokiem. Schemat serii `shrink-0` z wypisaną każdą serią rozpychał flex. Dwa patche kg/% na starym snapshocie kasowały ciężar. Podsumowanie czytało agregat, nie `prescribedSets`.
+**Zasada**: Enter w `input` = blur, zapis tylko przyciskiem albo Cmd/Ctrl+Enter. Overlay (`Dialog`, `Sheet`) zawsze przez portal na `body`. Długi tekst (schemat, nazwa) nigdy `shrink-0` w wierszu — nazwa pełna szerokość, schemat pod spodem na mobile, zwięzły formatter (`4 × 8 @ 60 kg`). Jeden patch na interakcję kg/%. `prescribedSets` jest źródłem prawdy podsumowania i agregatu. `html { overflow-x: hidden }`.
+**Dotyczy**: `PlanBuilder.tsx`, `ui.tsx` (`Dialog`), `schemeSummary.ts`, `SetRow.tsx`, `ExercisePreviewList.tsx`, `globals.css`, portal klienta
+
 ## Kreator: chrome tylko gdy ma co powiedzieć
 
 **Kontekst**: Widok Tablica przy pustym planie renderował 28 chipów Pn–Nd, 4 przyciski „Zastosuj…”, 4 empty state’y i 4 linie „0 ćwiczeń · 0 serii · ~5 min”.

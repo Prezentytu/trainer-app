@@ -14,6 +14,7 @@ import {
 import { AssignDialog } from "./AssignDialog";
 
 export type AssignedClientInfo = {
+  id?: number;
   name: string;
   startDate: string;
   weeksCount: number;

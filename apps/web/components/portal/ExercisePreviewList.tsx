@@ -30,7 +30,7 @@ function ItemRow({
       : undefined;
   const name = label ? `${label} ${item.name}` : item.name;
   const nameBlock = (
-    <div className="min-w-0 flex-1">
+    <div className="min-w-0 w-full">
       <p
         className={`break-words text-[15px] font-semibold leading-snug ${
           item.done ? "text-muted" : "text-foreground"
@@ -44,8 +44,12 @@ function ItemRow({
     </div>
   );
   const detail = (
-    <p className="shrink-0 font-mono text-[15px] tabular-nums text-muted">{item.detail}</p>
+    <p className="min-w-0 break-words font-mono text-[13px] tabular-nums text-muted sm:text-right sm:text-[15px]">
+      {item.detail}
+    </p>
   );
+  const bodyClass =
+    "flex min-w-0 flex-1 flex-col items-stretch gap-0.5 text-left sm:flex-row sm:items-start sm:justify-between sm:gap-3";
 
   return (
     <div className="flex min-h-11 items-start gap-3 py-3.5">
@@ -58,16 +62,16 @@ function ItemRow({
         <button
           type="button"
           onClick={onRowClick}
-          className="flex min-w-0 flex-1 items-start justify-between gap-3 text-left transition-colors duration-[var(--dur-fast)] hover:bg-surface-hover/40 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] active:scale-[0.99]"
+          className={`${bodyClass} transition-colors duration-[var(--dur-fast)] hover:bg-surface-hover/40 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] active:scale-[0.99]`}
         >
           {nameBlock}
           {detail}
         </button>
       ) : (
-        <>
+        <div className={bodyClass}>
           {nameBlock}
           {detail}
-        </>
+        </div>
       )}
     </div>
   );

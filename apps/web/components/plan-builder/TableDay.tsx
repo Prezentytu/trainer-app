@@ -5,6 +5,7 @@ import { Exercise } from "@/lib/api";
 import { buildGroupLabels, computeGroupsFromLinks } from "@/lib/supersets";
 import { DayHeader } from "./DayHeader";
 import { QuickComposer } from "./QuickComposer";
+import { listEntrySummary } from "./listGroups";
 import { TABLE_ROW_GRID_COLS, TableExerciseRow } from "./TableExerciseRow";
 import { BuilderDay, BuilderItem, BuilderSet } from "./types";
 
@@ -103,6 +104,29 @@ export function TableDay({
                   exercise={exercises.find((e) => e.id === item.exerciseId)}
                   supersetLabel={labels[idx]}
                   isInSuperset={groups[idx] != null}
+                  isFirstInSuperset={
+                    groups[idx] != null && (idx === 0 || groups[idx - 1] !== groups[idx])
+                  }
+                  partners={
+                    groups[idx] == null
+                      ? []
+                      : day.items
+                          .map((other, otherIdx) => ({ other, otherIdx }))
+                          .filter(
+                            ({ other, otherIdx }) =>
+                              other.key !== item.key && groups[otherIdx] === groups[idx],
+                          )
+                          .map(({ other, otherIdx }) => ({
+                            label: labels[otherIdx] ?? String(otherIdx + 1),
+                            name: other.exerciseName,
+                            summary: listEntrySummary(
+                              other,
+                              exercises.find((e) => e.id === other.exerciseId),
+                              true,
+                            ),
+                            setCount: other.prescribedSets.length || other.sets || 0,
+                          }))
+                  }
                   isLastInDay={idx === day.items.length - 1}
                   expanded={expandedKeys.has(item.key)}
                   onToggleExpand={() => toggleExpand(item.key)}

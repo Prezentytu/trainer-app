@@ -85,10 +85,10 @@ export function WeeklyActivityBar({
                   title={`${formatDayShort(w.mondayIso)}: ${workoutsLabel(w.count)}`}
                   className={`w-full max-w-8 rounded-md transition-[height] duration-[var(--dur-fast)] ${
                     w.count === 0
-                      ? "h-1 bg-surface-active"
+                      ? "h-1 bg-border-strong"
                       : w.isCurrent
                         ? "bg-invert-bg"
-                        : "bg-surface-active"
+                        : "bg-muted"
                   }`}
                   style={w.count > 0 ? { height: `${heightPct}%` } : undefined}
                 />

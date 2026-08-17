@@ -31,6 +31,8 @@ export type BuilderItem = {
   loadPercent: number | null;
   notes: string | null;
   prescribedSets: BuilderSet[];
+  /** Tylko UI — nie idzie do API. */
+  lastPrescriptionLabel?: string | null;
 };
 
 export type BuilderDay = {

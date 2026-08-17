@@ -17,24 +17,13 @@ import { polishExerciseCount, polishTrainingCount } from "@/lib/plural";
 import type { WeekStripDay } from "@/lib/portalWeekStrip";
 import type { PreviewItem } from "@/lib/supersetPreview";
 import { todayIsoLocal } from "@/lib/dates";
-import { formatLoadDisplay } from "@/lib/weight";
+import { compactSchemeLine } from "@/lib/schemeSummary";
 
 function schemeLine(
   item: PortalDayPreview["day"]["items"][number],
   exerciseMeta?: Pick<PortalExercise, "equipment" | "isUnilateral"> | null,
 ): string {
-  const measure = item.measureType ?? "reps";
-  if (measure === "time") {
-    const sec = item.repDurationSeconds ?? 0;
-    return `${item.sets} × ${sec} s`;
-  }
-  if (measure === "distance") {
-    return `${item.sets} × ${item.distanceMeters ?? "—"} m`;
-  }
-  const load = item.computedLoadKg ?? item.loadKg ?? null;
-  return load != null
-    ? `${item.sets} × ${item.reps} @ ${formatLoadDisplay(load, exerciseMeta)}`
-    : `${item.sets} × ${item.reps}`;
+  return compactSchemeLine(item, exerciseMeta);
 }
 
 function formatSheetTitle(iso: string, fallback: string): string {
