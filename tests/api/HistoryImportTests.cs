@@ -165,12 +165,27 @@ public class HistoryImportLogicTests
         new(name, id, 1, sets.Select(s => new HistoryImportSet(s.Reps, s.Kg, false)).ToList());
 }
 
-public class HistoryImportCsvEndpointTests : IClassFixture<TestWebAppFactory>
+/// <summary>CSV musi działać bez klucza OpenRouter — ten sam przypadek co CI.</summary>
+public class HistoryImportCsvFactory : TestWebAppFactory
+{
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        base.ConfigureWebHost(builder);
+        builder.ConfigureServices(services =>
+        {
+            foreach (var d in services.Where(d => d.ServiceType == typeof(IChatClient)).ToList())
+                services.Remove(d);
+            services.AddSingleton<IChatClient>(new UnavailableChatClient());
+        });
+    }
+}
+
+public class HistoryImportCsvEndpointTests : IClassFixture<HistoryImportCsvFactory>
 {
     private readonly HttpClient _client;
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
 
-    public HistoryImportCsvEndpointTests(TestWebAppFactory factory) => _client = factory.CreateClient();
+    public HistoryImportCsvEndpointTests(HistoryImportCsvFactory factory) => _client = factory.CreateClient();
 
     [Fact]
     public async Task HistoryImport_CsvSkipsAi_ReturnsSessions()

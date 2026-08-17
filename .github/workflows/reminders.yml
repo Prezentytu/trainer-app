@@ -1,5 +1,5 @@
 # Dzienny cron: push-przypomnienia o treningu (POST /api/cron/reminders).
-# Wymaga secrets: API_BASE_URL_PROD (lub API_HEALTH_URL_PROD bez /api/health) + CRON_KEY.
+# Sekrety z Environment prod: API_BASE_URL + CRON_KEY. Brak sekretu = twardy fail.
 name: Daily workout reminders
 
 on:
@@ -8,26 +8,29 @@ on:
     - cron: "0 7 * * *"
   workflow_dispatch:
 
+permissions: {}
+
 jobs:
   remind:
+    name: Remind
     runs-on: ubuntu-latest
+    environment: prod
     steps:
       - name: Send reminders (prod)
         env:
-          BASE: ${{ secrets.API_BASE_URL_PROD }}
-          HEALTH: ${{ secrets.API_HEALTH_URL_PROD }}
+          BASE: ${{ secrets.API_BASE_URL }}
           KEY: ${{ secrets.CRON_KEY }}
         run: |
-          if [ -z "$KEY" ]; then
-            echo "Brak CRON_KEY — pomijam."
-            exit 0
+          set -euo pipefail
+          if [[ -z "${KEY:-}" ]]; then
+            echo "::error::Brak CRON_KEY w Environment prod."
+            exit 1
           fi
-          if [ -n "$BASE" ]; then
-            URL="${BASE%/}/api/cron/reminders"
-          elif [ -n "$HEALTH" ]; then
-            URL="${HEALTH%/api/health}/api/cron/reminders"
-          else
-            echo "Brak API_BASE_URL_PROD / API_HEALTH_URL_PROD — pomijam."
-            exit 0
+          if [[ -z "${BASE:-}" ]]; then
+            echo "::error::Brak API_BASE_URL w Environment prod."
+            exit 1
           fi
-          curl -fsS --max-time 120 -X POST "$URL" -H "X-Cron-Key: $KEY" -H "Content-Type: application/json"
+          URL="${BASE%/}/api/cron/reminders"
+          curl -fsS --max-time 120 -X POST "$URL" \
+            -H "X-Cron-Key: $KEY" \
+            -H "Content-Type: application/json"

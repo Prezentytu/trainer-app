@@ -1,0 +1,51 @@
+name: Deploy API container
+description: Wdraża obraz (tag albo digest) na Azure Web App i przywraca credentials GHCR.
+inputs:
+  app-name:
+    required: true
+  image:
+    required: true
+  ghcr-token:
+    required: true
+  registry-username:
+    required: true
+outputs:
+  previous-image:
+    description: Obraz sprzed wdrożenia (do rollbacku)
+    value: ${{ steps.prev.outputs.image }}
+  resource-group:
+    description: Resource group Web App
+    value: ${{ steps.prev.outputs.rg }}
+runs:
+  using: composite
+  steps:
+    - id: prev
+      name: Capture current image
+      shell: bash
+      env:
+        APP_NAME: ${{ inputs.app-name }}
+      run: |
+        RG=$(az webapp list --query "[?name=='$APP_NAME'].resourceGroup" -o tsv | head -n 1)
+        if [[ -z "$RG" ]]; then
+          echo "::error::Nie znaleziono Web App $APP_NAME."
+          exit 1
+        fi
+        echo "rg=$RG" >> "$GITHUB_OUTPUT"
+        PREV=$(az webapp config container show --name "$APP_NAME" --resource-group "$RG" --query linuxFxVersion -o tsv 2>/dev/null || true)
+        echo "image=${PREV#DOCKER|}" >> "$GITHUB_OUTPUT"
+        echo "Poprzedni obraz: ${PREV#DOCKER|}"
+
+    - name: Deploy container
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: ${{ inputs.app-name }}
+        images: ${{ inputs.image }}
+
+    - name: Keep GHCR pull credentials
+      shell: bash
+      env:
+        APP_NAME: ${{ inputs.app-name }}
+        GHCR_TOKEN: ${{ inputs.ghcr-token }}
+        RESOURCE_GROUP: ${{ steps.prev.outputs.rg }}
+        REGISTRY_USERNAME: ${{ inputs.registry-username }}
+      run: bash "${{ github.workspace }}/scripts/azure-keep-ghcr.sh"

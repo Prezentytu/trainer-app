@@ -213,23 +213,24 @@ static Task<IResult> UnauthorizedTrainer(Exception _)
 // ---------- Liveness / Health / me ----------
 
 // Always On pinguje `/` — musi być 2xx bez bazy (żeby nie trzymać Neona always-on).
-app.MapGet("/", () => Results.Ok(new { service = "RepMaxer API", status = "ok" }));
-app.MapGet("/api/health/live", () => Results.Ok(new { status = "ok", utc = DateTime.UtcNow }));
+app.MapGet("/", () => Results.Ok(new { service = "RepMaxer API", status = "ok", version = BuildInfo.Version }));
+app.MapGet("/api/health/live", () => Results.Ok(new { status = "ok", utc = DateTime.UtcNow, version = BuildInfo.Version }));
 
 app.MapGet("/api/health", async (AppDb db) =>
 {
     var utc = DateTime.UtcNow;
+    var version = BuildInfo.Version;
     try
     {
         // Readiness z pingiem DB — tylko smoke po deployu / diagnostyka, NIE Azure Health check.
         var canConnect = await db.Database.CanConnectAsync();
         if (!canConnect)
-            return Results.Json(new { status = "degraded", utc, database = "unreachable" }, statusCode: 503);
-        return Results.Ok(new { status = "ok", utc, database = "ok" });
+            return Results.Json(new { status = "degraded", utc, version, database = "unreachable" }, statusCode: 503);
+        return Results.Ok(new { status = "ok", utc, version, database = "ok" });
     }
     catch (Exception)
     {
-        return Results.Json(new { status = "degraded", utc, database = "error" }, statusCode: 503);
+        return Results.Json(new { status = "degraded", utc, version, database = "error" }, statusCode: 503);
     }
 });
 
@@ -836,37 +837,39 @@ static string NormalizeExerciseName(string? name) =>
 
 static object ItemToDto(PlanItem i, IReadOnlyDictionary<int, double>? maxesByExercise = null)
 {
+    var exercise = i.Exercise
+        ?? throw new InvalidOperationException($"PlanItem {i.Id} bez Exercise.");
     var topKg = PlanLoads.TopLoadKg(i);
     double? oneRmKg = maxesByExercise is not null && maxesByExercise.TryGetValue(i.ExerciseId, out var rm)
         ? rm
         : null;
-    var measure = i.MeasureType ?? i.Exercise!.Type;
+    var measure = i.MeasureType ?? exercise.Type;
     double? itemComputed = null;
     if (i.LoadPercent is not null && oneRmKg is not null)
         itemComputed = PlanLoads.RoundToHalf(oneRmKg.Value * i.LoadPercent.Value / 100.0);
-    var effectiveLoad = i.LoadKg ?? itemComputed ?? i.Exercise.DefaultLoadKg;
+    var effectiveLoad = i.LoadKg ?? itemComputed ?? exercise.DefaultLoadKg;
     return new
     {
         i.Id, i.ExerciseId, i.Order, i.SupersetGroup, i.IsWarmup,
-        ExerciseName = i.Exercise!.Name,
-        ExerciseType = i.Exercise.Type,
+        ExerciseName = exercise.Name,
+        ExerciseType = exercise.Type,
         MeasureType = measure,
-        ExerciseDescription = i.Exercise.Description,
-        Category = i.Exercise.Category,
-        DemoYoutubeId = i.Exercise.Media.FirstOrDefault(m => m.Kind == "demo")?.YoutubeId
-            ?? i.Exercise.Media.FirstOrDefault()?.YoutubeId,
+        ExerciseDescription = exercise.Description,
+        Category = exercise.Category,
+        DemoYoutubeId = exercise.Media.FirstOrDefault(m => m.Kind == "demo")?.YoutubeId
+            ?? exercise.Media.FirstOrDefault()?.YoutubeId,
         // Efektywne parametry: nadpisanie z planu albo default z ćwiczenia
-        Sets = i.Sets ?? i.Exercise.DefaultSets,
-        Reps = i.Reps ?? i.Exercise.DefaultReps,
+        Sets = i.Sets ?? exercise.DefaultSets,
+        Reps = i.Reps ?? exercise.DefaultReps,
         i.RepsMax,
-        RepDurationSeconds = i.RepDurationSeconds ?? (measure == "time" ? i.Exercise.DefaultRepDurationSeconds : null),
+        RepDurationSeconds = i.RepDurationSeconds ?? (measure == "time" ? exercise.DefaultRepDurationSeconds : null),
         i.RepDurationSecondsMax,
-        DistanceMeters = i.DistanceMeters ?? (measure == "distance" ? i.Exercise.DefaultDistanceMeters : null),
+        DistanceMeters = i.DistanceMeters ?? (measure == "distance" ? exercise.DefaultDistanceMeters : null),
         i.Tempo,
         i.TargetRpe,
         i.TargetRir,
         i.SetScheme,
-        RestBetweenSetsSeconds = i.RestBetweenSetsSeconds ?? i.Exercise.DefaultRestBetweenSetsSeconds,
+        RestBetweenSetsSeconds = i.RestBetweenSetsSeconds ?? exercise.DefaultRestBetweenSetsSeconds,
         i.RestAfterExerciseSeconds,
         LoadKg = effectiveLoad,
         i.LoadPercent,
@@ -3490,8 +3493,6 @@ app.MapPost("/api/ai/history-import", async (
     try
     {
         var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
-        if (chatClient is UnavailableChatClient)
-            return Results.Json(new { message = UnavailableChatClient.Message }, statusCode: 503);
 
         var library = await db.Exercises
             .Where(e => e.TrainerId == null || e.TrainerId == trainerId)

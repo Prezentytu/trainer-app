@@ -77,7 +77,7 @@ Jedno polecenie sprawdzające całość (build + testy API, lint + typecheck + b
 ./scripts/check.sh
 ```
 
-Te same kroki uruchamia CI (`.github/workflows/ci.yml`) na push do `main` i na pull requestach.
+Te same kroki (build + testy + lint + typecheck + build web) uruchamia CI (`.github/workflows/ci.yml`) na pull requestach. `main` jest trunkiem — krótkie gałęzie, bez długowiecznego `dev`. Merge odpala **Release** (dev → approval → prod). Runbook: [`docs/ci-cd.md`](docs/ci-cd.md).
 
 ## Flow MVP
 
@@ -113,7 +113,7 @@ Repozytorium jest przygotowane pod pracę z agentami (Cursor, Claude Code, Codex
 - Lokalnie bez Clerk: API działa jako seedowy trener `local-dev`.
 - **Production:** puste `Clerk__Authority` = API **nie startuje** (fail-fast).
 - Portal klienta: magic link `/portal/[token]` (bez konta), `noindex`, rotacja tokenu u trenera.
-- Deploy: [`docs/deploy.md`](docs/deploy.md). Zmienne: [`.env.example`](.env.example).
+- Deploy: [`docs/deploy.md`](docs/deploy.md). CI/CD: [`docs/ci-cd.md`](docs/ci-cd.md). Zmienne: [`.env.example`](.env.example).
 
 ## Poza zakresem early access (świadomie)
 

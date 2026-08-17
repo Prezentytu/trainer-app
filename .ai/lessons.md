@@ -786,4 +786,67 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: Jeden helper (`Scheduling.ResolveHero`) + `progress.nextDay` / portal `today.scheduledOn`. Front nie liczy kolejki. ISO 1=pn…7=nd — nie `DateTime.DayOfWeek` (nd=0) ani `getDay()`. Kotwica = poniedziałek tygodnia `StartDate`.
 **Dotyczy**: `Scheduling.cs`, `GET /api/clients/{id}/progress`, portal home, `clients/[id]/page.tsx`, `portalWeekStrip.ts`
 
+## `COPY . .` bez `.dockerignore` wciąga `trainer.db` do obrazu
+
+**Kontekst**: `apps/api/Dockerfile` kopiował cały kontekst (`bin/`, `obj/`, lokalny SQLite).
+**Problem**: Dane dev i śmieci builda lądowały w obrazie GHCR / Azure.
+**Zasada**: Każdy `COPY . .` w Dockerfile API ma `apps/api/.dockerignore` z `bin/`, `obj/`, `trainer.db*`, `.env*`. Nie polegaj na `.gitignore`.
+**Dotyczy**: `apps/api/Dockerfile`, `apps/api/.dockerignore`, workflow `Release`.
+
+## Cron / smoke nie mogą maskować braku sekretów przez `exit 0`
+
+**Kontekst**: `reminders.yml` i stary health check kończyły się sukcesem, gdy brakowało `CRON_KEY` albo URL-a.
+**Problem**: Przypomnienia i weryfikacja deploju milczały tygodniami przy zielonym workflow.
+**Zasada**: Brak wymaganego sekretu na prod = twardy fail. Health bez asercji SHA przechodzi na starym kontenerze — smoke porównuje `version` z `/api/health/live`.
+**Dotyczy**: `.github/workflows/reminders.yml`, `scripts/smoke.sh`, `BuildInfo.cs`.
+
+## CI `-warnaserror` łapie nullable, którego lokalny `check.sh` nie widzi
+
+**Kontekst**: `ItemToDto` używał `i.Exercise!` w jednym miejscu, a potem `i.Exercise.DefaultLoadKg` bez `!`. Lokalny build przeszedł; CI z `-warnaserror` padł na CS8602.
+**Problem**: `!` nie „zaraża” kolejnych odwołań do tej samej nawigacji. Job `dotnet build -warnaserror` jest ostrzejszy niż `./scripts/check.sh`.
+**Zasada**: Nawigację nullable wyciągnij raz (`var exercise = i.Exercise ?? throw …`) i używaj dalej. Przed PR odpal ten sam build co CI: `dotnet build apps/api/TrainerApp.Api.csproj -c Release -warnaserror`.
+**Dotyczy**: `apps/api/Program.cs`, `.github/workflows/ci.yml`
+
+## `dotnet ef` bez restore; `has-pending-model-changes` = 0 gdy zgodny
+
+**Kontekst**: Job Migrations wołał `dotnet ef` zanim powstał `project.assets.json`. Potem odwróciłem check na podstawie docs, nie logu.
+**Problem**: NETSDK1004 i fałszywy „brakuje migracji”. Po restore komenda przy zgodnym modelu drukuje „No changes have been made…” i kończy się **0**. `if cmd; then fail` pada na zielonym snapshotcie.
+**Zasada**: Przed `dotnet ef` zawsze `dotnet restore`. Fail tylko przy `if ! has-pending-model-changes` (EF rzuca, gdy model się różni). Wersja `dotnet-ef` = runtime (tu 10.0.9).
+**Dotyczy**: `.github/workflows/ci.yml` job `migrations`
+
+## CSV import nie może 503-ować zanim sparsujesz CSV
+
+**Kontekst**: `HistoryImport_CsvSkipsAi` lokalnie przechodził (klucz OpenRouter w env), w CI zwracał 503.
+**Problem**: `/api/ai/history-import` sprawdzał `UnavailableChatClient` zanim `ImportAsync` zdążył wziąć ścieżkę CSV.
+**Zasada**: 503 tylko gdy AI jest naprawdę potrzebne — po nieudanym parse CSV/tekstu, wewnątrz `ImportAsync`. Testy CSV nie mogą zależeć od klucza na laptopie.
+**Dotyczy**: `apps/api/Program.cs` `POST /api/ai/history-import`, `HistoryImport.ImportAsync`
+
+## Runbook w git: nazwy, nie cudza infra i nie sekrety
+
+**Kontekst**: `docs/deploy.md` miał iść na GitHub jako instrukcja deploju.
+**Problem**: W pliku nie było haseł, ale była mapa innego produktu (nazwy RG/Web App), username GitHuba i komenda `az … --sdk-auth`, która wypisuje client secret.
+**Zasada**: W docs commituj nazwy zmiennych i zasobów **tego** produktu. Cudze stacki, GUID-y subskrypcji, PAT, connection stringi i JSON SP — poza gitem. Service principal pod OIDC twórz bez `--sdk-auth`.
+**Dotyczy**: `docs/deploy.md`, `docs/ci-cd.md`, każdy runbook.
+
+## Jeden słownik środowisk: `dev` / `prod`
+
+**Kontekst**: Pipeline mówił `staging` w YAML, `dev.repmaxer.pl` w URL-u i `dev-latest` w starym stacku. Vercel ma własne wbudowane `production` / `preview` / `development`.
+**Problem**: Przy `vercel pull` i tworzeniu Environments każdy zgadywał, która nazwa jest „nasza”. Późniejszy rename wymaga przepisania federated credentials (subject zawiera nazwę środowiska).
+**Zasada**: GitHub Environments, joby, tagi obrazu i docs mówią `dev` / `prod`. Vercel Production zostaje `--environment=production` / `--prod` — skrypt mapuje argument `prod`. Nie mieszaj `staging` w YAML z `dev.*` w URL-u.
+**Dotyczy**: `.github/workflows/`, `scripts/vercel-deploy.sh`, `docs/ci-cd.md`.
+
+## Strażnik DDL skanuje delta, nie całą historię migracji
+
+**Kontekst**: Job Migrations generował `dotnet ef migrations script --idempotent` od `InitialCreate` i odpalał `check-migration-script.sh` na całym pliku.
+**Problem**: W `Up()` starych migracji są `DROP COLUMN` / `DROP TABLE` (np. `NotifyPr`). Każdy PR bez nowej migracji padał na „destrukcyjne DDL”.
+**Zasada**: Guard porównuje pliki migracji z `origin/main` i skanuje tylko skrypt przyrostowy. Brak nowych plików = skip. Etykieta `allow-destructive-ddl` zostaje na świadomy DROP w **tej** zmianie.
+**Dotyczy**: `scripts/check-destructive-ddl.sh`, `.github/workflows/ci.yml` job `migrations`
+
+## Concurrency na workflow + approval blokuje wcześniejsze etapy
+
+**Kontekst**: `release.yml` miał `concurrency.group: release` na całym workflow. Job prod czekał na approve i trzymał grupę.
+**Problem**: Kolejne merge'e nie wjeżdżały na `dev.repmaxer.pl` aż do kliknięcia. Właśnie ten scenariusz („niech poleży na dev”) był martwy.
+**Zasada**: Concurrency per środowisko, na jobach: `deploy-dev` i `deploy-prod`, `cancel-in-progress: false`. Approve prod nie blokuje dev. Nie stawiaj `concurrency` na poziomie workflow, gdy jeden job ma required reviewer.
+**Dotyczy**: `.github/workflows/release.yml`, `deploy-api.yml`, `rollback-api.yml`.
+
 ---

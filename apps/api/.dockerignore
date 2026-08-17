@@ -1,0 +1,10 @@
+bin/
+obj/
+trainer.db
+trainer.db-*
+*.md
+.env
+.env.*
+**/.DS_Store
+**/*.user
+**/*.suo

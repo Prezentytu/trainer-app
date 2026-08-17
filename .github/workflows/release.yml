@@ -1,0 +1,326 @@
+# Release train: jeden obraz → dev → approval → ten sam digest na prod.
+# Front (Vercel) jedzie po API. Environment prod ma required reviewer.
+# Concurrency per środowisko: oczekujący approve prod nie blokuje deployu na dev.
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      skip_prod:
+        description: "Zatrzymaj się na dev"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+  pull-requests: read
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: prezentytu/trainer-app-api
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    name: Build image
+    needs: ci
+    runs-on: ubuntu-latest
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+      image: ${{ steps.meta.outputs.image }}
+      sha: ${{ steps.meta.outputs.sha }}
+      version: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: meta
+        name: Image coordinates
+        run: |
+          sha="${GITHUB_SHA}"
+          short="${sha:0:12}"
+          version="0.0.${{ github.run_number }}"
+          image="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "short=$short" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: push
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          context: ./apps/api
+          build-args: |
+            SOURCE_REVISION=${{ steps.meta.outputs.sha }}
+          tags: |
+            ${{ steps.meta.outputs.image }}:sha-${{ steps.meta.outputs.short }}
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  dev:
+    name: Dev API
+    needs: build
+    runs-on: ubuntu-latest
+    environment: dev
+    concurrency:
+      group: deploy-dev
+      cancel-in-progress: false
+    outputs:
+      previous-image: ${{ steps.deploy.outputs.previous-image }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+          cache: true
+          cache-dependency-path: apps/api/TrainerApp.Api.csproj
+
+      - uses: ./.github/actions/ef-migrate
+        env:
+          DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
+
+      - uses: ./.github/actions/azure-login-oidc
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - id: deploy
+        uses: ./.github/actions/azure-deploy
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          image: ${{ needs.build.outputs.image }}@${{ needs.build.outputs.digest }}
+          ghcr-token: ${{ secrets.GHCR_TOKEN }}
+          registry-username: ${{ github.repository_owner }}
+
+      - name: Smoke
+        run: |
+          bash scripts/smoke.sh \
+            --base-url "${{ secrets.API_BASE_URL }}" \
+            --expect-version "${{ needs.build.outputs.sha }}"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Point dev-latest at digest
+        run: |
+          docker buildx imagetools create \
+            --tag "${{ needs.build.outputs.image }}:dev-latest" \
+            "${{ needs.build.outputs.image }}@${{ needs.build.outputs.digest }}"
+
+  web-dev:
+    name: Dev web
+    needs: [build, dev]
+    runs-on: ubuntu-latest
+    environment: dev
+    concurrency:
+      group: deploy-dev
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Vercel CLI
+        run: npm i -g vercel@latest
+
+      - name: Deploy dev front
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_DEV_ALIAS: ${{ vars.VERCEL_DEV_ALIAS }}
+        run: bash scripts/vercel-deploy.sh dev
+
+  e2e-dev:
+    name: Dev E2E
+    needs: web-dev
+    runs-on: ubuntu-latest
+    environment: dev
+    concurrency:
+      group: deploy-dev
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Playwright browsers
+        working-directory: apps/web
+        run: npx playwright install --with-deps chromium
+
+      - name: Critical path
+        working-directory: apps/web
+        env:
+          E2E_BASE_URL: ${{ vars.WEB_BASE_URL || 'https://dev.repmaxer.pl' }}
+          E2E_TRAINER_EMAIL: ${{ secrets.E2E_TRAINER_EMAIL }}
+          E2E_TRAINER_PASSWORD: ${{ secrets.E2E_TRAINER_PASSWORD }}
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+        run: npm run e2e
+
+  prod:
+    name: Prod API
+    needs: [build, e2e-dev]
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_prod != true }}
+    runs-on: ubuntu-latest
+    environment: prod
+    concurrency:
+      group: deploy-prod
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+          cache: true
+          cache-dependency-path: apps/api/TrainerApp.Api.csproj
+
+      - name: Neon bookmark
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
+          NEON_PARENT_BRANCH_ID: ${{ secrets.NEON_PARENT_BRANCH_ID }}
+        run: bash scripts/neon-bookmark.sh "${{ needs.build.outputs.sha }}"
+
+      - uses: ./.github/actions/ef-migrate
+        env:
+          DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
+
+      - uses: ./.github/actions/azure-login-oidc
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - id: deploy
+        uses: ./.github/actions/azure-deploy
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          image: ${{ needs.build.outputs.image }}@${{ needs.build.outputs.digest }}
+          ghcr-token: ${{ secrets.GHCR_TOKEN }}
+          registry-username: ${{ github.repository_owner }}
+
+      - id: smoke
+        name: Smoke
+        continue-on-error: true
+        run: |
+          bash scripts/smoke.sh \
+            --base-url "${{ secrets.API_BASE_URL }}" \
+            --expect-version "${{ needs.build.outputs.sha }}"
+
+      - name: Auto-rollback
+        if: steps.smoke.outcome == 'failure' && steps.deploy.outputs.previous-image != ''
+        uses: ./.github/actions/azure-deploy
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          image: ${{ steps.deploy.outputs.previous-image }}
+          ghcr-token: ${{ secrets.GHCR_TOKEN }}
+          registry-username: ${{ github.repository_owner }}
+
+      - name: Smoke after rollback
+        if: steps.smoke.outcome == 'failure' && steps.deploy.outputs.previous-image != ''
+        run: |
+          bash scripts/smoke.sh --base-url "${{ secrets.API_BASE_URL }}"
+          echo "::error::Smoke produkcji nie przeszedł — przywrócono poprzedni obraz."
+          exit 1
+
+      - name: Fail smoke (brak poprzedniego obrazu)
+        if: steps.smoke.outcome == 'failure'
+        run: |
+          echo "::error::Smoke produkcji nie przeszedł."
+          exit 1
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Point prod-latest at digest
+        run: |
+          docker buildx imagetools create \
+            --tag "${{ needs.build.outputs.image }}:prod-latest" \
+            "${{ needs.build.outputs.image }}@${{ needs.build.outputs.digest }}"
+
+  web-prod:
+    name: Prod web
+    needs: [build, prod]
+    runs-on: ubuntu-latest
+    environment: prod
+    concurrency:
+      group: deploy-prod
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Vercel CLI
+        run: npm i -g vercel@latest
+
+      - name: Deploy prod front
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: bash scripts/vercel-deploy.sh prod
+
+  release-notes:
+    name: GitHub Release
+    needs: [build, web-prod]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: r${{ github.run_number }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG już istnieje."
+            exit 0
+          fi
+          gh release create "$TAG" \
+            --target "${{ github.sha }}" \
+            --title "Release ${{ needs.build.outputs.version }}" \
+            --generate-notes
