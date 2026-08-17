@@ -57,8 +57,22 @@ link_next_env() {
     echo "::error::W ${pulled} nie ma NEXT_PUBLIC_API_URL. Dodaj ją w Vercel (checkbox Preview/Production)."
     exit 1
   fi
+  local pk
+  pk="$(grep -E '^NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=' "$pulled" | head -n1 | cut -d= -f2- | tr -d '"'\''[:space:]')"
+  if [[ -z "$pk" ]]; then
+    echo "::error::Brak NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY w tym środowisku Vercel (Preview/Production). Dodaj pk_test_ / pk_live_ z Clerk → API Keys."
+    exit 1
+  fi
+  if [[ ! "$pk" =~ ^pk_(test|live)_ ]]; then
+    echo "::error::NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY w Vercel nie zaczyna się od pk_test_ / pk_live_ (ucięty klucz albo wklejona cała linia .env)."
+    exit 1
+  fi
+  if [[ ${#pk} -lt 40 ]]; then
+    echo "::error::NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY jest za krótki (${#pk} znaków) — skopiuj z Clerk przyciskiem kopiuj, nie z uciętego podglądu."
+    exit 1
+  fi
   cp "$pulled" apps/web/.env.production.local
-  echo "Env z pull skopiowany do apps/web/.env.production.local"
+  echo "Env z pull skopiowany do apps/web/.env.production.local (Clerk pk: ${#pk} znaków)"
 }
 
 if [[ "$TARGET" == "prod" ]]; then

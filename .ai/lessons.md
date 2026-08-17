@@ -856,6 +856,20 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: Na Hobby wyłącz Vercel Authentication na Preview (Exceptions są płatne). E2E asseruje H1 landingu i link logowania albo rejestracji; przy ścianie Vercela — jasny błąd, nie timeout. Bez `VERCEL_AUTOMATION_BYPASS_SECRET`.
 **Dotyczy**: `apps/web/e2e/critical-path.spec.ts`, Vercel Settings → Deployment Protection
 
+## Domena Preview nie „jedzie” z Redeploy — tylko z `alias set` albo Git Branch
+
+**Kontekst**: `dev.repmaxer.pl` kiedyś działało po trainie; po Redeploy w UI nowy `*.vercel.app` był OK, alias dalej 500. Na Preview Vercel pokazuje Assigning Custom Domains: Skipped.
+**Problem**: Są dwa mechanizmy. (1) Settings → Domains + Git Branch — Vercel sam przesuwa domenę przy **git** deployu tej gałęzi; CLI tego nie dostaje (brak meta). (2) `vercel alias set` — przypina domenę do **jednego** deploymentu; następny Redeploy/PR/Dependabot jej nie dziedziczy. Train nadpisuje alias przy każdym Release — to zamierzone. Hobby nie ma Custom Environment `dev`.
+**Zasada**: `dev.repmaxer.pl` rusza tylko `scripts/vercel-deploy.sh` (albo ręczny `alias set`). Nie oceniaj po Redeploy w UI. Nie przypinaj `dev.repmaxer.pl` jako Production. Nie szukaj Assign Domain na karcie Preview.
+**Dotyczy**: Vercel Domains vs alias, `vercel-deploy.sh`, E2E
+
+## Ucięty `pk_test_` w Preview = 500 na każdym requestcie (edge)
+
+**Kontekst**: Vercel Logs: `Publishable key not valid` w `initPublishableKeyValues` (Web Handler / edge). E2E: 500. Klucz „był ustawiony”.
+**Problem**: `clerkEnabled = Boolean(process.env.NEXT_PUBLIC_…)` jest true przy śmieciu w wartości. `clerkMiddleware()` w `proxy.ts` wali całą domenę, łącznie z landingiem. Skrypt kopiujący env tylko powiela zły sekret z Vercel.
+**Zasada**: `isClerkPublishableKey` (`pk_test_`/`pk_live_` + długość) w `proxy.ts` i `api.ts`. Deploy failuje, gdy pk nie wygląda jak klucz. W Vercel: skasuj zmienną, wklej z przycisku kopiuj w Clerk, bez `NAZWA=`, bez cudzysłowów. Potem nowy build.
+**Dotyczy**: `apps/web/lib/clerkKey.ts`, `proxy.ts`, `scripts/vercel-deploy.sh`, Vercel Preview env
+
 ## `vercel pull` z roota nie karmi Next w `apps/web`
 
 **Kontekst**: Po przeniesieniu CLI na root repo `dev.repmaxer.pl` znowu 500; E2E nie widzi H1. Wcześniejszy deploy z `cd apps/web` działał.

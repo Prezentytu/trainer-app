@@ -1,3 +1,5 @@
+import { isClerkPublishableKey } from "@/lib/clerkKey";
+
 function resolveApiBase(): string {
   const fromEnv = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, "");
   if (fromEnv) return fromEnv;
@@ -87,7 +89,8 @@ export function setAuthTokenGetter(getter: AuthTokenGetter | null) {
   authTokenGetter = getter;
 }
 
-export const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+export { isClerkPublishableKey };
+export const clerkEnabled = isClerkPublishableKey(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
 /** Max czas czekania na Clerk przed pierwszym requestem (ms). */
 const AUTH_READY_TIMEOUT_MS = 8_000;
