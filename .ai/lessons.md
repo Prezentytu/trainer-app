@@ -842,6 +842,27 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: GitHub Environments, joby, tagi obrazu i docs mówią `dev` / `prod`. Vercel Production zostaje `--environment=production` / `--prod` — skrypt mapuje argument `prod`. Nie mieszaj `staging` w YAML z `dev.*` w URL-u.
 **Dotyczy**: `.github/workflows/`, `scripts/vercel-deploy.sh`, `docs/ci-cd.md`.
 
+## Pusty `version` w smoke nie jest zgodnym SHA; GET `/` bywa wolniejszy niż health
+
+**Kontekst**: Prod smoke: liveness `version=` (puste), skrypt napisał „SHA zgodny”, potem `GET /` timeout 20 s (curl 28).
+**Problem**: W bashu `[[ "$expected" == "$actual"* ]]` przy pustym `actual` jest zawsze prawdą. `GET /` nie miał retry — po restarcie kontenera health już żyje, root jeszcze wisi.
+**Zasada**: `version_matches` odrzuca pusty actual. Public `GET /` retry jak liveness. Na Web App: Always On + `WEBSITES_PORT=8080`.
+**Dotyczy**: `scripts/smoke.sh`, Azure App Settings prod
+
+## Preview za Deployment Protection = E2E widzi login Vercela, nie landing
+
+**Kontekst**: `dev.repmaxer.pl` u właściciela pokazywał landing; Playwright w CI nie znajdował „Zaloguj się”. Fetch bez sesji Vercel dostaje „Log in to Vercel”.
+**Problem**: Standard Protection na Preview. Przeglądarka z zalogowanym Vercel omija ścianę; runner GitHub nie. Test szukał też wyłącznie „Zaloguj się”, a hero ma „Załóż darmowe konto”.
+**Zasada**: Na Hobby wyłącz Vercel Authentication na Preview (Exceptions są płatne). E2E asseruje H1 landingu i link logowania albo rejestracji; przy ścianie Vercela — jasny błąd, nie timeout. Bez `VERCEL_AUTOMATION_BYPASS_SECRET`.
+**Dotyczy**: `apps/web/e2e/critical-path.spec.ts`, Vercel Settings → Deployment Protection
+
+## Nie zapisuj ręcznie `.vercel/project.json` przed `vercel pull`
+
+**Kontekst**: Prod web: token/org/project wyglądały OK (`team_` 29, `prj_` 32), CLI: „remove the `.vercel` directory”.
+**Problem**: Skrypt pisał `project.json` z samymi id. `vercel pull` widzi niepełny link i nie nadpisuje — ten sam błąd co przy złych ID.
+**Zasada**: `rm -rf .vercel` na starcie. Org/project tylko w env + `--scope`. CLI samo złoży settings. Root Directory `apps/web` zostaje w UI; komendy z roota repo.
+**Dotyczy**: `scripts/vercel-deploy.sh`
+
 ## Vercel CLI w monorepo odpalaj z roota, nie z `apps/web`
 
 **Kontekst**: Projekt Vercel ma Root Directory `apps/web`. `vercel-deploy.sh` robił `cd apps/web` i potem `vercel build`.

@@ -78,6 +78,8 @@ wait_body() {
 version_matches() {
   local actual="$1"
   local expected="$2"
+  # Pusty actual nie może przejść — `[[ expected == ""* ]]` jest zawsze prawdą w bashu.
+  [[ -z "$actual" || -z "$expected" ]] && return 1
   [[ "$actual" == "$expected" ]] && return 0
   [[ "$actual" == "${expected:0:12}" ]] && return 0
   [[ "$expected" == "$actual"* ]] && return 0
@@ -138,9 +140,17 @@ if [[ "$rstatus" != "ok" || "$rdb" != "ok" ]]; then
 fi
 
 echo "==> public GET ${BASE}/"
-code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 20 "${BASE}/")
+code=""
+for i in $(seq 1 "$RETRIES"); do
+  code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 20 "${BASE}/" || true)
+  if [[ "$code" == "200" ]]; then
+    break
+  fi
+  echo "  próba $i/$RETRIES — GET / HTTP ${code:-000}, czekam ${SLEEP}s…" >&2
+  sleep "$SLEEP"
+done
 if [[ "$code" != "200" ]]; then
-  echo "::error::GET / zwrócił ${code}"
+  echo "::error::GET / zwrócił ${code:-timeout} (Azure jeszcze wstaje? Always On + WEBSITES_PORT=8080)."
   exit 1
 fi
 

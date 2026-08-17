@@ -35,32 +35,32 @@ fi
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # Projekt Vercel ma Root Directory = apps/web. CLI z apps/web szuka apps/web/apps/web/package.json.
 cd "$ROOT"
-
-mkdir -p .vercel
-cat > .vercel/project.json <<EOF
-{"orgId":"${VERCEL_ORG_ID}","projectId":"${VERCEL_PROJECT_ID}"}
-EOF
+# Ręczny project.json (same id) CLI traktuje jako zepsuty link — „remove the .vercel directory”.
+rm -rf .vercel apps/web/.vercel
 
 if ! command -v vercel >/dev/null 2>&1; then
   echo "::error::Brak Vercel CLI (npm i -g vercel)."
   exit 1
 fi
 
+export VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID
+scope=(--token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID")
+
 if [[ "$TARGET" == "prod" ]]; then
   # Wbudowana nazwa Vercela — nie da się przemianować na `prod`.
-  vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
-  vercel build --prod --token="$VERCEL_TOKEN"
-  vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+  vercel pull --yes --environment=production "${scope[@]}"
+  vercel build --prod "${scope[@]}"
+  vercel deploy --prebuilt --prod "${scope[@]}"
   echo "Wdrożono prod (repmaxer.pl)."
   exit 0
 fi
 
 # Preview, nie Development i nie płatny Custom Environment.
-vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
-vercel build --token="$VERCEL_TOKEN"
-url=$(vercel deploy --prebuilt --token="$VERCEL_TOKEN")
+vercel pull --yes --environment=preview "${scope[@]}"
+vercel build "${scope[@]}"
+url=$(vercel deploy --prebuilt "${scope[@]}")
 echo "Wdrożono dev: ${url}"
 
 alias="${VERCEL_DEV_ALIAS:-dev.repmaxer.pl}"
-vercel alias set "$url" "$alias" --token="$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID"
+vercel alias set "$url" "$alias" "${scope[@]}"
 echo "Alias: ${alias}"

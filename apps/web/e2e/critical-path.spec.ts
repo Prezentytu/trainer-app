@@ -7,7 +7,18 @@ const hasAuth = Boolean(email && password);
 test.describe("public", () => {
   test("landing i ekran logowania", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("link", { name: "Zaloguj się" }).first()).toBeVisible();
+
+    const vercelWall = page.getByRole("heading", { name: /Log in to Vercel/i });
+    if (await vercelWall.isVisible().catch(() => false)) {
+      throw new Error(
+        "Vercel Authentication zasłania Preview. Wyłącz je w Settings → Deployment Protection.",
+      );
+    }
+
+    await expect(page.getByRole("heading", { name: /Wysyłasz link/i })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: /Zaloguj się|Załóż darmowe konto|Załóż konto/i }).first(),
+    ).toBeVisible();
 
     await page.goto("/sign-in");
     await expect(page.getByRole("heading", { name: /Zaloguj się|Logowanie/i })).toBeVisible();
