@@ -15,6 +15,13 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Kreator: chrome tylko gdy ma co powiedzieć
+
+**Kontekst**: Widok Tablica przy pustym planie renderował 28 chipów Pn–Nd, 4 przyciski „Zastosuj…”, 4 empty state’y i 4 linie „0 ćwiczeń · 0 serii · ~5 min”.
+**Problem**: Gęstość UI zamiast gęstości danych — chrome opisywał nieistnienie treści (Trello/Notion/Linear: front karty pokazuje tylko to, co istnieje; lokalizacja kontrolki = jej zasięg).
+**Zasada**: Kontrolki dnia (harmonogram, notatka, duplikuj, usuń) żyją w `DayMenu` przy nazwie dnia. Statystyki i empty state tylko gdy tydzień/dzień ma ćwiczenia. Jedna afordancja na akcję: composer + lupa; ściągawka pod `?` / menu planu, nie w każdej kolumnie. `/` fokusuje composer, jeśli fokus nie jest w polu tekstowym.
+**Dotyczy**: `apps/web/components/plan-builder/` (`DayHeader`, `DayMenu`, `ComposerChrome`, `WeekTabs`, `DayColumn`, `ListView`, `TableDay`).
+
 ## Sticky scena: tor = długość animacji, dziecko wypełnia kadr
 
 **Kontekst**: `md:min-h-[180svh]` + sticky `min-h-[100svh]` zostawiało ~560 px pustki **pod** dzieckiem po odpięciu. W telefonie drugi blok (Przysiad × 3) wypychał wyciskanie poza `overflow-hidden` — na niskim oknie widać było 4/4 i ghost serie, bez odhaczenia 105 × 3.
@@ -359,15 +366,15 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 **Kontekst**: W widoku Lista puste pole „Notatka / rozgrzewka dnia” było pełnym `inputClass` tuż nad composerem.
 **Problem**: W F-pattern wyglądało jak główne miejsce na treść — trenerzy wpisywali nazwę ćwiczenia w notatkę zamiast w composer.
-**Zasada**: Notatka dnia jest drugorzędna. Pusta = cichy link „+ Notatka…”, nie pełne pole. Otwarte pole ma label + dashed/muted border (nie hero `inputClass`). Wzorzec jak w `DayColumn` (progressive disclosure).
-**Dotyczy**: `ListView.tsx`, `TableDay.tsx`, `DayColumn.tsx`.
+**Zasada**: Notatka dnia jest drugorzędna. Pusta = nic w nagłówku. Edycja tylko w `DayMenu` (klik w nazwę dnia). Gdy jest treść — jedna wyciszona linia w `DayHeader`.
+**Dotyczy**: `DayHeader.tsx`, `DayMenu.tsx`.
 
 ## Podpowiedzi composera domyślnie zwinięte
 
 **Kontekst**: Widok Lista kreatora pokazywał zawsze 6 chipów skrótów + 3-liniową legendę tempo/RIR/rampa pod polem wpisywania.
 **Problem**: Ściana tekstu utrudniała fokus na dodawaniu ćwiczeń; power-userzy i tak znają skróty, a nowi potrzebują ściągawki na żądanie.
-**Zasada**: Hinty i legenda w composerze żyją w `ComposerHelp` (trigger `?`, localStorage `trainer-app:composer-help:v1`). Pod polem zostaje jedna kontekstowa linia (`↵ dodaj jako N`). Nie wracaj do zawsze widocznego bloku legendy.
-**Dotyczy**: `apps/web/components/plan-builder/ListComposer.tsx`, `ComposerHelp.tsx`, `QuickComposer.tsx`.
+**Zasada**: Hinty i legenda żyją w jednym `ComposerHelpDialog` (menu planu „Składnia wpisywania” albo `?` w pustym composerze). Nie wstawiaj `?` do każdej kolumny. Pod polem zostaje jedna kontekstowa linia (`↵ dodaj`).
+**Dotyczy**: `ComposerHelp.tsx`, `ComposerChrome.tsx`, `PlanToolbar.tsx`, `ListComposer.tsx`, `QuickComposer.tsx`.
 
 ## Dev web na Webpacku, nie Turbopacku, dopóki Next < 16.3
 

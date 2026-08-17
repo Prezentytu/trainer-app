@@ -25,6 +25,7 @@ import { useExerciseLibrary } from "./useExerciseLibrary";
 import { BuilderDay, BuilderItem } from "./types";
 import { usePlanDraft } from "./usePlanDraft";
 import { usePlanPersistence } from "./usePlanPersistence";
+import { ComposerChromeProvider, useComposerChrome } from "./ComposerChrome";
 import { WeekTabs } from "./WeekTabs";
 
 type ActiveItem = { dayKey: string; itemKey: string };
@@ -70,7 +71,7 @@ export default function PlanBuilder({
   initialDayCount?: number;
   initialWeekCount?: number;
   initialDays?: BuilderDay[];
-  /** np. „Krok 2 z 3 · zbuduj plan ćwiczeniami” — tylko nowy plan */
+  /** np. „Krok 2 z 2 · zbuduj plan ćwiczeniami” — tylko nowy plan */
   stepLabel?: string;
   /** Po utworzeniu planu automatycznie przypisz do klienta i wróć na jego profil. */
   assignTo?: { id: number; name: string };
@@ -88,6 +89,7 @@ export default function PlanBuilder({
   const [dialog, setDialog] = useState<DialogState>({ open: false });
   const [createdToast, setCreatedToast] = useState<Exercise | null>(null);
   const [methodOpen, setMethodOpen] = useState(false);
+  const [listDayKey, setListDayKey] = useState<string | null>(null);
 
   const draft = usePlanDraft({
     plan,
@@ -188,10 +190,18 @@ export default function PlanBuilder({
     [draft.visibleDays]
   );
   const weekMeta = useMemo(() => {
-    const count = weekItems.length;
+    if (weekItems.length === 0) return undefined;
     const mins = estimateDaysMinutes(draft.visibleDays, library.exercises);
-    return `${count} ćwiczeń · ${formatDurationApprox(mins)}`;
+    return `${weekItems.length} ćwiczeń · ${formatDurationApprox(mins)}`;
   }, [weekItems, draft.visibleDays, library.exercises]);
+
+  const resolvedListDayKey =
+    listDayKey && draft.visibleDays.some((d) => d.key === listDayKey)
+      ? listDayKey
+      : (draft.visibleDays[0]?.key ?? null);
+
+  const composerDayKey =
+    viewMode === "list" ? resolvedListDayKey : (draft.visibleDays[0]?.key ?? null);
 
   const assignFirstName = assignTo?.name.split(/\s+/)[0] ?? null;
   const submitLabel = plan
@@ -247,6 +257,7 @@ export default function PlanBuilder({
 
   return (
     <ExerciseLibraryProvider value={libraryActions}>
+      <ComposerChromeProvider preferredDayKey={composerDayKey}>
       <form
         onSubmit={persistence.handleSubmit}
         className="flex min-h-0 min-w-0 flex-1 flex-col"
@@ -254,7 +265,7 @@ export default function PlanBuilder({
         <div className="shrink-0">
           <ErrorBanner message={persistence.error} />
 
-          <PlanToolbar
+          <PlanToolbarWithHelp
             name={draft.name}
             onNameChange={draft.setName}
             isTemplate={draft.isTemplate}
@@ -280,7 +291,11 @@ export default function PlanBuilder({
             onSelect={handleWeekSelect}
             onAddWeek={draft.addWeek}
             onCopyWeek={draft.copyWeek}
-            metaLabel={viewMode === "list" || viewMode === "progression" ? undefined : weekMeta}
+            days={viewMode === "list" ? draft.visibleDays : undefined}
+            activeDayKey={viewMode === "list" ? resolvedListDayKey : undefined}
+            onSelectDay={viewMode === "list" ? setListDayKey : undefined}
+            onAddDay={viewMode === "list" ? () => draft.addDay(draft.activeWeek) : undefined}
+            metaLabel={viewMode === "progression" ? undefined : weekMeta}
             right={
               <SegmentedControl
                 items={[
@@ -307,6 +322,7 @@ export default function PlanBuilder({
             <ListView
               days={draft.visibleDays}
               exercises={library.exercises}
+              selectedDayKey={resolvedListDayKey}
               onAddDay={() => draft.addDay(draft.activeWeek)}
               onPatchDay={draft.patchDay}
               onRemoveDay={draft.removeDay}
@@ -493,6 +509,12 @@ export default function PlanBuilder({
           </div>
         )}
       </form>
+      </ComposerChromeProvider>
     </ExerciseLibraryProvider>
   );
+}
+
+function PlanToolbarWithHelp(props: Omit<Parameters<typeof PlanToolbar>[0], "onOpenComposerHelp">) {
+  const { setHelpOpen } = useComposerChrome();
+  return <PlanToolbar {...props} onOpenComposerHelp={() => setHelpOpen(true)} />;
 }

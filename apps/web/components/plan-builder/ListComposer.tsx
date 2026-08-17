@@ -1,6 +1,6 @@
 "use client";
 
-import { KeyboardEvent, useMemo, useRef, useState } from "react";
+import { KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Exercise } from "@/lib/api";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import {
@@ -11,7 +11,8 @@ import { formatMeasureCore } from "@/lib/measure";
 import { itemOverridesFromParsed, matchExercises, parseQuickEntry } from "@/lib/quickEntry";
 import { readRecentExerciseIds, rememberExercise } from "@/lib/recentExercises";
 import { demoMedia } from "@/lib/youtube";
-import { ComposerHelp, markComposerHelpSeen, useComposerHelpOpen } from "./ComposerHelp";
+import { COMPOSER_PLACEHOLDER, markComposerHelpSeen } from "./ComposerHelp";
+import { useComposerChrome } from "./ComposerChrome";
 import { CreateExerciseRow } from "@/components/CreateExerciseRow";
 import { useExerciseLibraryActions } from "./ExerciseLibraryContext";
 import { buildListGroups, nextPositionLabel, superHintLabel } from "./listGroups";
@@ -41,13 +42,18 @@ export function ListComposer({
   ) => void;
 }) {
   const { createExercise, requestNewExercise } = useExerciseLibraryActions();
-  const { open: helpOpen, onOpenChange: setHelpOpen } = useComposerHelpOpen();
+  const { registerComposer, markFocused, helpOpen, setHelpOpen } = useComposerChrome();
   const [value, setValue] = useState("");
   const [recentIds, setRecentIds] = useState<number[]>(readRecentExerciseIds);
   const [highlighted, setHighlighted] = useState(0);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    registerComposer(day.key, inputRef.current);
+    return () => registerComposer(day.key, null);
+  }, [day.key, registerComposer]);
 
   const parsed = useMemo(() => parseQuickEntry(value), [value]);
   const matches = useMemo(
@@ -290,7 +296,8 @@ export function ListComposer({
               setCreateError(null);
             }}
             onKeyDown={handleKeyDown}
-            placeholder={'Wpisz ćwiczenie — np. „przysiad 3x8” lub „deska 3x30s”'}
+            placeholder={COMPOSER_PLACEHOLDER}
+            onFocus={() => markFocused(day.key)}
             className="min-w-0 flex-1 bg-transparent py-1.5 text-sm text-foreground outline-none placeholder:text-muted-faint disabled:opacity-60"
           />
           {pendingNum != null && (
@@ -302,7 +309,6 @@ export function ListComposer({
             </span>
           )}
           <span className="shrink-0 text-xs text-muted-faint whitespace-nowrap">↵ dodaj</span>
-          <ComposerHelp open={helpOpen} onOpenChange={setHelpOpen} />
         </div>
       </div>
 

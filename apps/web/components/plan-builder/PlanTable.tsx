@@ -47,12 +47,20 @@ export function PlanTable({
   onApplyPreset: (dayKey: string, itemKey: string, presetId: string) => void;
   onClearSets: (dayKey: string, itemKey: string) => void;
 }) {
+  const weekEmpty = days.length > 0 && days.every((d) => d.items.length === 0);
+
   return (
     <div className="flex flex-col gap-4">
-      {days.map((day) => (
+      {weekEmpty ? (
+        <p className="text-sm text-muted">
+          Wpisz „przysiad 3x8” w polu pod dniem albo otwórz bibliotekę.
+        </p>
+      ) : null}
+      {days.map((day, idx) => (
         <TableDay
           key={day.key}
           day={day}
+          dayIndex={idx + 1}
           exercises={exercises}
           onPatchDay={(patch) => onPatchDay(day.key, patch)}
           onRemoveDay={() => onRemoveDay(day.key)}

@@ -56,9 +56,16 @@ export function DayBoard({
   onLinkSelected: (dayKey: string, itemKeys: string[]) => void;
   onUnlinkGroup: (dayKey: string, itemKey: string) => void;
 }) {
+  const weekEmpty = days.length > 0 && days.every((d) => d.items.length === 0);
+
   return (
     // Trello model: board = wysokość viewportu; poziomo kolumny; pionowo wewnątrz dnia.
     <div className="flex h-full min-h-0 w-full flex-col">
+      {weekEmpty ? (
+        <p className="mb-3 shrink-0 text-sm text-muted">
+          Wpisz „przysiad 3x8” w polu pod dniem albo otwórz bibliotekę.
+        </p>
+      ) : null}
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-y-contain md:flex-row md:items-stretch md:gap-3 md:overflow-x-auto md:overflow-y-hidden md:overscroll-x-contain md:snap-x md:snap-mandatory md:pb-1">
         {days.map((day, idx) => (
           <DayColumn

@@ -115,8 +115,8 @@ function NewPlanWizard({ assignTo }: { assignTo: AssignTo | null }) {
           initialWeekCount={preset.weeks}
           stepLabel={
             firstName
-              ? `Krok 2 z 3 · plan dla ${firstName}`
-              : "Krok 2 z 3 · zbuduj plan ćwiczeniami"
+              ? `Krok 2 z 2 · plan dla ${firstName}`
+              : "Krok 2 z 2 · zbuduj plan ćwiczeniami"
           }
           assignTo={assignTo ?? undefined}
         />
@@ -157,9 +157,8 @@ function NewPlanWizard({ assignTo }: { assignTo: AssignTo | null }) {
       <div className="mb-6 flex items-center gap-2" aria-hidden>
         <div className="h-1.5 flex-1 rounded-full bg-accent" />
         <div className="h-1.5 flex-1 rounded-full bg-surface-hover" />
-        <div className="h-1.5 flex-1 rounded-full bg-surface-hover" />
       </div>
-      <p className="t-label mb-6">Krok 1 z 3 · struktura wybrana</p>
+      <p className="t-label mb-6">Krok 1 z 2 · struktura wybrana</p>
 
       <form
         onSubmit={(e) => {

@@ -1,17 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Exercise } from "@/lib/api";
 import { buildGroupLabels, computeGroupsFromLinks } from "@/lib/supersets";
-import { Badge, EmptyState, IconButton, inputClass } from "@/components/ui";
-import { DayScheduleChips } from "./DayScheduleChips";
-import { DuplicateDayButton } from "./DuplicateDayButton";
+import { DayHeader } from "./DayHeader";
 import { QuickComposer } from "./QuickComposer";
 import { TABLE_ROW_GRID_COLS, TableExerciseRow } from "./TableExerciseRow";
 import { BuilderDay, BuilderItem, BuilderSet } from "./types";
 
 export function TableDay({
   day,
+  dayIndex,
   exercises,
   onPatchDay,
   onRemoveDay,
@@ -30,6 +29,7 @@ export function TableDay({
   onClearSets,
 }: {
   day: BuilderDay;
+  dayIndex: number;
   exercises: Exercise[];
   onPatchDay: (patch: Partial<BuilderDay>) => void;
   onRemoveDay: () => void;
@@ -48,13 +48,6 @@ export function TableDay({
   onClearSets: (itemKey: string) => void;
 }) {
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
-  const [notesOpen, setNotesOpen] = useState(false);
-  const notesRef = useRef<HTMLInputElement>(null);
-  const showNotesEditor = notesOpen || Boolean(day.notes?.trim());
-
-  useEffect(() => {
-    if (notesOpen) notesRef.current?.focus();
-  }, [notesOpen]);
 
   const toggleExpand = (key: string) =>
     setExpandedKeys((prev) => {
@@ -69,64 +62,21 @@ export function TableDay({
 
   return (
     <div className="rounded-xl border border-border bg-surface p-4">
-      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 flex-1 space-y-2 sm:max-w-sm">
-          <input
-            className={`${inputClass} w-full font-semibold`}
-            value={day.label}
-            onChange={(e) => onPatchDay({ label: e.target.value })}
-            placeholder="np. Poniedziałek / Trening A"
-          />
-          {showNotesEditor ? (
-            <input
-              ref={notesRef}
-              className="w-full rounded-[10px] border border-dashed border-border bg-transparent px-3 py-1.5 text-xs text-foreground-secondary outline-none placeholder:text-muted-faint focus:border-border-strong focus:text-foreground"
-              value={day.notes ?? ""}
-              onChange={(e) => onPatchDay({ notes: e.target.value || null })}
-              onBlur={() => {
-                if (!day.notes?.trim()) setNotesOpen(false);
-              }}
-              placeholder="Notatka / rozgrzewka dnia"
-              aria-label="Notatka dnia"
-            />
-          ) : (
-            <button
-              type="button"
-              onClick={() => setNotesOpen(true)}
-              className="text-xs text-muted-faint transition-colors hover:text-muted"
-            >
-              + Notatka / rozgrzewka dnia
-            </button>
-          )}
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <Badge>{day.items.length} ćw.</Badge>
-          <DuplicateDayButton
-            weeks={weeks}
-            currentWeek={day.weekNumber}
-            title={`Powiel układ „${day.label}”`}
-            onDuplicate={onDuplicateDay}
-          />
-          <IconButton title="Usuń dzień" variant="danger" onClick={onRemoveDay}>
-            🗑
-          </IconButton>
-        </div>
-      </div>
-
       <div className="mb-3">
-        <DayScheduleChips
+        <DayHeader
           day={day}
-          onPatch={onPatchDay}
-          showApply={weeks.length > 1}
-          onApplyToOtherWeeks={onApplyWeekdays}
+          dayIndex={dayIndex}
+          exercises={exercises}
+          density="row"
+          weeks={weeks}
+          onPatchDay={onPatchDay}
+          onRemoveDay={onRemoveDay}
+          onDuplicateDay={onDuplicateDay}
+          onApplyWeekdays={onApplyWeekdays}
         />
       </div>
 
-      {day.items.length === 0 ? (
-        <EmptyState title="Pusty dzień" action={null}>
-          Dodaj ćwiczenie poniżej — tu pojawi się arkusz serii i powtórzeń.
-        </EmptyState>
-      ) : (
+      {day.items.length > 0 ? (
         <div className="overflow-x-auto">
           <div className="min-w-[1040px]">
             <div
@@ -170,9 +120,9 @@ export function TableDay({
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
-      <div className="mt-3">
+      <div className={day.items.length > 0 ? "mt-3" : undefined}>
         <QuickComposer exercises={exercises} day={day} onAdd={onAddItem} onToggleLink={onToggleLink} />
       </div>
     </div>

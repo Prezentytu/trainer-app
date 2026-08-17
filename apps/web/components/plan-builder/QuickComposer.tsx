@@ -1,6 +1,6 @@
 "use client";
 
-import { KeyboardEvent, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { KeyboardEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Exercise } from "@/lib/api";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
@@ -14,7 +14,8 @@ import { readRecentExerciseIds, rememberExercise } from "@/lib/recentExercises";
 import { demoMedia } from "@/lib/youtube";
 import { Icon } from "@/components/Icon";
 import { Badge, IconButton, inputClass } from "@/components/ui";
-import { ComposerHelp, markComposerHelpSeen, useComposerHelpOpen } from "./ComposerHelp";
+import { COMPOSER_PLACEHOLDER, markComposerHelpSeen } from "./ComposerHelp";
+import { useComposerChrome } from "./ComposerChrome";
 import { CreateExerciseRow } from "@/components/CreateExerciseRow";
 import { useExerciseLibraryActions } from "./ExerciseLibraryContext";
 import { BuilderDay, BuilderItem } from "./types";
@@ -81,7 +82,7 @@ export function QuickComposer({
   onBrowse?: () => void;
 }) {
   const { createExercise, requestNewExercise } = useExerciseLibraryActions();
-  const { open: helpOpen, onOpenChange: setHelpOpen } = useComposerHelpOpen();
+  const { registerComposer, markFocused, helpOpen, setHelpOpen } = useComposerChrome();
   const [value, setValue] = useState("");
   const [recentIds, setRecentIds] = useState<number[]>(readRecentExerciseIds);
   const [highlighted, setHighlighted] = useState(0);
@@ -91,6 +92,11 @@ export function QuickComposer({
   const lastGroupRef = useRef<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const anchorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    registerComposer(day.key, inputRef.current);
+    return () => registerComposer(day.key, null);
+  }, [day.key, registerComposer]);
   const [menuBox, setMenuBox] = useState<{
     left: number;
     width: number;
@@ -325,7 +331,7 @@ export function QuickComposer({
           <input
             ref={inputRef}
             className={`${inputClass} w-full pr-14`}
-            placeholder='np. „przysiad 3x8”'
+            placeholder={COMPOSER_PLACEHOLDER}
             value={value}
             disabled={creating}
             onChange={(e) => {
@@ -334,7 +340,10 @@ export function QuickComposer({
               setCreateError(null);
             }}
             onKeyDown={handleKeyDown}
-            onFocus={() => setFocused(true)}
+            onFocus={() => {
+              setFocused(true);
+              markFocused(day.key);
+            }}
             onBlur={() => setFocused(false)}
           />
           {focused && value.trim() ? (
@@ -343,7 +352,6 @@ export function QuickComposer({
             </span>
           ) : null}
         </div>
-        <ComposerHelp open={helpOpen} onOpenChange={setHelpOpen} />
         {onBrowse ? (
           <IconButton title="Przeglądaj bibliotekę" onClick={onBrowse} size="sm">
             <Icon name="search" size={16} decorative />

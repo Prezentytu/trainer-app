@@ -37,6 +37,7 @@ export function PlanToolbar({
   stepLabel,
   onExit,
   onApplyMethod,
+  onOpenComposerHelp,
 }: {
   name: string;
   onNameChange: (v: string) => void;
@@ -55,6 +56,7 @@ export function PlanToolbar({
   stepLabel?: string;
   onExit?: () => void;
   onApplyMethod?: () => void;
+  onOpenComposerHelp?: () => void;
 }) {
   const [editingName, setEditingName] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -161,6 +163,16 @@ export function PlanToolbar({
                         }}
                       >
                         Zastosuj szablon metody
+                      </OverflowMenuItem>
+                    ) : null}
+                    {onOpenComposerHelp ? (
+                      <OverflowMenuItem
+                        onClick={() => {
+                          close();
+                          onOpenComposerHelp();
+                        }}
+                      >
+                        Składnia wpisywania
                       </OverflowMenuItem>
                     ) : null}
                     {planId ? (
