@@ -800,6 +800,20 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: Brak wymaganego sekretu na prod = twardy fail. Health bez asercji SHA przechodzi na starym kontenerze — smoke porównuje `version` z `/api/health/live`.
 **Dotyczy**: `.github/workflows/reminders.yml`, `scripts/smoke.sh`, `BuildInfo.cs`.
 
+## CI `-warnaserror` łapie nullable, którego lokalny `check.sh` nie widzi
+
+**Kontekst**: `ItemToDto` używał `i.Exercise!` w jednym miejscu, a potem `i.Exercise.DefaultLoadKg` bez `!`. Lokalny build przeszedł; CI z `-warnaserror` padł na CS8602.
+**Problem**: `!` nie „zaraża” kolejnych odwołań do tej samej nawigacji. Job `dotnet build -warnaserror` jest ostrzejszy niż `./scripts/check.sh`.
+**Zasada**: Nawigację nullable wyciągnij raz (`var exercise = i.Exercise ?? throw …`) i używaj dalej. Przed PR odpal ten sam build co CI: `dotnet build apps/api/TrainerApp.Api.csproj -c Release -warnaserror`.
+**Dotyczy**: `apps/api/Program.cs`, `.github/workflows/ci.yml`
+
+## `dotnet ef` bez restore + odwrócony exit code `has-pending-model-changes`
+
+**Kontekst**: Job Migrations wołał `dotnet ef` zanim powstał `project.assets.json`. Potem `if ! has-pending-model-changes` traktował każdy błąd jako „brakuje migracji”.
+**Problem**: NETSDK1004 i fałszywy komunikat. Po dodaniu restore inverted check padłby na zgodnym snapshotcie: EF zwraca **0 gdy są pending changes**, 1 gdy model jest zgodny.
+**Zasada**: Przed `dotnet ef` zawsze `dotnet restore`. `if dotnet ef migrations has-pending-model-changes; then fail; fi` — nie odwrotnie.
+**Dotyczy**: `.github/workflows/ci.yml` job `migrations`
+
 ## Runbook w git: nazwy, nie cudza infra i nie sekrety
 
 **Kontekst**: `docs/deploy.md` miał iść na GitHub jako instrukcja deploju.

@@ -203,3 +203,4 @@ Bez maila/hasła: tylko landing + `/sign-in` (job zielony). Pełna ścieżka: kl
 | Vercel `environment=dev` fail | utwórz Custom Environment `dev` (krok 4) |
 | Reminders czerwone | `CRON_KEY` + `API_BASE_URL` w Environment **prod** |
 | Migracje `Couldn't set …/neondb?sslmode` | do CI **direct**, nie pooler; `DbConnectionString.Normalize` |
+| Dependency review: not supported | Settings → Code security → **Dependency graph** On. Job nie blokuje bramki CI. |
