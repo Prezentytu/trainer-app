@@ -135,7 +135,8 @@ jobs:
       - name: Guard destructive DDL
         env:
           ALLOW: ${{ contains(join(github.event.pull_request.labels.*.name, ','), 'allow-destructive-ddl') || contains(github.event.head_commit.message, '[allow-destructive-ddl]') }}
-        run: bash scripts/check-migration-script.sh artifacts/ef.sql "${ALLOW}"
+          BASE_REF: ${{ github.base_ref || 'main' }}
+        run: bash scripts/check-destructive-ddl.sh "${BASE_REF}" "${ALLOW}"
 
       - name: Apply bundle on empty Postgres
         working-directory: apps/api

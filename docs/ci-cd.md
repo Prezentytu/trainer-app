@@ -170,7 +170,7 @@ Migracji w dół nie robimy. Rollback obrazu przy addytywnej migracji jest bezpi
 
 ## Destrukcyjne DDL
 
-CI pada, gdy `dotnet ef migrations script --idempotent` zawiera `DROP COLUMN` / `DROP TABLE` / `ALTER COLUMN … TYPE`.
+CI pada, gdy **nowe** migracje względem bazy PR (`main`) zawierają `DROP COLUMN` / `DROP TABLE` / `ALTER COLUMN … TYPE`. Historyczne DROP w już wdrożonym łańcuchu nie blokują PR-ów bez zmiany schematu.
 
 Świadoma zgoda: etykieta PR `allow-destructive-ddl` albo `[allow-destructive-ddl]` w commicie.
 

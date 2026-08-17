@@ -71,3 +71,4 @@ Brak zmian w panelu. Dev (`dev.repmaxer.pl`) dostaje `X-Robots-Tag: noindex` i `
 - 2026-08-16 — utworzono spec; decyzje: staging+prod, auto CD z bramką approvala, Vercel pod kontrolą Actions, bash smoke od razu + Playwright na staging.
 - 2026-08-16 — wdrożono pipeline w repo (workflowy, skrypty, health `version`). Kroki ręczne Environments/OIDC/Vercel staging: `docs/ci-cd.md`.
 - 2026-08-17 — korekta nazw `staging`/`production` → `dev`/`prod`; trunk zamiast gałęzi `dev`; concurrency per środowisko (approve prod nie blokuje deployu na dev).
+- 2026-08-17 — strażnik DDL skanuje tylko delta względem `main`, nie pełny skrypt idempotentny (historyczne DROP w `Up()` blokowały każdy PR).

@@ -835,6 +835,13 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: GitHub Environments, joby, tagi obrazu i docs mówią `dev` / `prod`. Vercel Production zostaje `--environment=production` / `--prod` — skrypt mapuje argument `prod`. Nie mieszaj `staging` w YAML z `dev.*` w URL-u.
 **Dotyczy**: `.github/workflows/`, `scripts/vercel-deploy.sh`, `docs/ci-cd.md`.
 
+## Strażnik DDL skanuje delta, nie całą historię migracji
+
+**Kontekst**: Job Migrations generował `dotnet ef migrations script --idempotent` od `InitialCreate` i odpalał `check-migration-script.sh` na całym pliku.
+**Problem**: W `Up()` starych migracji są `DROP COLUMN` / `DROP TABLE` (np. `NotifyPr`). Każdy PR bez nowej migracji padał na „destrukcyjne DDL”.
+**Zasada**: Guard porównuje pliki migracji z `origin/main` i skanuje tylko skrypt przyrostowy. Brak nowych plików = skip. Etykieta `allow-destructive-ddl` zostaje na świadomy DROP w **tej** zmianie.
+**Dotyczy**: `scripts/check-destructive-ddl.sh`, `.github/workflows/ci.yml` job `migrations`
+
 ## Concurrency na workflow + approval blokuje wcześniejsze etapy
 
 **Kontekst**: `release.yml` miał `concurrency.group: release` na całym workflow. Job prod czekał na approve i trzymał grupę.
