@@ -835,6 +835,20 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: GitHub Environments, joby, tagi obrazu i docs mówią `dev` / `prod`. Vercel Production zostaje `--environment=production` / `--prod` — skrypt mapuje argument `prod`. Nie mieszaj `staging` w YAML z `dev.*` w URL-u.
 **Dotyczy**: `.github/workflows/`, `scripts/vercel-deploy.sh`, `docs/ci-cd.md`.
 
+## Nasz `dev` na Vercelu = Preview, nie Development i nie płatny Custom
+
+**Kontekst**: `vercel-deploy.sh` wołał `--environment=dev`. Na Hobby Custom Environment jest płatne (Pro). Użytkownik pytał, czy użyć wbudowanego Development.
+**Problem**: Development Vercela to env do laptopa (`vercel pull` / `vercel dev`), bez domeny. Custom `dev` = dopłata. Bez zmiany skryptu train pada albo zmusza do upgrade'u.
+**Zasada**: Nasz słownik `dev`/`prod` zostaje. Na Vercelu: `dev` → `--environment=preview` + alias `dev.repmaxer.pl`; `prod` → `--prod`. Zmienne frontu dev zaznaczaj checkboxem **Preview**. Development zostaw na lokal.
+**Dotyczy**: `scripts/vercel-deploy.sh`, `docs/ci-cd.md`, Vercel Environment Variables
+
+## URL w sekrecie zawsze ze schematem; smoke czeka na JSON, nie na 200
+
+**Kontekst**: `API_BASE_URL` wklejone jako Default domain z portalu Azure — sam host, bez `https://`. Health w przeglądarce zwracał poprawny JSON, a smoke w CI padał od razu tracebackiem `json.decoder.JSONDecodeError`.
+**Problem**: `curl` bez schematu idzie po http, Azure odbija 301 z pustym ciałem i **exit 0** — `wait_body` uznał to za sukces, `json.loads("")` wysypał skrypt. Traceback Pythona nie mówił nic o przyczynie, a maskowanie (`***`) ukrywało brakujące `https://`.
+**Zasada**: Sekret z URL-em trzyma pełny `https://host` (bez końcowego `/`); `AZURE_WEBAPP_NAME` to sama nazwa apki — nowy host Azure ma format `<name>-<hash>.<region>-01.azurewebsites.net`. Skrypty smoke: `curl -fsSL`, retry dopóki ciało nie jest JSON-em, błąd domenowy zamiast tracebacku.
+**Dotyczy**: `scripts/smoke.sh`, Environments `dev` / `prod` (`API_BASE_URL`, `AZURE_WEBAPP_NAME`), `docs/ci-cd.md`
+
 ## Strażnik DDL skanuje delta, nie całą historię migracji
 
 **Kontekst**: Job Migrations generował `dotnet ef migrations script --idempotent` od `InitialCreate` i odpalał `check-migration-script.sh` na całym pliku.

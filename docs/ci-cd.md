@@ -51,12 +51,12 @@ GitHub Environments, joby i tagi obrazu mówią `dev` / `prod`. Vercel ma **wła
 
 | Nasz słownik | GitHub Environment | Azure / domena | Vercel CLI | Vercel UI |
 |---|---|---|---|---|
-| **dev** | `dev` | `trainer-app-api`, `dev.repmaxer.pl` | `--environment=dev` / `--target=dev` (Custom Environment) | Custom Environment `dev` |
+| **dev** | `dev` | `trainer-app-api`, `dev.repmaxer.pl` | `--environment=preview` + alias | wbudowane **Preview** (Hobby) |
 | **prod** | `prod` | `repmaxer-prod`, `repmaxer.pl` | `--environment=production` / `--prod` | wbudowane **Production** |
-| (PR) | — | Preview URL | (git integration) | wbudowane **Preview** |
-| (lokal) | — | localhost | `vercel pull --environment=development` (rzadko) | wbudowane **Development** |
+| (PR) | — | Preview URL | (git integration) | to samo **Preview** |
+| (lokal) | — | localhost | `vercel pull --environment=development` | wbudowane **Development** |
 
-`scripts/vercel-deploy.sh` przyjmuje `dev` albo `prod` i mapuje `prod` na flagi Vercela. Nie zgaduj przy `vercel pull`.
+`scripts/vercel-deploy.sh` przyjmuje `dev` albo `prod`. Custom Environment `dev` na Hobby jest płatne — nie zakładamy. Development Vercela nie jest hostem `dev.repmaxer.pl`.
 
 ## Faza 2 — kroki ręczne (zrób raz)
 
@@ -125,15 +125,16 @@ az ad app federated-credential create --id "$APP_ID" --parameters '{
 
 ### 4. Vercel — dwa środowiska frontu
 
-1. Projekt → **Settings → Environments** → Custom Environment **`dev`**.
-2. Zmienne (te same nazwy, checkbox środowiska `dev`):
-   - `NEXT_PUBLIC_API_URL` = `https://trainer-app-api.azurewebsites.net`
+Na Hobby nie zakładaj Custom Environment `dev` (Pro + dopłata). Nasz `dev` jedzie na wbudowane **Preview**.
+
+1. Projekt → **Settings → Environment Variables**. Przy `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SITE_URL`, Clerk — checkbox **Preview** (osobne wartości niż Production):
+   - `NEXT_PUBLIC_API_URL` = Default domain API (`https://…polandcentral-01.azurewebsites.net`)
    - `NEXT_PUBLIC_SITE_URL` = `https://dev.repmaxer.pl`
    - Clerk `pk_test` / `sk_test`
-3. Production: bez zmian (`repmaxer.pl` + live / test wg [deploy.md](deploy.md) D2).
-4. **Settings → Git**: Production branch `main`. `apps/web/vercel.json` wyłącza auto-deploy z `main` — train wdraża sam.
-5. **Domains:** `dev.repmaxer.pl` → environment `dev` (CNAME u rejestratora `.pl` na Vercel). `repmaxer.pl` zostaje Primary Production.
-6. Token: Vercel → Account → Tokens → `VERCEL_TOKEN`. Org/project ID: `apps/web/.vercel/project.json` po `vercel link`.
+2. Production: bez zmian (`repmaxer.pl` + live / test wg [deploy.md](deploy.md) D2).
+3. **Settings → Git**: Production branch `main`. `apps/web/vercel.json` wyłącza auto-deploy z `main` — train wdraża sam.
+4. **Domains:** dodaj `dev.repmaxer.pl` (CNAME u rejestratora na Vercel). `repmaxer.pl` zostaje Primary Production. Alias ustawia `vercel-deploy.sh`.
+5. Token: Vercel → Account → Tokens → `VERCEL_TOKEN`. Org/project ID: Settings → General (`team_…` / `prj_…`).
 
 ### 5. CORS / Clerk na dev
 
@@ -199,8 +200,10 @@ Bez maila/hasła: tylko landing + `/sign-in` (job zielony). Pełna ścieżka: kl
 | Release: brak `AZURE_CLIENT_ID` | Environment secrets, nie repo `AZURE_CREDENTIALS` JSON |
 | `ImagePullUnauthorizedFailure` | `GHCR_TOKEN` `read:packages`; krok keep-ghcr po deployu |
 | Smoke: zły `version` | stary kontener — Log stream, Always On, 2–3 min |
+| Smoke: „nie zwrócił JSON-a” | `API_BASE_URL` musi mieć `https://` i pełny host (`<name>-<hash>.<region>-01.azurewebsites.net`); bez schematu curl łapie 301 z pustym ciałem |
 | Smoke: 200 na `/api/clients` | Clerk wyłączony na Web App — ustaw `Clerk__Authority` |
-| Vercel `environment=dev` fail | utwórz Custom Environment `dev` (krok 4) |
+| Vercel `Could not retrieve Project Settings` | `VERCEL_ORG_ID` = `team_…`, `VERCEL_PROJECT_ID` = `prj_…`, token na ten sam team |
+| Vercel `environment=dev` fail | nie twórz Custom Environment — skrypt mapuje nasz `dev` na Preview |
 | Reminders czerwone | `CRON_KEY` + `API_BASE_URL` w Environment **prod** |
 | Migracje `Couldn't set …/neondb?sslmode` | do CI **direct**, nie pooler; `DbConnectionString.Normalize` |
 | Dependency review: not supported | Settings → Code security → **Dependency graph** On. Job nie blokuje bramki CI. |

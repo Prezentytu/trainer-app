@@ -33,19 +33,43 @@ if [[ -z "$BASE" ]]; then
   exit 2
 fi
 
+# Bez schematu curl idzie po http → Azure odpowiada 301 z pustym ciałem (exit 0),
+# co wyglądało jak „API zwraca nie-JSON”. Host bez https:// to konfiguracja, nie awaria.
+if [[ "$BASE" != http://* && "$BASE" != https://* ]]; then
+  echo "  base-url bez schematu — zakładam https://${BASE}" >&2
+  BASE="https://${BASE}"
+fi
+
 json_field() {
-  python3 -c 'import json,sys; print(json.loads(sys.stdin.read()).get(sys.argv[1],"") or "")' "$1"
+  python3 -c 'import json,sys
+try:
+    print(json.loads(sys.stdin.read()).get(sys.argv[1], "") or "")
+except (ValueError, AttributeError):
+    print("")' "$1"
 }
 
+is_json() {
+  printf '%s' "$1" | python3 -c 'import json,sys
+try:
+    json.loads(sys.stdin.read())
+except ValueError:
+    sys.exit(1)' 2>/dev/null
+}
+
+# Przy starcie kontenera Azure potrafi zwrócić 200 z pustym ciałem albo stroną HTML —
+# to jeszcze nie odpowiedź API, więc czekamy tak samo jak na błąd HTTP.
 wait_body() {
   local url="$1"
-  local i body
+  local i body code
   for i in $(seq 1 "$RETRIES"); do
-    if body=$(curl -fsS --max-time 20 "$url" 2>/dev/null); then
+    if body=$(curl -fsSL --max-time 20 "$url" 2>/dev/null) && is_json "$body"; then
       printf '%s' "$body"
       return 0
     fi
-    echo "  próba $i/$RETRIES — czekam ${SLEEP}s…" >&2
+    # 000 = DNS/połączenie (literówka w hoście), 404 = zła ścieżka w URL-u,
+    # 200 tutaj = odpowiedź nie-JSON (kontener jeszcze wstaje). Host maskuje GitHub.
+    code=$(curl -sSL -o /dev/null -w '%{http_code}' --max-time 20 "$url" 2>/dev/null || true)
+    echo "  próba $i/$RETRIES — HTTP ${code:-000}, czekam ${SLEEP}s…" >&2
     sleep "$SLEEP"
   done
   return 1
@@ -63,7 +87,7 @@ version_matches() {
 
 echo "==> liveness ${BASE}/api/health/live"
 if ! live=$(wait_body "${BASE}/api/health/live"); then
-  echo "::error::Liveness nie odpowiada."
+  echo "::error::Liveness nie zwrócił JSON-a. Sprawdź API_BASE_URL (ze schematem https://) i Log stream Web App."
   exit 1
 fi
 status=$(printf '%s' "$live" | json_field status)
@@ -84,7 +108,7 @@ fi
 
 echo "==> readiness ${BASE}/api/health"
 if ! ready=$(wait_body "${BASE}/api/health"); then
-  echo "::error::Readiness nie odpowiada."
+  echo "::error::Readiness nie zwrócił JSON-a (baza / start kontenera)."
   exit 1
 fi
 rstatus=$(printf '%s' "$ready" | json_field status)

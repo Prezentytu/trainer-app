@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Deploy frontu z prebuilt (Vercel CLI). Target: dev | prod.
-# Vercel nie pozwala przemianować wbudowanej produkcji — argument `prod`
-# mapujemy na --environment=production / --prod (ich słownik, nie nasz).
+# Vercel ma własny słownik: `prod` → --environment=production / --prod.
+# `dev` → wbudowane Preview (Hobby). Custom Environment `dev` jest płatne (Pro).
+# Development (Vercel) = tylko lokalny `vercel pull` / `vercel dev` — nie hostujemy tam.
 # Wymaga: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID. Uruchamiaj z roota repo.
 set -euo pipefail
 
@@ -33,9 +34,10 @@ if [[ "$TARGET" == "prod" ]]; then
   exit 0
 fi
 
-vercel pull --yes --environment=dev --token="$VERCEL_TOKEN"
-vercel build --target=dev --token="$VERCEL_TOKEN"
-url=$(vercel deploy --prebuilt --target=dev --token="$VERCEL_TOKEN")
+# Preview, nie Development i nie płatny Custom Environment.
+vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+vercel build --token="$VERCEL_TOKEN"
+url=$(vercel deploy --prebuilt --token="$VERCEL_TOKEN")
 echo "Wdrożono dev: ${url}"
 
 alias="${VERCEL_DEV_ALIAS:-dev.repmaxer.pl}"
