@@ -127,6 +127,8 @@ az ad app federated-credential create --id "$APP_ID" --parameters '{
 
 Na Hobby nie zakładaj Custom Environment `dev` (Pro + dopłata). Nasz `dev` jedzie na wbudowane **Preview**.
 
+Zmienne `NEXT_PUBLIC_*` muszą mieć **Sensitive wyłączone**. Sensitive znaczy „nieodczytywalne po zapisie” — `vercel pull` w Actions dostaje wtedy placeholder, a `NEXT_PUBLIC_*` wchodzą do bundla w trakcie build, więc front wstaje ze śmieciem (500, `Publishable key not valid`). Publishable key i tak jest publiczny. Sensitive zostaw dla `CLERK_SECRET_KEY` (runtime). Przełącznika nie da się zmienić w miejscu — trzeba usunąć zmienną i dodać od nowa.
+
 1. Projekt → **Settings → Environment Variables**. Przy `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SITE_URL`, Clerk — checkbox **Preview** (osobne wartości niż Production):
    - `NEXT_PUBLIC_API_URL` = Default domain API (`https://…polandcentral-01.azurewebsites.net`)
    - `NEXT_PUBLIC_SITE_URL` = `https://dev.repmaxer.pl`

@@ -57,18 +57,41 @@ link_next_env() {
     echo "::error::W ${pulled} nie ma NEXT_PUBLIC_API_URL. Dodaj ją w Vercel (checkbox Preview/Production)."
     exit 1
   fi
+  local name value
+  for name in NEXT_PUBLIC_API_URL NEXT_PUBLIC_SITE_URL; do
+    value="$(grep -E "^${name}=" "$pulled" | head -n1 | cut -d= -f2- | tr -d '"'\''[:space:]')"
+    if [[ -n "$value" && "$value" != http* ]]; then
+      echo "::error::${name} z Vercel nie wygląda na URL (początek «${value:0:16}»). Zwykle znaczy to Sensitive na zmiennej NEXT_PUBLIC_* — pull dostaje placeholder. Dodaj ją ponownie z Sensitive wyłączonym."
+      exit 1
+    fi
+  done
   local pk
-  pk="$(grep -E '^NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=' "$pulled" | head -n1 | cut -d= -f2- | tr -d '"'\''[:space:]')"
+  pk="$(grep -E '^NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=' "$pulled" | head -n1 | cut -d= -f2-)"
+  pk="${pk#$'\xef\xbb\xbf'}"
+  pk="${pk//[$'\t\r\n \"']}"
+  # Quick copy z Clerk wklejony jako WARTOŚĆ: NAZWA=pk_test_…
+  if [[ "$pk" == NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=* ]]; then
+    echo "Odwijam wklejoną linię .env z wartości NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY."
+    pk="${pk#NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=}"
+    pk="${pk//[$'\t\r\n \"']}"
+  fi
   if [[ -z "$pk" ]]; then
     echo "::error::Brak NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY w tym środowisku Vercel (Preview/Production). Dodaj pk_test_ / pk_live_ z Clerk → API Keys."
     exit 1
   fi
-  if [[ ! "$pk" =~ ^pk_(test|live)_ ]]; then
-    echo "::error::NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY w Vercel nie zaczyna się od pk_test_ / pk_live_ (ucięty klucz albo wklejona cała linia .env)."
+  if [[ "$pk" == sk_* ]]; then
+    echo "::error::W NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY jest Secret (sk_…), a ma być Public (pk_test_ / pk_live_). W Vercel wklejasz TYLKO wartość, nie linię z Quick copy."
     exit 1
   fi
-  if [[ ${#pk} -lt 40 ]]; then
-    echo "::error::NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY jest za krótki (${#pk} znaków) — skopiuj z Clerk przyciskiem kopiuj, nie z uciętego podglądu."
+  # Sensitive = wartość nie do odczytania przez `vercel pull`; przychodzi placeholder,
+  # a `NEXT_PUBLIC_*` są wstrzykiwane w BUILD, więc prebuilt zbudowałby się ze śmieciem.
+  if [[ ! "$pk" =~ ^pk_(test|live)_ ]]; then
+    echo "::error::NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY nie przyszło z Vercel jako klucz pk_* (długość ${#pk}, początek «${pk:0:16}»). Najczęstsza przyczyna: zmienna ma włączone Sensitive — wtedy pull dostaje placeholder. Zmienne NEXT_PUBLIC_* są publiczne w bundlu: usuń je i dodaj z Sensitive WYŁĄCZONYM."
+    exit 1
+  fi
+  # pk_live_ + base64("clerk.repmaxer.pl$") = 32 znaki — to pełny klucz, nie ucięcie.
+  if [[ ${#pk} -lt 24 ]]; then
+    echo "::error::NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY jest za krótki (${#pk} znaków) — skopiuj z Clerk przyciskiem kopiuj przy Public key, nie z uciętego podglądu."
     exit 1
   fi
   cp "$pulled" apps/web/.env.production.local

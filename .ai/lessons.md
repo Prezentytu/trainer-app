@@ -863,11 +863,18 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: `dev.repmaxer.pl` rusza tylko `scripts/vercel-deploy.sh` (albo ręczny `alias set`). Nie oceniaj po Redeploy w UI. Nie przypinaj `dev.repmaxer.pl` jako Production. Nie szukaj Assign Domain na karcie Preview.
 **Dotyczy**: Vercel Domains vs alias, `vercel-deploy.sh`, E2E
 
+## `Sensitive` na `NEXT_PUBLIC_*` zabija deploy z `--prebuilt`
+
+**Kontekst**: Klucz Clerk wklejany „milion razy” poprawnie (sam `pk_test_`, tylko Preview, Sensitive ON). Mimo to `vercel pull` w CI dawał wartość, która nie zaczyna się od `pk_`, a wcześniej front leciał 500 z `Publishable key not valid`.
+**Problem**: Sensitive = wartość nieodczytywalna po zapisie. Jest podawana tylko buildowi **w kontenerze Vercela** i runtime'owi. My budujemy w Actions (`vercel pull` + `vercel build` + `deploy --prebuilt`), więc dostajemy placeholder. `NEXT_PUBLIC_*` są inline'owane w build → do bundla wchodzi śmieć.
+**Zasada**: Zmienne `NEXT_PUBLIC_*` (publishable key, API URL, site URL) trzymaj z **Sensitive wyłączonym** — i tak trafiają do bundla klienta, więc nic nie chronią. Sensitive zostaw dla sekretów runtime (`CLERK_SECRET_KEY`). Sensitive nie da się przełączyć w miejscu: usuń zmienną i dodaj od nowa. Skrypt failuje z tym wyjaśnieniem, zanim zbuduje.
+**Dotyczy**: `scripts/vercel-deploy.sh`, Vercel Environment Variables (Preview i Production), `docs/ci-cd.md`
+
 ## Ucięty `pk_test_` w Preview = 500 na każdym requestcie (edge)
 
 **Kontekst**: Vercel Logs: `Publishable key not valid` w `initPublishableKeyValues` (Web Handler / edge). E2E: 500. Klucz „był ustawiony”.
 **Problem**: `clerkEnabled = Boolean(process.env.NEXT_PUBLIC_…)` jest true przy śmieciu w wartości. `clerkMiddleware()` w `proxy.ts` wali całą domenę, łącznie z landingiem. Skrypt kopiujący env tylko powiela zły sekret z Vercel.
-**Zasada**: `isClerkPublishableKey` (`pk_test_`/`pk_live_` + długość) w `proxy.ts` i `api.ts`. Deploy failuje, gdy pk nie wygląda jak klucz. W Vercel: skasuj zmienną, wklej z przycisku kopiuj w Clerk, bez `NAZWA=`, bez cudzysłowów. Potem nowy build.
+**Zasada**: `isClerkPublishableKey` (`pk_test_`/`pk_live_`). Deploy failuje, gdy pk nie wygląda jak klucz. Krótki host FAPI (`clerk.repmaxer.pl$`) daje `pk_live_` o **32 znakach** — to pełny klucz, nie ucięcie; próg w skrypcie to 24, nie 40. W Vercel wartość = sam `pk_*` (ikona przy Public key). Quick copy `.env` wklejony w VALUE daje `NAZWA=pk_…`. Sensitive na `NEXT_PUBLIC_*` psuje `vercel pull`. Potem Release, nie Redeploy.
 **Dotyczy**: `apps/web/lib/clerkKey.ts`, `proxy.ts`, `scripts/vercel-deploy.sh`, Vercel Preview env
 
 ## `vercel pull` z roota nie karmi Next w `apps/web`
