@@ -14,6 +14,12 @@ test.describe("public", () => {
         "Vercel Authentication zasłania Preview. Wyłącz je w Settings → Deployment Protection.",
       );
     }
+    const body = await page.locator("body").innerText().catch(() => "");
+    if (/Internal Server Error/i.test(body)) {
+      throw new Error(
+        "dev.repmaxer.pl zwraca 500. Zwykle brak NEXT_PUBLIC_* / Clerk w buildzie Preview — Vercel Logs.",
+      );
+    }
 
     await expect(page.getByRole("heading", { name: /Wysyłasz link/i })).toBeVisible();
     await expect(

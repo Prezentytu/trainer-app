@@ -856,6 +856,13 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: Na Hobby wyłącz Vercel Authentication na Preview (Exceptions są płatne). E2E asseruje H1 landingu i link logowania albo rejestracji; przy ścianie Vercela — jasny błąd, nie timeout. Bez `VERCEL_AUTOMATION_BYPASS_SECRET`.
 **Dotyczy**: `apps/web/e2e/critical-path.spec.ts`, Vercel Settings → Deployment Protection
 
+## `vercel pull` z roota nie karmi Next w `apps/web`
+
+**Kontekst**: Po przeniesieniu CLI na root repo `dev.repmaxer.pl` znowu 500; E2E nie widzi H1. Wcześniejszy deploy z `cd apps/web` działał.
+**Problem**: `vercel pull` zostawia `.vercel/.env.preview.local` w rootcie. `next build` w Root Directory czyta `apps/web/.env*` — bez `NEXT_PUBLIC_API_URL` / Clerk `resolveApiBase` / `auth()` walą 500.
+**Zasada**: Po pull skopiuj env do `apps/web/.env.production.local` (w `.gitignore`). Sprawdź obecność `NEXT_PUBLIC_API_URL` zanim poleci build. Nie commituj tego pliku.
+**Dotyczy**: `scripts/vercel-deploy.sh`
+
 ## Nie zapisuj ręcznie `.vercel/project.json` przed `vercel pull`
 
 **Kontekst**: Prod web: token/org/project wyglądały OK (`team_` 29, `prj_` 32), CLI: „remove the `.vercel` directory”.

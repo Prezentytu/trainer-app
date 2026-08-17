@@ -46,9 +46,25 @@ fi
 export VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID
 scope=(--token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID")
 
+# pull zapisuje env w .vercel/ (root). Next buduje w apps/web i czyta tylko tamtejsze .env*.
+link_next_env() {
+  local pulled="$1"
+  if [[ ! -f "$pulled" ]]; then
+    echo "::error::Brak ${pulled} po vercel pull — Preview/Production nie ma zmiennych?"
+    exit 1
+  fi
+  if ! grep -q '^NEXT_PUBLIC_API_URL=' "$pulled"; then
+    echo "::error::W ${pulled} nie ma NEXT_PUBLIC_API_URL. Dodaj ją w Vercel (checkbox Preview/Production)."
+    exit 1
+  fi
+  cp "$pulled" apps/web/.env.production.local
+  echo "Env z pull skopiowany do apps/web/.env.production.local"
+}
+
 if [[ "$TARGET" == "prod" ]]; then
   # Wbudowana nazwa Vercela — nie da się przemianować na `prod`.
   vercel pull --yes --environment=production "${scope[@]}"
+  link_next_env .vercel/.env.production.local
   vercel build --prod "${scope[@]}"
   vercel deploy --prebuilt --prod "${scope[@]}"
   echo "Wdrożono prod (repmaxer.pl)."
@@ -57,6 +73,7 @@ fi
 
 # Preview, nie Development i nie płatny Custom Environment.
 vercel pull --yes --environment=preview "${scope[@]}"
+link_next_env .vercel/.env.preview.local
 vercel build "${scope[@]}"
 url=$(vercel deploy --prebuilt "${scope[@]}")
 echo "Wdrożono dev: ${url}"
