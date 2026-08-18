@@ -6,9 +6,9 @@ Osobna resource group, osobny App Service Plan, osobny Neon, osobny Clerk. Nie w
 
 **W git idą nazwy zmiennych i zasobów, nigdy wartości.** Connection stringi, PAT, klucze `sk_*` / `re_*`, JSON service principala, hasła Neon — tylko GitHub Environment / Azure / Vercel. Ten plik jest runbookiem, nie notatnikiem sekretów.
 
-**Release train** (dev `trainer-app-api` + `dev.repmaxer.pl` → prod `repmaxer-prod` + `repmaxer.pl`): [ci-cd.md](ci-cd.md). GitHub Environments `dev` / `prod` — **te same nazwy sekretów**, nie `DEV_*` / `*_PROD`. `deploy-api.yml` to break-glass.
+**Release train** (dev `trainer-app-api` + `dev.repmaxer.pl`, potem ręcznie **Promote to prod** → `repmaxer-prod` + `repmaxer.pl`): [ci-cd.md](ci-cd.md). GitHub Environments `dev` / `prod` — **te same nazwy sekretów**, nie `DEV_*` / `*_PROD`. `deploy-api.yml` to break-glass.
 
-Vercel Preview (PR) zostaje. Production z `main` wdraża **Release**, nie gitowa integracja Vercela (`apps/web/vercel.json`).
+Vercel Preview (PR) zostaje. Production wdraża **Promote to prod**, nie gitowa integracja Vercela (`apps/web/vercel.json`) i nie sam merge na `main`.
 
 **Domeny (stan sierpień 2026):** kanoniczna produkcja frontu to [https://repmaxer.pl](https://repmaxer.pl). `repmaxer.com` jest kupione, **DNS jeszcze nieustawione** — nie wpinaj `.com` do CORS/Clerk jako działającego originu, dopóki nie zrobisz sekcji J (301 na `.pl`).
 
@@ -31,7 +31,7 @@ Kod czyta **te same** nazwy zmiennych wszędzie (`NEXT_PUBLIC_CLERK_PUBLISHABLE_
 | **Lokalnie**       | `apps/web/.env.local` (nie w gicie): localhost + ewentualnie `pk_test` do testów loginu.                                                                                                                                            | Nie wklejasz `pk_live` / connection stringa prod do laptopa „na stałe”.                    |
 
 
-Workflow `Release` i break-glass `Deploy API` biorą sekrety z GitHub Environment (`dev` albo `prod`). `GHCR_TOKEN` jest **jeden** (wspólny, `read:packages`) — nie duplikujesz. Push do GHCR idzie `GITHUB_TOKEN`.
+Workflow `Release` (dev), `Promote to prod` i break-glass `Deploy API` biorą sekrety z GitHub Environment (`dev` albo `prod`). `GHCR_TOKEN` jest **jeden** (wspólny, `read:packages`) — nie duplikujesz. Push do GHCR idzie `GITHUB_TOKEN`.
 
 ### Gdzie wklejasz klucze Clerk (test i live)
 
@@ -88,7 +88,7 @@ Wypełniaj w miarę kroków A–E. **GitHub: tylko dodajesz wiersze. Vercel/Azur
 - [ ] C. GitHub Environments `dev` / `prod` ([ci-cd.md](ci-cd.md))
 - [ ] D. Vercel — weryfikacja projektu/domeny; cutover env **po F** (nie drugi projekt)
 - [ ] E. CORS + Clerk URLs
-- [ ] F. Release albo Deploy API, Environment `prod`
+- [ ] F. Promote to prod albo Deploy API, Environment `prod`
 - [ ] G. Smoke test na `https://repmaxer.pl`
 - [ ] J. DNS `repmaxer.com` → 301 na `.pl` (gdy będziesz gotów; nie blokuje API)
 
@@ -109,7 +109,7 @@ Wypełniaj w miarę kroków A–E. **GitHub: tylko dodajesz wiersze. Vercel/Azur
 | Neon             | nowy projekt `repmaxer`, region **ten sam** co Web App                                           |
 | Clerk            | nowa aplikacja **RepMaxer**                                                                      |
 | Vercel           | root `apps/web`, `NEXT_PUBLIC_API_URL` = URL `repmaxer-prod`                                     |
-| GitHub Actions   | **Release** → Environment `prod` (albo break-glass **Deploy API**)                               |
+| GitHub Actions   | **Promote to prod** (albo break-glass **Deploy API**)                                            |
 
 
 Obraz Dockera: `ghcr.io/<owner>/trainer-app-api` (owner = właściciel tego repo). Tag przy prod: `prod-latest` + `0.0.N`.
@@ -163,7 +163,7 @@ Skopiuj **dwa** connection stringi z tego projektu (nie ze stacku **dev**):
 | Gdzie                                           | Który string                  | Po co                                    |
 | ----------------------------------------------- | ----------------------------- | ---------------------------------------- |
 | Azure App Settings `ConnectionStrings__Default` | **pooled** (host z `-pooler`) | runtime API                              |
-| GitHub Environment `prod` → `DB_CONNECTION_STRING` | **direct** (bez `-pooler`) | migracje CI (`Release` / `Deploy API`) |
+| GitHub Environment `prod` → `DB_CONNECTION_STRING` | **direct** (bez `-pooler`) | migracje CI (`Promote to prod` / `Deploy API`) |
 
 
 URI przechodzi przez `DbConnectionString.Normalize` na format Npgsql. Hasło ze znakami specjalnymi: URL-encode.
@@ -443,7 +443,7 @@ Lokal i Preview: bez tej zmiennej.
 
 # F. Pierwszy Deploy API (Environment `prod`)
 
-Docelowo: merge do `main` → workflow **Release** (approval na prod). Break-glass:
+Docelowo: merge do `main` → **Release** (tylko dev) → po sprawdzeniu `dev.repmaxer.pl` → **Promote to prod**. Break-glass:
 
 1. GitHub → **Actions** → **Deploy API** → **Run workflow**
 2. Branch: `main`
@@ -485,7 +485,7 @@ Oczekiwane: `"status":"ok"`.
 
 | Zmiana            | Co odpalasz |
 | ----------------- | ----------- |
-| Cokolwiek na `main` | **Release**: API dev → front `dev.repmaxer.pl` → approval → ten sam digest na prod + `repmaxer.pl` |
+| Cokolwiek na `main` | **Release** wdraża tylko dev. Na `repmaxer.pl`: Actions → **Promote to prod** (ten sam `sha-XXXX`) |
 | Awaria API        | **Rollback API** albo auto-rollback po czerwonym smoke |
 | Awaria frontu     | Vercel → Rollback |
 | PR / UI           | Vercel Preview (nie rusza `repmaxer.pl`) |

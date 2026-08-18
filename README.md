@@ -77,7 +77,7 @@ Jedno polecenie sprawdzające całość (build + testy API, lint + typecheck + b
 ./scripts/check.sh
 ```
 
-Te same kroki (build + testy + lint + typecheck + build web) uruchamia CI (`.github/workflows/ci.yml`) na pull requestach. `main` jest trunkiem — krótkie gałęzie, bez długowiecznego `dev`. Merge odpala **Release** (dev → approval → prod). Runbook: [`docs/ci-cd.md`](docs/ci-cd.md).
+Te same kroki (build + testy + lint + typecheck + build web) uruchamia CI (`.github/workflows/ci.yml`) na pull requestach. `main` jest trunkiem — krótkie gałęzie, bez długowiecznego `dev`. Merge odpala **Release** (tylko dev); produkcja to ręczny **Promote to prod**. Runbook: [`docs/ci-cd.md`](docs/ci-cd.md).
 
 ## Flow MVP
 

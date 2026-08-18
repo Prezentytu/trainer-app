@@ -968,4 +968,11 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: Concurrency per środowisko, na jobach: `deploy-dev` i `deploy-prod`, `cancel-in-progress: false`. Approve prod nie blokuje dev. Nie stawiaj `concurrency` na poziomie workflow, gdy jeden job ma required reviewer.
 **Dotyczy**: `.github/workflows/release.yml`, `deploy-api.yml`, `rollback-api.yml`.
 
+## `environment: prod` to nie bramka
+
+**Kontekst**: Docs obiecywały `[Approve prod]`. Job miał tylko `environment: prod`. Environment `prod` miał `protection_rules: []`.
+**Problem**: Merge na `main` wjeżdżał na `repmaxer.pl` bez przycisku. Required reviewers na tym samym env zatrzymałyby cron `reminders.yml`.
+**Zasada**: Release kończy się na dev. Prod = **Promote to prod** (`workflow_dispatch`), ten sam obraz `sha-XXXX`. Nie włączaj Required reviewers na `prod`.
+**Dotyczy**: `.github/workflows/release.yml`, `.github/workflows/promote.yml`, `.github/workflows/reminders.yml`
+
 ---

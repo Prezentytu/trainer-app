@@ -1,0 +1,229 @@
+# Promote to prod: ten sam obraz z Release (sha-XXXX @ digest), bez przebudowy.
+# Merge na main wdraża tylko dev — produkcja jedzie po tym przycisku.
+name: Promote to prod
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "Pełny SHA commita już na dev (puste = czubek main)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: prezentytu/trainer-app-api
+
+jobs:
+  resolve:
+    name: Resolve image
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.meta.outputs.sha }}
+      short: ${{ steps.meta.outputs.short }}
+      image: ${{ steps.meta.outputs.image }}
+      digest: ${{ steps.inspect.outputs.digest }}
+    steps:
+      - name: Require main
+        run: |
+          if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
+            echo "::error::Promote to prod odpalaj z gałęzi main (Run workflow → Branch: main)."
+            exit 1
+          fi
+
+      - id: meta
+        name: Resolve sha + digest
+        run: |
+          set -euo pipefail
+          sha="${{ inputs.sha }}"
+          sha="${sha//[$'\t\r\n ']}"
+          if [[ -z "$sha" ]]; then
+            sha="${GITHUB_SHA}"
+          fi
+          if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Podaj pełny SHA (40 znaków hex) albo zostaw puste — wtedy jedzie czubek main."
+            exit 1
+          fi
+          short="${sha:0:12}"
+          image="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "short=$short" >> "$GITHUB_OUTPUT"
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+          echo "Szukam ${image}:sha-${short}"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: inspect
+        name: Inspect existing image
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+          SHORT: ${{ steps.meta.outputs.short }}
+        run: |
+          set -euo pipefail
+          tag="${IMAGE}:sha-${SHORT}"
+          if ! docker buildx imagetools inspect "$tag" >/tmp/inspect.txt; then
+            echo "::error::Brak obrazu ${tag}. Najpierw zielony Release na dev dla tego commita."
+            exit 1
+          fi
+          digest="$(docker buildx imagetools inspect "$tag" --format '{{.Manifest.Digest}}' || true)"
+          if [[ -z "$digest" || "$digest" != sha256:* ]]; then
+            digest="$(awk '/^Digest:/ {print $2; exit}' /tmp/inspect.txt)"
+          fi
+          if [[ -z "$digest" || "$digest" != sha256:* ]]; then
+            echo "::error::Nie udało się odczytać digestu dla ${tag}."
+            cat /tmp/inspect.txt
+            exit 1
+          fi
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
+          echo "Obraz ${tag} @ ${digest}"
+
+
+  prod:
+    name: Prod API
+    needs: resolve
+    runs-on: ubuntu-latest
+    environment: prod
+    concurrency:
+      group: deploy-prod
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.resolve.outputs.sha }}
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+          cache: true
+          cache-dependency-path: apps/api/TrainerApp.Api.csproj
+
+      - name: Neon bookmark
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
+          NEON_PARENT_BRANCH_ID: ${{ secrets.NEON_PARENT_BRANCH_ID }}
+        run: bash scripts/neon-bookmark.sh "${{ needs.resolve.outputs.sha }}"
+
+      - uses: ./.github/actions/ef-migrate
+        env:
+          DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
+
+      - uses: ./.github/actions/azure-login-oidc
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - id: deploy
+        uses: ./.github/actions/azure-deploy
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          image: ${{ needs.resolve.outputs.image }}@${{ needs.resolve.outputs.digest }}
+          ghcr-token: ${{ secrets.GHCR_TOKEN }}
+          registry-username: ${{ github.repository_owner }}
+
+      - id: smoke
+        name: Smoke
+        continue-on-error: true
+        run: |
+          bash scripts/smoke.sh \
+            --base-url "${{ secrets.API_BASE_URL }}" \
+            --expect-version "${{ needs.resolve.outputs.sha }}"
+
+      - name: Auto-rollback
+        if: steps.smoke.outcome == 'failure' && steps.deploy.outputs.previous-image != ''
+        uses: ./.github/actions/azure-deploy
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          image: ${{ steps.deploy.outputs.previous-image }}
+          ghcr-token: ${{ secrets.GHCR_TOKEN }}
+          registry-username: ${{ github.repository_owner }}
+
+      - name: Smoke after rollback
+        if: steps.smoke.outcome == 'failure' && steps.deploy.outputs.previous-image != ''
+        run: |
+          bash scripts/smoke.sh --base-url "${{ secrets.API_BASE_URL }}"
+          echo "::error::Smoke produkcji nie przeszedł — przywrócono poprzedni obraz."
+          exit 1
+
+      - name: Fail smoke (brak poprzedniego obrazu)
+        if: steps.smoke.outcome == 'failure'
+        run: |
+          echo "::error::Smoke produkcji nie przeszedł."
+          exit 1
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Point prod-latest at digest
+        run: |
+          docker buildx imagetools create \
+            --tag "${{ needs.resolve.outputs.image }}:prod-latest" \
+            "${{ needs.resolve.outputs.image }}@${{ needs.resolve.outputs.digest }}"
+
+  web-prod:
+    name: Prod web
+    needs: [resolve, prod]
+    runs-on: ubuntu-latest
+    environment: prod
+    concurrency:
+      group: deploy-prod
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.resolve.outputs.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Vercel CLI
+        run: npm i -g vercel@latest
+
+      - name: Deploy prod front
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: bash scripts/vercel-deploy.sh prod
+
+  release-notes:
+    name: GitHub Release
+    needs: [resolve, web-prod]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.resolve.outputs.sha }}
+          fetch-depth: 0
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: prod-${{ needs.resolve.outputs.short }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG już istnieje."
+            exit 0
+          fi
+          gh release create "$TAG" \
+            --target "${{ needs.resolve.outputs.sha }}" \
+            --title "Release sha-${{ needs.resolve.outputs.short }}" \
+            --generate-notes

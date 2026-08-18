@@ -2,7 +2,7 @@
 
 ## TLDR
 
-Jeden artefakt API (obraz Dockera pinowany digestem) idzie najpierw na dev (`trainer-app-api` + `dev.repmaxer.pl`), potem — po smoke z weryfikacją SHA i jednym kliknięciem approvala — na produkcję (`repmaxer-prod` + `repmaxer.pl`). CI jest reusable, migracje EF pierwszy raz odpalają się na Postgresie w CI, a nie na żywym Neonie. `main` jest trunkiem: krótkie gałęzie, bez długowiecznego `dev`.
+Jeden artefakt API (obraz Dockera pinowany digestem) idzie najpierw na dev (`trainer-app-api` + `dev.repmaxer.pl`) przy merge na `main`. Produkcja (`repmaxer-prod` + `repmaxer.pl`) jedzie dopiero po ręcznym **Promote to prod** — ten sam tag `sha-XXXX`, bez przebudowy. CI jest reusable, migracje EF pierwszy raz odpalają się na Postgresie w CI, a nie na żywym Neonie. `main` jest trunkiem: krótkie gałęzie, bez długowiecznego `dev`.
 
 ## Problem
 
@@ -20,12 +20,12 @@ Cztery zasady:
 
 1. **Jeden artefakt** — obraz budowany raz, promowany digestem dev → prod.
 2. **Rozdział środowisk to miejsce** — GitHub Environments `dev` / `prod` z tymi samymi nazwami sekretów.
-3. **Nic na prod bez dowodu** — zielone CI, dev, smoke z SHA, approval.
+3. **Nic na prod bez dowodu** — zielone CI, dev, smoke z SHA, potem ręczny Promote to prod.
 4. **Każde wdrożenie ma odwrotność** — redeploy poprzedniego digestu; front = `vercel rollback`.
 
 Front: Vercel przestaje sam wdrażać `main`. Actions wdraża `dev.repmaxer.pl` (dev) i `repmaxer.pl` (prod) **po** API.
 
-Git: trunk na `main`. Nie zakładamy gałęzi `dev` — „niech poleży” = merge + czekający approve prod; „niegotowe” = PR + Preview; praca > 1 dzień = kawałki albo flaga.
+Git: trunk na `main`. Nie zakładamy gałęzi `dev` — „niech poleży” = merge (Release = tylko dev) + ręczny Promote kiedy chcesz; „niegotowe” = PR + Preview; praca > 1 dzień = kawałki albo flaga.
 
 ## Model danych
 
@@ -72,3 +72,4 @@ Brak zmian w panelu. Dev (`dev.repmaxer.pl`) dostaje `X-Robots-Tag: noindex` i `
 - 2026-08-16 — wdrożono pipeline w repo (workflowy, skrypty, health `version`). Kroki ręczne Environments/OIDC/Vercel staging: `docs/ci-cd.md`.
 - 2026-08-17 — korekta nazw `staging`/`production` → `dev`/`prod`; trunk zamiast gałęzi `dev`; concurrency per środowisko (approve prod nie blokuje deployu na dev).
 - 2026-08-17 — strażnik DDL skanuje tylko delta względem `main`, nie pełny skrypt idempotentny (historyczne DROP w `Up()` blokowały każdy PR).
+- 2026-08-18 — bramka prod to `promote.yml` (`workflow_dispatch`), nie Required reviewers na Environment `prod` (ten sam env czyta cron). `release.yml` kończy się na E2E.

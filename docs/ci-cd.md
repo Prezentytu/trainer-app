@@ -14,7 +14,8 @@ Zamiast niej:
 
 | Chcesz | Robisz |
 |---|---|
-| Niech poleży na `dev.repmaxer.pl` | Merge do `main` — train wdraża **dev**; produkcja czeka na Twój approve dowolnie długo |
+| Niech poleży na `dev.repmaxer.pl` | Merge do `main` — **Release** wdraża tylko **dev**; prod czeka na **Promote to prod** dowolnie długo |
+| Wjechać na `repmaxer.pl` | Actions → **Promote to prod** → Run workflow (branch `main`) — ten sam obraz `sha-XXXX` |
 | Niegotowe nawet na dev | Zostaje na gałęzi z PR-em; Vercel Preview ma własny URL |
 | Robota na kilka dni | Dziel na kawałki albo schowaj za flagą (`NEXT_PUBLIC_FEATURE_*` / `Features:*` w konfiguracji API) |
 
@@ -27,20 +28,25 @@ Release: build obrazu (digest + sha)
   → migracje dev → trainer-app-api → smoke (SHA)
   → Vercel dev → dev.repmaxer.pl
   → Playwright
-  → [Approve prod]
-  → bookmark Neon → migracje prod → repmaxer-prod (TEN SAM digest)
+  → stop
+  ↓ Actions → Promote to prod (ręcznie)
+  → ten sam obraz sha-XXXX @ digest
+  → bookmark Neon → migracje prod → repmaxer-prod
   → smoke → Vercel --prod → repmaxer.pl
   → GitHub Release
 ```
 
-API zawsze przed frontem. Prod nigdy nie buduje nowego obrazu API.
+API zawsze przed frontem. Prod nigdy nie buduje nowego obrazu API — **Promote to prod** pinuje istniejący tag `sha-{12}`.
 
-Concurrency jest **per środowisko**, nie na cały workflow: joby `dev` / `web-dev` / `e2e-dev` dzielą grupę `deploy-dev`, joby `prod` / `web-prod` — `deploy-prod`. Oczekujący approve produkcji **nie blokuje** kolejnych merge'y na `dev.repmaxer.pl`. `cancel-in-progress: false` — kolejka, nigdy przerwanie migracji w połowie. Przy kilku approve'ach zatwierdzasz od najstarszego.
+Concurrency jest **per środowisko**, nie na cały workflow: joby `dev` / `web-dev` / `e2e-dev` dzielą grupę `deploy-dev`, joby Promote `prod` / `web-prod` — `deploy-prod`. Czekający promote **nie blokuje** kolejnych merge'y na `dev.repmaxer.pl`. `cancel-in-progress: false` — kolejka, nigdy przerwanie migracji w połowie.
+
+Nie włączaj **Required reviewers** na Environment `prod`. Ten sam env czyta cron (`reminders.yml`) — reviewer zatrzymałby codzienny POST. Bramka to przycisk **Promote to prod**, nie żółty banner w runie Release.
 
 | Workflow | Kiedy | Rola |
 |---|---|---|
 | `ci.yml` | PR + `workflow_call` | Bramka. Wymagany check: **CI** |
-| `release.yml` | push `main` | Train dev → prod |
+| `release.yml` | push `main` | Train **tylko dev** |
+| `promote.yml` | ręcznie | Ten sam digest na prod + `repmaxer.pl` |
 | `deploy-api.yml` | ręcznie | Break-glass (poza trainem) |
 | `rollback-api.yml` | ręcznie | Przywróć digest / tag |
 | `reminders.yml` | cron 07:00 UTC | Twardy fail bez sekretów |
@@ -86,7 +92,7 @@ Repo → **Settings → Environments**.
 
 Variables: `WEB_BASE_URL` = `https://dev.repmaxer.pl`, `VERCEL_DEV_ALIAS` = `dev.repmaxer.pl`.
 
-**`prod`** (required reviewer = Ty, branch `main`):
+**`prod`** (bez reviewerów — bramka to **Promote to prod**, nie Environment; cron czyta ten sam env):
 
 Te **same nazwy**. Wartości: Neon `repmaxer` direct, `repmaxer-prod`, `https://repmaxer-prod.azurewebsites.net`, SP na RG `repmaxer-prod`, plus `CRON_KEY`, opcjonalnie `NEON_API_KEY` / `NEON_PROJECT_ID` / `NEON_PARENT_BRANCH_ID`.
 
@@ -200,6 +206,7 @@ Bez maila/hasła: tylko landing + `/sign-in` (job zielony). Pełna ścieżka: kl
 | Objaw | Fix |
 |---|---|
 | Release: brak `AZURE_CLIENT_ID` | Environment secrets, nie repo `AZURE_CREDENTIALS` JSON |
+| Promote: brak obrazu `sha-XXXX` | Najpierw zielony **Release** na dev dla tego commita; odpalaj z branch `main` |
 | `ImagePullUnauthorizedFailure` | `GHCR_TOKEN` `read:packages`; krok keep-ghcr po deployu |
 | Smoke: zły `version` | Azure jeszcze na starym obrazie — skrypt ma czekać na SHA; w przeglądarce `/api/health/live` musi mieć `version` z tego Release. Log stream / pull GHCR. |
 | Smoke: „nie zwrócił JSON-a” | `API_BASE_URL` musi mieć `https://` i pełny host (`<name>-<hash>.<region>-01.azurewebsites.net`); bez schematu curl łapie 301 z pustym ciałem |
