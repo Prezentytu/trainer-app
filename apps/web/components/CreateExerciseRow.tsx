@@ -32,7 +32,10 @@ export function CreateExerciseRow({
           onClick={onCreate}
           className="flex min-w-0 flex-1 items-center gap-2.5 text-left disabled:opacity-60"
         >
-          <span className="min-w-0 flex-1 break-words text-sm font-medium text-accent-strong">
+          <span
+            className="min-w-0 flex-1 truncate text-sm font-medium text-accent-strong"
+            title={creating ? "Tworzę…" : `Utwórz „${name}”`}
+          >
             {creating ? "Tworzę…" : `+ Utwórz „${name}”`}
           </span>
           {!creating && (
@@ -40,7 +43,7 @@ export function CreateExerciseRow({
           )}
         </button>
         {active && !creating && (
-          <div className="flex shrink-0 items-center gap-1.5">
+          <div className="hidden shrink-0 items-center gap-1.5 min-[20rem]:flex">
             <span className="rounded-full border border-accent-border bg-accent-dim px-2 py-0.5 text-xs font-semibold text-accent-strong">
               ↵ utwórz
             </span>

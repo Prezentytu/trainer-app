@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
-import { api, Exercise, Plan } from "@/lib/api";
+import { api, Exercise, LastPrescription, Plan } from "@/lib/api";
 import { DEFAULT_EXERCISE_INPUT, ExerciseInput } from "@/lib/exerciseDraft";
 import { ErrorBanner, SegmentedControl } from "@/components/ui";
 import { PlanBuilderLibrarySkeleton } from "@/components/skeletons";
@@ -19,12 +19,14 @@ import { ExerciseFormDialog } from "@/components/ExerciseFormDialog";
 import { PlanToolbar, AssignedClientInfo } from "./PlanToolbar";
 import { PlanTable } from "./PlanTable";
 import { ProgressionView } from "./ProgressionView";
+import { polishExerciseCount } from "@/lib/plural";
 import { estimateDaysMinutes, formatDurationApprox } from "./summaryText";
 import { useBuilderDnd } from "./useBuilderDnd";
 import { useExerciseLibrary } from "./useExerciseLibrary";
 import { BuilderDay, BuilderItem } from "./types";
 import { usePlanDraft } from "./usePlanDraft";
 import { usePlanPersistence } from "./usePlanPersistence";
+import { LastPrescriptionProvider } from "./lastPrescription";
 import { ComposerChromeProvider, useComposerChrome } from "./ComposerChrome";
 import { WeekTabs } from "./WeekTabs";
 
@@ -90,6 +92,8 @@ export default function PlanBuilder({
   const [createdToast, setCreatedToast] = useState<Exercise | null>(null);
   const [methodOpen, setMethodOpen] = useState(false);
   const [listDayKey, setListDayKey] = useState<string | null>(null);
+  const [lastById, setLastById] = useState<Map<number, LastPrescription>>(() => new Map());
+  const getLastPrescription = useCallback((id: number) => lastById.get(id), [lastById]);
 
   const draft = usePlanDraft({
     plan,
@@ -100,6 +104,7 @@ export default function PlanBuilder({
     initialWeekCount,
     initialDays,
     getExerciseById: library.getExerciseById,
+    getLastPrescription,
   });
 
   const persistence = usePlanPersistence({
@@ -122,6 +127,26 @@ export default function PlanBuilder({
     if (library.error) setPersistenceError(library.error);
   }, [library.error, setPersistenceError]);
 
+  const clientIdForHistory = assignTo?.id ?? assigned?.id;
+  useEffect(() => {
+    if (!clientIdForHistory || library.exercises.length === 0) return;
+    let cancelled = false;
+    api.clients
+      .lastPrescription(
+        clientIdForHistory,
+        library.exercises.map((e) => e.id),
+      )
+      .then((r) => {
+        if (!cancelled) setLastById(new Map(r.items.map((i) => [i.exerciseId, i])));
+      })
+      .catch(() => {
+        /* historia jest opcjonalna */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [clientIdForHistory, library.exercises]);
+
   useEffect(() => {
     if (!plan) return;
     api.assignments
@@ -130,6 +155,7 @@ export default function PlanBuilder({
         const active = list.find((a) => a.planId === plan.id && a.status === "active");
         if (active) {
           setAssigned({
+            id: active.clientId,
             name: active.clientName,
             startDate: active.startDate,
             weeksCount: plan.weeksCount || draft.weeks.length,
@@ -192,7 +218,7 @@ export default function PlanBuilder({
   const weekMeta = useMemo(() => {
     if (weekItems.length === 0) return undefined;
     const mins = estimateDaysMinutes(draft.visibleDays, library.exercises);
-    return `${weekItems.length} ćwiczeń · ${formatDurationApprox(mins)}`;
+    return `${polishExerciseCount(weekItems.length)} · ${formatDurationApprox(mins)}`;
   }, [weekItems, draft.visibleDays, library.exercises]);
 
   const resolvedListDayKey =
@@ -257,9 +283,20 @@ export default function PlanBuilder({
 
   return (
     <ExerciseLibraryProvider value={libraryActions}>
+      <LastPrescriptionProvider value={{ get: getLastPrescription }}>
       <ComposerChromeProvider preferredDayKey={composerDayKey}>
       <form
         onSubmit={persistence.handleSubmit}
+        onKeyDown={(e) => {
+          if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
+          if (e.metaKey || e.ctrlKey) return;
+          const target = e.target as HTMLElement;
+          if (target.tagName === "TEXTAREA") return;
+          if (target.tagName === "BUTTON" && (target as HTMLButtonElement).type === "submit") return;
+          if (target.tagName !== "INPUT") return;
+          e.preventDefault();
+          target.blur();
+        }}
         className="flex min-h-0 min-w-0 flex-1 flex-col"
       >
         <div className="shrink-0">
@@ -510,6 +547,7 @@ export default function PlanBuilder({
         )}
       </form>
       </ComposerChromeProvider>
+      </LastPrescriptionProvider>
     </ExerciseLibraryProvider>
   );
 }

@@ -76,4 +76,29 @@ public class ClientsEndpointsTests : IClassFixture<TestWebAppFactory>
         var res = await _client.GetAsync($"/api/clients/{created.Id}");
         Assert.Equal(HttpStatusCode.NotFound, res.StatusCode);
     }
+
+    private record LastPrescriptionSet(int? Reps, int? RepsMax, double? LoadKg);
+    private record LastPrescriptionItem(int ExerciseId, string? PerformedOn, string Source, string Label, List<LastPrescriptionSet> Sets);
+    private record LastPrescriptionResponse(List<LastPrescriptionItem> Items);
+
+    [Fact]
+    public async Task LastPrescription_ReturnsLoggedSetsForSeededClient()
+    {
+        var clients = await _client.GetFromJsonAsync<List<ClientDto>>("/api/clients");
+        var jan = Assert.Single(clients!, c => c.Name == "Jan Kowalski");
+        var exercises = await _client.GetFromJsonAsync<List<ExerciseIdDto>>("/api/exercises");
+        Assert.NotNull(exercises);
+        var squat = Assert.Single(exercises!, e => e.Name == "Przysiad ze sztangą");
+
+        var res = await _client.GetFromJsonAsync<LastPrescriptionResponse>(
+            $"/api/clients/{jan.Id}/exercises/last-prescription?exerciseIds={squat.Id}");
+        Assert.NotNull(res);
+        var row = Assert.Single(res!.Items);
+        Assert.Equal(squat.Id, row.ExerciseId);
+        Assert.Equal("logged", row.Source);
+        Assert.NotEmpty(row.Sets);
+        Assert.Contains(row.Sets, s => s.LoadKg != null);
+    }
+
+    private record ExerciseIdDto(int Id, string Name);
 }

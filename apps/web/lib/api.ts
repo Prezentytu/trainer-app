@@ -846,6 +846,20 @@ export type ClientRecord = {
   sessionId?: number;
 };
 
+export type LastPrescriptionSet = {
+  reps: number | null;
+  repsMax: number | null;
+  loadKg: number | null;
+};
+
+export type LastPrescription = {
+  exerciseId: number;
+  performedOn: string | null;
+  source: "logged" | "planned";
+  label: string;
+  sets: LastPrescriptionSet[];
+};
+
 export type ExerciseUsage = {
   sessions: number;
   sets: number;
@@ -1446,6 +1460,12 @@ export const api = {
           sinceDays: input?.sinceDays ?? 120,
         }),
       }),
+    lastPrescription: (clientId: number, exerciseIds: number[]) => {
+      const q = exerciseIds.filter((id) => id > 0).join(",");
+      return request<{ items: LastPrescription[] }>(
+        `/api/clients/${clientId}/exercises/last-prescription${q ? `?exerciseIds=${q}` : ""}`,
+      );
+    },
     exerciseUsage: (clientId: number, exerciseId: number) =>
       request<ExerciseUsage>(`/api/clients/${clientId}/exercises/${exerciseId}/usage`),
     remapExercise: (clientId: number, exerciseId: number, targetExerciseId: number) =>

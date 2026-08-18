@@ -6,7 +6,9 @@ import { formatRest } from "@/components/ui";
 import { DayHeader } from "./DayHeader";
 import { ListComposer } from "./ListComposer";
 import { ListEntryCard } from "./ListEntryCard";
-import { buildListGroups } from "./listGroups";
+import { NumInput } from "./NumInput";
+import { libraryDefaults } from "./lastPrescription";
+import { buildListGroups, listEntrySummary } from "./listGroups";
 import { BuilderDay, BuilderItem, BuilderSet } from "./types";
 
 export function ListView({
@@ -122,16 +124,29 @@ export function ListView({
                 }
               >
                 {g.multi ? (
-                  <div className="flex items-center gap-2 px-2 pt-0.5">
+                  <div className="flex flex-wrap items-center gap-2 px-2 pt-0.5">
                     <span className="font-mono text-xs font-semibold tracking-[0.08em] text-accent-strong">
                       SUPERSERIA {g.positionNum}
                     </span>
-                    <span className="text-xs text-muted">
-                      {g.flow}
-                      {g.entries[0]?.item.restBetweenSetsSeconds != null
-                        ? ` · ${formatRest(g.entries[0].item.restBetweenSetsSeconds)} po superserii`
-                        : ""}
-                    </span>
+                    <span className="text-xs text-muted">{g.flow}</span>
+                    <label className="ml-auto flex items-center gap-1.5 text-xs text-muted">
+                      Przerwa po superserii
+                      <NumInput
+                        className="w-16 px-2 py-1 text-center"
+                        value={g.entries[0]?.item.restBetweenSetsSeconds ?? null}
+                        min={0}
+                        onChange={(v) => {
+                          const first = g.entries[0]?.item;
+                          if (first) onPatchItem(activeDay.key, first.key, { restBetweenSetsSeconds: v });
+                        }}
+                        placeholder="60"
+                      />
+                      {g.entries[0]?.item.restBetweenSetsSeconds != null ? (
+                        <span className="text-muted-faint">
+                          {formatRest(g.entries[0].item.restBetweenSetsSeconds)}
+                        </span>
+                      ) : null}
+                    </label>
                   </div>
                 ) : null}
                 {g.entries.map((entry) => {
@@ -148,6 +163,32 @@ export function ListView({
                       weekNumber={activeDay.weekNumber}
                       exercise={exercises.find((e) => e.id === entry.item.exerciseId)}
                       superLabel={superLabel}
+                      lastPrescriptionLabel={entry.item.lastPrescriptionLabel}
+                      onUndoLastPrescription={
+                        entry.item.lastPrescriptionLabel
+                          ? () => {
+                              const ex = exercises.find((e) => e.id === entry.item.exerciseId);
+                              if (!ex) return;
+                              onPatchItem(activeDay.key, entry.item.key, libraryDefaults(entry.item, ex));
+                            }
+                          : undefined
+                      }
+                      partners={
+                        g.multi
+                          ? g.entries
+                              .filter((e) => e.item.key !== entry.item.key)
+                              .map((e) => ({
+                                label: e.label,
+                                name: e.item.exerciseName,
+                                summary: listEntrySummary(
+                                  e.item,
+                                  exercises.find((ex) => ex.id === e.item.exerciseId),
+                                  true,
+                                ),
+                                setCount: e.item.prescribedSets.length || e.item.sets || 0,
+                              }))
+                          : []
+                      }
                       onToggleExpand={() =>
                         setEdit((prev) =>
                           prev?.dayKey === activeDay.key && prev.itemKey === entry.item.key

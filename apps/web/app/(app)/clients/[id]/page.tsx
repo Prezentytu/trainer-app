@@ -709,11 +709,11 @@ function ClientDetailsPage() {
             <Link href={`/plans/${activeAssignment.planId}`}>
               <Button>Otwórz plan</Button>
             </Link>
-            <Button variant="ghost" onClick={() => void openLogBehalf(activeAssignment)}>
+            <Button variant="secondary" onClick={() => void openLogBehalf(activeAssignment)}>
               Wpisz trening za klienta
             </Button>
             <Link href={`/clients/${clientId}/import`}>
-              <Button variant="ghost">Wgraj stare treningi</Button>
+              <Button variant="secondary">Wgraj stare treningi</Button>
             </Link>
           </div>
         </div>
@@ -724,14 +724,12 @@ function ClientDetailsPage() {
               <div className="flex flex-wrap justify-center gap-2">
                 <Button onClick={openAssignTab}>Przypisz plan</Button>
                 <Link href={`/clients/${clientId}/import`}>
-                  <Button variant="ghost">Wgraj stare treningi</Button>
+                  <Button variant="secondary">Wgraj stare treningi</Button>
                 </Link>
-                {sessions.length > 0 ? (
-                  <Button variant="ghost" onClick={() => setPlanFromHistoryOpen(true)}>
-                    Złóż plan z historii
-                  </Button>
-                ) : null}
-                <Button variant="ghost" onClick={() => void openLogBehalf(null)}>
+                <Button variant="secondary" onClick={() => setPlanFromHistoryOpen(true)}>
+                  Złóż plan z historii
+                </Button>
+                <Button variant="secondary" onClick={() => void openLogBehalf(null)}>
                   Wpisz trening za klienta
                 </Button>
               </div>
@@ -767,11 +765,9 @@ function ClientDetailsPage() {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <h2 className="font-display text-lg font-semibold">Przypisane plany</h2>
               <div className="flex flex-wrap gap-2">
-                {sessions.length > 0 ? (
-                  <Button variant="secondary" onClick={() => setPlanFromHistoryOpen(true)}>
-                    Złóż plan z historii
-                  </Button>
-                ) : null}
+                <Button variant="secondary" onClick={() => setPlanFromHistoryOpen(true)}>
+                  Złóż plan z historii
+                </Button>
                 {!assignOpen ? (
                   <Button variant="secondary" onClick={openAssignForm}>
                     Przypisz plan
@@ -864,11 +860,9 @@ function ClientDetailsPage() {
                 action={
                   <div className="flex flex-wrap justify-center gap-2">
                     <Button onClick={openAssignForm}>Przypisz plan</Button>
-                    {sessions.length > 0 ? (
-                      <Button variant="secondary" onClick={() => setPlanFromHistoryOpen(true)}>
-                        Złóż plan z historii
-                      </Button>
-                    ) : null}
+                    <Button variant="secondary" onClick={() => setPlanFromHistoryOpen(true)}>
+                      Złóż plan z historii
+                    </Button>
                   </div>
                 }
               >
@@ -1475,8 +1469,8 @@ function ClientDetailsPage() {
         clientId={clientId}
         clientName={client.name}
         exercises={exercises}
+        hasHistory={completedSessions.some((s) => withinLastDays(s.performedOn, 120))}
         onClose={() => setPlanFromHistoryOpen(false)}
-        onError={setError}
       />
 
       {toastNode}

@@ -198,5 +198,9 @@ export function usePlanPersistence({
     return () => clearTimeout(timer);
   }, [plan, name, description, isTemplate, days]);
 
-  return { saving, error, setError, lastSavedAt, isDirty, handleSubmit };
+  const totalItems = days.reduce((sum, d) => sum + d.items.length, 0);
+  const visibleError =
+    error === "Dodaj przynajmniej jedno ćwiczenie do planu." && totalItems > 0 ? null : error;
+
+  return { saving, error: visibleError, setError, lastSavedAt, isDirty, handleSubmit };
 }

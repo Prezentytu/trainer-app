@@ -1737,6 +1737,26 @@ app.MapGet("/api/clients/{clientId:int}/exercises/{exerciseId:int}/stats", async
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
+app.MapGet("/api/clients/{id:int}/exercises/last-prescription", async (
+    int id, string? exerciseIds, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (!await TrainerAccess.OwnsClientAsync(db, trainerId, id)) return Results.NotFound();
+
+        var ids = (exerciseIds ?? "")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(s => int.TryParse(s, out var n) ? n : 0)
+            .Where(n => n > 0)
+            .Distinct()
+            .ToList();
+        var items = await Sessions.LoadLastPrescriptionsAsync(db, id, ids);
+        return Results.Ok(new { items });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
 app.MapGet("/api/clients/{id:int}/exercises/{exerciseId:int}/usage", async (
     int id, int exerciseId, HttpContext http, AppDb db, IConfiguration config) =>
 {

@@ -31,6 +31,7 @@ import {
   weekdayIndexFromLabel,
 } from "@/lib/dates";
 import { formatScheduledShort } from "@/lib/schedule";
+import { compactSchemeLine } from "@/lib/schemeSummary";
 import { formatLoadDisplay } from "@/lib/weight";
 import { previewBlocksFromItems, type PreviewItem } from "@/lib/supersetPreview";
 
@@ -38,29 +39,7 @@ function schemeLine(
   item: NonNullable<PortalHome["today"]>["day"]["items"][number],
   exerciseMeta?: Pick<PortalExercise, "equipment" | "isUnilateral"> | null,
 ): string {
-  if (item.prescribedSets.length > 0) {
-    return item.prescribedSets
-      .map((s) => {
-        const reps = s.repsMax != null && s.reps != null ? `${s.reps}–${s.repsMax}` : String(s.reps ?? "—");
-        const kg = s.computedLoadKg ?? s.loadKg;
-        if (s.durationSeconds != null) return `${s.durationSeconds} s`;
-        if (s.distanceMeters != null) return `${s.distanceMeters} m`;
-        return kg != null ? `${reps} @ ${formatLoadDisplay(kg, exerciseMeta)}` : reps;
-      })
-      .join(", ");
-  }
-  const measure = item.measureType ?? "reps";
-  if (measure === "time") {
-    const sec = item.repDurationSeconds ?? 0;
-    return `${item.sets} × ${sec} s`;
-  }
-  if (measure === "distance") {
-    return `${item.sets} × ${item.distanceMeters ?? "—"} m`;
-  }
-  const load = item.computedLoadKg ?? item.loadKg ?? null;
-  return load != null
-    ? `${item.sets} × ${item.reps} @ ${formatLoadDisplay(load, exerciseMeta)}`
-    : `${item.sets} × ${item.reps}`;
+  return compactSchemeLine(item, exerciseMeta);
 }
 
 function schemeFromLogged(

@@ -2,13 +2,41 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { arrayMove } from "@dnd-kit/sortable";
-import { Exercise, Plan } from "@/lib/api";
+import { Exercise, LastPrescription, Plan } from "@/lib/api";
+import { lastPrescriptionOverrides } from "./lastPrescription";
 import { formatSchemeLabel, matchingPresetId, PLAN_PRESETS } from "@/lib/planPresets";
 import { isDefaultDayLabel, WEEKDAY_NAMES } from "@/lib/schedule";
 import { applyMethodTemplate, MethodTemplateId } from "@/lib/methodTemplates";
 import { useUndoToast } from "@/components/ui";
 import { loadInitialDays } from "./loadInitialDays";
 import { BuilderDay, BuilderItem, BuilderSet, newKey } from "./types";
+
+function aggregatesFromSets(sets: BuilderSet[]): Partial<BuilderItem> {
+  if (sets.length === 0) return {};
+  const reps = sets.map((s) => s.reps);
+  const sameReps = reps.every((r) => r === reps[0]);
+  const repsMax = sets.map((s) => s.repsMax);
+  const sameRepsMax = repsMax.every((r) => r === repsMax[0]);
+  const loads = sets.map((s) => s.loadKg);
+  const sameLoad = loads.every((l) => l === loads[0]);
+  const patch: Partial<BuilderItem> = { sets: sets.length };
+  if (sameReps) {
+    patch.reps = reps[0];
+    patch.repsMax = sameRepsMax ? (repsMax[0] ?? null) : null;
+  } else {
+    const numeric = reps.filter((r): r is number => r != null);
+    if (numeric.length > 0) {
+      patch.reps = Math.min(...numeric);
+      patch.repsMax = Math.max(...numeric);
+    }
+  }
+  if (sameLoad) patch.loadKg = loads[0];
+  return patch;
+}
+
+function withSyncedSets(item: BuilderItem, sets: BuilderSet[]): BuilderItem {
+  return { ...item, prescribedSets: sets, ...aggregatesFromSets(sets) };
+}
 
 export function detachLinks(items: BuilderItem[], itemKey: string): BuilderItem[] {
   return items.map((it, idx) => {
@@ -28,6 +56,7 @@ export function usePlanDraft({
   initialWeekCount,
   initialDays,
   getExerciseById,
+  getLastPrescription,
 }: {
   plan?: Plan;
   initialName?: string;
@@ -38,6 +67,7 @@ export function usePlanDraft({
   /** Gotowy draft (np. z importu AI) — nadpisuje pustą strukturę. */
   initialDays?: BuilderDay[];
   getExerciseById: (id: number) => Exercise | undefined;
+  getLastPrescription?: (exerciseId: number) => LastPrescription | undefined;
 }) {
   const { showUndoToast, toastNode } = useUndoToast();
 
@@ -268,6 +298,7 @@ export function usePlanDraft({
                     loadPercent: null,
                     notes: null,
                     prescribedSets: [],
+                    ...lastPrescriptionOverrides(getLastPrescription?.(exerciseId), overrides),
                     ...overrides,
                   },
                 ],
@@ -275,7 +306,7 @@ export function usePlanDraft({
         )
       );
     },
-    [getExerciseById]
+    [getExerciseById, getLastPrescription]
   );
 
   const patchItem = useCallback(
@@ -394,6 +425,7 @@ export function usePlanDraft({
             loadPercent: null,
             notes: null,
             prescribedSets: [],
+            ...lastPrescriptionOverrides(getLastPrescription?.(exerciseId), options.overrides),
             ...options.overrides,
             isWarmup: warmupFlag,
           };
@@ -429,7 +461,7 @@ export function usePlanDraft({
         })
       );
     },
-    [getExerciseById]
+    [getExerciseById, getLastPrescription]
   );
 
   const duplicateItem = useCallback((dayKey: string, itemKey: string) => {
@@ -572,7 +604,8 @@ export function usePlanDraft({
   }, []);
 
   const setItemSets = useCallback(
-    (dayKey: string, itemKey: string, sets: BuilderSet[]) => patchItem(dayKey, itemKey, { prescribedSets: sets }),
+    (dayKey: string, itemKey: string, sets: BuilderSet[]) =>
+      patchItem(dayKey, itemKey, { prescribedSets: sets, ...aggregatesFromSets(sets) }),
     [patchItem]
   );
 
@@ -586,28 +619,26 @@ export function usePlanDraft({
             items: d.items.map((item) => {
               if (item.key !== itemKey) return item;
               const last = item.prescribedSets[item.prescribedSets.length - 1];
-              return {
-                ...item,
-                prescribedSets: [
-                  ...item.prescribedSets,
-                  {
-                    key: newKey(),
-                    order: item.prescribedSets.length + 1,
-                    reps: last?.reps ?? null,
-                    repsMax: last?.repsMax ?? null,
-                    durationSeconds: last?.durationSeconds ?? null,
-                    distanceMeters: last?.distanceMeters ?? null,
-                    loadKg: last?.loadKg ?? null,
-                    loadPercent: last?.loadPercent ?? null,
-                    percentOf: last?.percentOf ?? null,
-                    targetRpe: last?.targetRpe ?? null,
-                    targetRir: last?.targetRir ?? null,
-                    tempo: last?.tempo ?? null,
-                    role: last?.role ?? "work",
-                    note: null,
-                  },
-                ],
-              };
+              const next = [
+                ...item.prescribedSets,
+                {
+                  key: newKey(),
+                  order: item.prescribedSets.length + 1,
+                  reps: last?.reps ?? null,
+                  repsMax: last?.repsMax ?? null,
+                  durationSeconds: last?.durationSeconds ?? null,
+                  distanceMeters: last?.distanceMeters ?? null,
+                  loadKg: last?.loadKg ?? null,
+                  loadPercent: last?.loadPercent ?? null,
+                  percentOf: last?.percentOf ?? null,
+                  targetRpe: last?.targetRpe ?? null,
+                  targetRir: last?.targetRir ?? null,
+                  tempo: last?.tempo ?? null,
+                  role: last?.role ?? "work",
+                  note: null,
+                },
+              ];
+              return withSyncedSets(item, next);
             }),
           };
         })
@@ -627,10 +658,10 @@ export function usePlanDraft({
                 items: d.items.map((i) =>
                   i.key !== itemKey
                     ? i
-                    : {
-                        ...i,
-                        prescribedSets: i.prescribedSets.map((s) => (s.key === setKey ? { ...s, ...patch } : s)),
-                      }
+                    : withSyncedSets(
+                        i,
+                        i.prescribedSets.map((s) => (s.key === setKey ? { ...s, ...patch } : s)),
+                      )
                 ),
               }
         )
@@ -657,7 +688,7 @@ export function usePlanDraft({
                     if (i.prescribedSets.some((s) => s.key === removed.key)) return i;
                     const next = [...i.prescribedSets];
                     next.splice(Math.min(removedIndex, next.length), 0, removed);
-                    return { ...i, prescribedSets: next.map((s, o) => ({ ...s, order: o + 1 })) };
+                    return withSyncedSets(i, next.map((s, o) => ({ ...s, order: o + 1 })));
                   }),
                 };
               }),
@@ -672,12 +703,12 @@ export function usePlanDraft({
                 items: d.items.map((i) =>
                   i.key !== itemKey
                     ? i
-                    : {
-                        ...i,
-                        prescribedSets: i.prescribedSets
+                    : withSyncedSets(
+                        i,
+                        i.prescribedSets
                           .filter((s) => s.key !== setKey)
                           .map((s, o) => ({ ...s, order: o + 1 })),
-                      },
+                      ),
                 ),
               },
         );
@@ -706,7 +737,7 @@ export function usePlanDraft({
                     ...d,
                     items: d.items.map((i) =>
                       i.key === itemKey
-                        ? { ...i, prescribedSets: previousSets, setScheme: previousScheme }
+                        ? { ...withSyncedSets(i, previousSets), setScheme: previousScheme }
                         : i,
                     ),
                   },
@@ -720,7 +751,7 @@ export function usePlanDraft({
           : {
               ...d,
               items: d.items.map((i) =>
-                i.key === itemKey ? { ...i, prescribedSets: sets, setScheme } : i,
+                i.key === itemKey ? { ...withSyncedSets(i, sets), setScheme } : i,
               ),
             },
       );

@@ -725,4 +725,111 @@ public static class Sessions
 
         return result;
     }
+
+    public static async Task<IReadOnlyList<object>> LoadLastPrescriptionsAsync(
+        AppDb db, int clientId, IReadOnlyList<int> exerciseIds)
+    {
+        if (exerciseIds.Count == 0) return [];
+
+        var logged = await db.LoggedExercises
+            .AsNoTracking()
+            .Include(e => e.Sets)
+            .Include(e => e.Session)
+            .Where(e => e.Session!.ClientId == clientId
+                        && e.Session.Status == "completed"
+                        && exerciseIds.Contains(e.ExerciseId))
+            .ToListAsync();
+
+        var byExercise = new Dictionary<int, object>();
+        foreach (var group in logged.GroupBy(e => e.ExerciseId))
+        {
+            var latest = group
+                .OrderByDescending(e => e.Session!.PerformedOn)
+                .ThenByDescending(e => e.Session!.Id)
+                .First();
+            var sets = latest.Sets
+                .Where(s => s.Completed && !s.IsWarmup)
+                .OrderBy(s => s.SetNumber)
+                .Select(s => (s.Reps, (int?)null, s.WeightKg))
+                .ToList();
+            if (sets.Count == 0) continue;
+            byExercise[group.Key] = LastPrescriptionDto(
+                group.Key, latest.Session!.PerformedOn, "logged", sets);
+        }
+
+        var missing = exerciseIds.Where(id => !byExercise.ContainsKey(id)).ToList();
+        if (missing.Count == 0) return exerciseIds.Where(byExercise.ContainsKey).Select(id => byExercise[id]).ToList();
+
+        var planned = await db.PlanItems
+            .AsNoTracking()
+            .Include(i => i.PrescribedSets)
+            .Where(i => missing.Contains(i.ExerciseId)
+                        && i.Day!.Plan!.Assignments.Any(a => a.ClientId == clientId && a.Status == "active"))
+            .ToListAsync();
+
+        foreach (var group in planned.GroupBy(i => i.ExerciseId))
+        {
+            var item = group.OrderByDescending(i => i.Id).First();
+            List<(int? Reps, int? RepsMax, double? LoadKg)> sets;
+            if (item.PrescribedSets.Count > 0)
+            {
+                sets = item.PrescribedSets
+                    .OrderBy(s => s.Order)
+                    .Select(s => (s.Reps, s.RepsMax, s.LoadKg))
+                    .ToList();
+            }
+            else
+            {
+                var n = Math.Max(1, item.Sets ?? 3);
+                sets = Enumerable.Range(0, n)
+                    .Select(_ => (item.Reps, item.RepsMax, item.LoadKg))
+                    .ToList();
+            }
+            if (sets.Count == 0) continue;
+            byExercise[group.Key] = LastPrescriptionDto(group.Key, null, "planned", sets);
+        }
+
+        return exerciseIds.Where(byExercise.ContainsKey).Select(id => byExercise[id]).ToList();
+    }
+
+    static object LastPrescriptionDto(
+        int exerciseId,
+        DateOnly? performedOn,
+        string source,
+        IReadOnlyList<(int? Reps, int? RepsMax, double? LoadKg)> sets)
+    {
+        var label = CompactPrescriptionLabel(sets);
+        return new
+        {
+            exerciseId,
+            performedOn,
+            source,
+            label,
+            sets = sets.Select(s => new { reps = s.Reps, repsMax = s.RepsMax, loadKg = s.LoadKg }).ToList(),
+        };
+    }
+
+    static string CompactPrescriptionLabel(IReadOnlyList<(int? Reps, int? RepsMax, double? LoadKg)> sets)
+    {
+        if (sets.Count == 0) return "";
+        var reps = sets.Select(s => s.Reps).ToList();
+        var loads = sets.Select(s => s.LoadKg).ToList();
+        var sameReps = reps.All(r => r == reps[0]);
+        var sameLoad = loads.All(l => l == loads[0]);
+        var measure = sameReps
+            ? (reps[0] is null ? "—" : reps[0]!.Value.ToString())
+            : string.Join("/", reps.Select(r => r?.ToString() ?? "—"));
+        if (sameReps && sameLoad)
+        {
+            var load = loads[0] is null ? "" : $" · {loads[0]} kg";
+            return $"{sets.Count} × {measure}{load}";
+        }
+        if (sameReps && loads.All(l => l != null))
+        {
+            var min = loads.Min();
+            var max = loads.Max();
+            return $"{sets.Count} × {measure} · {min}–{max} kg";
+        }
+        return $"{sets.Count} × {measure}";
+    }
 }

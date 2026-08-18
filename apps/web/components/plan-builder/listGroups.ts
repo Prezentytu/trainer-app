@@ -1,5 +1,5 @@
 import { Exercise } from "@/lib/api";
-import { formatMeasureCore } from "@/lib/measure";
+import { compactSchemeLine } from "@/lib/schemeSummary";
 import { BuilderItem, newKey } from "./types";
 
 const LETTERS = "abcdefgh";
@@ -228,14 +228,24 @@ export function buildRampPrescribedSets(opts: {
   return sets;
 }
 
-/** Dopisuje brakujące role rampy, nie kasując ręcznych wierszy. */
+/** Dopisuje brakujące stopnie rampy (rola + kolejność), nie kasując ręcznych wierszy. */
 export function mergeRampRoles(
   existing: BuilderItem["prescribedSets"],
   generated: BuilderItem["prescribedSets"],
 ): BuilderItem["prescribedSets"] {
   if (existing.length === 0) return generated;
-  const have = new Set(existing.map((s) => s.role).filter(Boolean));
-  const extra = generated.filter((s) => s.role && !have.has(s.role));
+  const haveCount = new Map<string, number>();
+  for (const s of existing) {
+    if (!s.role) continue;
+    haveCount.set(s.role, (haveCount.get(s.role) ?? 0) + 1);
+  }
+  const seen = new Map<string, number>();
+  const extra = generated.filter((s) => {
+    if (!s.role) return false;
+    const n = (seen.get(s.role) ?? 0) + 1;
+    seen.set(s.role, n);
+    return n > (haveCount.get(s.role) ?? 0);
+  });
   return [...existing, ...extra].map((s, i) => ({ ...s, order: i + 1 }));
 }
 
@@ -256,27 +266,9 @@ export function readRampBackoffs(item: BuilderItem): BackoffRow[] {
   return [];
 }
 
-/** Jedna linia podsumowania karty Lista (jak makieta WA). */
+/** Jedna linia podsumowania karty Lista — prescribedSets jest źródłem prawdy. */
 export function listEntrySummary(item: BuilderItem, exercise?: Exercise, omitRest = false): string {
-  const sets = item.sets ?? exercise?.defaultSets ?? null;
-  const ramp = parseRampSchemeInfo(item.setScheme);
-  let schemeText: string;
-  if (ramp != null) {
-    const backoffs = readRampBackoffs(item);
-    const percents =
-      backoffs.length > 0
-        ? backoffs.map((b) => b.percent)
-        : ramp.backoffPercents;
-    schemeText = formatRampScheme(ramp.targetRm, percents);
-    if (item.sets != null) schemeText = `~${item.sets} serii · ${schemeText}`;
-  } else if (item.setScheme) {
-    schemeText = sets ? `${sets} serii · ${item.setScheme}` : item.setScheme;
-  } else {
-    const core = formatMeasureCore(item, exercise);
-    schemeText = sets ? `${sets} × ${core}` : core;
-  }
-
-  const parts: string[] = [schemeText];
+  const parts: string[] = [compactSchemeLine(item, exercise)];
   if (item.tempo) parts.push(`tempo ${item.tempo}`);
   if (item.targetRir != null) {
     const rirLabel = item.targetRir >= 3 ? "3+" : String(item.targetRir);

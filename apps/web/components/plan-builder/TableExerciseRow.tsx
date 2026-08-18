@@ -9,13 +9,14 @@ import { NumInput } from "./NumInput";
 import { RampControls } from "./RampControls";
 import { SetSchemeEditor } from "./SetSchemeEditor";
 import {
+  BackoffRow,
   buildRampPrescribedSets,
   formatRampScheme,
-  mergeRampRoles,
   parseRampSchemeInfo,
   readRampBackoffs,
 } from "./listGroups";
-import { BuilderItem, BuilderSet } from "./types";
+import { BuilderItem, BuilderSet, newKey } from "./types";
+import type { EditorPartner } from "./ListEntryEditor";
 
 // Wspólna siatka kolumn dla wiersza i nagłówka tabeli (TableDay) — trzymana w jednym miejscu,
 // żeby kolumny obu nie mogły się rozjechać.
@@ -106,6 +107,8 @@ export function TableExerciseRow({
   exercise,
   supersetLabel,
   isInSuperset,
+  isFirstInSuperset = false,
+  partners = [],
   isLastInDay,
   expanded,
   onToggleExpand,
@@ -125,6 +128,8 @@ export function TableExerciseRow({
   exercise?: Exercise;
   supersetLabel: string | null;
   isInSuperset: boolean;
+  isFirstInSuperset?: boolean;
+  partners?: EditorPartner[];
   isLastInDay: boolean;
   expanded: boolean;
   onToggleExpand: () => void;
@@ -182,13 +187,18 @@ export function TableExerciseRow({
           aria-label="Tempo"
         />
 
-        <NumInput
-          className="px-2 py-1.5 text-center"
-          value={item.restBetweenSetsSeconds}
-          min={0}
-          onChange={(v) => onPatch({ restBetweenSetsSeconds: v })}
-          placeholder={exercise ? String(exercise.defaultRestBetweenSetsSeconds) : "dom."}
-        />
+        {isInSuperset && !isFirstInSuperset ? (
+          <span className="t-label text-muted">wspólna</span>
+        ) : (
+          <NumInput
+            className="px-2 py-1.5 text-center"
+            value={item.restBetweenSetsSeconds}
+            min={0}
+            onChange={(v) => onPatch({ restBetweenSetsSeconds: v })}
+            placeholder={exercise ? String(exercise.defaultRestBetweenSetsSeconds) : "dom."}
+            aria-label={isInSuperset ? "Przerwa po superserii" : "Przerwa"}
+          />
+        )}
 
         <NumInput
           className="px-2 py-1.5 text-center"
@@ -242,88 +252,159 @@ export function TableExerciseRow({
       </div>
 
       {expanded && (
-        <div className="border-t border-border p-3">
-          <div className="mb-3 flex items-center gap-2">
-            <label className="flex items-center gap-1.5 text-xs text-muted">
-              RPE (opcjonalnie)
-              <NumInput
-                className="w-16 px-2 py-1 text-center"
-                value={item.targetRpe}
-                min={1}
-                step={0.5}
-                onChange={(v) => onPatch({ targetRpe: v })}
-                placeholder="—"
-              />
-            </label>
-            {item.targetRpe != null && item.targetRir == null && (
-              <span className="text-xs text-muted">≈ RIR {rirFromRpe(item.targetRpe)}</span>
-            )}
-          </div>
-          <div className="mb-3">
-            <RampControls
-              mode={isRamp ? "ramp" : "sets"}
-              targetRm={rampInfo?.targetRm ?? 6}
-              topKg={item.prescribedSets.find((s) => s.role === "top")?.loadKg ?? item.loadKg}
-              backoffEnabled={backoffs.length > 0}
-              showSetsCount={false}
-              showRest={false}
-              onModeChange={(mode) => {
-                if (mode !== "ramp") {
-                  onPatch({ setScheme: null });
-                  return;
-                }
-                const targetRm = rampInfo?.targetRm ?? 6;
+        <div className="border-t border-border px-3 py-2.5">
+          {partners.length > 0 ? (
+            <div className="mb-2 space-y-1">
+              {partners.map((p) => (
+                <div key={p.label} className="flex flex-wrap items-center gap-2 text-sm text-muted">
+                  <span>
+                    {p.label} {p.name} — {p.summary}
+                  </span>
+                  {p.setCount > 0 && p.setCount !== (item.prescribedSets.length || item.sets || 0) ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        let next = [...item.prescribedSets];
+                        if (next.length === 0) {
+                          next = Array.from({ length: p.setCount }, (_, i) => ({
+                            key: newKey(),
+                            order: i + 1,
+                            reps: item.reps,
+                            repsMax: item.repsMax,
+                            durationSeconds: item.repDurationSeconds,
+                            distanceMeters: item.distanceMeters,
+                            loadKg: item.loadKg,
+                            loadPercent: item.loadPercent,
+                            percentOf: item.loadPercent != null ? "1rm" : null,
+                            targetRpe: item.targetRpe,
+                            targetRir: item.targetRir,
+                            tempo: item.tempo,
+                            role: "work",
+                            note: null,
+                          }));
+                        } else if (next.length < p.setCount) {
+                          const last = next[next.length - 1];
+                          while (next.length < p.setCount) {
+                            next.push({ ...last, key: newKey(), order: next.length + 1, note: null });
+                          }
+                        } else {
+                          next = next.slice(0, p.setCount).map((s, i) => ({ ...s, order: i + 1 }));
+                        }
+                        onPatch({ prescribedSets: next, sets: next.length });
+                      }}
+                      className="font-medium text-foreground-secondary hover:text-foreground"
+                    >
+                      wyrównaj serie
+                    </button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ) : null}
+          <RampControls
+            mode={isRamp ? "ramp" : "sets"}
+            targetRm={rampInfo?.targetRm ?? 6}
+            topKg={item.prescribedSets.find((s) => s.role === "top")?.loadKg ?? item.loadKg}
+            backoffs={backoffs}
+            showSetsCount={false}
+            showRest={false}
+            onModeChange={(mode) => {
+              if (mode !== "ramp") {
+                onPatch({ setScheme: null });
+                return;
+              }
+              onPatch({
+                setScheme: formatRampScheme(
+                  rampInfo?.targetRm ?? 6,
+                  backoffs.length > 0 ? backoffs.map((b) => b.percent) : null,
+                ),
+                prescribedSets: [],
+              });
+            }}
+            onTargetRm={(v) => {
+              const next = item.prescribedSets.map((s) =>
+                s.role === "top" || s.role === "ramp" ? { ...s, reps: v } : s,
+              );
+              onPatch({
+                setScheme: formatRampScheme(v, backoffs.length > 0 ? backoffs.map((b) => b.percent) : null),
+                prescribedSets: next,
+              });
+            }}
+            onTopKg={(v) =>
+              onPatch({
+                loadKg: v,
+                prescribedSets: item.prescribedSets.map((s) =>
+                  s.role === "top" ? { ...s, loadKg: v, loadPercent: null, percentOf: null } : s,
+                ),
+              })
+            }
+            onBackoffsChange={(rows: BackoffRow[]) => {
+              const scheme = formatRampScheme(
+                rampInfo?.targetRm ?? 6,
+                rows.length > 0 ? rows.map((b) => b.percent) : null,
+              );
+              if (item.prescribedSets.length === 0) {
+                onPatch({ setScheme: scheme });
+                return;
+              }
+              const withoutBo = item.prescribedSets.filter((s) => s.role !== "backoff");
+              const generated = buildRampPrescribedSets({
+                targetRm: rampInfo?.targetRm ?? 6,
+                topKg: item.loadKg,
+                backoffs: rows,
+              });
+              onPatch({
+                setScheme: scheme,
+                prescribedSets: [...withoutBo, ...generated.filter((s) => s.role === "backoff")].map((s, i) => ({
+                  ...s,
+                  order: i + 1,
+                })),
+              });
+            }}
+          />
+          {isRamp ? (
+            <button
+              type="button"
+              onClick={() => {
                 const generated = buildRampPrescribedSets({
-                  targetRm,
+                  targetRm: rampInfo?.targetRm ?? 6,
                   topKg: item.loadKg,
                   backoffs,
                 });
                 onPatch({
-                  setScheme: formatRampScheme(targetRm, backoffs.map((b) => b.percent)),
-                  prescribedSets: mergeRampRoles(item.prescribedSets, generated),
-                });
-              }}
-              onTargetRm={(v) => {
-                const next = item.prescribedSets.map((s) =>
-                  s.role === "top" || s.role === "ramp" ? { ...s, reps: v } : s,
-                );
-                onPatch({
-                  setScheme: formatRampScheme(v, backoffs.map((b) => b.percent)),
-                  prescribedSets:
-                    next.length > 0
-                      ? next
-                      : buildRampPrescribedSets({ targetRm: v, topKg: item.loadKg, backoffs }),
-                });
-              }}
-              onTopKg={(v) =>
-                onPatch({
-                  loadKg: v,
-                  prescribedSets: item.prescribedSets.map((s) =>
-                    s.role === "top" ? { ...s, loadKg: v, loadPercent: null, percentOf: null } : s,
+                  setScheme: formatRampScheme(
+                    rampInfo?.targetRm ?? 6,
+                    backoffs.length > 0 ? backoffs.map((b) => b.percent) : null,
                   ),
-                })
-              }
-              onBackoffEnabled={(enabled) => {
-                if (!enabled) {
-                  onPatch({
-                    setScheme: formatRampScheme(rampInfo?.targetRm ?? 6),
-                    prescribedSets: item.prescribedSets.filter((s) => s.role !== "backoff"),
-                  });
-                  return;
-                }
-                const generated = buildRampPrescribedSets({
-                  targetRm: rampInfo?.targetRm ?? 6,
-                  topKg: item.loadKg,
-                  backoffs: [{ reps: 5, repsMax: 10, percent: 80 }],
-                });
-                onPatch({
-                  setScheme: formatRampScheme(rampInfo?.targetRm ?? 6, [80]),
-                  prescribedSets: mergeRampRoles(item.prescribedSets, generated),
+                  prescribedSets: generated,
+                  sets: generated.length,
                 });
               }}
-            />
-          </div>
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">Rozkład serii</p>
+              className="mt-2 text-sm font-medium text-foreground-secondary hover:text-foreground"
+            >
+              Rozpisz rozbieg
+            </button>
+          ) : null}
+          <details className="mt-2">
+            <summary className="t-label cursor-pointer text-muted-faint">Zaawansowane</summary>
+            <div className="mt-2 flex items-center gap-2">
+              <label className="flex items-center gap-1.5 text-xs text-muted">
+                RPE
+                <NumInput
+                  className="w-16 px-2 py-1 text-center"
+                  value={item.targetRpe}
+                  min={1}
+                  step={0.5}
+                  onChange={(v) => onPatch({ targetRpe: v })}
+                  placeholder="—"
+                />
+              </label>
+              {item.targetRpe != null && item.targetRir == null ? (
+                <span className="text-xs text-muted">≈ RIR {rirFromRpe(item.targetRpe)}</span>
+              ) : null}
+            </div>
+          </details>
+          <p className="mb-2 mt-2.5 text-xs font-medium uppercase tracking-wide text-muted">Rozkład serii</p>
           <SetSchemeEditor
             sets={item.prescribedSets}
             weekNumber={weekNumber}

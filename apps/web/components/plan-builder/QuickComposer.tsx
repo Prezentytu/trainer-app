@@ -18,9 +18,14 @@ import { COMPOSER_PLACEHOLDER, markComposerHelpSeen } from "./ComposerHelp";
 import { useComposerChrome } from "./ComposerChrome";
 import { CreateExerciseRow } from "@/components/CreateExerciseRow";
 import { useExerciseLibraryActions } from "./ExerciseLibraryContext";
+import { useLastPrescription } from "./lastPrescription";
 import { BuilderDay, BuilderItem } from "./types";
 
-function previewSummary(exercise: Exercise, overrides: Partial<BuilderItem>): string {
+function previewSummary(
+  exercise: Exercise,
+  overrides: Partial<BuilderItem>,
+  lastLabel?: string,
+): string {
   const draft: BuilderItem = {
     key: "",
     exerciseId: exercise.id,
@@ -60,6 +65,15 @@ function previewSummary(exercise: Exercise, overrides: Partial<BuilderItem>): st
     if (overrides.targetRir != null) parts.push(`RIR ${overrides.targetRir}`);
     return parts.join(" · ");
   }
+  if (
+    lastLabel &&
+    overrides.sets == null &&
+    overrides.reps == null &&
+    overrides.loadKg == null &&
+    overrides.setScheme == null
+  ) {
+    return lastLabel;
+  }
   const parts = [`${sets}×${core}`];
   if (overrides.loadKg != null) parts.push(`${overrides.loadKg}kg`);
   if (draft.tempo) parts.push(draft.tempo);
@@ -82,6 +96,7 @@ export function QuickComposer({
   onBrowse?: () => void;
 }) {
   const { createExercise, requestNewExercise } = useExerciseLibraryActions();
+  const lastPrescription = useLastPrescription();
   const { registerComposer, markFocused, helpOpen, setHelpOpen } = useComposerChrome();
   const [value, setValue] = useState("");
   const [recentIds, setRecentIds] = useState<number[]>(readRecentExerciseIds);
@@ -133,7 +148,7 @@ export function QuickComposer({
       const maxHeight = Math.min(256, Math.max(120, openUp ? spaceAbove : spaceBelow));
       setMenuBox({
         left: rect.left,
-        width: Math.max(rect.width, 240),
+        width: Math.max(rect.width, 320),
         maxHeight,
         top: openUp ? null : rect.bottom + gap,
         bottom: openUp ? window.innerHeight - rect.top + gap : null,
@@ -296,7 +311,11 @@ export function QuickComposer({
                 <span className="min-w-0 break-words">{exercise.name}</span>
               </div>
               <span className="shrink-0 font-mono text-xs tabular-nums text-muted">
-                {previewSummary(exercise, itemOverridesFromParsed(parsed, exercise.type))}
+                {previewSummary(
+                  exercise,
+                  itemOverridesFromParsed(parsed, exercise.type),
+                  lastPrescription.get(exercise.id)?.label,
+                )}
               </span>
             </button>
           </li>

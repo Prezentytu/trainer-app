@@ -8,6 +8,9 @@ import { editorChipOff, editorChipOn } from "./editorChips";
 
 export { editorChipOff, editorChipOn } from "./editorChips";
 
+export const SET_ROW_GRID =
+  "grid-cols-[4.75rem_5.25rem_7rem_1.75rem_1.75rem]";
+
 const ROLE_OPTIONS = ["work", "warmup", "ramp", "top", "backoff"] as const;
 
 function roleShort(role: string | null | undefined): string {
@@ -33,7 +36,6 @@ export function SetRow({
   percentOf,
   measureType,
   computedKg,
-  computedHint,
   onReps,
   onRepsMax,
   onLoadKg,
@@ -62,7 +64,6 @@ export function SetRow({
   percentOf?: PercentBase | null;
   measureType?: "reps" | "time" | "distance";
   computedKg?: number | null;
-  computedHint?: string | null;
   onReps: (v: number | null) => void;
   onRepsMax: (v: number | null) => void;
   onLoadKg: (v: number | null) => void;
@@ -85,15 +86,21 @@ export function SetRow({
   const [roleOpen, setRoleOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const roleRef = useRef<HTMLDivElement>(null);
+  const moreRef = useRef<HTMLDivElement>(null);
   const display = label ?? `${index} · ${roleShort(role)}`;
 
   useEffect(() => {
-    if (!roleOpen) return;
+    if (!roleOpen && !moreOpen) return;
     const onDoc = (e: MouseEvent) => {
-      if (roleRef.current && !roleRef.current.contains(e.target as Node)) setRoleOpen(false);
+      const t = e.target as Node;
+      if (roleRef.current && !roleRef.current.contains(t)) setRoleOpen(false);
+      if (moreRef.current && !moreRef.current.contains(t)) setMoreOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setRoleOpen(false);
+      if (e.key === "Escape") {
+        setRoleOpen(false);
+        setMoreOpen(false);
+      }
     };
     document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onKey);
@@ -101,28 +108,18 @@ export function SetRow({
       document.removeEventListener("mousedown", onDoc);
       document.removeEventListener("keydown", onKey);
     };
-  }, [roleOpen]);
-
-  const setPercent = (v: number | null) => {
-    onLoadPercent(v);
-    if (v != null) onLoadKg(null);
-  };
-
-  const setKg = (v: number | null) => {
-    onLoadKg(v);
-    if (v != null) onLoadPercent(null);
-  };
+  }, [roleOpen, moreOpen]);
 
   return (
-    <div className="border-b border-border py-2 last:border-b-0">
-      <div className="grid grid-cols-[minmax(5.75rem,auto)_minmax(7rem,1fr)_minmax(8.5rem,auto)_2rem] items-center gap-2">
+    <div>
+      <div className={`grid ${SET_ROW_GRID} items-center gap-2`}>
         <div className="relative min-w-0" ref={roleRef}>
           {onRole ? (
             <>
               <button
                 type="button"
                 onClick={() => setRoleOpen((v) => !v)}
-                className="t-label w-full min-w-0 break-words text-left text-muted hover:text-foreground"
+                className="t-label w-full whitespace-nowrap text-left text-muted hover:text-foreground"
                 title="Rola serii"
                 aria-haspopup="menu"
                 aria-expanded={roleOpen}
@@ -156,26 +153,8 @@ export function SetRow({
               ) : null}
             </>
           ) : (
-            <span className="t-label text-muted">{display}</span>
+            <span className="t-label whitespace-nowrap text-muted">{display}</span>
           )}
-        </div>
-
-        <div className="flex min-w-0 items-center gap-1.5">
-          <NumInput
-            value={reps}
-            min={1}
-            onChange={onReps}
-            placeholder="8"
-            aria-label="Powtórzenia od"
-          />
-          <span className="text-muted-faint">–</span>
-          <NumInput
-            value={repsMax}
-            min={1}
-            onChange={onRepsMax}
-            placeholder="—"
-            aria-label="Powtórzenia do"
-          />
         </div>
 
         <div className="min-w-0" onFocus={onLoadFocus}>
@@ -186,7 +165,7 @@ export function SetRow({
                 min={1}
                 max={100}
                 step={1}
-                onChange={setPercent}
+                onChange={onLoadPercent}
                 placeholder="80"
                 aria-label="% obciążenia"
               />
@@ -195,7 +174,7 @@ export function SetRow({
                 value={loadKg}
                 min={0}
                 step={0.5}
-                onChange={setKg}
+                onChange={onLoadKg}
                 placeholder="kg"
                 aria-label="Ciężar kg"
               />
@@ -213,112 +192,129 @@ export function SetRow({
               <span className="t-label shrink-0 text-muted">{loadKind === "kg" ? "kg" : "%"}</span>
             )}
           </div>
-          {loadKind === "percent" ? (
-            <p className="mt-0.5 text-[11px] leading-4 text-muted">
-              {computedKg != null
-                ? `${loadPercent ?? "—"}% ≈ ${computedKg} kg`
-                : (computedHint ?? "Ustaw docelowy ciężar, żeby zobaczyć kg")}
-            </p>
-          ) : null}
         </div>
+
+        <div className="flex min-w-0 items-center gap-1">
+          <NumInput
+            value={reps}
+            min={1}
+            onChange={onReps}
+            placeholder="8"
+            aria-label="Powtórzenia od"
+          />
+          <span className="text-muted-faint">–</span>
+          <NumInput
+            value={repsMax}
+            min={1}
+            onChange={onRepsMax}
+            placeholder="—"
+            aria-label="Powtórzenia do"
+          />
+        </div>
+
+        {onMorePatch ? (
+          <div className="relative" ref={moreRef}>
+            <button
+              type="button"
+              onClick={() => setMoreOpen((v) => !v)}
+              className="t-label w-full text-muted-faint hover:text-foreground"
+              aria-expanded={moreOpen}
+              title="Więcej pól serii"
+            >
+              ···
+            </button>
+            {moreOpen ? (
+              <div className="absolute right-0 top-full z-30 mt-1 w-[min(18rem,calc(100vw-2rem))] rounded-[10px] border border-border-strong bg-surface p-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <Field label="Tempo">
+                    <input
+                      className={inputClass}
+                      value={tempo ?? ""}
+                      onChange={(e) => onMorePatch({ tempo: e.target.value.toUpperCase().slice(0, 5) || null })}
+                      placeholder="3110"
+                    />
+                  </Field>
+                  <Field label="RPE">
+                    <NumInput
+                      value={targetRpe ?? null}
+                      min={1}
+                      step={0.5}
+                      onChange={(v) => onMorePatch({ targetRpe: v })}
+                      placeholder="—"
+                    />
+                  </Field>
+                  <Field label="RIR">
+                    <NumInput
+                      value={targetRir ?? null}
+                      min={0}
+                      step={0.5}
+                      onChange={(v) => onMorePatch({ targetRir: v })}
+                      placeholder="—"
+                    />
+                  </Field>
+                  {measureType === "time" ? (
+                    <Field label="Czas (s)">
+                      <NumInput
+                        value={durationSeconds ?? null}
+                        min={1}
+                        onChange={(v) => onMorePatch({ durationSeconds: v })}
+                        placeholder="—"
+                      />
+                    </Field>
+                  ) : null}
+                  {measureType === "distance" ? (
+                    <Field label="Dystans (m)">
+                      <NumInput
+                        value={distanceMeters ?? null}
+                        min={1}
+                        onChange={(v) => onMorePatch({ distanceMeters: v })}
+                        placeholder="—"
+                      />
+                    </Field>
+                  ) : null}
+                  {loadKind === "percent" ? (
+                    <div className="col-span-2">
+                      <p className="t-label mb-1.5 text-muted">Baza %</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        <button
+                          type="button"
+                          className={(percentOf ?? "top") === "top" ? editorChipOn : editorChipOff}
+                          onClick={() => onMorePatch({ percentOf: "top" })}
+                        >
+                          top
+                        </button>
+                        <button
+                          type="button"
+                          className={percentOf === "1rm" ? editorChipOn : editorChipOff}
+                          onClick={() => onMorePatch({ percentOf: "1rm" })}
+                        >
+                          1RM
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+                  <div className="col-span-2">
+                    <Field label="Notatka serii">
+                      <input
+                        className={inputClass}
+                        value={note ?? ""}
+                        onChange={(e) => onMorePatch({ note: e.target.value || null })}
+                        placeholder="np. ostatnia seria na zapas"
+                      />
+                    </Field>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <span />
+        )}
 
         <IconButton title={removeTitle} size="xs" onClick={onRemove}>
           ✕
         </IconButton>
       </div>
-
-      {onMorePatch ? (
-        <div className="mt-1">
-          <button
-            type="button"
-            onClick={() => setMoreOpen((v) => !v)}
-            className="t-label text-muted-faint"
-          >
-            Więcej {moreOpen ? "▾" : "▸"}
-          </button>
-          {moreOpen ? (
-            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-              <Field label="Tempo">
-                <input
-                  className={inputClass}
-                  value={tempo ?? ""}
-                  onChange={(e) => onMorePatch({ tempo: e.target.value.toUpperCase().slice(0, 5) || null })}
-                  placeholder="3110"
-                />
-              </Field>
-              <Field label="RPE">
-                <NumInput
-                  value={targetRpe ?? null}
-                  min={1}
-                  step={0.5}
-                  onChange={(v) => onMorePatch({ targetRpe: v })}
-                  placeholder="—"
-                />
-              </Field>
-              <Field label="RIR">
-                <NumInput
-                  value={targetRir ?? null}
-                  min={0}
-                  step={0.5}
-                  onChange={(v) => onMorePatch({ targetRir: v })}
-                  placeholder="—"
-                />
-              </Field>
-              {measureType === "time" ? (
-                <Field label="Czas (s)">
-                  <NumInput
-                    value={durationSeconds ?? null}
-                    min={1}
-                    onChange={(v) => onMorePatch({ durationSeconds: v })}
-                    placeholder="—"
-                  />
-                </Field>
-              ) : null}
-              {measureType === "distance" ? (
-                <Field label="Dystans (m)">
-                  <NumInput
-                    value={distanceMeters ?? null}
-                    min={1}
-                    onChange={(v) => onMorePatch({ distanceMeters: v })}
-                    placeholder="—"
-                  />
-                </Field>
-              ) : null}
-              {loadKind === "percent" ? (
-                <div className="col-span-2 sm:col-span-3">
-                  <p className="t-label mb-1.5 text-muted">Baza %</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    <button
-                      type="button"
-                      className={(percentOf ?? "top") === "top" ? editorChipOn : editorChipOff}
-                      onClick={() => onMorePatch({ percentOf: "top" })}
-                    >
-                      top
-                    </button>
-                    <button
-                      type="button"
-                      className={percentOf === "1rm" ? editorChipOn : editorChipOff}
-                      onClick={() => onMorePatch({ percentOf: "1rm" })}
-                    >
-                      1RM
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-              <div className="col-span-2 sm:col-span-3">
-                <Field label="Notatka serii">
-                  <input
-                    className={inputClass}
-                    value={note ?? ""}
-                    onChange={(e) => onMorePatch({ note: e.target.value || null })}
-                    placeholder="np. ostatnia seria na zapas"
-                  />
-                </Field>
-              </div>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
     </div>
   );
 }
