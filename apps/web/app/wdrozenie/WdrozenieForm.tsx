@@ -140,7 +140,7 @@ export function WdrozenieForm() {
         <div>
           <p className="t-label m-0 tracking-[0.16em]">Przygotuj</p>
           <ul className="mt-3 m-0 grid list-none gap-2 p-0 text-[15px] leading-[1.6] text-muted">
-            <li>Excel albo PDF jednego planu.</li>
+            <li>Arkusz albo PDF jednego planu.</li>
             <li>Imiona trzech klientów.</li>
           </ul>
         </div>

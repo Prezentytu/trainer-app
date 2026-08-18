@@ -26,6 +26,7 @@ export function DayBoard({
   onRemoveItem,
   onMoveItem,
   onDuplicateItem,
+  onSwapItem,
   onToggleWarmup,
   onToggleLink,
   onLinkSelected,
@@ -51,6 +52,7 @@ export function DayBoard({
   onRemoveItem: (dayKey: string, itemKey: string) => void;
   onMoveItem: (dayKey: string, itemKey: string, dir: -1 | 1) => void;
   onDuplicateItem: (dayKey: string, itemKey: string) => void;
+  onSwapItem?: (dayKey: string, itemKey: string) => void;
   onToggleWarmup: (dayKey: string, itemKey: string) => void;
   onToggleLink: (dayKey: string, itemKey: string) => void;
   onLinkSelected: (dayKey: string, itemKeys: string[]) => void;
@@ -89,6 +91,7 @@ export function DayBoard({
             onRemoveItem={(itemKey) => onRemoveItem(day.key, itemKey)}
             onMoveItem={(itemKey, dir) => onMoveItem(day.key, itemKey, dir)}
             onDuplicateItem={(itemKey) => onDuplicateItem(day.key, itemKey)}
+            onSwapItem={onSwapItem ? (itemKey) => onSwapItem(day.key, itemKey) : undefined}
             onToggleWarmup={(itemKey) => onToggleWarmup(day.key, itemKey)}
             onToggleLink={(itemKey) => onToggleLink(day.key, itemKey)}
             onLinkSelected={(keys) => onLinkSelected(day.key, keys)}

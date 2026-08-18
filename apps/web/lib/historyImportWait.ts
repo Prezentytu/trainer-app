@@ -33,12 +33,12 @@ export function historyImportWaitCopy(input: {
     if (imageCount <= 1) {
       return {
         title: "Przygotowuję zdjęcie",
-        detail: "Kompresuję screen — zaraz zacznę czytać treningi.",
+        detail: "Zmniejszam zdjęcie — zaraz zacznę czytać treningi.",
       };
     }
     return {
       title: `Przygotowuję zdjęcia — ${compressDone} z ${imageCount}`,
-      detail: "Kompresuję screeny — zaraz zacznę czytać treningi.",
+      detail: "Zmniejszam zdjęcia — zaraz zacznę czytać treningi.",
     };
   }
 

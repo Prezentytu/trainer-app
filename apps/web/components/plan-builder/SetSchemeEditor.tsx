@@ -165,7 +165,7 @@ export function SetSchemeEditor({
 
       {sets.length > 0 ? (
         <div className="min-w-0 overflow-x-auto">
-          <div className="inline-block min-w-[22rem]">
+          <div className="w-full min-w-[18rem]">
             <div className={`grid ${SET_ROW_GRID} gap-2 pb-1`}>
               <span className="t-label text-muted">Seria</span>
               <span className="t-label text-muted">Ciężar</span>
@@ -247,7 +247,7 @@ export function SetSchemeEditor({
             onClick={onClear}
             className="text-sm text-muted hover:text-foreground-secondary"
           >
-            Wyczyść
+            Wyczyść serie
           </button>
         ) : null}
         {sets.length > 0 ? (

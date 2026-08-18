@@ -199,6 +199,52 @@ public static class ExportData
         return sb.ToString();
     }
 
+    public static async Task<string> BuildClientCsvAsync(AppDb db, int clientId)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("section,sessionId,date,exercise,setNumber,weightKg,reps,durationSeconds,rir,warmup,completed,note");
+        var sets = await db.LoggedSets
+            .AsNoTracking()
+            .Where(x => x.LoggedExercise!.Session!.ClientId == clientId
+                        && x.LoggedExercise.Session.Status == "completed")
+            .OrderByDescending(x => x.LoggedExercise!.Session!.PerformedOn)
+            .ThenBy(x => x.LoggedExercise!.WorkoutSessionId)
+            .ThenBy(x => x.LoggedExercise!.Order)
+            .ThenBy(x => x.SetNumber)
+            .Select(x => new
+            {
+                SessionId = x.LoggedExercise!.WorkoutSessionId,
+                Date = x.LoggedExercise.Session!.PerformedOn,
+                ExerciseName = x.LoggedExercise.Exercise!.Name,
+                x.SetNumber,
+                x.WeightKg,
+                x.Reps,
+                x.DurationSeconds,
+                x.Rir,
+                x.IsWarmup,
+                x.Completed,
+                x.Note,
+            })
+            .ToListAsync();
+        foreach (var x in sets)
+        {
+            sb.AppendLine(string.Join(',',
+                "set",
+                x.SessionId,
+                x.Date.ToString("yyyy-MM-dd"),
+                Csv(x.ExerciseName),
+                x.SetNumber,
+                x.WeightKg?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "",
+                x.Reps?.ToString() ?? "",
+                x.DurationSeconds?.ToString() ?? "",
+                x.Rir?.ToString() ?? "",
+                x.IsWarmup ? "1" : "0",
+                x.Completed ? "1" : "0",
+                Csv(x.Note)));
+        }
+        return sb.ToString();
+    }
+
     static string Csv(string? value)
     {
         if (string.IsNullOrEmpty(value)) return "";

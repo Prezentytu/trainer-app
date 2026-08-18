@@ -15,6 +15,7 @@ import {
   StagnationResponse,
 } from "@/lib/api";
 import { Card, EmptyState, ErrorBanner, SegmentedControl, StatBlock } from "@/components/ui";
+import { clientExerciseName } from "@/lib/exerciseName";
 import { Icon } from "@/components/Icon";
 import { PortalPageSkeleton } from "@/components/skeletons";
 import { SectionHeader } from "@/components/portal/SectionHeader";
@@ -22,6 +23,7 @@ import { WeeklyActivityBar } from "@/components/WeeklyActivityBar";
 import { MuscleVolumeBars } from "@/components/MuscleVolumeBars";
 import { LineChart } from "@/components/charts/LineChart";
 import { TrendSparkline } from "@/components/TrendSparkline";
+import { ScoreSparkline } from "@/components/ScoreSparkline";
 import { RepMaxList } from "@/components/RepMaxList";
 import { daysAgo, formatDayShort } from "@/lib/dates";
 import { formatKg } from "@/lib/plates";
@@ -131,6 +133,9 @@ export default function PortalProgressPage() {
   const [expandedRecordId, setExpandedRecordId] = useState<number | null>(null);
   const [statsCache, setStatsCache] = useState<Record<number, ExerciseStats | "loading" | "error">>({});
   const [consistencyView, setConsistencyView] = useState<"weeks" | "calendar">("weeks");
+  const [maxes, setMaxes] = useState<
+    { exerciseId: number; exerciseName: string; maxKg: number; measuredOn: string }[] | null
+  >(null);
 
   const load = useCallback(() => {
     Promise.all([
@@ -141,8 +146,9 @@ export default function PortalProgressPage() {
       api.portal.mostImproved(token, 90).catch(() => null),
       api.portal.stagnation(token).catch(() => null),
       api.portal.progressReport(token).catch(() => null),
+      api.portal.maxes(token).catch(() => []),
     ])
-      .then(([s, r, mv, tr, mi, st, pr]) => {
+      .then(([s, r, mv, tr, mi, st, pr, mx]) => {
         setSessions(s);
         setRecords(r);
         setMuscleVolume(mv);
@@ -150,6 +156,7 @@ export default function PortalProgressPage() {
         setMostImproved(mi);
         setStagnation(st);
         setReport(pr);
+        setMaxes(mx);
       })
       .catch((e: Error) => setError(e.message));
   }, [token]);
@@ -255,6 +262,14 @@ export default function PortalProgressPage() {
     ?? null;
   const returning = lastCompletedOn != null && daysAgo(lastCompletedOn) >= 14;
 
+  const latestMaxes = useMemo(() => {
+    const map = new Map<number, NonNullable<typeof maxes>[number]>();
+    for (const m of maxes ?? []) {
+      if (!map.has(m.exerciseId)) map.set(m.exerciseId, m);
+    }
+    return [...map.values()];
+  }, [maxes]);
+
   return (
     <div className="mx-auto max-w-lg space-y-8 pb-24">
       <header>
@@ -266,7 +281,7 @@ export default function PortalProgressPage() {
 
       <ErrorBanner message={error} />
 
-      {!sessions || !records || mostImproved === undefined || stagnation === undefined || report === undefined ? (
+      {!sessions || !records || maxes == null || mostImproved === undefined || stagnation === undefined || report === undefined ? (
         <PortalPageSkeleton label="Wczytuję progres…" />
       ) : (
         <>
@@ -313,7 +328,7 @@ export default function PortalProgressPage() {
             <section aria-label="Największy progres">
               <Card
                 eyebrow={`Największy progres · ${mostImproved.days} dni`}
-                title={mostImproved.exerciseName}
+                title={clientExerciseName(mostImproved.exerciseName)}
               >
                 <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                   <p className="font-mono text-2xl font-semibold tabular-nums tracking-tight text-gain">
@@ -336,11 +351,11 @@ export default function PortalProgressPage() {
               <ul className="space-y-2">
                 {stagnation.items.slice(0, 3).map((item) => (
                   <li key={item.exerciseId} className="text-[15px] text-foreground-secondary">
-                    <span className="font-medium text-foreground">{item.exerciseName}</span>
+                    <span className="font-medium text-foreground">{clientExerciseName(item.exerciseName)}</span>
                     {" — "}
                     {item.reason === "volume_drop"
                       ? `tonaż spada ${item.volumeDropWeeks ?? 2} tyg. z rzędu`
-                      : `brak progresu e1RM przez ${item.sessionsWithoutProgress ?? 3} sesje`}
+                      : `brak progresu maxa przez ${item.sessionsWithoutProgress ?? 3} sesje`}
                   </li>
                 ))}
               </ul>
@@ -388,6 +403,18 @@ export default function PortalProgressPage() {
             />
           </section>
 
+          <section aria-label="Samopoczucie">
+            <SectionHeader title="Samopoczucie" window="skala 1–5" />
+            <ScoreSparkline
+              points={sessions
+                .filter((s) => s.feelingScore != null)
+                .slice()
+                .reverse()
+                .map((s) => ({ date: s.performedOn, score: s.feelingScore as number }))}
+              ariaLabel="Trend samopoczucia po treningu"
+            />
+          </section>
+
           <section aria-label="Objętość mięśniowa">
             <SectionHeader title="Objętość mięśniowa" window="4 tyg." />
             <MuscleVolumeBars
@@ -397,8 +424,33 @@ export default function PortalProgressPage() {
             />
           </section>
 
+          {latestMaxes.length > 0 ? (
+            <section aria-label="Maxy od trenera">
+              <SectionHeader title="Maxy od trenera" />
+              <ul className="divide-y divide-border border-y border-border">
+                {latestMaxes.map((m) => (
+                  <li key={`${m.exerciseId}-${m.measuredOn}`} className="flex min-h-11 items-baseline justify-between gap-3 py-3">
+                    <div className="min-w-0">
+                      <p className="break-words text-[15px] font-medium text-foreground">
+                        {clientExerciseName(m.exerciseName)}
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted">{formatDay(m.measuredOn)}</p>
+                    </div>
+                    <p className="shrink-0 font-mono text-lg font-semibold tabular-nums tracking-tight text-foreground">
+                      {formatKg(m.maxKg)}
+                      <span className="ml-1 text-sm font-medium text-muted">kg</span>
+                    </p>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-sm text-muted">
+                To liczby od trenera. Niżej — 1RM z twoich serii.
+              </p>
+            </section>
+          ) : null}
+
           <section aria-label="Rekordy">
-            <SectionHeader title="Rekordy" window="est. 1RM" />
+            <SectionHeader title="Rekordy" window="1RM" />
             {records.length === 0 ? (
               <div className="pt-1">
                 <EmptyState
@@ -430,7 +482,7 @@ export default function PortalProgressPage() {
                       >
                         <div className="min-w-0 flex-1">
                           <p className="break-words text-[15px] font-medium leading-snug text-foreground">
-                            {r.exerciseName}
+                            {clientExerciseName(r.exerciseName)}
                           </p>
                           <p className="mt-0.5 text-xs text-muted">{formatDay(r.performedOn)}</p>
                         </div>
@@ -457,7 +509,7 @@ export default function PortalProgressPage() {
                             <>
                               <TrendSparkline points={exStats.trend} />
                               <p className="mt-4 font-mono text-xs font-medium uppercase tracking-caps text-muted">
-                                Rep-maxy
+                                Najlepsze serie
                               </p>
                               <RepMaxList items={exStats.repMaxes} />
                             </>
@@ -482,7 +534,7 @@ export default function PortalProgressPage() {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[15px] font-medium text-foreground">
-                  Kalkulator %1RM
+                  Kalkulator ciężaru
                 </span>
                 <span className="mt-0.5 block text-sm text-muted">
                   Strefy ciężaru z twojego rekordu

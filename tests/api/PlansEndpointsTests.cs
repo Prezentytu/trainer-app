@@ -1,15 +1,24 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using TrainerApp.Api;
 using Xunit;
 
 namespace TrainerApp.Api.Tests;
 
 public class PlansEndpointsTests : IClassFixture<TestWebAppFactory>
 {
+    private readonly TestWebAppFactory _factory;
     private readonly HttpClient _client;
+    private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
 
-    public PlansEndpointsTests(TestWebAppFactory factory) => _client = factory.CreateClient();
+    public PlansEndpointsTests(TestWebAppFactory factory)
+    {
+        _factory = factory;
+        _client = factory.CreateClient();
+    }
 
     private record CreatedPlan(int Id);
 
@@ -154,5 +163,135 @@ public class PlansEndpointsTests : IClassFixture<TestWebAppFactory>
         Assert.Equal("reps", itemInherit.GetProperty("measureType").GetString());
         Assert.Equal(JsonValueKind.Null, itemInherit.GetProperty("repDurationSeconds").ValueKind);
         Assert.Equal(JsonValueKind.Null, itemInherit.GetProperty("overrides").GetProperty("measureType").ValueKind);
+    }
+
+    [Fact]
+    public async Task UpdatePlan_MergesDaysById_KeepsSessionAndOverride()
+    {
+        var post = await _client.PostAsJsonAsync("/api/plans", new
+        {
+            name = "Merge PUT",
+            description = (string?)null,
+            isTemplate = false,
+            days = new[]
+            {
+                new
+                {
+                    weekNumber = 1,
+                    order = 1,
+                    label = "Dzień 1",
+                    notes = (string?)null,
+                    items = new[]
+                    {
+                        new { exerciseId = 1, order = 1, sets = 3, reps = 8, setScheme = "normal" },
+                    },
+                },
+            },
+        });
+        Assert.Equal(HttpStatusCode.Created, post.StatusCode);
+        var created = await post.Content.ReadFromJsonAsync<CreatedPlan>();
+        Assert.NotNull(created);
+
+        var get = await _client.GetAsync($"/api/plans/{created!.Id}");
+        using var getDoc = JsonDocument.Parse(await get.Content.ReadAsStringAsync());
+        var dayEl = getDoc.RootElement.GetProperty("days")[0];
+        var dayId = dayEl.GetProperty("id").GetInt32();
+        var itemEl = dayEl.GetProperty("items")[0];
+        var itemId = itemEl.GetProperty("id").GetInt32();
+        Assert.Equal(JsonValueKind.Null, itemEl.GetProperty("setScheme").ValueKind);
+
+        var clientRes = await _client.PostAsJsonAsync("/api/clients", new
+        {
+            name = "Klient merge",
+            email = (string?)null,
+            note = (string?)null,
+        });
+        Assert.Equal(HttpStatusCode.Created, clientRes.StatusCode);
+        var clientId = (await clientRes.Content.ReadFromJsonAsync<JsonElement>(JsonOpts))
+            .GetProperty("id").GetInt32();
+
+        var assignRes = await _client.PostAsJsonAsync("/api/assignments", new
+        {
+            planId = created.Id,
+            clientId,
+            startDate = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd"),
+            note = (string?)null,
+        });
+        Assert.Equal(HttpStatusCode.Created, assignRes.StatusCode);
+        var assignmentId = (await assignRes.Content.ReadFromJsonAsync<JsonElement>(JsonOpts))
+            .GetProperty("id").GetInt32();
+
+        var start = await _client.PostAsJsonAsync("/api/sessions/start", new
+        {
+            clientId,
+            assignmentId,
+            planId = created.Id,
+            planDayId = dayId,
+        });
+        Assert.Equal(HttpStatusCode.Created, start.StatusCode);
+        var sessionId = (await start.Content.ReadFromJsonAsync<JsonElement>(JsonOpts))
+            .GetProperty("id").GetInt32();
+
+        var overrideDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(2);
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDb>();
+            db.AssignmentDayOverrides.Add(new AssignmentDayOverride
+            {
+                AssignmentId = assignmentId,
+                PlanDayId = dayId,
+                Date = overrideDate,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var put = await _client.PutAsJsonAsync($"/api/plans/{created.Id}", new
+        {
+            name = "Merge PUT — edycja",
+            description = (string?)null,
+            isTemplate = false,
+            days = new[]
+            {
+                new
+                {
+                    id = dayId,
+                    weekNumber = 1,
+                    order = 1,
+                    label = "Zmieniony dzień",
+                    notes = (string?)null,
+                    items = new[]
+                    {
+                        new
+                        {
+                            id = itemId,
+                            exerciseId = 1,
+                            order = 1,
+                            sets = 4,
+                            reps = 6,
+                        },
+                    },
+                },
+            },
+        });
+        Assert.Equal(HttpStatusCode.OK, put.StatusCode);
+        using var putDoc = JsonDocument.Parse(await put.Content.ReadAsStringAsync());
+        Assert.Equal(dayId, putDoc.RootElement.GetProperty("days")[0].GetProperty("id").GetInt32());
+        Assert.Equal(itemId, putDoc.RootElement.GetProperty("days")[0].GetProperty("items")[0].GetProperty("id").GetInt32());
+
+        var after = await _client.GetAsync($"/api/plans/{created.Id}");
+        using var afterDoc = JsonDocument.Parse(await after.Content.ReadAsStringAsync());
+        var afterDay = afterDoc.RootElement.GetProperty("days")[0];
+        Assert.Equal(dayId, afterDay.GetProperty("id").GetInt32());
+        Assert.Equal("Zmieniony dzień", afterDay.GetProperty("label").GetString());
+        Assert.Equal(4, afterDay.GetProperty("items")[0].GetProperty("sets").GetInt32());
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDb>();
+            var session = await db.WorkoutSessions.AsNoTracking().FirstAsync(s => s.Id == sessionId);
+            Assert.Equal(dayId, session.PlanDayId);
+            Assert.True(await db.AssignmentDayOverrides.AnyAsync(o =>
+                o.AssignmentId == assignmentId && o.PlanDayId == dayId && o.Date == overrideDate));
+        }
     }
 }

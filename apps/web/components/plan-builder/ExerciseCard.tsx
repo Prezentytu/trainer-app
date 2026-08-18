@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Exercise } from "@/lib/api";
+import { ExerciseName } from "@/components/ExerciseName";
 import { OverflowMenu, OverflowMenuItem } from "@/components/ui";
 import { cardLine } from "./summaryText";
 import { BuilderItem } from "./types";
@@ -25,6 +26,7 @@ export function ExerciseCard({
   onRemove,
   onDuplicate,
   onToggleWarmup,
+  onSwap,
 }: {
   item: BuilderItem;
   exercise?: Exercise;
@@ -41,6 +43,7 @@ export function ExerciseCard({
   onRemove: () => void;
   onDuplicate: () => void;
   onToggleWarmup: () => void;
+  onSwap?: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.key,
@@ -113,8 +116,8 @@ export function ExerciseCard({
                 {badge}
               </span>
             ) : null}
-            <span className="min-w-0 break-words text-[15px] font-medium text-foreground">
-              {item.exerciseName}
+            <span className="min-w-0 text-[15px] font-medium text-foreground">
+              <ExerciseName name={item.exerciseName} />
             </span>
             {item.notes ? (
               <span
@@ -139,7 +142,7 @@ export function ExerciseCard({
       </div>
 
       <div
-        className="absolute right-1 top-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+        className="absolute right-1 top-1 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 group-focus-within:opacity-100"
         onPointerDown={(e) => e.stopPropagation()}
       >
         <OverflowMenu label="Akcje ćwiczenia" align="right">
@@ -177,6 +180,16 @@ export function ExerciseCard({
               >
                 {item.isWarmup ? "Usuń rozgrzewkę" : "Rozgrzewka"}
               </OverflowMenuItem>
+              {onSwap ? (
+                <OverflowMenuItem
+                  onClick={() => {
+                    onSwap();
+                    close();
+                  }}
+                >
+                  Zamień ćwiczenie
+                </OverflowMenuItem>
+              ) : null}
               {onToggleSelect ? (
                 <OverflowMenuItem
                   onClick={() => {

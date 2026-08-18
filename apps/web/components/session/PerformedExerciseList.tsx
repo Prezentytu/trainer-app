@@ -1,9 +1,11 @@
 "use client";
 
 import { SessionDetail } from "@/lib/api";
+import { clientExerciseName } from "@/lib/exerciseName";
 import { formatKg } from "@/lib/plates";
 import { formatSetLoadReps } from "@/lib/weight";
 import { buildSessionBlocks } from "@/lib/sessionRounds";
+import { FormCheckPlayer } from "@/components/session/FormCheckPlayer";
 
 type SummarySet = SessionDetail["exercises"][0]["sets"][0];
 type SummaryExercise = SessionDetail["exercises"][0];
@@ -60,9 +62,11 @@ function setIndexLabel(set: SummarySet): string {
 export function PerformedExerciseList({
   session,
   heading = true,
+  portalToken,
 }: {
   session: SessionDetail;
   heading?: boolean;
+  portalToken?: string;
 }) {
   const sessionBlocks = buildSessionBlocks(session.exercises);
 
@@ -95,7 +99,7 @@ export function PerformedExerciseList({
                     <div className="flex min-h-7 items-start justify-between gap-3">
                       <p className="min-w-0 flex-1 break-words text-[15px] font-medium leading-snug text-foreground">
                         {ex.supersetLabel ? `${ex.supersetLabel} ` : ""}
-                        {ex.exerciseName}
+                        {clientExerciseName(ex.exerciseName)}
                       </p>
                       {incomplete ? (
                         <span className="shrink-0 pt-0.5 font-mono text-sm tabular-nums text-muted">
@@ -107,6 +111,14 @@ export function PerformedExerciseList({
                       <p className="mt-1 whitespace-pre-wrap text-[13px] leading-snug text-muted">
                         {exerciseNote}
                       </p>
+                    ) : null}
+                    {ex.formCheck ? (
+                      <FormCheckPlayer
+                        sessionId={session.id}
+                        exerciseId={ex.id}
+                        contentType={ex.formCheck.contentType}
+                        portalToken={portalToken}
+                      />
                     ) : null}
                     <ul className="mt-2 space-y-1.5">
                       {ex.sets.map((s) => {

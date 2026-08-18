@@ -181,7 +181,7 @@ export function ClientMaxesSection({
             </Button>
           }
         >
-          Bez maxów plany oparte o %1RM nie wyliczą kilogramów na serie.
+          Bez maxów plany oparte o procent ciężaru nie wyliczą kilogramów na serie.
         </EmptyState>
       ) : (
         <div className="space-y-3">

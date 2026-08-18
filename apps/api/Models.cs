@@ -411,6 +411,19 @@ public class LoggedExercise
     public int? SupersetGroup { get; set; }
     public string? Note { get; set; }
     public List<LoggedSet> Sets { get; set; } = [];
+    public LoggedExerciseFormCheck? FormCheck { get; set; }
+}
+
+/// <summary>Klip / zdjęcie form check przy ćwiczeniu w sesji (blob w DB).</summary>
+public class LoggedExerciseFormCheck
+{
+    public int Id { get; set; }
+    public int LoggedExerciseId { get; set; }
+    public LoggedExercise? LoggedExercise { get; set; }
+    public string ContentType { get; set; } = "video/mp4";
+    public string FileName { get; set; } = "";
+    public byte[] Bytes { get; set; } = [];
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
 public class LoggedSet

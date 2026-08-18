@@ -30,6 +30,8 @@ import { refreshNavCounts } from "@/lib/navCounts";
 import { formatKg } from "@/lib/plates";
 import { formatTrainingsFraction } from "@/lib/plural";
 import { canWriteSilence, silenceKind, silenceLabel, silenceMessage } from "@/lib/silenceProtocol";
+import { liveSetsLabel, needsReviewLabel } from "@/components/ClientPresenceLabel";
+import { useVisiblePoll } from "@/lib/useVisiblePoll";
 
 type RowStatus = {
   kind: "no_plan" | "attention" | "ok";
@@ -68,6 +70,22 @@ export function TrainerDashboard() {
     () => false,
   );
 
+  const refresh = useCallback((quiet = false) => {
+    if (!quiet) {
+      setLoading(true);
+      setError(null);
+    }
+    api
+      .dashboard()
+      .then(setDash)
+      .catch((e: Error) => {
+        if (!quiet) setError(e.message);
+      })
+      .finally(() => {
+        if (!quiet) setLoading(false);
+      });
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     api
@@ -85,16 +103,9 @@ export function TrainerDashboard() {
       cancelled = true;
     };
   }, []);
+  useVisiblePoll(() => refresh(true), 20_000);
 
-  const retry = useCallback(() => {
-    setLoading(true);
-    setError(null);
-    api
-      .dashboard()
-      .then(setDash)
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
+  const retry = useCallback(() => refresh(), [refresh]);
 
   const recentSessions = dash?.recentSessions ?? [];
   const recentPrs = dash?.recentPrs ?? [];
@@ -602,6 +613,31 @@ export function TrainerDashboard() {
         </div>
       )}
 
+      {(dash?.liveSessions?.length ?? 0) > 0 ? (
+        <Card title="Teraz na siłowni" className="mb-6">
+          <ul className="divide-y divide-border">
+            {dash!.liveSessions!.map((s) => (
+              <li key={s.sessionId}>
+                <Link
+                  href={`/clients/${s.clientId}/sessions/${s.sessionId}`}
+                  className="flex min-h-[var(--tap-min)] items-center justify-between gap-3 py-2.5 text-sm hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+                >
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    <Avatar name={s.clientName} size="sm" />
+                    <span className="min-w-0">
+                      <span className="font-medium">{s.clientName}</span>
+                      <span className="mt-0.5 block text-gain">
+                        ▲ Trenuje teraz · {liveSetsLabel(s)}
+                      </span>
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
       <div className="grid gap-6 lg:grid-cols-2">
         <div id="ostatnie-sesje" className="scroll-mt-20">
         <Card title="Ostatnie sesje">
@@ -633,9 +669,13 @@ export function TrainerDashboard() {
                       </span>
                     </span>
                   </Link>
-                  <span className="shrink-0 font-mono text-xs tabular-nums text-muted">
-                    {Math.round(s.totalVolumeKg)} kg
-                  </span>
+                  {s.needsReview ? (
+                    <span className="shrink-0 text-sm text-loss">{needsReviewLabel(s.needsReview)}</span>
+                  ) : (
+                    <span className="shrink-0 font-mono text-xs tabular-nums text-muted">
+                      {Math.round(s.totalVolumeKg)} kg
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>

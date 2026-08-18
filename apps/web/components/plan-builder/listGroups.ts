@@ -23,12 +23,18 @@ export type ListGroup = {
   entries: ListEntry[];
 };
 
-/** Numeracja pozycji dnia: 0 gdy jest rozgrzewka, inaczej od 1; superserie z literami. */
+function positionLabel(isWarmup: boolean, positionNum: number, letterIndex: number, multi: boolean): string {
+  const prefix = isWarmup ? `R${positionNum}` : String(positionNum);
+  return multi ? `${prefix}${LETTERS.charAt(letterIndex)}` : prefix;
+}
+
+/** Numeracja: rozgrzewka R1/R2, część główna od 1; superserie z literami. */
 export function buildListGroups(items: BuilderItem[]): ListGroup[] {
   const hasWarmup = items.some((it) => it.isWarmup);
   const groups: ListGroup[] = [];
   let i = 0;
-  let nextNum = hasWarmup ? 0 : 1;
+  let nextWarmup = 1;
+  let nextMain = 1;
   let mainCaptionDone = false;
 
   while (i < items.length) {
@@ -36,11 +42,11 @@ export function buildListGroups(items: BuilderItem[]): ListGroup[] {
     while (end < items.length - 1 && items[end].linkedToNext) end++;
     const slice = items.slice(i, end + 1);
     const multi = slice.length > 1;
-    const positionNum = nextNum;
     const isWarmup = items[i].isWarmup;
+    const positionNum = isWarmup ? nextWarmup : nextMain;
 
     let caption: string | null = null;
-    if (isWarmup && positionNum === 0) caption = "Rozgrzewka · 0";
+    if (isWarmup && positionNum === 1) caption = "Rozgrzewka";
     else if (hasWarmup && !isWarmup && !mainCaptionDone) {
       caption = "Część główna";
       mainCaptionDone = true;
@@ -49,7 +55,7 @@ export function buildListGroups(items: BuilderItem[]): ListGroup[] {
     const entries: ListEntry[] = slice.map((item, letterIndex) => ({
       item,
       index: i + letterIndex,
-      label: multi ? `${positionNum}${LETTERS.charAt(letterIndex)}` : String(positionNum),
+      label: positionLabel(isWarmup, positionNum, letterIndex, multi),
       positionNum,
       letterIndex,
       multi,
@@ -64,7 +70,8 @@ export function buildListGroups(items: BuilderItem[]): ListGroup[] {
       entries,
     });
 
-    nextNum++;
+    if (isWarmup) nextWarmup++;
+    else nextMain++;
     i = end + 1;
   }
 
@@ -74,31 +81,37 @@ export function buildListGroups(items: BuilderItem[]): ListGroup[] {
 /** Etykieta następnej pozycji (composer badge). */
 export function nextPositionLabel(
   items: BuilderItem[],
-  opts?: { forcedNum?: number | null; pendingNum?: number | null }
+  opts?: { forcedNum?: number | null; pendingNum?: number | null; pendingWarmup?: boolean }
 ): string {
   const groups = buildListGroups(items);
   if (opts?.forcedNum != null) {
-    const g = groups.find((x) => x.positionNum === opts.forcedNum);
-    if (g) return `${opts.forcedNum}${LETTERS.charAt(g.entries.length)}`;
+    if (opts.forcedNum === 0) {
+      const warmups = groups.filter((x) => x.isWarmup);
+      const g = warmups[warmups.length - 1];
+      if (g) return positionLabel(true, g.positionNum, g.entries.length, true);
+      return "R1";
+    }
+    const g = groups.find((x) => !x.isWarmup && x.positionNum === opts.forcedNum);
+    if (g) return positionLabel(false, opts.forcedNum, g.entries.length, true);
     return String(opts.forcedNum);
   }
   if (opts?.pendingNum != null) {
-    const g = groups.find((x) => x.positionNum === opts.pendingNum);
-    if (g) return `${opts.pendingNum}${LETTERS.charAt(g.entries.length)}`;
-    return String(opts.pendingNum);
+    const warmup = Boolean(opts.pendingWarmup);
+    const g = groups.find((x) => x.positionNum === opts.pendingNum && x.isWarmup === warmup);
+    if (g) return positionLabel(g.isWarmup, g.positionNum, g.entries.length, true);
+    return warmup ? `R${opts.pendingNum}` : String(opts.pendingNum);
   }
-  if (groups.length === 0) return "1";
-  // Domyślnie kolejny numer po ostatniej pozycji (nie 0, chyba że pusto i warmup pending)
-  const last = groups[groups.length - 1];
-  return String(last.positionNum + 1);
+  const mains = groups.filter((x) => !x.isWarmup);
+  if (mains.length === 0) return "1";
+  return String(mains[mains.length - 1].positionNum + 1);
 }
 
 /** Etykieta superserii z ostatnią pozycją (hint ⇧↵). */
 export function superHintLabel(items: BuilderItem[]): string {
   const groups = buildListGroups(items);
-  if (groups.length === 0) return "—";
+  if (groups.length === 0) return "1a";
   const last = groups[groups.length - 1];
-  return `${last.positionNum}${LETTERS.charAt(last.entries.length)}`;
+  return positionLabel(last.isWarmup, last.positionNum, last.entries.length, true);
 }
 
 export type BackoffRow = {
@@ -270,12 +283,12 @@ export function readRampBackoffs(item: BuilderItem): BackoffRow[] {
 export function listEntrySummary(item: BuilderItem, exercise?: Exercise, omitRest = false): string {
   const parts: string[] = [compactSchemeLine(item, exercise)];
   if (item.tempo) parts.push(`tempo ${item.tempo}`);
-  if (item.targetRir != null) {
+  if (item.targetRir != null && item.targetRir > 0) {
     const rirLabel = item.targetRir >= 3 ? "3+" : String(item.targetRir);
     parts.push(`RIR ${rirLabel}`);
   }
   const rest = item.restBetweenSetsSeconds ?? exercise?.defaultRestBetweenSetsSeconds ?? null;
-  if (rest != null && !omitRest) parts.push(`przerwa ${rest}s`);
+  if (rest != null && rest > 0 && !omitRest) parts.push(`przerwa ${rest}s`);
   return parts.join(" · ");
 }
 

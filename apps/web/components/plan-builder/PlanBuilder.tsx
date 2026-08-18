@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { api, Exercise, LastPrescription, Plan } from "@/lib/api";
 import { DEFAULT_EXERCISE_INPUT, ExerciseInput } from "@/lib/exerciseDraft";
+import { ExerciseName } from "@/components/ExerciseName";
 import { ErrorBanner, SegmentedControl } from "@/components/ui";
 import { PlanBuilderLibrarySkeleton } from "@/components/skeletons";
 import { DayBoard } from "./DayBoard";
@@ -84,6 +85,7 @@ export default function PlanBuilder({
   const panelId = useId();
   const [viewMode, setViewMode] = useState<ViewMode>(loadInitialViewMode);
   const [drawerDayKey, setDrawerDayKey] = useState<string | null>(null);
+  const [swapTarget, setSwapTarget] = useState<{ dayKey: string; itemKey: string } | null>(null);
   const [selectionDayKey, setSelectionDayKey] = useState<string | null>(null);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [activeItem, setActiveItem] = useState<ActiveItem | null>(null);
@@ -114,6 +116,7 @@ export default function PlanBuilder({
     isTemplate: draft.isTemplate,
     days: draft.days,
     assignTo,
+    onSavedIds: draft.applySavedIds,
   });
 
   const dnd = useBuilderDnd({ days: draft.days, setDays: draft.setDays });
@@ -312,6 +315,8 @@ export default function PlanBuilder({
             weeksCount={draft.weeks.length}
             lastSavedAt={persistence.lastSavedAt}
             isDirty={persistence.isDirty}
+            autosaveFailed={persistence.autosaveFailed}
+            onRetrySave={persistence.retryAutosave}
             planId={plan?.id}
             assigned={assigned}
             onAssigned={setAssigned}
@@ -372,6 +377,9 @@ export default function PlanBuilder({
               onRemoveItem={draft.removeItem}
               onDuplicateItem={draft.duplicateItem}
               onToggleWarmup={draft.toggleWarmup}
+              onMoveItem={draft.moveItem}
+              onUnlinkGroup={draft.unlinkGroup}
+              onSwapItem={(dayKey, itemKey) => setSwapTarget({ dayKey, itemKey })}
               onAddSet={draft.addSet}
               onPatchSet={draft.patchSet}
               onRemoveSet={draft.removeSet}
@@ -406,6 +414,7 @@ export default function PlanBuilder({
                   onLinkSelected={draft.linkSelected}
                   onUnlinkGroup={draft.unlinkGroup}
                   onDuplicateItem={draft.duplicateItem}
+                  onSwapItem={(dayKey, itemKey) => setSwapTarget({ dayKey, itemKey })}
                   onToggleWarmup={draft.toggleWarmup}
                   onAddDay={boardCallbacks.onAddDay}
                   onPatchDay={boardCallbacks.onPatchDay}
@@ -428,7 +437,9 @@ export default function PlanBuilder({
                     <div className="w-[280px] rounded-[10px] border border-border-strong bg-surface-active px-3 py-2.5">
                       <div className="flex items-center gap-2">
                         <span className="text-muted-faint">⠿</span>
-                        <span className="text-[15px] font-medium">{dnd.activeDragItem.exerciseName}</span>
+                        <span className="text-[15px] font-medium">
+                          <ExerciseName name={dnd.activeDragItem.exerciseName} />
+                        </span>
                       </div>
                       <p className="mt-1 pl-5 font-mono text-[12px] text-muted">Przenoszenie…</p>
                     </div>
@@ -472,6 +483,9 @@ export default function PlanBuilder({
               onDuplicate={() => {
                 if (activeItem) draft.duplicateItem(activeItem.dayKey, activeItem.itemKey);
               }}
+              onSwap={() => {
+                if (activeItem) setSwapTarget({ dayKey: activeItem.dayKey, itemKey: activeItem.itemKey });
+              }}
               onRemove={() => {
                 if (!activeItem) return;
                 const { dayKey, itemKey } = activeItem;
@@ -495,10 +509,18 @@ export default function PlanBuilder({
         )}
 
         <ExerciseDrawer
-          open={drawerDayKey != null}
+          open={drawerDayKey != null || swapTarget != null}
           exercises={library.exercises}
-          onClose={() => setDrawerDayKey(null)}
+          onClose={() => {
+            setDrawerDayKey(null);
+            setSwapTarget(null);
+          }}
           onAdd={(exerciseId) => {
+            if (swapTarget) {
+              draft.swapItem(swapTarget.dayKey, swapTarget.itemKey, exerciseId);
+              setSwapTarget(null);
+              return;
+            }
             if (drawerDayKey) draft.addItem(drawerDayKey, exerciseId);
           }}
         />

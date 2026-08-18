@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api, ClientRecord } from "@/lib/api";
 import { Button, EmptyState, ErrorBanner } from "@/components/ui";
-import { Icon } from "@/components/Icon";
+import { PortalBackLink } from "@/components/portal/PortalBackLink";
 import { SearchPicker } from "@/components/SearchPicker";
 import { PortalPageSkeleton } from "@/components/skeletons";
 import { DEFAULT_PLATE_CONFIG, formatKg, solvePlates } from "@/lib/plates";
@@ -68,15 +68,9 @@ export default function PortalCalculatorPage() {
   return (
     <div className="mx-auto max-w-lg space-y-8 pb-24">
       <header>
-        <Link
-          href={`/portal/${token}/progress`}
-          className="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-muted transition-[color,transform] duration-[var(--dur-fast)] hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] active:scale-[0.97]"
-        >
-          <Icon name="caret-left" size={16} decorative />
-          Progres
-        </Link>
+        <PortalBackLink href={`/portal/${token}/progress`}>Progres</PortalBackLink>
         <p className="t-label mt-2 text-muted">Narzędzia</p>
-        <h1 className="t-title mt-2">Kalkulator %1RM</h1>
+        <h1 className="t-title mt-2">Kalkulator ciężaru</h1>
         <p className="t-small mt-1">
           Strefy obciążenia z Twojego szacowanego maxu — zaokrąglone do realnych talerzy.
         </p>
@@ -95,7 +89,7 @@ export default function PortalCalculatorPage() {
             </Link>
           }
         >
-          Po sesjach z kg zobaczysz tu strefy %1RM per ćwiczenie.
+          Po sesjach z kilogramami zobaczysz tu strefy ciężaru na każde ćwiczenie.
         </EmptyState>
       ) : (
         <>

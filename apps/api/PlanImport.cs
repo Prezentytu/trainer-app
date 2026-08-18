@@ -445,7 +445,7 @@ SCHEMAT JSON (pola opcjonalne pomijaj gdy brak danych):
             Tempo = string.IsNullOrWhiteSpace(it.Tempo) ? null : it.Tempo.Trim().ToUpperInvariant(),
             TargetRpe = ClampDouble(it.TargetRpe, 1, 10),
             TargetRir = ClampDouble(it.TargetRir, 0, 10),
-            SetScheme = string.IsNullOrWhiteSpace(it.SetScheme) ? null : it.SetScheme.Trim(),
+            SetScheme = PlanSanitize.SetScheme(it.SetScheme),
             RestBetweenSetsSeconds = ClampNullable(it.RestBetweenSetsSeconds, 0, 600),
             RestAfterExerciseSeconds = ClampNullable(it.RestAfterExerciseSeconds, 0, 600),
             LoadKg = ClampDouble(it.LoadKg, 0, 1000),

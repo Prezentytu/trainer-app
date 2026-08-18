@@ -23,6 +23,8 @@ import {
   useUndoToast,
 } from "@/components/ui";
 import { ClientListSkeleton } from "@/components/skeletons";
+import { ClientPresenceLabel, presenceHref } from "@/components/ClientPresenceLabel";
+import { useVisiblePoll } from "@/lib/useVisiblePoll";
 
 type TabFilter = "all" | "active" | "idle";
 
@@ -79,6 +81,7 @@ export default function ClientsPage() {
   }, []);
 
   useEffect(load, [load]);
+  useVisiblePoll(load, 20_000);
 
   const resetForm = () => {
     setName("");
@@ -110,6 +113,8 @@ export default function ClientsPage() {
       note: payload.note,
       activePlans: 0,
       lastSessionOn: null,
+      liveSession: null,
+      needsReview: null,
     };
     setClients((prev) => [optimistic, ...prev]);
     resetForm();
@@ -276,7 +281,7 @@ export default function ClientsPage() {
           setShowImport(false);
         }}
       >
-        <Field label="CSV" hint="imię, e-mail — jedna osoba w wierszu">
+        <Field label="Lista z arkusza" hint="imię i e-mail — jedna osoba w wierszu">
           <textarea
             className={`${inputClass} min-h-32 py-2`}
             value={csvText}
@@ -334,10 +339,19 @@ export default function ClientsPage() {
           {filtered.map((c) => {
             const ago = c.lastSessionOn ? daysAgo(c.lastSessionOn) : null;
             const stale = ago != null && ago > 7;
+            const href = presenceHref(c.id, c.liveSession, c.needsReview) ?? `/clients/${c.id}`;
+            const idleClass =
+              ago == null ? "text-muted" : stale ? "text-loss" : "text-gain";
+            const idle =
+              ago == null
+                ? "Brak treningów"
+                : stale
+                  ? `▼ Nieaktywny · ${relativeDayLabel(c.lastSessionOn!)}`
+                  : `▲ Aktywny · ${relativeDayLabel(c.lastSessionOn!)}`;
             return (
               <Link
                 key={c.id}
-                href={`/clients/${c.id}`}
+                href={href}
                 className="flex flex-col gap-3 px-2 py-4 transition-colors duration-[var(--dur-fast)] hover:bg-surface-hover/60 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="flex min-w-0 items-start gap-3">
@@ -350,16 +364,12 @@ export default function ClientsPage() {
                   </div>
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
-                  <span
-                    className={`text-sm ${
-                      ago == null ? "text-muted" : stale ? "text-loss" : "text-gain"
-                    }`}
-                  >
-                    {ago == null
-                      ? "Brak treningów"
-                      : stale
-                        ? `▼ Nieaktywny · ${relativeDayLabel(c.lastSessionOn!)}`
-                        : `▲ Aktywny · ${relativeDayLabel(c.lastSessionOn!)}`}
+                  <span className={c.liveSession || c.needsReview ? undefined : idleClass}>
+                    <ClientPresenceLabel
+                      liveSession={c.liveSession}
+                      needsReview={c.needsReview}
+                      idle={idle}
+                    />
                   </span>
                   {c.activePlans > 0 ? (
                     <Badge tone="neutral">{activePlansLabel(c.activePlans)}</Badge>

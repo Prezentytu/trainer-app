@@ -2,7 +2,8 @@
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api, Plan, PlanInput } from "@/lib/api";
+import { api, Plan, PlanInput, PlanSaveIds } from "@/lib/api";
+import { sanitizeSetScheme } from "@/lib/schemeSummary";
 import { clearImportHandoff } from "@/lib/planImportHandoff";
 import { refreshNavCounts } from "@/lib/navCounts";
 import { computeGroupsFromLinks } from "@/lib/supersets";
@@ -21,12 +22,14 @@ export function buildPlanInput(
     days: days.map((d) => {
       const groups = computeGroupsFromLinks(d.items.map((i) => i.linkedToNext));
       return {
+        id: d.entityId,
         weekNumber: d.weekNumber,
         order: d.order,
         label: d.label.trim() || `Dzień ${d.order}`,
         notes: d.notes?.trim() || null,
         dayOfWeek: d.dayOfWeek,
         items: d.items.map((it, idx) => ({
+          id: it.entityId,
           exerciseId: it.exerciseId,
           order: idx + 1,
           supersetGroup: groups[idx],
@@ -42,7 +45,7 @@ export function buildPlanInput(
           tempo: it.tempo?.trim() || null,
           targetRpe: it.targetRpe,
           targetRir: it.targetRir,
-          setScheme: it.setScheme?.trim() || null,
+          setScheme: sanitizeSetScheme(it.setScheme),
           restBetweenSetsSeconds: it.restBetweenSetsSeconds,
           restAfterExerciseSeconds: it.restAfterExerciseSeconds,
           loadKg: it.loadKg,
@@ -76,6 +79,7 @@ export function usePlanPersistence({
   isTemplate,
   days,
   assignTo,
+  onSavedIds,
 }: {
   plan?: Plan;
   name: string;
@@ -84,10 +88,12 @@ export function usePlanPersistence({
   days: BuilderDay[];
   /** Po create — przypisz plan do klienta i wróć na jego profil. */
   assignTo?: { id: number; name: string };
+  onSavedIds?: (saved: PlanSaveIds) => void;
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [autosaveFailed, setAutosaveFailed] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   /** Snapshot ostatnio wysłanego payloadu — pomija PUT gdy treść się nie zmieniła. */
@@ -138,9 +144,11 @@ export function usePlanPersistence({
       const input = buildPlanInput(name, description, effectiveIsTemplate, days);
       try {
         if (plan) {
-          await api.plans.update(plan.id, input);
+          const saved = await api.plans.update(plan.id, input);
+          onSavedIds?.(saved);
           lastSavedPayloadRef.current = JSON.stringify(input);
           setIsDirty(false);
+          setAutosaveFailed(false);
           clearImportHandoff();
           router.push(`/plans/${plan.id}`);
         } else {
@@ -173,7 +181,7 @@ export function usePlanPersistence({
         setSaving(false);
       }
     },
-    [assignTo, days, description, isTemplate, name, plan, router]
+    [assignTo, days, description, isTemplate, name, onSavedIds, plan, router]
   );
 
   useEffect(() => {
@@ -186,21 +194,51 @@ export function usePlanPersistence({
     const timer = setTimeout(() => {
       api.plans
         .update(plan.id, input)
-        .then(() => {
+        .then((saved) => {
+          onSavedIds?.(saved);
           lastSavedPayloadRef.current = payload;
           setLastSavedAt(new Date());
           setIsDirty(false);
+          setAutosaveFailed(false);
         })
         .catch(() => {
-          /* ciche fail — manualny zapis zostaje fallbackiem */
+          setAutosaveFailed(true);
         });
     }, 2000);
     return () => clearTimeout(timer);
-  }, [plan, name, description, isTemplate, days]);
+  }, [plan, name, description, isTemplate, days, onSavedIds]);
+
+  const retryAutosave = useCallback(() => {
+    if (!plan) return;
+    const input = buildPlanInput(name, description, isTemplate, days);
+    api.plans
+      .update(plan.id, input)
+      .then((saved) => {
+        onSavedIds?.(saved);
+        lastSavedPayloadRef.current = JSON.stringify(input);
+        setLastSavedAt(new Date());
+        setIsDirty(false);
+        setAutosaveFailed(false);
+        setError(null);
+      })
+      .catch((err: Error) => {
+        setAutosaveFailed(true);
+        setError(err.message);
+      });
+  }, [days, description, isTemplate, name, onSavedIds, plan]);
 
   const totalItems = days.reduce((sum, d) => sum + d.items.length, 0);
   const visibleError =
     error === "Dodaj przynajmniej jedno ćwiczenie do planu." && totalItems > 0 ? null : error;
 
-  return { saving, error: visibleError, setError, lastSavedAt, isDirty, handleSubmit };
+  return {
+    saving,
+    error: visibleError,
+    setError,
+    lastSavedAt,
+    isDirty,
+    autosaveFailed,
+    retryAutosave,
+    handleSubmit,
+  };
 }

@@ -27,6 +27,9 @@ export function ListView({
   onRemoveItem,
   onDuplicateItem,
   onToggleWarmup,
+  onMoveItem,
+  onUnlinkGroup,
+  onSwapItem,
   onAddSet,
   onPatchSet,
   onRemoveSet,
@@ -57,6 +60,9 @@ export function ListView({
   onRemoveItem: (dayKey: string, itemKey: string) => void;
   onDuplicateItem: (dayKey: string, itemKey: string) => void;
   onToggleWarmup: (dayKey: string, itemKey: string) => void;
+  onMoveItem: (dayKey: string, itemKey: string, dir: -1 | 1) => void;
+  onUnlinkGroup: (dayKey: string, itemKey: string) => void;
+  onSwapItem: (dayKey: string, itemKey: string) => void;
   onAddSet: (dayKey: string, itemKey: string) => void;
   onPatchSet: (dayKey: string, itemKey: string, setKey: string, patch: Partial<BuilderSet>) => void;
   onRemoveSet: (dayKey: string, itemKey: string, setKey: string) => void;
@@ -64,7 +70,7 @@ export function ListView({
   onClearSets: (dayKey: string, itemKey: string) => void;
 }) {
   const [edit, setEdit] = useState<{ dayKey: string; itemKey: string } | null>(null);
-  const [pending, setPending] = useState<{ dayKey: string; num: number } | null>(null);
+  const [pending, setPending] = useState<{ dayKey: string; num: number; warmup: boolean } | null>(null);
 
   const activeDayKey =
     selectedDayKey && days.some((d) => d.key === selectedDayKey) ? selectedDayKey : (days[0]?.key ?? null);
@@ -73,6 +79,7 @@ export function ListView({
   const groups = useMemo(() => (activeDay ? buildListGroups(activeDay.items) : []), [activeDay]);
   const editKey = edit?.dayKey === activeDayKey ? edit.itemKey : null;
   const pendingNum = pending?.dayKey === activeDayKey ? pending.num : null;
+  const pendingWarmup = pending?.dayKey === activeDayKey ? pending.warmup : false;
 
   if (!activeDay) {
     return (
@@ -87,7 +94,7 @@ export function ListView({
 
   return (
     <div className="flex justify-center pb-6 pt-1">
-      <div className="flex w-full max-w-[840px] flex-col gap-[18px]">
+      <div className="flex w-full max-w-[1000px] flex-col gap-[18px]">
         {days.every((d) => d.items.length === 0) ? (
           <p className="text-sm text-muted">
             Wpisz „przysiad 3x8” w polu pod dniem albo otwórz bibliotekę.
@@ -199,9 +206,12 @@ export function ListView({
                       onPatch={(patch) => onPatchItem(activeDay.key, entry.item.key, patch)}
                       onToggleWarmup={() => onToggleWarmup(activeDay.key, entry.item.key)}
                       onMakeSuper={() => {
-                        setPending({ dayKey: activeDay.key, num: g.positionNum });
+                        setPending({ dayKey: activeDay.key, num: g.positionNum, warmup: g.isWarmup });
                         setEdit(null);
                       }}
+                      onUnlink={g.multi ? () => onUnlinkGroup(activeDay.key, entry.item.key) : undefined}
+                      onMove={(dir) => onMoveItem(activeDay.key, entry.item.key, dir)}
+                      onSwap={() => onSwapItem(activeDay.key, entry.item.key)}
                       onDuplicate={() => onDuplicateItem(activeDay.key, entry.item.key)}
                       onRemove={() => onRemoveItem(activeDay.key, entry.item.key)}
                       onAddSet={() => onAddSet(activeDay.key, entry.item.key)}
@@ -225,6 +235,7 @@ export function ListView({
           exercises={exercises}
           day={activeDay}
           pendingNum={pendingNum}
+          pendingWarmup={pendingWarmup}
           onCancelPending={() => setPending(null)}
           onAdd={(exerciseId, overrides) => onAddItem(activeDay.key, exerciseId, overrides)}
           onAddAt={(exerciseId, options) => onAddItemAt(activeDay.key, exerciseId, options)}

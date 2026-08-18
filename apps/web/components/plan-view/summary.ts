@@ -1,4 +1,4 @@
-import { PlanDay, PlanItem, PlanSet, rirFromRpe } from "@/lib/api";
+import { PlanDay, PlanItem, PlanSet, SET_ROLE_LABELS, rirFromRpe } from "@/lib/api";
 import { estimateDayMinutes, formatDurationApprox } from "@/lib/estimateDuration";
 import { formatRest } from "@/components/ui";
 import { polishExerciseCount, polishSetCount } from "@/lib/plural";
@@ -17,9 +17,9 @@ export type SchemeParts = {
 export function schemeParts(item: PlanItem): SchemeParts {
   const primary = compactSchemeLine(item);
   const metaParts: string[] = [];
-  if (item.targetRir != null) metaParts.push(`RIR ${item.targetRir}`);
-  else if (item.targetRpe != null) metaParts.push(`RPE ${item.targetRpe}`);
-  metaParts.push(formatRest(item.restBetweenSetsSeconds));
+  if (item.targetRir != null && item.targetRir > 0) metaParts.push(`RIR ${item.targetRir}`);
+  else if (item.targetRpe != null && item.targetRpe > 0) metaParts.push(`RPE ${item.targetRpe}`);
+  if (item.restBetweenSetsSeconds > 0) metaParts.push(formatRest(item.restBetweenSetsSeconds));
   return { primary, meta: metaParts.filter(Boolean).join(" · ") || null };
 }
 
@@ -57,15 +57,15 @@ export function dayStats(day: PlanDay): DayStats {
 }
 
 export function intensityText(item: PlanItem): string | null {
-  if (item.targetRir != null) return `RIR ${item.targetRir}`;
-  if (item.targetRpe != null) return `RPE ${item.targetRpe} (≈ RIR ${rirFromRpe(item.targetRpe)})`;
+  if (item.targetRir != null && item.targetRir > 0) return `RIR ${item.targetRir}`;
+  if (item.targetRpe != null && item.targetRpe > 0) return `RPE ${item.targetRpe} (≈ RIR ${rirFromRpe(item.targetRpe)})`;
   return null;
 }
 
 /** Jedna linia wiersza serii w panelu: `1 · ramp · 2 · 50 kg · RIR 0`. */
 export function prescribedSetLine(s: PlanSet): { primary: string; note: string | null } {
   const chunks: string[] = [`${s.order}`];
-  if (s.role) chunks.push(s.role);
+  if (s.role) chunks.push(SET_ROLE_LABELS[s.role] ?? s.role);
 
   if (s.durationSeconds != null) chunks.push(`${s.durationSeconds}s`);
   else if (s.repsMax) chunks.push(`${s.reps}–${s.repsMax}`);
@@ -86,8 +86,8 @@ export function prescribedSetLine(s: PlanSet): { primary: string; note: string |
     chunks.push(`${s.loadPercent}%${of}`);
   }
 
-  if (s.targetRir != null) chunks.push(`RIR ${s.targetRir}`);
-  else if (s.targetRpe != null) chunks.push(`RPE ${s.targetRpe}`);
+  if (s.targetRir != null && s.targetRir > 0) chunks.push(`RIR ${s.targetRir}`);
+  else if (s.targetRpe != null && s.targetRpe > 0) chunks.push(`RPE ${s.targetRpe}`);
 
   return { primary: chunks.join(" · "), note: s.note };
 }

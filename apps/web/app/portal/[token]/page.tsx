@@ -13,7 +13,7 @@ import {
   PortalSessionSummary,
   SessionDetail,
 } from "@/lib/api";
-import { Button, ErrorBanner } from "@/components/ui";
+import { Button, ErrorBanner, useUndoToast } from "@/components/ui";
 import { PortalHomeSkeleton } from "@/components/skeletons";
 import { usePortalStickyCta } from "@/components/portal/PortalChrome";
 import { estimateDayMinutes, formatDurationApprox } from "@/lib/estimateDuration";
@@ -34,6 +34,7 @@ import { formatScheduledShort } from "@/lib/schedule";
 import { compactSchemeLine } from "@/lib/schemeSummary";
 import { formatLoadDisplay } from "@/lib/weight";
 import { previewBlocksFromItems, type PreviewItem } from "@/lib/supersetPreview";
+import { beginOfflineSession, cachePortalHome, LOCAL_SESSION_ID } from "@/lib/offlineStart";
 
 function schemeLine(
   item: NonNullable<PortalHome["today"]>["day"]["items"][number],
@@ -95,6 +96,7 @@ export default function PortalTodayPage() {
   const [staleBusy, setStaleBusy] = useState<"save" | "discard" | null>(null);
   const [selectedWeekDay, setSelectedWeekDay] = useState<WeekStripDay | null>(null);
   const { setStickyCta } = usePortalStickyCta();
+  const { showUndoToast, toastNode } = useUndoToast();
   const heroCtaRef = useRef<HTMLDivElement>(null);
   const [heroCtaLeftView, setHeroCtaLeftView] = useState(false);
   const todayIso = useMemo(() => todayIsoLocal(), []);
@@ -115,6 +117,7 @@ export default function PortalTodayPage() {
     ])
       .then(([h, s, intk, checkinRows, exs]) => {
         setHome(h);
+        cachePortalHome(token, h);
         setHistory(s);
         setIntake(intk);
         setCheckIns(checkinRows);
@@ -184,6 +187,14 @@ export default function PortalTodayPage() {
         });
         router.push(`/portal/${token}/session/${session.id}`);
       } catch (e) {
+        const offline = typeof navigator !== "undefined" && !navigator.onLine;
+        if (offline) {
+          const local = beginOfflineSession(token, home, planDayId);
+          if (local) {
+            router.push(`/portal/${token}/session/${LOCAL_SESSION_ID}`);
+            return;
+          }
+        }
         setError((e as Error).message);
         setStarting(false);
       }
@@ -241,27 +252,20 @@ export default function PortalTodayPage() {
     }
   }, [home, token, load]);
 
-  const discardStale = useCallback(async () => {
+  const discardStale = useCallback(() => {
     if (!home?.staleSession) return;
-    const label = home.staleSession.dayLabel ?? "trening";
-    if (
-      !window.confirm(
-        `Odrzucić niedokończony ${label}? Zapisane serie nie trafią do historii.`,
-      )
-    ) {
-      return;
-    }
-    setStaleBusy("discard");
-    setError(null);
-    try {
-      await api.portal.abandonSession(token, home.staleSession.id);
+    const id = home.staleSession.id;
+    let cancelled = false;
+    setHome((prev) => (prev ? { ...prev, staleSession: null } : prev));
+    showUndoToast("Odrzucono niedokończony trening", () => {
+      cancelled = true;
       load();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setStaleBusy(null);
-    }
-  }, [home, token, load]);
+    });
+    window.setTimeout(() => {
+      if (cancelled) return;
+      void api.portal.abandonSession(token, id).then(load).catch((e: Error) => setError(e.message));
+    }, 5000);
+  }, [home, token, load, showUndoToast]);
 
   // Jeden invert: sticky tylko gdy CTA nad listą wyjedzie z kadru (albo gdy go nie ma).
   useEffect(() => {
@@ -329,6 +333,10 @@ export default function PortalTodayPage() {
   const today = home?.today ?? null;
   const fresh = home?.inProgressSession ?? null;
   const stale = home?.staleSession ?? null;
+  const todaySlot = weekStrip.find((d) => d.today);
+  const restDay = Boolean(
+    home?.week && !today && !fresh && !stale && todaySlot && !todaySlot.hasPlanDay,
+  );
   const silentDays = lastCompleted ? daysAgo(lastCompleted.performedOn) : null;
   const returning = Boolean(!fresh && silentDays != null && silentDays >= 14);
 
@@ -377,6 +385,7 @@ export default function PortalTodayPage() {
   if (!home) {
     return (
       <div>
+        {toastNode}
         <ErrorBanner message={error} />
         {error ? null : <PortalHomeSkeleton />}
       </div>
@@ -434,6 +443,7 @@ export default function PortalTodayPage() {
 
   return (
     <div className="mx-auto max-w-lg space-y-8">
+      {toastNode}
       <header>
         <p className="text-xs font-medium uppercase tracking-caps text-muted">
           {heroSectionLabel}
@@ -505,11 +515,15 @@ export default function PortalTodayPage() {
 
       {!today && !fresh ? (
         <section className="rounded-xl border border-border bg-surface-raised px-4 py-5">
-          <p className="text-[15px] font-semibold text-foreground">Brak aktywnego planu</p>
+          <p className="text-[15px] font-semibold text-foreground">
+            {restDay ? "Dziś odpoczynek" : "Brak aktywnego planu"}
+          </p>
           <p className="mt-1 text-sm text-muted">
-            {lastCompleted
-              ? "Możesz powtórzyć ostatni trening albo poprosić trenera o plan."
-              : "Poproś trenera o przypisanie dnia treningowego."}
+            {restDay
+              ? "Nie masz treningu w planie na dziś. Możesz otworzyć inny dzień na pasku tygodnia."
+              : lastCompleted
+                ? "Możesz powtórzyć ostatni trening albo poprosić trenera o plan."
+                : "Poproś trenera o przypisanie dnia treningowego."}
           </p>
         </section>
       ) : (
@@ -647,7 +661,7 @@ export default function PortalTodayPage() {
 
       {/* Poniżej foldu — nie konkurują z CTA „Rozpocznij trening". */}
       <div className="space-y-6 pt-10">
-        {!hasTodayCheckIn ? (
+        {!hasTodayCheckIn && !today && !fresh ? (
           <CheckInCard
             token={token}
             defaultCollapsed

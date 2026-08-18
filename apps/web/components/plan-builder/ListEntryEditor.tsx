@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Exercise, ExerciseType, RIR_HELP, rirFromRpe } from "@/lib/api";
+import { splitExerciseName } from "@/lib/exerciseName";
 import { MEASURE_SHORT, measurePatch } from "@/lib/measure";
 import { Field, Switch, inputClass } from "@/components/ui";
 import { isDumbbellPair } from "@/lib/weight";
@@ -107,6 +108,9 @@ export function ListEntryEditor({
   onPatch,
   onToggleWarmup,
   onMakeSuper,
+  onUnlink,
+  onMove,
+  onSwap,
   onDuplicate,
   onRemove,
   onAddSet,
@@ -127,6 +131,9 @@ export function ListEntryEditor({
   onPatch: (patch: Partial<BuilderItem>) => void;
   onToggleWarmup: () => void;
   onMakeSuper: () => void;
+  onUnlink?: () => void;
+  onMove?: (dir: -1 | 1) => void;
+  onSwap?: () => void;
   onDuplicate?: () => void;
   onRemove: () => void;
   onAddSet: () => void;
@@ -139,15 +146,18 @@ export function ListEntryEditor({
   const isRamp = rampInfo != null;
   const backoffs = readRampBackoffs(item);
   const [moreOpen, setMoreOpen] = useState(false);
+  const setsSnapshot = useRef<BuilderSet[] | null>(null);
   const [schemeWanted, setSchemeWanted] = useState(item.prescribedSets.length > 0);
   const schemeOpen = isRamp || schemeWanted || item.prescribedSets.length > 0;
 
   const pickSets = () => {
-    setSchemeWanted(item.prescribedSets.length > 0);
-    onPatch({ setScheme: null });
+    const restored = setsSnapshot.current ?? item.prescribedSets;
+    setSchemeWanted(restored.length > 0);
+    onPatch({ setScheme: null, prescribedSets: restored });
   };
 
   const pickRamp = (target = rampInfo?.targetRm ?? 6) => {
+    if (item.prescribedSets.length > 0) setsSnapshot.current = item.prescribedSets;
     onPatch({
       setScheme: formatRampScheme(
         target,
@@ -267,20 +277,6 @@ export function ListEntryEditor({
     >
       <div className="space-y-2.5 border-b border-border pb-3">
         <p className="t-label text-muted">Ćwiczenie</p>
-        <div className="flex flex-wrap items-center gap-1.5" title={RIR_HELP}>
-          <span className="t-label mr-1 text-muted">RIR</span>
-          {RIR_OPTS.map((o) => (
-            <button
-              key={o.label}
-              type="button"
-              className={rirActive(o.value) ? editorChipOn : editorChipOff}
-              onClick={() => onPatch({ targetRir: o.value })}
-            >
-              {o.label}
-            </button>
-          ))}
-        </div>
-
         <RampControls
           mode={isRamp ? "ramp" : "sets"}
           targetRm={rampInfo?.targetRm ?? 6}
@@ -304,7 +300,7 @@ export function ListEntryEditor({
             onClick={fillRamp}
             className="text-sm font-medium text-foreground-secondary hover:text-foreground"
           >
-            Rozpisz rozbieg
+            Rozpisz serie rampy
           </button>
         ) : null}
 
@@ -326,7 +322,7 @@ export function ListEntryEditor({
             {partners.map((p) => (
               <div key={p.label} className="flex flex-wrap items-center gap-2 text-sm text-muted">
                 <span>
-                  {p.label} {p.name} — {p.summary}
+                  {p.label} {splitExerciseName(p.name).primary} — {p.summary}
                 </span>
                 {p.setCount > 0 && p.setCount !== (item.prescribedSets.length || item.sets || 0) ? (
                   <button
@@ -374,6 +370,20 @@ export function ListEntryEditor({
             ) : null}
           </div>
         )}
+
+        <div className="flex flex-wrap items-center gap-1.5" title={RIR_HELP}>
+          <span className="t-label mr-1 text-muted">RIR</span>
+          {RIR_OPTS.map((o) => (
+            <button
+              key={o.label}
+              type="button"
+              className={rirActive(o.value) ? editorChipOn : editorChipOff}
+              onClick={() => onPatch({ targetRir: o.value })}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="space-y-2.5">
@@ -402,7 +412,7 @@ export function ListEntryEditor({
                 onClick={closeScheme}
                 className="text-sm font-medium text-muted hover:text-foreground-secondary"
               >
-                Zwiń rozpis
+                Zwiń serie
               </button>
             ) : (
               <button
@@ -501,8 +511,8 @@ export function ListEntryEditor({
       </div>
 
       <div className="space-y-2 border-t border-border pt-3">
-        <p className="t-label text-muted">Akcje</p>
         <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={onMakeSuper}
@@ -510,6 +520,43 @@ export function ListEntryEditor({
         >
           + Superseria → {superLabel}
         </button>
+        {onUnlink ? (
+          <button
+            type="button"
+            onClick={onUnlink}
+            className="text-sm font-medium text-muted transition-colors hover:text-foreground-secondary"
+          >
+            Rozłącz
+          </button>
+        ) : null}
+        {onMove ? (
+          <>
+            <button
+              type="button"
+              onClick={() => onMove(-1)}
+              className="text-sm font-medium text-muted transition-colors hover:text-foreground-secondary"
+            >
+              Wyżej
+            </button>
+            <button
+              type="button"
+              onClick={() => onMove(1)}
+              className="text-sm font-medium text-muted transition-colors hover:text-foreground-secondary"
+            >
+              Niżej
+            </button>
+          </>
+        ) : null}
+        {onSwap ? (
+          <button
+            type="button"
+            onClick={onSwap}
+            className="text-sm font-medium text-muted transition-colors hover:text-foreground-secondary"
+          >
+            Zamień ćwiczenie
+          </button>
+        ) : null}
+        </div>
         <div className="flex flex-wrap items-center gap-1">
           {onDuplicate ? (
             <button

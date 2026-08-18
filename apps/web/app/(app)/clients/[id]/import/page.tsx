@@ -592,10 +592,10 @@ export default function ClientHistoryImportPage() {
               <Icon name="image" size={36} decorative />
             </span>
             <span className="text-base font-medium text-foreground">
-              Przeciągnij screeny albo kliknij i wybierz z dysku
+              Przeciągnij zdjęcia albo kliknij i wybierz z dysku
             </span>
             <span className="text-sm text-muted">
-              JPG, PNG, WebP albo CSV z dziennika · maks. {HISTORY_IMPORT_MAX_IMAGES} zdjęć
+              Zdjęcia albo arkusz z dziennika · maks. {HISTORY_IMPORT_MAX_IMAGES} zdjęć
             </span>
           </label>
 
@@ -639,7 +639,7 @@ export default function ClientHistoryImportPage() {
           ) : (
             <div>
               <Button variant="ghost" onClick={() => setTextOpen(true)} disabled={busy}>
-                Nie masz screenów? Wklej tekst albo CSV
+                Nie masz zdjęć? Wklej tekst albo plik z dziennika
               </Button>
             </div>
           )}
@@ -792,7 +792,7 @@ export default function ClientHistoryImportPage() {
                 ? `Zapisałem ${polishTrainingCount(applied.sessions)}.`
                 : applied && applied.maxes > 0
                   ? `Zapisałem ${polishRecordCount(applied.maxes)}.`
-                  : "Draft planu jest gotowy — historia nie została zapisana."}
+                  : "Szkic planu jest gotowy — historia nie została zapisana."}
           </p>
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => void goToPlan()} disabled={busy} loading={busy}>

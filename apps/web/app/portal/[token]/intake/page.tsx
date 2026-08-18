@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { api, ClientIntake, ClientIntakeInput } from "@/lib/api";
 import { ClientIntakeForm } from "@/components/ClientIntakeForm";
-import { Icon } from "@/components/Icon";
 import { Button, ErrorBanner } from "@/components/ui";
+import { PortalBackLink } from "@/components/portal/PortalBackLink";
 import { PortalPageSkeleton } from "@/components/skeletons";
 
 export default function PortalIntakePage() {
@@ -39,7 +39,8 @@ export default function PortalIntakePage() {
 
   if (!intake) {
     return (
-      <div className="space-y-4">
+      <div className="mx-auto max-w-lg space-y-4">
+        <PortalBackLink href={`/portal/${token}`}>Treningi</PortalBackLink>
         <ErrorBanner message={error} />
         {!error ? <PortalPageSkeleton label="Wczytuję ankietę…" /> : null}
       </div>
@@ -64,13 +65,7 @@ export default function PortalIntakePage() {
   return (
     <div className="mx-auto max-w-lg space-y-8 pb-24">
       <header>
-        <Link
-          href={`/portal/${token}`}
-          className="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-muted transition-[color,transform] duration-[var(--dur-fast)] hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] active:scale-[0.97]"
-        >
-          <Icon name="caret-left" size={16} decorative />
-          Treningi
-        </Link>
+        <PortalBackLink href={`/portal/${token}`}>Treningi</PortalBackLink>
         <p className="t-label mt-2 text-muted">Ankieta startowa</p>
         <h1 className="t-title mt-2">Poznajmy się</h1>
         <p className="t-small mt-2 max-w-[40ch]">
@@ -90,7 +85,7 @@ export default function PortalIntakePage() {
             href={`/portal/${token}/import`}
             className="text-foreground underline-offset-2 hover:underline"
           >
-            Wrzuć screeny z poprzedniej apki
+            Wrzuć zdjęcia z poprzedniej apki
           </Link>
           — trener zobaczy je u siebie.
         </p>

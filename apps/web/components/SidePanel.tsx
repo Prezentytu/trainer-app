@@ -108,7 +108,7 @@ export function SidePanel({
           "relative flex w-full max-h-[85dvh] flex-col border border-border-strong bg-surface pointer-events-auto",
           "rounded-t-[var(--r-sheet)] border-b-0",
           "motion-safe:transition-[transform,opacity] motion-safe:duration-[var(--dur-med)] motion-safe:ease-[var(--ease-out)]",
-          "md:h-full md:max-h-none md:w-[380px] md:shrink-0 md:rounded-none md:border-y-0 md:border-r-0 md:border-l",
+          "md:h-full md:max-h-none md:w-[clamp(380px,30vw,480px)] md:shrink-0 md:rounded-none md:border-y-0 md:border-r-0 md:border-l",
           "md:static md:pointer-events-auto",
         ].join(" ")}
       >

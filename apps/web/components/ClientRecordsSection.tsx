@@ -147,7 +147,7 @@ export function ClientRecordsSection({
       </h2>
       {records.length === 0 ? (
         <EmptyState title="Jeszcze bez rekordów siłowych" action={emptyAction}>
-          Rekordy (est. 1RM) pojawią się po seriach z ciężarem i powtórzeniami.
+          Rekordy (1RM) pojawią się po seriach z ciężarem i powtórzeniami.
         </EmptyState>
       ) : (
         <div className="space-y-3">

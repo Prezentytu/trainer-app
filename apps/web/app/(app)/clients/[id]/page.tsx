@@ -63,6 +63,9 @@ import { formatKg } from "@/lib/plates";
 import { polishPhotoCount } from "@/lib/plural";
 import { formatNextDayLine, formatSchedulePreview, nearestStartForFirstDay } from "@/lib/schedule";
 import { ProgressPhotoGallery } from "@/components/ProgressPhotoGallery";
+import { ClientPresenceLabel, presenceHref } from "@/components/ClientPresenceLabel";
+import { useVisiblePoll } from "@/lib/useVisiblePoll";
+import { ScoreSparkline } from "@/components/ScoreSparkline";
 
 function trendChartPoints(
   weeks: { weekStart: string; volumeKg: number; sessions: number }[] | undefined,
@@ -189,6 +192,7 @@ function ClientDetailsPage() {
   }, [clientId]);
 
   useEffect(load, [load]);
+  useVisiblePoll(load, 20_000);
 
   // Peak-End: toast po zamkniętej pętli kreator → auto-przypisanie.
   useEffect(() => {
@@ -662,6 +666,7 @@ function ClientDetailsPage() {
   };
 
   const activeTab = tab ?? "plans";
+  const presenceLink = presenceHref(client.id, client.liveSession, client.needsReview);
 
   return (
     <div>
@@ -673,6 +678,20 @@ function ClientDetailsPage() {
             <p className="mt-1 max-w-[70ch] break-words text-sm leading-[var(--leading-body)] text-muted-strong">
               {[client.email, client.note].filter(Boolean).join(" · ") || "Profil klienta"}
             </p>
+            {presenceLink ? (
+              <p className="mt-2">
+                <Link
+                  href={presenceLink}
+                  className="hover:underline focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+                >
+                  <ClientPresenceLabel
+                    liveSession={client.liveSession}
+                    needsReview={client.needsReview}
+                    idle=""
+                  />
+                </Link>
+              </p>
+            ) : null}
           </div>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
@@ -735,7 +754,7 @@ function ClientDetailsPage() {
               </div>
             }
           >
-            Przypisz plan, żeby klient mógł zacząć trenować — albo wrzuć screeny z poprzedniej apki.
+            Przypisz plan, żeby klient mógł zacząć trenować — albo wrzuć zdjęcia z poprzedniej apki.
           </EmptyState>
         </div>
       )}
@@ -933,7 +952,7 @@ function ClientDetailsPage() {
                   </div>
                 }
               >
-                Wrzuć screeny z poprzedniej apki — albo wpisz trening ręcznie, także bez planu.
+                Wrzuć zdjęcia z poprzedniej apki — albo wpisz trening ręcznie, także bez planu.
               </EmptyState>
             ) : (
               <ul className="divide-y divide-border overflow-hidden rounded-[var(--r-card)] border border-border bg-surface">
@@ -1071,6 +1090,20 @@ function ClientDetailsPage() {
                 valueClassName={prs30 > 0 ? "text-pr" : undefined}
               />
             </section>
+
+            {completedSessions.filter((s) => s.feelingScore != null).length >= 2 ? (
+              <section aria-label="Samopoczucie">
+                <h2 className="mb-3 font-display text-lg font-semibold">Samopoczucie</h2>
+                <ScoreSparkline
+                  points={completedSessions
+                    .filter((s) => s.feelingScore != null)
+                    .slice()
+                    .reverse()
+                    .map((s) => ({ date: s.performedOn, score: s.feelingScore as number }))}
+                  ariaLabel="Trend samopoczucia klienta"
+                />
+              </section>
+            ) : null}
 
             {stagnation && stagnation.items.length > 0 ? (
               <section>

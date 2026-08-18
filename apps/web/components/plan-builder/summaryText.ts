@@ -30,9 +30,9 @@ export function schemeParts(item: BuilderItem, exercise?: Exercise): SchemeParts
     item.restBetweenSetsSeconds ?? exercise?.defaultRestBetweenSetsSeconds ?? null;
   const primary = compactSchemeLine(item, exercise);
   const metaParts: string[] = [];
-  if (item.targetRir != null) metaParts.push(`RIR ${item.targetRir}`);
-  else if (item.targetRpe != null) metaParts.push(`RPE ${item.targetRpe}`);
-  if (rest != null) metaParts.push(formatRest(rest));
+  if (item.targetRir != null && item.targetRir > 0) metaParts.push(`RIR ${item.targetRir}`);
+  else if (item.targetRpe != null && item.targetRpe > 0) metaParts.push(`RPE ${item.targetRpe}`);
+  if (rest != null && rest > 0) metaParts.push(formatRest(rest));
   if (item.tempo) metaParts.push(`tempo ${item.tempo}`);
   return { primary, meta: metaParts.length ? metaParts.join(" · ") : null };
 }

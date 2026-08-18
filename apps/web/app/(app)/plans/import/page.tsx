@@ -197,7 +197,7 @@ export default function PlanImportPage() {
     if (!file) return;
     const lower = file.name.toLowerCase();
     if (!ACCEPTED_EXT.some((ext) => lower.endsWith(ext))) {
-      setError("Obsługiwane pliki: .txt, .md, .csv");
+      setError("Wrzuć plik tekstowy albo arkusz.");
       return;
     }
     try {
@@ -372,7 +372,7 @@ export default function PlanImportPage() {
             }`}
           >
             <p className="text-sm text-foreground-secondary">
-              Upuść plik <span className="font-mono text-muted">.txt / .md / .csv</span> albo{" "}
+              Upuść plik tekstowy albo arkusz albo{" "}
               <label className="cursor-pointer font-semibold text-accent-strong underline-offset-2 hover:underline">
                 wybierz z dysku
                 <input

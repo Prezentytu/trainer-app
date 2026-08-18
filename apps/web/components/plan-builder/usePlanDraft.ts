@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { arrayMove } from "@dnd-kit/sortable";
-import { Exercise, LastPrescription, Plan } from "@/lib/api";
+import { Exercise, LastPrescription, Plan, PlanSaveIds } from "@/lib/api";
 import { lastPrescriptionOverrides } from "./lastPrescription";
 import { formatSchemeLabel, matchingPresetId, PLAN_PRESETS } from "@/lib/planPresets";
 import { isDefaultDayLabel, WEEKDAY_NAMES } from "@/lib/schedule";
@@ -387,16 +387,18 @@ export function usePlanDraft({
         prev.map((d) => {
           if (d.key !== dayKey) return d;
 
-          type Block = { start: number; end: number; num: number };
+          type Block = { start: number; end: number; num: number; warmup: boolean };
           const blocks: Block[] = [];
           let i = 0;
-          const hasWarmup = d.items.some((it) => it.isWarmup);
-          let nextNum = hasWarmup ? 0 : 1;
+          let nextWarmup = 1;
+          let nextMain = 1;
           while (i < d.items.length) {
             let end = i;
             while (end < d.items.length - 1 && d.items[end].linkedToNext) end++;
-            blocks.push({ start: i, end, num: nextNum });
-            nextNum++;
+            const warmup = d.items[i].isWarmup;
+            blocks.push({ start: i, end, num: warmup ? nextWarmup : nextMain, warmup });
+            if (warmup) nextWarmup++;
+            else nextMain++;
             i = end + 1;
           }
 
@@ -430,7 +432,10 @@ export function usePlanDraft({
             isWarmup: warmupFlag,
           };
 
-          const target = blocks.find((b) => b.num === options.positionNum);
+          const target =
+            options.positionNum === 0 && warmupFlag
+              ? [...blocks].reverse().find((b) => b.warmup)
+              : blocks.find((b) => b.num === options.positionNum && b.warmup === warmupFlag);
           let nextItems = [...d.items];
 
           if (target) {
@@ -526,13 +531,58 @@ export function usePlanDraft({
       setDays((prev) =>
         prev.map((d) => {
           if (d.key !== dayKey) return d;
-          const idx = d.items.findIndex((i) => i.key === itemKey);
+          const detached = detachLinks(d.items, itemKey);
+          const idx = detached.findIndex((i) => i.key === itemKey);
           const target = idx + dir;
-          if (idx === -1 || target < 0 || target >= d.items.length) return d;
-          return { ...d, items: arrayMove(d.items, idx, target).map((i, o) => ({ ...i, order: o + 1 })) };
+          if (idx === -1 || target < 0 || target >= detached.length) return d;
+          return { ...d, items: arrayMove(detached, idx, target).map((i, o) => ({ ...i, order: o + 1 })) };
         })
       ),
     []
+  );
+
+  const applySavedIds = useCallback((saved: PlanSaveIds) => {
+    setDays((prev) =>
+      prev.map((d) => {
+        const match = saved.days.find((s) => s.weekNumber === d.weekNumber && s.order === d.order);
+        if (!match) return d;
+        return {
+          ...d,
+          entityId: match.id,
+          items: d.items.map((it, idx) => {
+            const im = match.items.find((s) => s.order === it.order) ?? match.items[idx];
+            return im ? { ...it, entityId: im.id } : it;
+          }),
+        };
+      }),
+    );
+  }, []);
+
+  const swapItem = useCallback(
+    (dayKey: string, itemKey: string, exerciseId: number) => {
+      const exercise = getExerciseById(exerciseId);
+      if (!exercise) return;
+      setDays((prev) =>
+        prev.map((d) => {
+          if (d.key !== dayKey) return d;
+          return {
+            ...d,
+            items: d.items.map((i) => {
+              if (i.key !== itemKey) return i;
+              const inheritMeasure = i.measureType === i.exerciseType;
+              return {
+                ...i,
+                exerciseId: exercise.id,
+                exerciseName: exercise.name,
+                exerciseType: exercise.type,
+                measureType: inheritMeasure ? exercise.type : i.measureType,
+              };
+            }),
+          };
+        }),
+      );
+    },
+    [getExerciseById],
   );
 
   const toggleLink = useCallback(
@@ -764,8 +814,43 @@ export function usePlanDraft({
   }, []);
 
   const clearSets = useCallback(
-    (dayKey: string, itemKey: string) => setItemSets(dayKey, itemKey, []),
-    [setItemSets]
+    (dayKey: string, itemKey: string) => {
+      setDays((prev) => {
+        const day = prev.find((d) => d.key === dayKey);
+        const item = day?.items.find((i) => i.key === itemKey);
+        const previousSets = item?.prescribedSets ?? [];
+        const previousScheme = item?.setScheme ?? null;
+        if (previousSets.length > 0) {
+          showUndoToast("Przywrócono serie", () => {
+            setDays((cur) =>
+              cur.map((d) =>
+                d.key !== dayKey
+                  ? d
+                  : {
+                      ...d,
+                      items: d.items.map((i) =>
+                        i.key === itemKey
+                          ? { ...withSyncedSets(i, previousSets), setScheme: previousScheme }
+                          : i,
+                      ),
+                    },
+              ),
+            );
+          });
+        }
+        return prev.map((d) =>
+          d.key !== dayKey
+            ? d
+            : {
+                ...d,
+                items: d.items.map((i) =>
+                  i.key === itemKey ? { ...withSyncedSets(i, []), setScheme: i.setScheme } : i,
+                ),
+              },
+        );
+      });
+    },
+    [showUndoToast],
   );
 
   return {
@@ -797,6 +882,8 @@ export function usePlanDraft({
     removeItem,
     duplicateItem,
     moveItem,
+    swapItem,
+    applySavedIds,
     toggleLink,
     toggleWarmup,
     linkSelected,

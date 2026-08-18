@@ -29,6 +29,7 @@ import {
   typeLabel,
   type ExerciseFilters,
 } from "@/lib/exerciseSearch";
+import { ExerciseName } from "@/components/ExerciseName";
 import { ExerciseFormDialog } from "@/components/ExerciseFormDialog";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { YoutubeExternalLink, YoutubeLite } from "@/components/YoutubeLite";
@@ -452,7 +453,7 @@ export default function ExercisesPage() {
                       href={`/exercises/${ex.id}`}
                       className="break-words after:absolute after:inset-0 after:z-0 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
                     >
-                      {ex.name}
+                      <ExerciseName name={ex.name} />
                     </Link>
                   }
                   sub={`${meta}${ex.isUnilateral ? " · jednostronne" : ""} · ${volumeLabel(ex)} · ${formatRest(ex.defaultRestBetweenSetsSeconds)}`}

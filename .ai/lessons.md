@@ -15,6 +15,34 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Copy: zakładka ≠ cel w zdaniu
+
+**Kontekst**: Powrót z pustej sesji brzmiał „Wróć na Dziś”.
+**Problem**: „Dziś” to nazwa taba. „Na Dziś” brzmi jak kalka i nie mówi, dokąd idziesz.
+**Zasada**: W zdaniu i CTA nazywaj miejsce po treści („treningi”, „historia”), nie po etykiecie taba. Tab może zostać „Dziś”.
+**Dotyczy**: portal (sesja, empty states, back link)
+
+## Empty / błąd: nie mów „wróć” bez przycisku
+
+**Kontekst**: Sesja bez ćwiczeń (`/portal/…/session/…`) pisała „wróć i wybierz dzień”, a tab bar portalu jest na tej trasie ukryty.
+**Problem**: Copy obiecuje akcję, której nie ma — ślepy zaułek, zwłaszcza na telefonie.
+**Zasada**: Gdy chowasz nav albo tekst każe iść gdzie indziej, daj widoczny powrót (link caret + CTA w `EmptyState`). `action={null}` tylko gdy naprawdę nie ma następnego kroku. Ten sam link wstecz na ekranie błędu, nie tylko w szczęśliwym stanie.
+**Dotyczy**: `SessionLogger`, portal sesja/ankieta, podgląd sesji u trenera
+
+## UI: język klienta, nie format pliku, żargon ani nazwa cudzej apki
+
+**Kontekst**: Portal i eksport mówiły „CSV”, potem „Excel”, a także „draft”, „form check”, „e1RM”, „screeny”. Status sesji brzmiał „Trzeba poprawić”; 1RM rozwinięto do „szacowany max”.
+**Problem**: Klient nie wie, co to CSV; Excel to cudza marka. „Trzeba poprawić” nie mówi *co*. 1RM to język siłowni — Hevy/Styrka skracają celowo; parafraza nic nie dodaje.
+**Zasada**: W copy UI nazywaj skutek i narzędzie, które człowiek zna: „arkusz”, „zdjęcia”, „nagranie techniki”, „trener jeszcze nie zatwierdził”, „brak internetu”. Status = fakt + liczba („2 serie poniżej celu”), nie rozkaz bez przedmiotu. Terminy siłowe zostaw krótkie (1RM, nie „est.” i nie „szacowany max”). Bez nazw cudzych programów (Excel, CSV, JSON). Format zostaje w kodzie i w nazwie pobranego pliku, nie w etykiecie.
+**Dotyczy**: portal (Profil, Import, Historia, Progres, logger), karta klienta, dashboard, ustawienia trenera, FAQ landingu, importy
+
+## Zapis planu merge'uje dni — nie kasuje i nie odtwarza
+
+**Kontekst**: Trener edytuje przypisany plan w trakcie cyklu; klient ma zalogowaną sesję i przesunięty dzień.
+**Problem**: `PUT /api/plans/{id}` robił `RemoveRange(plan.Days)` — `WorkoutSession.PlanDayId` szedł w SetNull, `AssignmentDayOverride` w Cascade. Cele live i harmonogram klienta znikały przy każdym autosave.
+**Zasada**: Zapis planu aktualizuje `PlanDay`/`PlanItem` po Id (tylko Id należące do tego planu). Brak Id = insert. Usuwane tylko rekordy, których nie ma w payloadzie. Zalogowana sesja jest niemutowalna — edycje planu działają od dziś w przód. Front trzyma `entityId` i wgrywa Id z odpowiedzi PUT.
+**Dotyczy**: `apps/api/Program.cs` (`MergePlanDays`), `apps/web/components/plan-builder/usePlanDraft.ts` (`applySavedIds`), `usePlanPersistence.ts`
+
 ## Kreator i portal: jeden patch, zwięzły schemat, overlay w portalu
 
 **Kontekst**: Enter w polu kreatora zapisywał plan; baner „Dodaj ćwiczenie” wisiał po dodaniu; „Złóż plan z historii” i film w portalu nie reagowały; na telefonie nazwa ćwiczenia łamała się po literze, a strona jechała w bok.

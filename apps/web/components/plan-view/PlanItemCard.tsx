@@ -1,6 +1,7 @@
 "use client";
 
 import { PlanItem } from "@/lib/api";
+import { ExerciseName } from "@/components/ExerciseName";
 import { schemeParts } from "./summary";
 
 export function PlanItemCard({
@@ -45,8 +46,8 @@ export function PlanItemCard({
             {label}
           </span>
         ) : null}
-        <span className="min-w-0 break-words text-[15px] font-medium text-foreground">
-          {item.exerciseName}
+        <span className="min-w-0 text-[15px] font-medium text-foreground">
+          <ExerciseName name={item.exerciseName} />
         </span>
       </div>
       <p className="mt-1 min-w-0 break-words font-mono text-[12px] tabular-nums">

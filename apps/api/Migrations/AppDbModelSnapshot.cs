@@ -545,6 +545,40 @@ namespace TrainerApp.Api.Migrations
                     b.ToTable("LoggedExercises");
                 });
 
+            modelBuilder.Entity("TrainerApp.Api.LoggedExerciseFormCheck", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<byte[]>("Bytes")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("LoggedExerciseId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LoggedExerciseId")
+                        .IsUnique();
+
+                    b.ToTable("LoggedExerciseFormChecks");
+                });
+
             modelBuilder.Entity("TrainerApp.Api.LoggedSet", b =>
                 {
                     b.Property<int>("Id")
@@ -1185,6 +1219,17 @@ namespace TrainerApp.Api.Migrations
                     b.Navigation("SubstitutedFromExercise");
                 });
 
+            modelBuilder.Entity("TrainerApp.Api.LoggedExerciseFormCheck", b =>
+                {
+                    b.HasOne("TrainerApp.Api.LoggedExercise", "LoggedExercise")
+                        .WithOne("FormCheck")
+                        .HasForeignKey("TrainerApp.Api.LoggedExerciseFormCheck", "LoggedExerciseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LoggedExercise");
+                });
+
             modelBuilder.Entity("TrainerApp.Api.LoggedSet", b =>
                 {
                     b.HasOne("TrainerApp.Api.LoggedExercise", "LoggedExercise")
@@ -1336,6 +1381,8 @@ namespace TrainerApp.Api.Migrations
 
             modelBuilder.Entity("TrainerApp.Api.LoggedExercise", b =>
                 {
+                    b.Navigation("FormCheck");
+
                     b.Navigation("Sets");
                 });
 

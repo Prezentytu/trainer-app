@@ -80,7 +80,8 @@ public record PlanItemInput(
     double? LoadKg = null,
     double? LoadPercent = null,
     string? Notes = null,
-    List<PlanSetInput>? PrescribedSets = null);
+    List<PlanSetInput>? PrescribedSets = null,
+    int? Id = null);
 
 public record PlanDayInput(
     int WeekNumber = 1,
@@ -88,7 +89,8 @@ public record PlanDayInput(
     string Label = "",
     string? Notes = null,
     int? DayOfWeek = null,
-    List<PlanItemInput>? Items = null);
+    List<PlanItemInput>? Items = null,
+    int? Id = null);
 
 public record PlanDayRescheduleInput(DateOnly Date);
 
@@ -300,6 +302,11 @@ public record PortalPinInput(string? Pin);
 public record AccessTokenExpireInput(int? Days);
 
 public record PortalUnlockInput(string Pin);
+
+public record FormCheckInput(
+    string FileBase64,
+    string? ContentType = "video/mp4",
+    string? FileName = null);
 
 public record ProgressPhotoInput(
     string ImageBase64,

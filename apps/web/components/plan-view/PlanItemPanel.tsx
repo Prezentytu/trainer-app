@@ -5,6 +5,8 @@ import { PlanItem } from "@/lib/api";
 import { Badge, formatRest } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { SidePanel } from "@/components/SidePanel";
+import { ExerciseName } from "@/components/ExerciseName";
+import { sanitizeSetScheme } from "@/lib/schemeSummary";
 import { MEASURE_LABELS } from "@/lib/measure";
 import { intensityText, prescribedSetLine, schemeLine } from "./summary";
 
@@ -27,14 +29,16 @@ export function PlanItemPanel({
     <SidePanel
       open={open}
       panelId={panelId}
-      title={item.exerciseName}
+      title={<ExerciseName name={item.exerciseName} />}
       subtitle={schemeLine(item)}
       onClose={onClose}
     >
       <div className="flex flex-wrap gap-1.5">
         <Badge tone="neutral">{MEASURE_LABELS[item.measureType]}</Badge>
         {item.isWarmup ? <Badge tone="neutral">rozgrzewka</Badge> : null}
-        {item.setScheme ? <Badge tone="neutral">{item.setScheme}</Badge> : null}
+        {sanitizeSetScheme(item.setScheme) ? (
+          <Badge tone="neutral">{sanitizeSetScheme(item.setScheme)}</Badge>
+        ) : null}
       </div>
 
       <dl className="mt-4 grid gap-2 text-sm">
@@ -44,12 +48,14 @@ export function PlanItemPanel({
             <dd className="font-mono tabular-nums text-foreground">{item.tempo}</dd>
           </div>
         ) : null}
-        <div className="flex justify-between gap-3 border-b border-border py-2">
-          <dt className="text-muted">Przerwa</dt>
-          <dd className="font-mono tabular-nums text-foreground">
-            {formatRest(item.restBetweenSetsSeconds)}
-          </dd>
-        </div>
+        {item.restBetweenSetsSeconds > 0 ? (
+          <div className="flex justify-between gap-3 border-b border-border py-2">
+            <dt className="text-muted">Przerwa</dt>
+            <dd className="font-mono tabular-nums text-foreground">
+              {formatRest(item.restBetweenSetsSeconds)}
+            </dd>
+          </div>
+        ) : null}
         {intensity ? (
           <div className="flex justify-between gap-3 border-b border-border py-2">
             <dt className="text-muted">Intensywność</dt>
@@ -93,7 +99,7 @@ export function PlanItemPanel({
       <div className="mt-6">
         <Link
           href={`/exercises/${item.exerciseId}`}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground underline underline-offset-2 hover:text-foreground-secondary"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-foreground-secondary"
         >
           Otwórz ćwiczenie
           <Icon name="caret-right" size={14} decorative />

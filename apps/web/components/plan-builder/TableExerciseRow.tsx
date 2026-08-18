@@ -1,6 +1,7 @@
 "use client";
 
 import { Exercise, rirFromRpe } from "@/lib/api";
+import { ExerciseName } from "@/components/ExerciseName";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { Badge, IconButton, inputClass } from "@/components/ui";
 import { isDumbbellPair } from "@/lib/weight";
@@ -171,7 +172,9 @@ export function TableExerciseRow({
             />
           </div>
           <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-            <span className="min-w-0 break-words text-sm font-medium">{item.exerciseName}</span>
+            <span className="min-w-0 text-sm font-medium">
+              <ExerciseName name={item.exerciseName} />
+            </span>
             {item.isWarmup ? <Badge tone="neutral">rozgrzewka</Badge> : null}
             {supersetLabel && <Badge tone="accent">{supersetLabel}</Badge>}
           </div>

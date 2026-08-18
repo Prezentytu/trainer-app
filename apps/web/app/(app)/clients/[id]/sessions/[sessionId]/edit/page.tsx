@@ -57,16 +57,24 @@ export default function ClientSessionEditPage() {
 
   useEffect(load, [load]);
 
+  const reviewHref = `/clients/${clientId}/sessions/${sessionId}`;
+
   if (!session) {
     return (
       <div>
+        <PageHeader
+          title="Sesja treningowa"
+          action={
+            <Link href={reviewHref}>
+              <Button variant="ghost">← Podgląd</Button>
+            </Link>
+          }
+        />
         <ErrorBanner message={error} />
         {error ? null : <SessionLoggerSkeleton />}
       </div>
     );
   }
-
-  const reviewHref = `/clients/${clientId}/sessions/${sessionId}`;
 
   return (
     <div>
@@ -85,6 +93,7 @@ export default function ClientSessionEditPage() {
         libraryExercises={exercises}
         mode={session.status === "completed" ? "completedEdit" : "behalf"}
         clientName={clientName}
+        onPause={() => router.push(`/clients/${clientId}`)}
         onUpdated={setSession}
         onPersistFailed={(input, complete) => {
           enqueueSessionWrite({

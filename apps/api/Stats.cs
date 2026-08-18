@@ -244,6 +244,15 @@ public static class Stats
                     e.SupersetGroup,
                     SupersetLabel = labels[idx],
                     e.Note,
+                    FormCheck = e.FormCheck == null
+                        ? null
+                        : new
+                        {
+                            e.FormCheck.Id,
+                            e.FormCheck.ContentType,
+                            e.FormCheck.FileName,
+                            e.FormCheck.CreatedAt,
+                        },
                     TargetRir = targets?.TargetRir,
                     Tempo = targets?.Tempo,
                     PlanNote = targets?.PlanNote,

@@ -120,14 +120,14 @@ export function PlanDayColumn({
                 ) : (
                   <div className="overflow-hidden rounded-[10px] border border-border-strong">
                     <div className="flex items-baseline justify-between gap-2 border-b border-border bg-surface-raised px-3 py-1.5">
-                      <span className="font-mono text-xs font-semibold uppercase tracking-[0.08em] text-muted">
+                      <span className="shrink-0 font-mono text-xs font-semibold uppercase tracking-[0.08em] text-muted">
                         Superseria {block.letter}
                       </span>
-                      <span className="shrink-0 text-xs text-muted-faint">
-                        {day.items[block.indices[0]]?.restBetweenSetsSeconds
-                          ? `${formatRest(day.items[block.indices[0]].restBetweenSetsSeconds)} po superserii`
-                          : "bez przerwy między ćwiczeniami"}
-                      </span>
+                      {day.items[block.indices[0]]?.restBetweenSetsSeconds > 0 ? (
+                        <span className="min-w-0 truncate text-xs text-muted-faint">
+                          przerwa {formatRest(day.items[block.indices[0]].restBetweenSetsSeconds)} po superserii
+                        </span>
+                      ) : null}
                     </div>
                     <div className="divide-y divide-border">
                       {block.indices.map((idx) => (

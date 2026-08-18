@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { api, isAbortError } from "@/lib/api";
 import { fileToHistoryImage, HISTORY_IMPORT_MAX_IMAGES } from "@/lib/compressImage";
@@ -14,7 +13,7 @@ import {
 } from "@/lib/historyImportWait";
 import { Button, ErrorBanner, Field, inputClass } from "@/components/ui";
 import { ImportWaitStatus } from "@/components/ImportWaitStatus";
-import { Icon } from "@/components/Icon";
+import { PortalBackLink } from "@/components/portal/PortalBackLink";
 
 function readTextFile(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -36,6 +35,7 @@ export default function PortalHistoryImportPage() {
   const [elapsedSec, setElapsedSec] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const [pending, setPending] = useState<{ id: number; createdAt: string } | null | undefined>(undefined);
   const abortRef = useRef<AbortController | null>(null);
   const cancelReasonRef = useRef<"user" | "timeout" | null>(null);
 
@@ -51,6 +51,13 @@ export default function PortalHistoryImportPage() {
   useEffect(() => {
     return () => abortRef.current?.abort();
   }, []);
+
+  useEffect(() => {
+    api.portal
+      .importPending(token)
+      .then(setPending)
+      .catch(() => setPending(null));
+  }, [token]);
 
   const handleFiles = (list: FileList | null) => {
     if (busy) return;
@@ -144,25 +151,33 @@ export default function PortalHistoryImportPage() {
   return (
     <div className="mx-auto max-w-lg space-y-8 pb-24">
       <header>
-        <Link
-          href={`/portal/${token}/history`}
-          className="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-muted transition-[color,transform] duration-[var(--dur-fast)] hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] active:scale-[0.97]"
-        >
-          <Icon name="caret-left" size={16} decorative />
-          Historia
-        </Link>
+        <PortalBackLink href={`/portal/${token}/history`}>Historia</PortalBackLink>
         <p className="t-label mt-2 text-muted">Poprzednia apka</p>
         <h1 className="t-title mt-2">Wrzuć zdjęcia treningów</h1>
         <p className="t-small mt-2 max-w-[48ch]">
-          Zdjęcia z poprzedniej apki albo plik CSV, jeśli dziennik daje eksport. Trener zobaczy je u
-          siebie. Nic nie zapisuje się od razu w historii.
+          Zdjęcia z poprzedniej apki albo arkusz z dziennika. Trener zobaczy je u siebie.
+          Nic nie zapisuje się od razu w historii.
         </p>
       </header>
 
       <ErrorBanner message={error} />
 
+      {pending ? (
+        <section className="rounded-xl border border-border bg-surface-raised px-4 py-4">
+          <p className="font-mono text-xs font-medium uppercase tracking-caps text-muted">
+            Status
+          </p>
+          <p className="mt-2 text-[15px] font-medium text-foreground">
+            Trener jeszcze nie zatwierdził
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            Nic nie zapisuje się w historii, dopóki trener nie zatwierdzi. Możesz wysłać nowe zdjęcia — zastąpią poprzednie.
+          </p>
+        </section>
+      ) : null}
+
       <div className="grid gap-5">
-        <Field label="Screeny albo CSV">
+        <Field label="Zdjęcia albo plik z dziennika">
           <input
             className={inputClass}
             type="file"
@@ -179,7 +194,7 @@ export default function PortalHistoryImportPage() {
               {files.length} {files.length === 1 ? "zdjęcie" : files.length < 5 ? "zdjęcia" : "zdjęć"}
             </p>
           ) : (
-            <p className="mt-1.5 text-sm text-muted">Max {HISTORY_IMPORT_MAX_IMAGES} zdjęć.</p>
+            <p className="mt-1.5 text-sm text-muted">Do {HISTORY_IMPORT_MAX_IMAGES} zdjęć.</p>
           )}
         </Field>
         <Field label="Albo wklej tekst treningu">

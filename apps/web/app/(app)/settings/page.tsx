@@ -268,7 +268,7 @@ export default function SettingsPage() {
               loading={downloadingCsv}
               disabled={downloadingCsv || downloadingJson || deleting}
             >
-              Pobierz plik dla Excela (.csv)
+              Pobierz arkusz
             </Button>
             <Button
               variant="secondary"
@@ -276,12 +276,12 @@ export default function SettingsPage() {
               loading={downloadingJson}
               disabled={downloadingCsv || downloadingJson || deleting}
             >
-              Pobierz pełną kopię (.json)
+              Pobierz pełną kopię
             </Button>
           </div>
           <p className="text-xs text-muted">
-            CSV zawiera też wiersze serii. Pełna kopia JSON obejmuje pomiary, wywiad i check-iny —
-            bez tokenów linków portalu.
+            Arkusz ma też każdą serię. Pełna kopia obejmuje pomiary, wywiad i samopoczucie —
+            bez linków do portalu klientów.
           </p>
         </div>
       </Card>

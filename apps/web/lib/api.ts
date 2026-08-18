@@ -108,6 +108,18 @@ export function markAuthReady(): void {
   resolveAuthReady = null;
 }
 
+export type LiveSession = {
+  sessionId: number;
+  startedAt: string;
+  doneSets: number;
+  totalSets: number;
+};
+
+export type NeedsReview = {
+  sessionId: number;
+  belowTargetCount: number;
+};
+
 export type ClientSummary = {
   id: number;
   name: string;
@@ -116,6 +128,8 @@ export type ClientSummary = {
   activePlans: number;
   /** Data ostatniej ukończonej sesji (YYYY-MM-DD) albo null. */
   lastSessionOn: string | null;
+  liveSession?: LiveSession | null;
+  needsReview?: NeedsReview | null;
 };
 
 export type ClientAssignment = {
@@ -146,6 +160,8 @@ export type ClientDetails = {
   note: string | null;
   goalWeightKg?: number | null;
   hasPortalPin?: boolean;
+  liveSession?: LiveSession | null;
+  needsReview?: NeedsReview | null;
   assignments: ClientAssignment[];
 };
 
@@ -382,8 +398,8 @@ export const CATEGORY_ORDER: ExerciseCategory[] = [
 export const SET_ROLE_LABELS: Record<string, string> = {
   warmup: "rozgrzewka",
   ramp: "rampa",
-  top: "top",
-  backoff: "back-off",
+  top: "szczytowa",
+  backoff: "zejście",
   work: "robocza",
 };
 
@@ -637,6 +653,7 @@ export type HistoryImportAnalyzeResult = {
 };
 
 export type PlanItemInput = {
+  id?: number;
   exerciseId: number;
   order: number;
   supersetGroup: number | null;
@@ -748,6 +765,7 @@ export type LoggedExercise = {
   targetRir?: number | null;
   tempo?: string | null;
   planNote?: string | null;
+  formCheck?: { id: number; contentType: string; fileName?: string; createdAt: string } | null;
   /** Data poprzedniej sesji tego ćwiczenia (nagłówek kolumny Poprz.). */
   prevPerformedOn?: string | null;
   prevSets: PrevLoggedSet[];
@@ -1055,11 +1073,17 @@ export type DashboardActivation = {
   trainerCreatedAt: string;
 };
 
+export type DashboardLiveSession = LiveSession & {
+  clientId: number;
+  clientName: string;
+};
+
 export type DashboardData = {
   clients: number;
   plans: number;
   exercises: number;
-  recentSessions: (SessionSummary & { clientName: string })[];
+  liveSessions?: DashboardLiveSession[];
+  recentSessions: (SessionSummary & { clientName: string; needsReview?: NeedsReview | null })[];
   recentPrs: (ClientRecord & { clientId: number; clientName: string })[];
   attention: AttentionItem[];
   /** Nieprzeczytane od klientów. */
@@ -1131,6 +1155,7 @@ export type NavCounts = {
 };
 
 export type PlanDayInput = {
+  id?: number;
   weekNumber: number;
   order: number;
   label: string;
@@ -1144,6 +1169,16 @@ export type PlanInput = {
   description: string | null;
   isTemplate: boolean;
   days: PlanDayInput[];
+};
+
+export type PlanSaveIds = {
+  id: number;
+  days: {
+    id: number;
+    weekNumber: number;
+    order: number;
+    items: { id: number; order: number }[];
+  }[];
 };
 
 function isPublicApiPath(path: string): boolean {
@@ -1642,7 +1677,7 @@ export const api = {
     create: (input: PlanInput) =>
       request<{ id: number }>("/api/plans", { method: "POST", body: JSON.stringify(input) }),
     update: (id: number, input: PlanInput) =>
-      request(`/api/plans/${id}`, { method: "PUT", body: JSON.stringify(input) }),
+      request<PlanSaveIds>(`/api/plans/${id}`, { method: "PUT", body: JSON.stringify(input) }),
     duplicate: (id: number, input: { name: string | null; isTemplate: boolean | null }) =>
       request<{ id: number }>(`/api/plans/${id}/duplicate`, {
         method: "POST",
@@ -1702,6 +1737,8 @@ export const api = {
     markReplyRead: (id: number) =>
       request<SessionDetail>(`/api/sessions/${id}/comment/read`, { method: "POST" }),
     remove: (id: number) => request(`/api/sessions/${id}`, { method: "DELETE" }),
+    formCheckBlob: (sessionId: number, exerciseId: number) =>
+      requestBlob(`/api/sessions/${sessionId}/exercises/${exerciseId}/form-check`),
   },
   portal: {
     recover: (email: string) =>
@@ -1837,6 +1874,27 @@ export const api = {
         method: "PUT",
         body: JSON.stringify(input),
       }),
+    exportCsv: (token: string) => requestText(`/api/portal/${token}/export`),
+    maxes: (token: string) =>
+      request<
+        { id: number; exerciseId: number; exerciseName: string; maxKg: number; measuredOn: string; note: string | null }[]
+      >(`/api/portal/${token}/maxes`),
+    importPending: (token: string) =>
+      request<{ id: number; status: string; createdAt: string } | null>(
+        `/api/portal/${token}/history-import/pending`,
+      ),
+    addFormCheck: (
+      token: string,
+      sessionId: number,
+      exerciseId: number,
+      input: { fileBase64: string; contentType?: string; fileName?: string },
+    ) =>
+      request<{ id: number; loggedExerciseId: number; contentType: string; fileName: string; createdAt: string }>(
+        `/api/portal/${token}/sessions/${sessionId}/exercises/${exerciseId}/form-check`,
+        { method: "POST", body: JSON.stringify(input) },
+      ),
+    formCheckBlob: (token: string, sessionId: number, exerciseId: number) =>
+      requestBlob(`/api/portal/${token}/sessions/${sessionId}/exercises/${exerciseId}/form-check`),
     importHistory: (
       token: string,
       input: { text?: string; images?: HistoryImportImage[] },

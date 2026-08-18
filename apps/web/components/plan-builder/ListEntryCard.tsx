@@ -4,6 +4,7 @@ import { Exercise } from "@/lib/api";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { demoMedia } from "@/lib/youtube";
 import { ListEntryEditor, type EditorPartner } from "./ListEntryEditor";
+import { ExerciseName } from "@/components/ExerciseName";
 import { listEntrySummary } from "./listGroups";
 import { BuilderItem, BuilderSet } from "./types";
 
@@ -23,6 +24,9 @@ export function ListEntryCard({
   onPatch,
   onToggleWarmup,
   onMakeSuper,
+  onUnlink,
+  onMove,
+  onSwap,
   onDuplicate,
   onRemove,
   onAddSet,
@@ -46,6 +50,9 @@ export function ListEntryCard({
   onPatch: (patch: Partial<BuilderItem>) => void;
   onToggleWarmup: () => void;
   onMakeSuper: () => void;
+  onUnlink?: () => void;
+  onMove?: (dir: -1 | 1) => void;
+  onSwap?: () => void;
   onDuplicate?: () => void;
   onRemove: () => void;
   onAddSet: () => void;
@@ -87,8 +94,8 @@ export function ListEntryCard({
               alt={item.exerciseName}
             />
           </div>
-          <span className="min-w-0 flex-1 break-words text-sm font-semibold leading-snug text-foreground">
-            {item.exerciseName}
+          <span className="min-w-0 flex-1 text-sm font-semibold leading-snug text-foreground">
+            <ExerciseName name={item.exerciseName} />
           </span>
           {item.isWarmup ? (
             <span className="shrink-0 rounded-full bg-surface-active px-2 py-0.5 text-xs text-muted">
@@ -140,6 +147,9 @@ export function ListEntryCard({
           onPatch={onPatch}
           onToggleWarmup={onToggleWarmup}
           onMakeSuper={onMakeSuper}
+          onUnlink={onUnlink}
+          onMove={onMove}
+          onSwap={onSwap}
           onDuplicate={onDuplicate}
           onRemove={onRemove}
           onAddSet={onAddSet}

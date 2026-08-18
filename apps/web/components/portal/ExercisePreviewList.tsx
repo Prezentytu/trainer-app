@@ -1,6 +1,7 @@
 "use client";
 
 import { PortalExercise } from "@/lib/api";
+import { clientExerciseName } from "@/lib/exerciseName";
 import { DemoThumbButton } from "@/components/portal/DemoThumbButton";
 import {
   previewBlocksFromItems,
@@ -28,7 +29,8 @@ function ItemRow({
     item.exerciseId != null && fallbackYoutubeId
       ? fallbackYoutubeId(item.exerciseId)
       : undefined;
-  const name = label ? `${label} ${item.name}` : item.name;
+  const displayName = clientExerciseName(item.name);
+  const name = label ? `${label} ${displayName}` : displayName;
   const nameBlock = (
     <div className="min-w-0 w-full">
       <p
@@ -44,7 +46,7 @@ function ItemRow({
     </div>
   );
   const detail = (
-    <p className="min-w-0 break-words font-mono text-[13px] tabular-nums text-muted sm:text-right sm:text-[15px]">
+    <p className="min-w-0 break-words [overflow-wrap:anywhere] font-mono text-[13px] tabular-nums text-muted sm:text-right sm:text-[15px]">
       {item.detail}
     </p>
   );
@@ -52,7 +54,7 @@ function ItemRow({
     "flex min-w-0 flex-1 flex-col items-stretch gap-0.5 text-left sm:flex-row sm:items-start sm:justify-between sm:gap-3";
 
   return (
-    <div className="flex min-h-11 items-start gap-3 py-3.5">
+    <div className="flex min-h-11 min-w-0 overflow-hidden items-start gap-3 py-3.5">
       {showThumbs ? (
         <div className="flex h-11 w-11 shrink-0 items-center justify-center">
           <DemoThumbButton exercise={ex} fallbackYoutubeId={yt} title={name} />

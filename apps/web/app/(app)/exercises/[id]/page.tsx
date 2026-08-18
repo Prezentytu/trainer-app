@@ -29,6 +29,7 @@ import {
   Tag,
 } from "@/components/ui";
 import { ExerciseDetailSkeleton } from "@/components/skeletons";
+import { splitExerciseName } from "@/lib/exerciseName";
 import { polishFilmLabel } from "@/lib/plural";
 
 function volumeValue(exercise: Exercise): string {
@@ -161,12 +162,18 @@ export default function ExerciseDetailPage() {
       ? PATTERN_LABELS[exercise.pattern as ExercisePattern]
       : exercise.pattern;
   const rest = restStat(exercise.defaultRestBetweenSetsSeconds);
+  const { primary: exercisePrimary, secondary: exerciseSecondary } = splitExerciseName(exercise.name);
 
   return (
     <div>
       <PageHeader
-        title={exercise.name}
-        subtitle={[cat, pattern, exercise.isUnilateral ? "jednostronne" : null]
+        title={exercisePrimary}
+        subtitle={[
+          exerciseSecondary,
+          cat,
+          pattern,
+          exercise.isUnilateral ? "jednostronne" : null,
+        ]
           .filter(Boolean)
           .join(" · ")}
         action={
@@ -195,7 +202,7 @@ export default function ExerciseDetailPage() {
                 <div className="min-w-0">
                   <p className="break-words text-sm font-medium">{current.title || exercise.name}</p>
                   <p className="text-xs text-muted">
-                    {MEDIA_KIND_LABELS[current.kind as ExerciseMediaKind] ?? current.kind}
+                    {MEDIA_KIND_LABELS[current.kind as ExerciseMediaKind] ?? "wideo"}
                   </p>
                 </div>
                 <YoutubeExternalLink youtubeId={current.youtubeId} />
@@ -230,7 +237,7 @@ export default function ExerciseDetailPage() {
                   <div className="px-2 py-1.5">
                     <p className="truncate text-xs font-medium">{m.title || "Wideo"}</p>
                     <p className="text-xs uppercase tracking-[0.08em] text-muted">
-                      {MEDIA_KIND_LABELS[m.kind as ExerciseMediaKind] ?? m.kind}
+                      {MEDIA_KIND_LABELS[m.kind as ExerciseMediaKind] ?? "wideo"}
                     </p>
                   </div>
                 </button>

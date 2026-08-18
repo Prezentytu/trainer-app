@@ -501,7 +501,7 @@ function PrCard({
                 fontFamily: "Geist Mono",
               }}
             >
-              est. 1RM {e1} kg
+              1RM {e1} kg
               {prev ? ` / poprz. ${prev}` : ""}
             </div>
             {delta != null && delta > 0 ? (

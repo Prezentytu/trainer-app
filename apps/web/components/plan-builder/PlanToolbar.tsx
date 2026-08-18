@@ -30,6 +30,8 @@ export function PlanToolbar({
   weeksCount,
   lastSavedAt,
   isDirty,
+  autosaveFailed,
+  onRetrySave,
   planId,
   assigned,
   onAssigned,
@@ -49,6 +51,8 @@ export function PlanToolbar({
   weeksCount: number;
   lastSavedAt: Date | null;
   isDirty?: boolean;
+  autosaveFailed?: boolean;
+  onRetrySave?: () => void;
   planId?: number;
   assigned: AssignedClientInfo;
   onAssigned: (info: AssignedClientInfo) => void;
@@ -100,7 +104,15 @@ export function PlanToolbar({
             {stepLabel ? (
               <span className="hidden font-mono text-xs text-muted sm:inline">{stepLabel}</span>
             ) : null}
-            {isDirty ? (
+            {autosaveFailed ? (
+              <button
+                type="button"
+                onClick={onRetrySave}
+                className="text-[12px] text-danger hover:underline"
+              >
+                Nie zapisano — spróbuj ponownie
+              </button>
+            ) : isDirty ? (
               <span className="hidden text-[12px] text-muted sm:inline">Niezapisane</span>
             ) : lastSavedAt ? (
               <span className="hidden items-center gap-1.5 text-[12px] text-positive sm:inline-flex">

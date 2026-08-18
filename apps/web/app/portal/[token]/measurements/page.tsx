@@ -13,8 +13,8 @@ import {
   inputNumericClass,
   ListRow,
 } from "@/components/ui";
-import { Icon } from "@/components/Icon";
 import { PortalPageSkeleton } from "@/components/skeletons";
+import { PortalBackLink } from "@/components/portal/PortalBackLink";
 import { WeightTrendSparkline } from "@/components/WeightTrendSparkline";
 import { formatKg } from "@/lib/plates";
 import { ProgressPhotoGallery } from "@/components/ProgressPhotoGallery";
@@ -95,13 +95,7 @@ export default function PortalMeasurementsPage() {
   return (
     <div className="mx-auto max-w-lg space-y-8 pb-24">
       <header>
-        <Link
-          href={`/portal/${token}/profile`}
-          className="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-muted transition-[color,transform] duration-[var(--dur-fast)] hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] active:scale-[0.97]"
-        >
-          <Icon name="caret-left" size={16} decorative />
-          Profil
-        </Link>
+        <PortalBackLink href={`/portal/${token}/profile`}>Profil</PortalBackLink>
         <h1 className="t-title mt-2">Pomiary</h1>
         <p className="t-small mt-1">Waga, obwody i zdjęcia sylwetki — trener to widzi w Twoim profilu.</p>
       </header>

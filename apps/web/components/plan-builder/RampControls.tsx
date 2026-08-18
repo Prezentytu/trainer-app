@@ -57,8 +57,8 @@ export function RampControls({
           onChange={(v) => onModeChange(v === "ramp" ? "ramp" : "sets")}
         />
         {mode === "ramp" ? (
-          <>
-            <span className="ml-1 text-xs text-muted">do</span>
+          <div className="flex min-w-0 flex-nowrap items-center gap-1.5 overflow-x-auto">
+            <span className="shrink-0 text-xs text-muted">do</span>
             {RAMP_SHORTCUTS.map((t) => (
               <button
                 key={t}
@@ -79,7 +79,7 @@ export function RampControls({
             >
               inny…
             </button>
-          </>
+          </div>
         ) : null}
       </div>
 

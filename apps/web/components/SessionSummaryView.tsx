@@ -235,12 +235,15 @@ export function SessionSummaryView({
           {formatDay(session.performedOn)}
           {session.planName ? ` · ${session.planName}` : ""}
         </p>
+        {!fromHistory ? (
+          <p className="mt-2 text-sm text-muted">Zapisane — trener zobaczy ten trening.</p>
+        ) : null}
       </header>
 
       {hasPrs ? (
         // Celebracja samą typografią (Styrka: odejmowanie) — bez boxa. Złoto na danych:
         // wynik rekordu w text-pr (spójnie z SessionReview / kartą klienta), jedna dominanta
-        // na widoku (Peak-End). Szacowany max w osobnej linii — nie konkuruje z bohaterem.
+        // na widoku (Peak-End). 1RM w osobnej linii — nie konkuruje z bohaterem.
         // Animacja wejścia tylko przy świeżym ukończeniu — przegląd archiwum bez celebracji
         <section
           aria-label={prHeadline(session.prs.length)}
@@ -270,7 +273,7 @@ export function SessionSummaryView({
                   </p>
                   {p.estimated1Rm != null ? (
                     <p className="mt-1.5 font-mono text-sm tabular-nums text-muted">
-                      Szacowany max {formatKg(p.estimated1Rm)} kg
+                      1RM {formatKg(p.estimated1Rm)} kg
                       {delta != null && delta > 0 ? (
                         <span className="text-gain"> ▲ +{formatKg(delta)}</span>
                       ) : null}
@@ -363,7 +366,7 @@ export function SessionSummaryView({
       ) : null}
 
       <div>
-        <PerformedExerciseList session={session} />
+        <PerformedExerciseList session={session} portalToken={portalToken} />
         {/* Korekta w kontekście wyników (grouping & mapping) — nie konkuruje z głównym CTA */}
         <div className="mt-2">
           <Button variant="ghost" onClick={onEdit}>

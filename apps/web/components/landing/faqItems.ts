@@ -14,7 +14,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: "Co z\u00A0moimi danymi?",
-    a: "Są Twoje. Eksport JSON i\u00A0CSV z\u00A0panelu. Klient nie zakłada konta — po współpracy nie zostaje mu aplikacja w\u00A0sklepie.",
+    a: "Są Twoje. Z\u00A0panelu pobierasz arkusz albo pełną kopię. Klient nie zakłada konta — po współpracy nie zostaje mu aplikacja w\u00A0sklepie.",
   },
   {
     q: "Skąd wiem, że klient trenuje?",

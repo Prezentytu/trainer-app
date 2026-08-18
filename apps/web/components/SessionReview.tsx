@@ -4,10 +4,12 @@ import { useEffect, useState, Fragment } from "react";
 import { api, SessionDetail, WorkoutSessionInput } from "@/lib/api";
 import { refreshNavCounts } from "@/lib/navCounts";
 import { Button, Card, Dialog, ErrorBanner, Field, formatRest, inputClass, Marker } from "@/components/ui";
+import { splitExerciseName } from "@/lib/exerciseName";
 import { formatDurationMinutes } from "@/lib/estimateDuration";
 import { formatKg } from "@/lib/plates";
 import { formatSetLoadReps, isDumbbellPair } from "@/lib/weight";
 import { buildSessionBlocks } from "@/lib/sessionRounds";
+import { FormCheckPlayer } from "@/components/session/FormCheckPlayer";
 
 function toSessionInput(session: SessionDetail, performedOn: string): WorkoutSessionInput {
   return {
@@ -222,18 +224,20 @@ export function SessionReview({
             ex.sets.some((s) => s.isPr && s.completed) ||
             session.prs.some((p) => p.exerciseId === ex.exerciseId);
           const restMeta =
-            ex.restSeconds != null
+            ex.restSeconds != null && ex.restSeconds > 0
               ? ` · ${formatRest(ex.restSeconds)}${ex.supersetLabel ? " po superserii" : ""}`
               : "";
           return (
             <Card
               key={ex.id}
-              title={`${ex.supersetLabel ? `${ex.supersetLabel} ` : ""}${ex.exerciseName}`}
+              title={`${ex.supersetLabel ? `${ex.supersetLabel} ` : ""}${splitExerciseName(ex.exerciseName).primary}`}
               meta={`${done}/${ex.sets.length} serii${restMeta}`}
               headerAction={hasPr ? <Marker tone="pr">PR</Marker> : undefined}
             >
               {ex.substitutedFromName ? (
-                <p className="mb-2 text-xs text-muted">zamieniono z {ex.substitutedFromName}</p>
+                <p className="mb-2 text-xs text-muted">
+                  zamieniono z {splitExerciseName(ex.substitutedFromName).primary}
+                </p>
               ) : null}
               {ex.planNote ? (
                 <p className="mb-2 text-[13px] text-muted">Trener: {ex.planNote}</p>
@@ -309,6 +313,13 @@ export function SessionReview({
                   </span>
                   {ex.note.trim()}
                 </p>
+              ) : null}
+              {ex.formCheck ? (
+                <FormCheckPlayer
+                  sessionId={session.id}
+                  exerciseId={ex.id}
+                  contentType={ex.formCheck.contentType}
+                />
               ) : null}
             </Card>
           );

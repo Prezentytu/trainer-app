@@ -37,6 +37,14 @@ export default function ClientSessionPage() {
   if (!session) {
     return (
       <div>
+        <PageHeader
+          title="Sesja treningowa"
+          action={
+            <Link href={`/clients/${clientId}`}>
+              <Button variant="ghost">← Profil klienta</Button>
+            </Link>
+          }
+        />
         <ErrorBanner message={error} />
         {error ? null : <SessionLoggerSkeleton />}
       </div>

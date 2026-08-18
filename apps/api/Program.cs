@@ -26,10 +26,13 @@ builder.Services.AddDbContext<AppDb>(o =>
     {
         // Retry przy cold start Neona (scale-to-zero) — zamiast 500 pierwsze zapytanie dostaje backoff.
         o.UseNpgsql(connectionString, npg =>
-            npg.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(2), errorCodesToAdd: null));
+        {
+            npg.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(2), errorCodesToAdd: null);
+            npg.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+        });
     }
     else
-        o.UseSqlite(connectionString);
+        o.UseSqlite(connectionString, sqlite => sqlite.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
 });
 
 builder.Services.AddHostedService<WarmupService>();
@@ -396,7 +399,7 @@ app.MapGet("/api/clients", async (HttpContext http, AppDb db, IConfiguration con
     try
     {
         var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
-        return Results.Ok(await db.Clients
+        var rows = await db.Clients
             .Where(c => c.TrainerId == trainerId)
             .OrderBy(c => c.Name)
             .Select(c => new
@@ -407,7 +410,20 @@ app.MapGet("/api/clients", async (HttpContext http, AppDb db, IConfiguration con
                     .Where(s => s.Status == "completed")
                     .Max(s => (DateOnly?)s.PerformedOn),
             })
-            .ToListAsync());
+            .ToListAsync();
+        var presence = await TrainerPresence.ForTrainerAsync(db, trainerId);
+        return Results.Ok(rows.Select(c =>
+        {
+            presence.LiveByClient.TryGetValue(c.Id, out var live);
+            presence.ReviewByClient.TryGetValue(c.Id, out var review);
+            return new
+            {
+                c.Id, c.Name, c.Email, c.Note, c.CreatedAt,
+                c.ActivePlans, c.LastSessionOn,
+                LiveSession = TrainerPresence.LiveJson(live),
+                NeedsReview = TrainerPresence.ReviewJson(review),
+            };
+        }));
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
@@ -422,10 +438,16 @@ app.MapGet("/api/clients/{id:int}", async (int id, HttpContext http, AppDb db, I
             .FirstOrDefaultAsync(c => c.Id == id && c.TrainerId == trainerId);
         if (client is null) return Results.NotFound();
 
+        var presence = await TrainerPresence.ForTrainerAsync(db, trainerId);
+        presence.LiveByClient.TryGetValue(client.Id, out var live);
+        presence.ReviewByClient.TryGetValue(client.Id, out var review);
+
         return Results.Ok(new
         {
             client.Id, client.Name, client.Email, client.Note, client.GoalWeightKg, client.CreatedAt,
             HasPortalPin = !string.IsNullOrEmpty(client.PortalPinHash),
+            LiveSession = TrainerPresence.LiveJson(live),
+            NeedsReview = TrainerPresence.ReviewJson(review),
             Assignments = client.Assignments
                 .OrderByDescending(a => a.CreatedAt)
                 .Select(a => new
@@ -917,7 +939,7 @@ static PlanItem BuildItem(PlanItemInput i) => new()
     MeasureType = i.MeasureType,
     Sets = i.Sets, Reps = i.Reps, RepsMax = i.RepsMax,
     RepDurationSeconds = i.RepDurationSeconds, RepDurationSecondsMax = i.RepDurationSecondsMax,
-    DistanceMeters = i.DistanceMeters, Tempo = i.Tempo, TargetRpe = i.TargetRpe, TargetRir = i.TargetRir, SetScheme = i.SetScheme,
+    DistanceMeters = i.DistanceMeters, Tempo = i.Tempo, TargetRpe = i.TargetRpe, TargetRir = i.TargetRir, SetScheme = PlanSanitize.SetScheme(i.SetScheme),
     RestBetweenSetsSeconds = i.RestBetweenSetsSeconds, RestAfterExerciseSeconds = i.RestAfterExerciseSeconds ?? 90,
     LoadKg = i.LoadKg, LoadPercent = i.LoadPercent, Notes = i.Notes,
     PrescribedSets = (i.PrescribedSets ?? []).Select(BuildSet).ToList(),
@@ -928,6 +950,88 @@ static PlanDay BuildDay(PlanDayInput d) => new()
     WeekNumber = d.WeekNumber, Order = d.Order, Label = d.Label, Notes = d.Notes, DayOfWeek = d.DayOfWeek,
     Items = (d.Items ?? []).Select(BuildItem).ToList(),
 };
+
+static void ApplyItem(PlanItem item, PlanItemInput i)
+{
+    item.ExerciseId = i.ExerciseId;
+    item.Order = i.Order;
+    item.SupersetGroup = i.SupersetGroup;
+    item.IsWarmup = i.IsWarmup;
+    item.MeasureType = i.MeasureType;
+    item.Sets = i.Sets;
+    item.Reps = i.Reps;
+    item.RepsMax = i.RepsMax;
+    item.RepDurationSeconds = i.RepDurationSeconds;
+    item.RepDurationSecondsMax = i.RepDurationSecondsMax;
+    item.DistanceMeters = i.DistanceMeters;
+    item.Tempo = i.Tempo;
+    item.TargetRpe = i.TargetRpe;
+    item.TargetRir = i.TargetRir;
+    item.SetScheme = PlanSanitize.SetScheme(i.SetScheme);
+    item.RestBetweenSetsSeconds = i.RestBetweenSetsSeconds;
+    item.RestAfterExerciseSeconds = i.RestAfterExerciseSeconds ?? 90;
+    item.LoadKg = i.LoadKg;
+    item.LoadPercent = i.LoadPercent;
+    item.Notes = i.Notes;
+}
+
+static void MergePlanItems(AppDb db, PlanDay day, List<PlanItemInput> incoming)
+{
+    var existingById = day.Items.Where(i => i.Id > 0).ToDictionary(i => i.Id);
+    var keepIds = new HashSet<int>();
+
+    foreach (var iIn in incoming)
+    {
+        if (iIn.Id is > 0 && existingById.TryGetValue(iIn.Id.Value, out var item))
+        {
+            keepIds.Add(item.Id);
+            ApplyItem(item, iIn);
+            item.PrescribedSets.Clear();
+            foreach (var s in iIn.PrescribedSets ?? [])
+                item.PrescribedSets.Add(BuildSet(s));
+        }
+        else
+        {
+            day.Items.Add(BuildItem(iIn));
+        }
+    }
+
+    foreach (var item in day.Items.Where(i => i.Id > 0 && !keepIds.Contains(i.Id)).ToList())
+    {
+        day.Items.Remove(item);
+        db.PlanItems.Remove(item);
+    }
+}
+
+static void MergePlanDays(AppDb db, Plan plan, List<PlanDayInput> incoming)
+{
+    var existingById = plan.Days.Where(d => d.Id > 0).ToDictionary(d => d.Id);
+    var keepIds = new HashSet<int>();
+
+    foreach (var dIn in incoming)
+    {
+        if (dIn.Id is > 0 && existingById.TryGetValue(dIn.Id.Value, out var day))
+        {
+            keepIds.Add(day.Id);
+            day.WeekNumber = dIn.WeekNumber;
+            day.Order = dIn.Order;
+            day.Label = dIn.Label;
+            day.Notes = dIn.Notes;
+            day.DayOfWeek = dIn.DayOfWeek;
+            MergePlanItems(db, day, dIn.Items ?? []);
+        }
+        else
+        {
+            plan.Days.Add(BuildDay(dIn));
+        }
+    }
+
+    foreach (var day in plan.Days.Where(d => d.Id > 0 && !keepIds.Contains(d.Id)).ToList())
+    {
+        plan.Days.Remove(day);
+        db.PlanDays.Remove(day);
+    }
+}
 
 app.MapGet("/api/plans", async (HttpContext http, AppDb db, IConfiguration config) =>
 {
@@ -1116,12 +1220,52 @@ app.MapGet("/api/dashboard", async (HttpContext http, AppDb db, IConfiguration c
         var clientsWithSessionLast14Days = clientActivity.Count(c =>
             c.lastSessionOn != null && c.lastSessionOn >= window14);
 
+        var presence = await TrainerPresence.ForTrainerAsync(db, trainerId);
+        var liveSessions = presence.LiveByClient.Values
+            .OrderByDescending(x => x.StartedAt)
+            .Select(x => new
+            {
+                clientId = x.ClientId,
+                clientName = x.ClientName,
+                sessionId = x.SessionId,
+                startedAt = x.StartedAt,
+                doneSets = x.DoneSets,
+                totalSets = x.TotalSets,
+            })
+            .ToList();
+        var recentSessionsWithReview = recentSessions.Select(s =>
+        {
+            presence.ReviewBySession.TryGetValue(s.Id, out var review);
+            return new
+            {
+                s.Id,
+                s.ClientId,
+                s.ClientName,
+                s.AssignmentId,
+                s.PlanDayId,
+                s.PlanId,
+                s.PlanName,
+                s.DayLabel,
+                s.OutOfOrder,
+                s.PerformedOn,
+                s.DurationSeconds,
+                s.Note,
+                s.Status,
+                s.CreatedAt,
+                s.TotalSets,
+                s.TotalVolumeKg,
+                s.ExerciseCount,
+                NeedsReview = TrainerPresence.ReviewJson(review),
+            };
+        });
+
         return Results.Ok(new
         {
             clients,
             plans,
             exercises,
-            recentSessions,
+            liveSessions,
+            recentSessions = recentSessionsWithReview,
             recentPrs,
             attention,
             fromClients,
@@ -1243,10 +1387,21 @@ app.MapPut("/api/plans/{id:int}", async (int id, PlanInput input, HttpContext ht
         plan.Name = input.Name;
         plan.Description = input.Description;
         plan.IsTemplate = input.IsTemplate;
-        db.PlanDays.RemoveRange(plan.Days);   // kaskada usuwa pozycje i serie
-        plan.Days = (input.Days ?? []).Select(BuildDay).ToList();
+        MergePlanDays(db, plan, input.Days ?? []);
         await db.SaveChangesAsync();
-        return Results.Ok(new { plan.Id });
+        return Results.Ok(new
+        {
+            plan.Id,
+            days = plan.Days
+                .OrderBy(d => d.WeekNumber).ThenBy(d => d.Order)
+                .Select(d => new
+                {
+                    d.Id,
+                    d.WeekNumber,
+                    d.Order,
+                    items = d.Items.OrderBy(i => i.Order).Select(i => new { i.Id, i.Order }),
+                }),
+        });
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
@@ -1572,6 +1727,20 @@ app.MapGet("/api/sessions/{id:int}", async (int id, HttpContext http, AppDb db, 
         if (await TrainerAccess.OwnedSessionAsync(db, trainerId, id) is null) return Results.NotFound();
         var dto = await Sessions.LoadDto(db, id);
         return dto is null ? Results.NotFound() : Results.Ok(dto);
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapGet("/api/sessions/{id:int}/exercises/{exId:int}/form-check", async (int id, int exId, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        if (await TrainerAccess.OwnedSessionAsync(db, trainerId, id) is null) return Results.NotFound();
+        var row = await db.LoggedExerciseFormChecks
+            .FirstOrDefaultAsync(f => f.LoggedExerciseId == exId && f.LoggedExercise!.WorkoutSessionId == id);
+        if (row is null) return Results.NotFound();
+        return Results.File(row.Bytes, row.ContentType, row.FileName);
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
@@ -3069,6 +3238,90 @@ app.MapPost("/api/portal/{token}/history-import", async (
         logger.LogError(ex, "Portal history import AI call failed");
         return Results.Json(new { message = "Nie rozpoznałem treningów. Spróbuj ponownie za chwilę." }, statusCode: 502);
     }
+}).RequireRateLimiting("portal");
+
+app.MapGet("/api/portal/{token}/export", async (string token, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    var csv = await ExportData.BuildClientCsvAsync(db, access.ClientId);
+    return Results.Text(csv, "text/csv; charset=utf-8");
+}).RequireRateLimiting("portal");
+
+app.MapGet("/api/portal/{token}/maxes", async (string token, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    var rows = await db.ClientMaxes
+        .Where(m => m.ClientId == access.ClientId)
+        .OrderByDescending(m => m.MeasuredOn)
+        .ThenByDescending(m => m.Id)
+        .Select(m => new
+        {
+            m.Id, m.ExerciseId, ExerciseName = m.Exercise!.Name, m.MaxKg, m.MeasuredOn, m.Note,
+        })
+        .ToListAsync();
+    return Results.Ok(rows);
+}).RequireRateLimiting("portal");
+
+app.MapGet("/api/portal/{token}/history-import/pending", async (string token, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    var row = await db.ClientHistoryImports
+        .Where(h => h.ClientId == access.ClientId && h.Status == "pending")
+        .OrderByDescending(h => h.CreatedAt)
+        .Select(h => new { h.Id, h.Status, h.CreatedAt })
+        .FirstOrDefaultAsync();
+    return Results.Ok(row);
+}).RequireRateLimiting("portal");
+
+app.MapPost("/api/portal/{token}/sessions/{id:int}/exercises/{exId:int}/form-check", async (
+    string token, int id, int exId, FormCheckInput input, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    var exercise = await db.LoggedExercises
+        .Include(e => e.FormCheck)
+        .Include(e => e.Session)
+        .FirstOrDefaultAsync(e => e.Id == exId && e.WorkoutSessionId == id && e.Session!.ClientId == access.ClientId);
+    if (exercise is null) return Results.NotFound(new { message = "Nie znaleziono ćwiczenia w tym treningu." });
+    var decode = FormChecks.Decode(input, out var bytes, out var contentType, out var fileName);
+    if (decode is not null) return decode;
+    if (exercise.FormCheck is not null)
+    {
+        exercise.FormCheck.Bytes = bytes;
+        exercise.FormCheck.ContentType = contentType;
+        exercise.FormCheck.FileName = fileName;
+        exercise.FormCheck.CreatedAt = DateTime.UtcNow;
+    }
+    else
+    {
+        exercise.FormCheck = new LoggedExerciseFormCheck
+        {
+            ContentType = contentType,
+            FileName = fileName,
+            Bytes = bytes,
+        };
+    }
+    await db.SaveChangesAsync();
+    return Results.Created(
+        $"/api/portal/{token}/sessions/{id}/exercises/{exId}/form-check",
+        FormChecks.Meta(exercise.FormCheck));
+}).RequireRateLimiting("portal");
+
+app.MapGet("/api/portal/{token}/sessions/{id:int}/exercises/{exId:int}/form-check", async (
+    string token, int id, int exId, AppDb db) =>
+{
+    var access = await ResolvePortalToken(db, token);
+    if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
+    var row = await db.LoggedExerciseFormChecks
+        .FirstOrDefaultAsync(f =>
+            f.LoggedExerciseId == exId
+            && f.LoggedExercise!.WorkoutSessionId == id
+            && f.LoggedExercise.Session!.ClientId == access.ClientId);
+    if (row is null) return Results.NotFound();
+    return Results.File(row.Bytes, row.ContentType, row.FileName);
 }).RequireRateLimiting("portal");
 
 app.MapPost("/api/portal/{token}/push-subscription", async (string token, PushSubscriptionInput input, AppDb db) =>

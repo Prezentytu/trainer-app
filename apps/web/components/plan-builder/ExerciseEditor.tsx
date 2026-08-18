@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Exercise, RIR_HELP, rirFromRpe } from "@/lib/api";
 import { editorChipOff, editorChipOn } from "./editorChips";
 import { Field, Switch, inputClass } from "@/components/ui";
@@ -42,6 +42,7 @@ export function ExerciseEditor({
   onClearSets: () => void;
 }) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const setsSnapshot = useRef<BuilderSet[] | null>(null);
   const rampInfo = parseRampSchemeInfo(item.setScheme);
   const isRamp = rampInfo != null;
   const backoffs = readRampBackoffs(item);
@@ -50,6 +51,7 @@ export function ExerciseEditor({
 
   const pickRamp = () => {
     const targetRm = rampInfo?.targetRm ?? 6;
+    if (item.prescribedSets.length > 0) setsSnapshot.current = item.prescribedSets;
     onPatch({
       setScheme: formatRampScheme(targetRm, backoffs.length > 0 ? backoffs.map((b) => b.percent) : null),
       reps: null,
@@ -85,7 +87,10 @@ export function ExerciseEditor({
   };
 
   const pickSets = () => {
-    onPatch({ setScheme: null });
+    onPatch({
+      setScheme: null,
+      prescribedSets: setsSnapshot.current ?? item.prescribedSets,
+    });
   };
 
   const setTopKg = (v: number | null) => {
@@ -113,9 +118,10 @@ export function ExerciseEditor({
     const loads = item.prescribedSets
       .map((s) => s.loadKg)
       .filter((k): k is number => k != null);
-    const repPart = reps.length ? `${Math.min(...reps)}${reps.length > 1 ? `–${Math.max(...reps)}` : ""}` : "—";
-    const loadPart = loads.length ? `${Math.max(...loads)} kg` : "—";
-    return `${polishSetCount(item.prescribedSets.length)} · ${repPart} · ${loadPart}`;
+    const parts = [polishSetCount(item.prescribedSets.length)];
+    if (reps.length) parts.push(`${Math.min(...reps)}${reps.length > 1 ? `–${Math.max(...reps)}` : ""}`);
+    if (loads.length) parts.push(`${Math.max(...loads)} kg`);
+    return parts.join(" · ");
   })();
 
   const rirActive = (v: number) => {
@@ -140,24 +146,6 @@ export function ExerciseEditor({
           ) : null}
         </p>
       ) : null}
-      <div className="flex flex-wrap items-center gap-1.5" title={RIR_HELP}>
-        <span className="t-label mr-1 text-muted">RIR</span>
-        {([
-          { label: "0", value: 0 },
-          { label: "1", value: 1 },
-          { label: "2", value: 2 },
-          { label: "3+", value: 3 },
-        ] as const).map((o) => (
-          <button
-            key={o.label}
-            type="button"
-            className={rirActive(o.value) ? editorChipOn : editorChipOff}
-            onClick={() => onPatch({ targetRir: o.value })}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
       <RampControls
         mode={isRamp ? "ramp" : "sets"}
         targetRm={rampInfo?.targetRm ?? 6}
@@ -190,7 +178,7 @@ export function ExerciseEditor({
           }}
           className="text-sm font-medium text-foreground-secondary hover:text-foreground"
         >
-          Rozpisz rozbieg
+          Rozpisz serie rampy
         </button>
       ) : null}
 
@@ -247,6 +235,25 @@ export function ExerciseEditor({
         </Field>
       </div>
       )}
+
+      <div className="flex flex-wrap items-center gap-1.5" title={RIR_HELP}>
+        <span className="t-label mr-1 text-muted">RIR</span>
+        {([
+          { label: "0", value: 0 },
+          { label: "1", value: 1 },
+          { label: "2", value: 2 },
+          { label: "3+", value: 3 },
+        ] as const).map((o) => (
+          <button
+            key={o.label}
+            type="button"
+            className={rirActive(o.value) ? editorChipOn : editorChipOff}
+            onClick={() => onPatch({ targetRir: o.value })}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
 
       <div>
         <button

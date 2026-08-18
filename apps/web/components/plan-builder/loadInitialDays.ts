@@ -22,6 +22,7 @@ export function loadInitialDays(plan?: Plan, initialDayCount = 1, initialWeekCou
     const linked = deriveLinkedToNext(d.items.map((i) => i.supersetGroup));
     return {
       key: newKey(),
+      entityId: d.id,
       weekNumber: d.weekNumber,
       order: d.order,
       label: d.label,
@@ -29,6 +30,7 @@ export function loadInitialDays(plan?: Plan, initialDayCount = 1, initialWeekCou
       dayOfWeek: d.dayOfWeek ?? null,
       items: d.items.map((i, idx) => ({
         key: newKey(),
+        entityId: i.id,
         exerciseId: i.exerciseId,
         exerciseName: i.exerciseName,
         exerciseType: i.exerciseType,

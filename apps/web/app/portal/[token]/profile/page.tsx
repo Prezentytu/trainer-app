@@ -81,6 +81,12 @@ export default function PortalProfilePage() {
   const [logRir, setLogRir] = useState(() => readLogRir());
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushSaving, setPushSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [importPending, setImportPending] = useState<{
+    id: number;
+    status: string;
+    createdAt: string;
+  } | null>(null);
   const { theme, setTheme } = useTheme();
   const standalone = useIsStandalone();
   const ios = useIsIos();
@@ -88,11 +94,35 @@ export default function PortalProfilePage() {
   const pushNeedsInstall = ios && !standalone;
 
   const load = useCallback(() => {
-    api.portal
-      .home(token)
-      .then(setHome)
+    Promise.all([
+      api.portal.home(token),
+      api.portal.importPending(token).catch(() => null),
+    ])
+      .then(([h, pending]) => {
+        setHome(h);
+        setImportPending(pending);
+      })
       .catch((e: Error) => setError(e.message));
   }, [token]);
+
+  const downloadHistory = async () => {
+    setExporting(true);
+    setError(null);
+    try {
+      const csv = await api.portal.exportCsv(token);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "repmaxer-historia.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(load, [load]);
 
@@ -291,9 +321,39 @@ export default function PortalProfilePage() {
           <NavRow
             href={`/portal/${token}/calculator`}
             icon="calculator"
-            title="Kalkulator %1RM"
-            sub="Strefy ciężaru z rekordu"
+            title="Kalkulator ciężaru"
+            sub="Strefy z twojego rekordu"
           />
+          <NavRow
+            href={`/portal/${token}/import`}
+            icon="history"
+            title="Wrzuć stare treningi"
+            sub={
+              importPending
+                ? "Trener jeszcze nie zatwierdził"
+                : "Zdjęcia z poprzedniej apki"
+            }
+          />
+          <li>
+            <button
+              type="button"
+              onClick={() => void downloadHistory()}
+              disabled={exporting}
+              className="flex min-h-11 w-full items-center gap-3 py-2.5 text-left transition-colors duration-[var(--dur-fast)] hover:bg-surface focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] active:scale-[0.98]"
+            >
+              <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-md bg-surface-raised text-foreground">
+                <Icon name="download" size={18} decorative />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] font-medium text-foreground">
+                  {exporting ? "Przygotowuję plik…" : "Pobierz historię"}
+                </span>
+                <span className="mt-0.5 block text-sm text-muted">
+                  Treningi i serie w arkuszu — zostają u ciebie
+                </span>
+              </span>
+            </button>
+          </li>
           <NavRow href="/prywatnosc" icon="lock-simple" title="Polityka prywatności" />
         </ul>
       </section>

@@ -65,6 +65,16 @@ function formatKgRange(min: number, max: number, ex?: SchemeExerciseLike): strin
   return `${a}–${b} kg`;
 }
 
+const JUNK_SET_SCHEME = /^(normal|standard|std|default|zampa|none|n\/a|-)$/i;
+
+/** Ukrywa śmieci z importu („normal”) — zostawia rampę i świadomy tekst. */
+export function sanitizeSetScheme(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const t = raw.trim();
+  if (!t || JUNK_SET_SCHEME.test(t)) return null;
+  return t;
+}
+
 function parseOpenRampRm(setScheme: string | null | undefined): number | null {
   if (!setScheme) return null;
   const m =
@@ -137,9 +147,10 @@ export function compactSchemeLine(item: SchemeItemLike, exercise?: SchemeExercis
     const n = item.sets;
     return n != null ? `~${n} serii · rampa → ${rampRm}RM` : `rampa → ${rampRm}RM`;
   }
-  if (item.setScheme) {
+  const scheme = sanitizeSetScheme(item.setScheme);
+  if (scheme) {
     const n = item.sets ?? exercise?.defaultSets ?? null;
-    return n ? `${n} serii · ${item.setScheme}` : item.setScheme;
+    return n ? `${n} serii · ${scheme}` : scheme;
   }
 
   const core = formatMeasureCore(

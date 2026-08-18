@@ -1,4 +1,5 @@
 import { formatLoadDisplay } from "@/lib/weight";
+import { splitExerciseName } from "@/lib/exerciseName";
 import { BuilderDay, BuilderItem } from "./types";
 
 function topLoad(item: BuilderItem): string | null {
@@ -19,7 +20,8 @@ function topLoad(item: BuilderItem): string | null {
 
 function itemLine(item: BuilderItem): string {
   const load = topLoad(item);
-  return load ? `${item.exerciseName} · ${load}` : item.exerciseName;
+  const { primary } = splitExerciseName(item.exerciseName);
+  return load ? `${primary} · ${load}` : primary;
 }
 
 /** Te same dni (order) z tygodni obok siebie — widać, czy progresja ma sens. */

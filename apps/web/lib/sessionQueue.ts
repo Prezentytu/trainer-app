@@ -12,6 +12,22 @@ export type QueuedSessionWrite = {
 
 const KEY = "wa-session-queue";
 const LEGACY_PORTAL_KEY = "wa-portal-queue";
+const listeners = new Set<() => void>();
+
+function emitQueue() {
+  for (const fn of listeners) fn();
+}
+
+export function subscribeSessionQueue(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+export function sessionQueueCount(scope?: string): number {
+  const all = readSessionQueue();
+  if (!scope) return all.length;
+  return all.filter((q) => q.scope === scope).length;
+}
 
 function migrateLegacyPortalQueue(): void {
   try {
@@ -71,11 +87,13 @@ export function enqueueSessionWrite(item: Omit<QueuedSessionWrite, "id" | "creat
     createdAt: new Date().toISOString(),
   });
   localStorage.setItem(KEY, JSON.stringify(queue));
+  emitQueue();
 }
 
 export function clearSessionQueueItem(id: string) {
   const next = readSessionQueue().filter((q) => q.id !== id);
   localStorage.setItem(KEY, JSON.stringify(next));
+  emitQueue();
 }
 
 /** Kompatybilność wsteczna z portalQueue. */

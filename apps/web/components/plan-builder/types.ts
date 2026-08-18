@@ -4,6 +4,8 @@ export type BuilderSet = PlanSetInput & { key: string };
 
 export type BuilderItem = {
   key: string;
+  /** Id z bazy — merge przy PUT. Brak = nowa pozycja. */
+  entityId?: number;
   exerciseId: number;
   exerciseName: string;
   /** Typ ćwiczenia w bibliotece (kontekst pickera). */
@@ -37,6 +39,8 @@ export type BuilderItem = {
 
 export type BuilderDay = {
   key: string;
+  /** Id z bazy — merge przy PUT. Brak = nowy dzień. */
+  entityId?: number;
   weekNumber: number;
   order: number;
   label: string;

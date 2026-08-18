@@ -23,6 +23,7 @@ export function ListComposer({
   exercises,
   day,
   pendingNum,
+  pendingWarmup = false,
   onCancelPending,
   onAdd,
   onAddAt,
@@ -30,6 +31,7 @@ export function ListComposer({
   exercises: Exercise[];
   day: BuilderDay;
   pendingNum: number | null;
+  pendingWarmup?: boolean;
   onCancelPending: () => void;
   onAdd: (exerciseId: number, overrides: Partial<BuilderItem>) => void;
   onAddAt: (
@@ -76,7 +78,7 @@ export function ListComposer({
   const previewLabel = createExercisePreviewLabel(draftInput);
 
   const forcedNum = parsed.supersetPrefix ? Number(parsed.supersetPrefix.group) : null;
-  const nextLabel = nextPositionLabel(day.items, { forcedNum, pendingNum });
+  const nextLabel = nextPositionLabel(day.items, { forcedNum, pendingNum, pendingWarmup });
   const hintSuper = superHintLabel(day.items);
   const groups = buildListGroups(day.items);
 
@@ -118,7 +120,7 @@ export function ListComposer({
       onAddAt(exercise.id, {
         positionNum: pendingNum,
         asSuper: true,
-        isWarmup: pendingNum === 0,
+        isWarmup: pendingWarmup || pendingNum === 0,
         overrides,
       });
       onCancelPending();

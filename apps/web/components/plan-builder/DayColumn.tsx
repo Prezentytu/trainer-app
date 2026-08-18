@@ -34,6 +34,7 @@ export function DayColumn({
   onRemoveItem,
   onMoveItem,
   onDuplicateItem,
+  onSwapItem,
   onToggleWarmup,
   onToggleLink,
   onLinkSelected,
@@ -58,6 +59,7 @@ export function DayColumn({
   onRemoveItem: (itemKey: string) => void;
   onMoveItem: (itemKey: string, dir: -1 | 1) => void;
   onDuplicateItem: (itemKey: string) => void;
+  onSwapItem?: (itemKey: string) => void;
   onToggleWarmup: (itemKey: string) => void;
   onToggleLink: (itemKey: string) => void;
   onLinkSelected: (itemKeys: string[]) => void;
@@ -102,6 +104,7 @@ export function DayColumn({
           onRemove={() => onRemoveItem(item.key)}
           onDuplicate={() => onDuplicateItem(item.key)}
           onToggleWarmup={() => onToggleWarmup(item.key)}
+          onSwap={onSwapItem ? () => onSwapItem(item.key) : undefined}
         />
       </div>
     );
@@ -110,7 +113,7 @@ export function DayColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`flex max-h-[70dvh] w-full shrink-0 flex-col rounded-[var(--r-card)] border bg-surface p-0 md:h-full md:max-h-none md:w-[300px] md:min-h-0 md:snap-start ${
+      className={`flex max-h-[70dvh] w-full shrink-0 flex-col rounded-[var(--r-card)] border bg-surface p-0 md:h-full md:max-h-none md:w-[clamp(300px,24vw,360px)] md:min-h-0 md:snap-start ${
         isOver ? "border-border-strong" : "border-border"
       }`}
     >

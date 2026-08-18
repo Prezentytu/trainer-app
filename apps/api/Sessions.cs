@@ -502,6 +502,7 @@ public static class Sessions
             .Include(s => s.PlanDay)
             .Include(s => s.Exercises).ThenInclude(e => e.Exercise)
             .Include(s => s.Exercises).ThenInclude(e => e.SubstitutedFromExercise)
+            .Include(s => s.Exercises).ThenInclude(e => e.FormCheck)
             .Include(s => s.Exercises).ThenInclude(e => e.Sets)
             .FirstOrDefaultAsync(s => s.Id == id);
         if (session is null) return null;
@@ -547,7 +548,13 @@ public static class Sessions
             .ToListAsync();
 
         var maxes = await PlanLoads.LatestMaxesAsync(db, session.ClientId);
+        return TargetsFromItems(items, maxes);
+    }
 
+    public static Dictionary<int, Stats.ExerciseTargets> TargetsFromItems(
+        IEnumerable<PlanItem> items, IReadOnlyDictionary<int, double> maxes)
+    {
+        var result = new Dictionary<int, Stats.ExerciseTargets>();
         foreach (var item in items)
         {
             if (result.ContainsKey(item.ExerciseId)) continue;

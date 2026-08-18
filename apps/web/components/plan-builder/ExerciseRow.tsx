@@ -3,6 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Exercise, RIR_HELP, rirFromRpe } from "@/lib/api";
+import { ExerciseName } from "@/components/ExerciseName";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { formatMeasureCore } from "@/lib/measure";
 import { Badge, Field, IconButton, formatRest, inputClass } from "@/components/ui";
@@ -18,11 +19,11 @@ function summaryText(item: BuilderItem, exercise?: Exercise): string {
   if (item.measureType === "reps" && core !== "—") core = `${core} powt.`;
   const rest = item.restBetweenSetsSeconds ?? exercise?.defaultRestBetweenSetsSeconds ?? null;
   const parts = [sets ? `${sets} × ${core}` : core];
-  if (rest != null) parts.push(formatRest(rest));
+  if (rest != null && rest > 0) parts.push(formatRest(rest));
   if (item.loadKg != null) parts.push(formatLoadDisplay(item.loadKg, exercise));
   if (item.tempo) parts.push(`tempo ${item.tempo}`);
-  if (item.targetRir != null) parts.push(`RIR ${item.targetRir}`);
-  else if (item.targetRpe != null) parts.push(`RPE ${item.targetRpe}`);
+  if (item.targetRir != null && item.targetRir > 0) parts.push(`RIR ${item.targetRir}`);
+  else if (item.targetRpe != null && item.targetRpe > 0) parts.push(`RPE ${item.targetRpe}`);
   return parts.join(" · ");
 }
 
@@ -110,7 +111,9 @@ export function ExerciseRow({
                 alt={item.exerciseName}
               />
             </div>
-            <span className="min-w-0 break-words font-medium">{item.exerciseName}</span>
+            <span className="min-w-0 font-medium">
+              <ExerciseName name={item.exerciseName} />
+            </span>
             {supersetLabel && <Badge tone="accent">{supersetLabel}</Badge>}
           </button>
         </div>

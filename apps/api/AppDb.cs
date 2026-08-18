@@ -28,6 +28,7 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
     public DbSet<TrainerNotification> TrainerNotifications => Set<TrainerNotification>();
     public DbSet<WorkoutSession> WorkoutSessions => Set<WorkoutSession>();
     public DbSet<LoggedExercise> LoggedExercises => Set<LoggedExercise>();
+    public DbSet<LoggedExerciseFormCheck> LoggedExerciseFormChecks => Set<LoggedExerciseFormCheck>();
     public DbSet<LoggedSet> LoggedSets => Set<LoggedSet>();
 
     private static readonly JsonSerializerOptions JsonOpts = new()
@@ -277,6 +278,16 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
             .WithMany(e => e.Sets)
             .HasForeignKey(s => s.LoggedExerciseId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<LoggedExercise>()
+            .HasOne(e => e.FormCheck)
+            .WithOne(f => f.LoggedExercise)
+            .HasForeignKey<LoggedExerciseFormCheck>(f => f.LoggedExerciseId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<LoggedExerciseFormCheck>()
+            .HasIndex(f => f.LoggedExerciseId)
+            .IsUnique();
 
         var stringListConverter = new ValueConverter<List<string>, string>(
             v => JsonSerializer.Serialize(v ?? new List<string>(), JsonOpts),

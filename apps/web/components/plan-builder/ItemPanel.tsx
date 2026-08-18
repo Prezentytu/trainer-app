@@ -5,6 +5,7 @@ import { Exercise } from "@/lib/api";
 import { Icon } from "@/components/Icon";
 import { SidePanel } from "@/components/SidePanel";
 import { IconButton, OverflowMenu, OverflowMenuItem } from "@/components/ui";
+import { ExerciseName } from "@/components/ExerciseName";
 import { ExerciseEditor } from "./ExerciseEditor";
 import { cardLine } from "./summaryText";
 import { BuilderItem, BuilderSet } from "./types";
@@ -26,6 +27,7 @@ export function ItemPanel({
   onClearSets,
   onDuplicate,
   onRemove,
+  onSwap,
 }: {
   item: BuilderItem | null;
   /** Pozycje dnia — do nawigacji ←/→. */
@@ -44,6 +46,7 @@ export function ItemPanel({
   onClearSets: () => void;
   onDuplicate: () => void;
   onRemove: () => void;
+  onSwap?: () => void;
 }) {
   if (!open || !item) return null;
 
@@ -56,7 +59,7 @@ export function ItemPanel({
     <SidePanel
       open={open}
       panelId={panelId}
-      title={item.exerciseName}
+      title={<ExerciseName name={item.exerciseName} />}
       subtitle={line}
       onClose={onClose}
       headerRight={
@@ -80,6 +83,16 @@ export function ItemPanel({
           <OverflowMenu label="Akcje pozycji" align="right">
             {({ close }) => (
               <>
+                {onSwap ? (
+                  <OverflowMenuItem
+                    onClick={() => {
+                      onSwap();
+                      close();
+                    }}
+                  >
+                    Zamień ćwiczenie
+                  </OverflowMenuItem>
+                ) : null}
                 <OverflowMenuItem
                   onClick={() => {
                     onDuplicate();
@@ -118,7 +131,7 @@ export function ItemPanel({
       <div className="mt-6">
         <Link
           href={`/exercises/${item.exerciseId}`}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground underline underline-offset-2 hover:text-foreground-secondary"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-foreground-secondary"
         >
           Otwórz ćwiczenie
           <Icon name="caret-right" size={14} decorative />

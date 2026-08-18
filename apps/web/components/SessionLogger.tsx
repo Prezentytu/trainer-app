@@ -15,6 +15,7 @@ import {
   SetSide,
   WorkoutSessionInput,
 } from "@/lib/api";
+import { PortalBackLink } from "@/components/portal/PortalBackLink";
 import { YoutubeLite } from "@/components/YoutubeLite";
 import {
   Button,
@@ -31,6 +32,8 @@ import {
 import { demoMedia } from "@/lib/youtube";
 import { lightHaptic } from "@/lib/restAlarm";
 import { clearLocalDraft, readLocalDraft, saveLocalDraft } from "@/lib/sessionDraft";
+import { LOCAL_SESSION_ID } from "@/lib/offlineStart";
+import { fileToFormCheck } from "@/lib/compressImage";
 import { readAutoRest, readLogRir } from "@/lib/portalPrefs";
 import {
   buildSessionBlocks,
@@ -48,6 +51,7 @@ import { PlateCalculator } from "@/components/session/PlateCalculator";
 import { useKeyboardInset } from "@/components/session/useKeyboardInset";
 import { formatKg } from "@/lib/plates";
 import { formatLoadDisplay, isDumbbellPair } from "@/lib/weight";
+import { clientExerciseName } from "@/lib/exerciseName";
 import { Icon } from "@/components/Icon";
 
 /**
@@ -95,7 +99,7 @@ type Props = {
   clientName?: string;
   onUpdated: (session: SessionDetail) => void;
   onCompleted?: (session: SessionDetail) => void;
-  /** Portal live: wróć na Dziś, sesja zostaje in_progress (draft). */
+  /** Wyjście z sesji: pauza na Dziś (portal) albo powrót do klienta (trener). */
   onPause?: () => void;
   /** Wywołane przy nieudanym zapisie (np. offline queue). */
   onPersistFailed?: (input: WorkoutSessionInput, complete: boolean, error: Error) => void;
@@ -420,6 +424,9 @@ export function SessionLogger({
   const [addingExercise, setAddingExercise] = useState(false);
   const [swapSearch, setSwapSearch] = useState("");
   const [menuExIdx, setMenuExIdx] = useState<number | null>(null);
+  const formCheckInputRef = useRef<HTMLInputElement>(null);
+  const [formCheckExIdx, setFormCheckExIdx] = useState<number | null>(null);
+  const [formCheckBusy, setFormCheckBusy] = useState(false);
   const [setRowMenu, setSetRowMenu] = useState<{ exIdx: number; setIdx: number } | null>(null);
   const [setNoteEdit, setSetNoteEdit] = useState<{ exIdx: number; setIdx: number } | null>(null);
   const [restPickerEx, setRestPickerEx] = useState<number | null>(null);
@@ -563,9 +570,13 @@ export function SessionLogger({
   );
 
   const persistLocalDraft = useCallback(
-    (next: LocalSession) => {
+    (next: LocalSession, immediate = false) => {
       if (isCompletedEdit || isBehalf || next.status !== "in_progress") return;
       if (draftSaveTimer.current) clearTimeout(draftSaveTimer.current);
+      if (immediate) {
+        saveLocalDraft(draftScope, next.id, stripUids(next));
+        return;
+      }
       draftSaveTimer.current = setTimeout(() => {
         saveLocalDraft(draftScope, next.id, stripUids(next));
       }, 250);
@@ -579,6 +590,17 @@ export function SessionLogger({
       setError(null);
       const input = toInput(next);
       try {
+        if (portalToken && next.id === LOCAL_SESSION_ID) {
+          saveLocalDraft(draftScope, next.id, stripUids(next));
+          onPersistFailed?.(input, complete, new Error("offline"));
+          dirtyRef.current = false;
+          if (complete) {
+            const done = { ...stripUids(next), status: "completed" as const };
+            onUpdated(done);
+            onCompleted?.(done);
+          }
+          return next;
+        }
         let updated: SessionDetail;
         if (portalToken) {
           updated = await api.portal.updateSession(portalToken, next.id, input, {
@@ -636,6 +658,37 @@ export function SessionLogger({
     },
     [draftScope, isBehalf, isCompletedEdit, onCompleted, onPersistFailed, onUpdated, portalToken],
   );
+
+  const uploadFormCheck = async (file: File | undefined) => {
+    const exIdx = formCheckExIdx;
+    setFormCheckExIdx(null);
+    if (!file || exIdx == null || !portalToken) return;
+    const exercise = draftRef.current.exercises[exIdx];
+    if (!exercise || exercise.id <= 0) {
+      setError("Połącz się z internetem — wtedy zapiszesz nagranie przy tym ćwiczeniu.");
+      return;
+    }
+    setFormCheckBusy(true);
+    setError(null);
+    try {
+      const payload = await fileToFormCheck(file);
+      const meta = await api.portal.addFormCheck(portalToken, draftRef.current.id, exercise.id, payload);
+      setDraft((prev) => {
+        const next = {
+          ...prev,
+          exercises: prev.exercises.map((ex, i) =>
+            i === exIdx ? { ...ex, formCheck: meta } : ex,
+          ),
+        };
+        draftRef.current = next;
+        return next;
+      });
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setFormCheckBusy(false);
+    }
+  };
 
   const scheduleSave = useCallback(() => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -792,7 +845,7 @@ export function SessionLogger({
       };
       draftRef.current = next;
       dirtyRef.current = true;
-      persistLocalDraft(next);
+      persistLocalDraft(next, true);
       return next;
     });
 
@@ -1405,7 +1458,7 @@ export function SessionLogger({
                 className="flex min-h-12 items-center gap-2.5 border-b border-border last:border-0"
               >
                 <div className="min-w-0 flex-1 text-[15px] font-semibold text-foreground-secondary">
-                  {ex.exerciseName}
+                  {clientExerciseName(ex.exerciseName)}
                   {ex.substitutedFromName ? (
                     <p className="mt-0.5 text-xs font-normal text-muted">
                       zamieniono z {ex.substitutedFromName}
@@ -1493,11 +1546,23 @@ export function SessionLogger({
   }
 
   if (draft.exercises.length === 0) {
+    const homeHref = portalToken ? `/portal/${portalToken}` : null;
+    const leave = onPause;
     return (
-      <div>
+      <div className="mx-auto max-w-lg space-y-4">
+        {homeHref ? <PortalBackLink href={homeHref}>Treningi</PortalBackLink> : null}
         <ErrorBanner message={error} />
-        <EmptyState title="Brak ćwiczeń w tej sesji" action={null}>
-          Sesja nie ma pozycji do zalogowania — wróć i wybierz dzień z planu.
+        <EmptyState
+          title="Brak ćwiczeń w tej sesji"
+          action={
+            leave ? (
+              <Button variant="secondary" onClick={() => void leave()}>
+                {portalToken ? "Wróć do treningów" : "Wróć do klienta"}
+              </Button>
+            ) : null
+          }
+        >
+          Ta sesja nie ma pozycji do zalogowania. Wybierz dzień z planu.
         </EmptyState>
       </div>
     );
@@ -1541,6 +1606,17 @@ export function SessionLogger({
 
   return (
     <div className="space-y-4" style={{ paddingBottom: contentPadBottom }}>
+      <input
+        ref={formCheckInputRef}
+        type="file"
+        accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/webp"
+        className="sr-only"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          void uploadFormCheck(file);
+        }}
+      />
       <ErrorBanner message={error} />
       {isBehalf ? (
         <div
@@ -1711,8 +1787,8 @@ export function SessionLogger({
           exercise.sets.find((s) => s.targetWeightKg != null)?.targetWeightKg ??
           null;
         const metaBits = [
-          exercise.targetRir != null ? `RIR ${exercise.targetRir}` : null,
-          inSuperset ? null : `Przerwa ${restPillLabel(restSec)}`,
+          exercise.targetRir != null && exercise.targetRir > 0 ? `RIR ${exercise.targetRir}` : null,
+          inSuperset || restSec <= 0 ? null : `Przerwa ${restPillLabel(restSec)}`,
           targetKg != null && pairDb ? formatLoadDisplay(targetKg, exercise) : null,
         ].filter(Boolean);
 
@@ -1733,7 +1809,16 @@ export function SessionLogger({
                       {exercise.supersetLabel}
                     </span>
                   ) : null}
-                  {exercise.exerciseName}
+                  {clientExerciseName(exercise.exerciseName)}
+                  {exercise.sets.filter((s) => !s.isWarmup).length > 0 &&
+                  exercise.sets.filter((s) => !s.isWarmup).every((s) => s.completed) ? (
+                    <span className="ml-2 font-mono text-xs font-medium text-gain">✓ zrobione</span>
+                  ) : (exercise.note ?? "").startsWith("Pominięte") ? (
+                    <span className="ml-2 font-mono text-xs font-medium text-muted">pominięte</span>
+                  ) : null}
+                  {exercise.formCheck ? (
+                    <span className="ml-2 font-mono text-xs font-medium text-muted">nagranie</span>
+                  ) : null}
                 </h2>
                 {exercise.substitutedFromName ? (
                   <p className="mt-0.5 text-[13px] text-muted">
@@ -1820,6 +1905,36 @@ export function SessionLogger({
                         Podmień ćwiczenie
                       </button>
                     ) : null}
+                    <button
+                      type="button"
+                      className="block w-full px-3 py-2.5 text-left text-[15px] hover:bg-surface-hover"
+                      onClick={() => {
+                        const skipped = (exercise.note ?? "").startsWith("Pominięte");
+                        updateDraft((prev) => ({
+                          ...prev,
+                          exercises: prev.exercises.map((ex, i) =>
+                            i === exIdx
+                              ? {
+                                  ...ex,
+                                  note: skipped
+                                    ? (ex.note ?? "").replace(/^Pominięte\.?\s*/, "") || null
+                                    : ex.note?.trim()
+                                      ? `Pominięte. ${ex.note}`
+                                      : "Pominięte.",
+                                  sets: skipped
+                                    ? ex.sets
+                                    : ex.sets.map((s) => ({ ...s, completed: true })),
+                                }
+                              : ex,
+                          ),
+                        }));
+                        setMenuExIdx(null);
+                      }}
+                    >
+                      {(exercise.note ?? "").startsWith("Pominięte")
+                        ? "Cofnij pominięcie"
+                        : "Pomiń ćwiczenie"}
+                    </button>
                     {hasVideo ? (
                       <button
                         type="button"
@@ -1830,6 +1945,20 @@ export function SessionLogger({
                         }}
                       >
                         {videoExIdx === exIdx ? "Ukryj film" : "Pokaż film"}
+                      </button>
+                    ) : null}
+                    {portalToken && exercise.id > 0 ? (
+                      <button
+                        type="button"
+                        className="block w-full px-3 py-2.5 text-left text-[15px] hover:bg-surface-hover"
+                        disabled={formCheckBusy}
+                        onClick={() => {
+                          setFormCheckExIdx(exIdx);
+                          setMenuExIdx(null);
+                          formCheckInputRef.current?.click();
+                        }}
+                      >
+                        {exercise.formCheck ? "Podmień nagranie techniki" : "Wyślij nagranie techniki"}
                       </button>
                     ) : null}
                   </div>
@@ -1865,7 +1994,9 @@ export function SessionLogger({
             {videoExIdx === exIdx && thumb.youtubeId ? (
               <div className="rounded-xl border border-border bg-surface p-3">
                 <div className="mb-2 flex items-center justify-between gap-2">
-                  <p className="min-w-0 break-words text-sm font-semibold">{exercise.exerciseName}</p>
+                  <p className="min-w-0 break-words text-sm font-semibold">
+                    {clientExerciseName(exercise.exerciseName)}
+                  </p>
                   <button
                     type="button"
                     className="shrink-0 text-xs text-muted hover:text-foreground"
@@ -1874,7 +2005,11 @@ export function SessionLogger({
                     Zamknij
                   </button>
                 </div>
-                <YoutubeLite youtubeId={thumb.youtubeId} title={exercise.exerciseName} autoplay />
+                <YoutubeLite
+                  youtubeId={thumb.youtubeId}
+                  title={clientExerciseName(exercise.exerciseName)}
+                  autoplay
+                />
               </div>
             ) : null}
 
@@ -2337,11 +2472,11 @@ export function SessionLogger({
             ★ Rekord osobisty
           </p>
           <p className="mt-1 break-words text-[15px] font-semibold leading-snug text-foreground">
-            {prCelebrate.exerciseName}
+            {clientExerciseName(prCelebrate.exerciseName)}
           </p>
           {prCelebrate.estimated1Rm != null ? (
             <p className="mt-0.5 font-mono text-sm tabular-nums text-muted">
-              Szacowany max{" "}
+              1RM{" "}
               <span className="font-semibold text-foreground">
                 {formatKg(prCelebrate.estimated1Rm)} kg
               </span>

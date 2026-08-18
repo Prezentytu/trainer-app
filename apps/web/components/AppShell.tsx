@@ -369,7 +369,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const drawerEase = drawerEntered ? "ease-[var(--ease-out)]" : "ease-[var(--ease-in)]";
 
   return (
-    <div className="flex min-h-screen flex-col md:flex-row">
+    <div className="flex min-h-screen flex-col md:h-dvh md:flex-row md:overflow-hidden">
       {/* Mobile top bar */}
       <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-background px-4 py-3 md:hidden">
         <Wordmark />
@@ -387,7 +387,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <aside
         onMouseEnter={() => showRail && setRailExpanded(true)}
         onMouseLeave={() => isPlanEditor && setRailExpanded(false)}
-        className={`hidden shrink-0 flex-col border-r border-border bg-surface transition-[width] duration-[var(--dur-fast)] md:sticky md:top-0 md:flex md:h-screen ${
+        className={`hidden shrink-0 flex-col border-r border-border bg-surface transition-[width] duration-[var(--dur-fast)] md:flex md:h-full ${
           showRail
             ? "md:w-14 md:items-stretch md:overflow-hidden md:px-1.5 md:py-3"
             : "md:w-56 md:overflow-y-auto md:p-3"
@@ -438,8 +438,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main
         className={`w-full min-w-0 flex-1 bg-background p-4 pb-28 md:p-6 ${
           isPlanEditor
-            ? "md:flex md:h-dvh md:flex-col md:overflow-hidden md:pb-4"
-            : "md:p-8 md:pb-8"
+            ? "md:flex md:h-full md:flex-col md:overflow-hidden md:pb-4"
+            : "md:overflow-y-auto md:p-8 md:pb-8"
         }`}
       >
         <div

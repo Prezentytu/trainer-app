@@ -59,16 +59,19 @@ export default function PortalHistoryPage() {
   const [clientId, setClientId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [repeatingId, setRepeatingId] = useState<number | null>(null);
+  const [importPending, setImportPending] = useState(false);
   const todayIso = useMemo(() => todayIsoLocal(), []);
 
   const load = useCallback(() => {
     Promise.all([
       api.portal.sessions(token),
       api.portal.home(token, todayIso).catch(() => null),
+      api.portal.importPending(token).catch(() => null),
     ])
-      .then(([sessions, home]) => {
+      .then(([sessions, home, pending]) => {
         setHistory(sessions);
         setClientId(home?.client.id ?? sessions[0]?.clientId ?? null);
+        setImportPending(Boolean(pending));
       })
       .catch((e: Error) => setError(e.message));
   }, [token, todayIso]);
@@ -145,6 +148,16 @@ export default function PortalHistoryPage() {
 
       <ErrorBanner message={error} />
 
+      {importPending ? (
+        <Link
+          href={`/portal/${token}/import`}
+          className="block rounded-xl border border-border bg-surface-raised px-4 py-3 transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+        >
+          <p className="text-[15px] font-medium text-foreground">Trener jeszcze nie zatwierdził starych treningów</p>
+          <p className="mt-1 text-sm text-muted">Nic nie zapisuje się w historii, dopóki trener nie zatwierdzi.</p>
+        </Link>
+      ) : null}
+
       {!history ? (
         <PortalPageSkeleton label="Wczytuję historię…" />
       ) : history.length === 0 ? (
@@ -156,7 +169,7 @@ export default function PortalHistoryPage() {
                 href={`/portal/${token}/import`}
                 className="inline-flex min-h-11 items-center text-sm font-medium text-foreground underline-offset-4 hover:underline"
               >
-                Wrzuć screeny z poprzedniej apki
+                Wrzuć zdjęcia z poprzedniej apki
               </Link>
               <Link
                 href={`/portal/${token}`}
@@ -167,7 +180,7 @@ export default function PortalHistoryPage() {
             </div>
           }
         >
-          Tu zobaczysz ukończone treningi — od najnowszego. Jeśli trenowałeś w innej apce, wrzuć screeny, a trener przepisze je za Ciebie.
+          Tu zobaczysz ukończone treningi — od najnowszego. Jeśli trenowałeś w innej apce, wrzuć zdjęcia, a trener przepisze je za Ciebie.
         </EmptyState>
       ) : (
         <div className="space-y-8">
@@ -185,45 +198,43 @@ export default function PortalHistoryPage() {
                   const busy = repeatingId === s.id;
                   return (
                     <li key={s.id} className="py-3.5">
-                      <div className="flex items-start gap-3">
-                        <Link
-                          href={`/portal/${token}/session/${s.id}?from=history`}
-                          className="flex min-h-11 min-w-0 flex-1 items-center gap-3 transition-colors duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:bg-surface-raised/50 focus-visible:outline-none focus-visible:shadow-[var(--glow-accent)] active:bg-surface-hover active:scale-[0.995]"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-baseline gap-2">
-                              <p className="text-[15px] font-semibold tracking-tight text-foreground">
-                                {formatWhen(s.performedOn, todayIso)}
-                              </p>
-                              {prCount > 0 ? (
-                                <span className="font-mono text-xs font-medium tracking-caps text-pr">
-                                  {prCount === 1 ? "★ PR" : `★ ${prCount}× PR`}
-                                </span>
-                              ) : null}
-                            </div>
-                            <p className="mt-0.5 break-words text-sm text-foreground-secondary">
-                              {sessionTitle(s)}
-                              {s.planName && s.dayLabel && s.planName !== s.dayLabel ? (
-                                <span className="text-muted"> · {s.planName}</span>
-                              ) : null}
-                            </p>
-                            {meta ? (
-                              <p className="mt-1 font-mono text-sm tabular-nums text-muted">{meta}</p>
-                            ) : null}
-                          </div>
-                          <Icon name="caret-right" size={18} className="shrink-0 text-muted-faint" decorative />
-                        </Link>
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="min-w-0 text-[15px] font-semibold tracking-tight text-foreground">
+                          {formatWhen(s.performedOn, todayIso)}
+                          {prCount > 0 ? (
+                            <span className="ml-2 font-mono text-xs font-medium tracking-caps text-pr">
+                              {prCount === 1 ? "★ PR" : `★ ${prCount}× PR`}
+                            </span>
+                          ) : null}
+                        </p>
                         <Button
                           size="sm"
-                          variant="secondary"
+                          variant="ghost"
                           disabled={repeatingId != null || clientId == null}
                           loading={busy}
                           onClick={() => void repeat(s)}
-                          className="shrink-0"
+                          className="-mr-2 shrink-0 text-sm font-medium"
                         >
-                          {busy ? "…" : "Powtórz"}
+                          Powtórz
                         </Button>
                       </div>
+                      <Link
+                        href={`/portal/${token}/session/${s.id}?from=history`}
+                        className="mt-0.5 flex min-h-11 items-center gap-3 transition-colors duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] active:scale-[0.995]"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="break-words text-sm text-foreground-secondary">
+                            {sessionTitle(s)}
+                            {s.planName && s.dayLabel && s.planName !== s.dayLabel ? (
+                              <span className="text-muted"> · {s.planName}</span>
+                            ) : null}
+                          </p>
+                          {meta ? (
+                            <p className="mt-1 font-mono text-sm tabular-nums text-muted">{meta}</p>
+                          ) : null}
+                        </div>
+                        <Icon name="caret-right" size={18} className="shrink-0 text-muted-faint" decorative />
+                      </Link>
                     </li>
                   );
                 })}

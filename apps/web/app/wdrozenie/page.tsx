@@ -4,7 +4,7 @@ import { WdrozenieForm } from "./WdrozenieForm";
 
 const AGENDA = [
   { n: "01", title: "Start", body: "Dwie minuty: czym dziś wysyłasz plan i ile za to płacisz." },
-  { n: "02", title: "Plan", body: "Przenosisz jeden plan z Excela albo PDF do linku." },
+  { n: "02", title: "Plan", body: "Przenosisz jeden plan z arkusza albo PDF do linku." },
   { n: "03", title: "Linki", body: "Trzech klientów dostaje link na Twoim WhatsAppie, na rozmowie." },
   { n: "04", title: "Kolejka", body: "Widzisz, kto nie trenował. Wiesz, co napisać." },
 ] as const;
@@ -20,7 +20,7 @@ const FAQ = [
   },
   {
     q: "Co przynieść?",
-    a: "Jeden plan w Excelu albo PDF i imiona trzech klientów, którym wyślesz link.",
+    a: "Jeden plan w arkuszu albo PDF i imiona trzech klientów, którym wyślesz link.",
   },
   {
     q: "Co jeśli nikt nie dokończy treningu?",
