@@ -41,6 +41,7 @@ export function PlanToolbar({
   onExit,
   onApplyMethod,
   onOpenComposerHelp,
+  onDownloadPlan,
 }: {
   name: string;
   onNameChange: (v: string) => void;
@@ -62,6 +63,7 @@ export function PlanToolbar({
   onExit?: () => void;
   onApplyMethod?: () => void;
   onOpenComposerHelp?: () => void;
+  onDownloadPlan?: () => void;
 }) {
   const [editingName, setEditingName] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -168,6 +170,16 @@ export function PlanToolbar({
                     >
                       Ustawienia planu
                     </OverflowMenuItem>
+                    {onDownloadPlan ? (
+                      <OverflowMenuItem
+                        onClick={() => {
+                          close();
+                          onDownloadPlan();
+                        }}
+                      >
+                        Pobierz plan
+                      </OverflowMenuItem>
+                    ) : null}
                     {onApplyMethod ? (
                       <OverflowMenuItem
                         onClick={() => {

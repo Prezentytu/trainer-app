@@ -24,7 +24,7 @@ export type HeroRow = {
   live?: boolean;
 };
 
-/** Lista w hero — inna historia niż zoom 01 (Marta / Ola zostają w raporcie). */
+/** Lista Klientów w panelu hero — dane przykładowe, osiem wierszy jak w mocku. */
 export const HERO_ROWS: HeroRow[] = [
   {
     name: "Michał Dąbrowski",
@@ -33,6 +33,20 @@ export const HERO_ROWS: HeroRow[] = [
     tone: "flat",
     mark: null,
     live: true,
+  },
+  {
+    name: "Marta Lewicka",
+    sub: "Przysiad · ciężar w dół",
+    value: "80,0 kg × 5",
+    tone: "loss",
+    mark: "−5 kg",
+  },
+  {
+    name: "Ola Wiśniewska",
+    sub: "Brak treningu od 14 dni",
+    value: null,
+    tone: "loss",
+    mark: "14 dni",
   },
   {
     name: "Tomasz Zieliński",
@@ -44,23 +58,30 @@ export const HERO_ROWS: HeroRow[] = [
   {
     name: "Kasia Nowak",
     sub: "2 z 3 treningów",
-    value: null,
-    tone: "flat",
-    mark: null,
+    value: "62,5 kg × 8",
+    tone: "gain",
+    mark: "+2,5 kg",
   },
   {
-    name: "Piotr Maj",
-    sub: "3 z 3 treningów · martwy ciąg",
+    name: "Piotr Kaczmarek",
+    sub: "Martwy ciąg · tydzień 4 planu",
     value: "140,0 kg × 5",
-    tone: "flat",
-    mark: null,
+    tone: "gain",
+    mark: "+5 kg",
   },
   {
-    name: "Ania Król",
+    name: "Anna Zając",
+    sub: "3 z 3 treningów · wiosłowanie",
+    value: "55,0 kg × 10",
+    tone: "pr",
+    mark: "PR",
+  },
+  {
+    name: "Jakub Szymański",
     sub: "1 z 3 treningów",
-    value: null,
-    tone: "flat",
-    mark: null,
+    value: "70,0 kg × 6",
+    tone: "loss",
+    mark: "−2,5 kg",
   },
 ];
 

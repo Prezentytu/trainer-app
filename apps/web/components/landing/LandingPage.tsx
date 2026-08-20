@@ -7,7 +7,6 @@ import { LossCalculatorSection } from "./LossCalculatorSection";
 import { MarketingShell } from "./MarketingShell";
 import { HowItWorks } from "./HowItWorks";
 import { PricingSection } from "./PricingSection";
-import { TrainerPreview } from "./TrainerPreview";
 
 export function LandingPage() {
   return (
@@ -15,15 +14,12 @@ export function LandingPage() {
       <LandingJsonLd />
       <main>
         <Hero />
-        <TrainerPreview />
         <HowItWorks />
         <LossCalculatorSection />
         <PricingSection />
         <Faq />
-        <div className="bg-background text-foreground">
-          <FinalCta />
-          <LandingFooter home />
-        </div>
+        <FinalCta />
+        <LandingFooter home />
       </main>
     </MarketingShell>
   );

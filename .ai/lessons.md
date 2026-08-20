@@ -1073,4 +1073,18 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Zasada**: Komórka = jedno pole (ciężar serii szczytowej) + wyciszona linia kontekstu (`4×5` i delta). Nazwa ćwiczenia `sticky left-0` przy przewijaniu w poziomie, panel generatora poza obszarem przewijania. Generator liczy czystymi funkcjami i zawsze pokazuje podgląd `T1…Tn` przed zapisem; zakres „cały dzień” liczy wzór od własnego ciężaru każdego ćwiczenia.
 **Dotyczy**: `ProgressionView.tsx`, `progressionMatrix.ts`, `lib/progressionModels.ts`
 
+## Kopia osoby nie zabiera nieprzypisanego planu
+
+**Kontekst**: Trener pobrał kartę klienta, żeby przenieść plan z dewa na prod. Na ekranie był pełniejszy „kolejny cykl”, w pliku tylko przypisany „testowy plan 1”.
+**Problem**: `GET /api/clients/{id}/bundle` bierze plany z przypisań i sesji. Plan leżący w bibliotece, nawet z imieniem klienta w nazwie, nie wchodzi. Karty po wgraniu wyglądały pusto (`3 × 1 s`), bo serie siłowe miały śmieciowe `durationSeconds: 1`, a podsumowanie woli czas nad powtórzeniami.
+**Zasada**: Jeden plan = `Pobierz plan` / `Wgraj plan` (`repmaxer.plan-bundle`). Kopia osoby zostaje do historii. Podsumowanie czyta powtórzenia przed czasem. Przy wgraniu zeraujemy czas/dystans na seriach z powtórzeniami.
+**Dotyczy**: `ClientBundle.cs`, `lib/schemeSummary.ts`, `lib/clientBundle.ts`, lista Planów
+
+## Mock Designera przełącza widok — produkcja idzie na stały URL
+
+**Kontekst**: Mock landingu przełączał `/` na formularz przez `setState` („Zamów darmowy raport” → pola → potwierdzenie w tym samym kadrze).
+**Problem**: Widok bez URL-a psuje przycisk wstecz, odświeżenie, kampanie i analytics — konwersji nie da się zmierzyć ani zalinkować.
+**Zasada**: Mock daje układ i copy, nie routing. Wszystkie CTA idą na jeden stały URL (`/wdrozenie`), a formularz jest tam pierwszym kadrem; oferta i FAQ schodzą pod niego, za kreską. Skalowania scenografii z mocka (`transform: scale`) też nie przenosimy — kompozycję odtwarzamy responsywnie w realnych rozmiarach tokenów, żeby tekst nie zszedł pod 12 px.
+**Dotyczy**: `components/landing/`, `app/wdrozenie/`, skill `odejmowanie`
+
 ---

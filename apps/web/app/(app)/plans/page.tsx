@@ -1,13 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { api, PlanSummary } from "@/lib/api";
 import { daysAgo, formatDayShort, relativeDayLabel } from "@/lib/dates";
 import { refreshNavCounts } from "@/lib/navCounts";
-import { polishDayCount, polishExerciseCount, polishResultCount, polishWeekCount } from "@/lib/plural";
+import { polishDayCount, polishExerciseCount, polishPlanCount, polishResultCount, polishWeekCount } from "@/lib/plural";
 import {
   Avatar,
   Button,
@@ -21,6 +21,7 @@ import {
   useUndoToast,
 } from "@/components/ui";
 import { PlanListSkeleton } from "@/components/skeletons";
+import { importPlanFile } from "@/lib/clientBundle";
 
 type AssignmentSummary = { planId: number; clientName: string };
 type KindFilter = "all" | "library" | "clients";
@@ -33,10 +34,12 @@ const PLAN_GRID =
 
 export default function PlansPage() {
   const router = useRouter();
+  const planFileRef = useRef<HTMLInputElement>(null);
   const [plans, setPlans] = useState<PlanSummary[]>([]);
   const [assignments, setAssignments] = useState<AssignmentSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [importingPlan, setImportingPlan] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<PlanSummary | null>(null);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<KindFilter>("all");
@@ -81,6 +84,30 @@ export default function PlansPage() {
 
   const filtersActive = kind !== "all" || query.trim().length > 0;
 
+  const handleImportPlanFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setImportingPlan(true);
+    setError(null);
+    try {
+      const result = await importPlanFile(file);
+      void refreshNavCounts();
+      const extra = result.warnings[0] ? ` ${result.warnings[0]}` : "";
+      if (result.planIds.length === 1) {
+        showUndoToast(`Wgrano plan „${result.names[0]}”.${extra}`);
+        router.push(`/plans/${result.planIds[0]}`);
+        return;
+      }
+      showUndoToast(`Wgrano ${polishPlanCount(result.planIds.length)}.${extra}`);
+      load();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setImportingPlan(false);
+    }
+  };
+
   const handleDuplicate = async (plan: PlanSummary, asClientPlan: boolean) => {
     try {
       const created = await api.plans.duplicate(plan.id, {
@@ -115,8 +142,22 @@ export default function PlansPage() {
         subtitle="Twoja biblioteka planów i plany przypisane klientom"
         action={
           <div className="flex flex-wrap gap-2">
+            <input
+              ref={planFileRef}
+              type="file"
+              accept="application/json,.json"
+              className="sr-only"
+              onChange={(e) => void handleImportPlanFile(e)}
+            />
+            <Button
+              variant="secondary"
+              loading={importingPlan}
+              onClick={() => planFileRef.current?.click()}
+            >
+              Wgraj plan
+            </Button>
             <Link href="/plans/import">
-              <Button variant="secondary">Importuj</Button>
+              <Button variant="secondary">Importuj z tekstu</Button>
             </Link>
             <Link href="/plans/new">
               <Button>Utwórz plan</Button>
@@ -169,15 +210,23 @@ export default function PlansPage() {
                   <Link href="/plans/new">
                     <Button size="sm">Utwórz plan</Button>
                   </Link>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    loading={importingPlan}
+                    onClick={() => planFileRef.current?.click()}
+                  >
+                    Wgraj plan
+                  </Button>
                   <Link href="/plans/import">
                     <Button size="sm" variant="secondary">
-                      Importuj
+                      Importuj z tekstu
                     </Button>
                   </Link>
                 </div>
               }
             >
-              Plan, który skopiujesz dla dowolnego klienta — albo zaimportuj gotowy.
+              Plan, który skopiujesz dla dowolnego klienta — albo wgraj plan z pliku.
             </EmptyState>
           ) : filtered.length === 0 ? (
             <PlansEmptyState

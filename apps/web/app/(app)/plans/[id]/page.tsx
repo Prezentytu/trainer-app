@@ -15,9 +15,11 @@ import {
   EmptyState,
   ErrorBanner,
   OverflowMenu,
+  OverflowMenuItem,
   Toolbar,
 } from "@/components/ui";
 import { polishDayCount, polishExerciseCount } from "@/lib/plural";
+import { downloadSavedPlan } from "@/lib/clientBundle";
 
 export default function PlanDetailsPage() {
   const params = useParams<{ id: string }>();
@@ -31,6 +33,7 @@ export default function PlanDetailsPage() {
   const [activeWeek, setActiveWeek] = useState<number | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -153,14 +156,31 @@ export default function PlanDetailsPage() {
           right={
             <>
               <OverflowMenu label="Szczegóły planu" align="right">
-                <div className="max-w-xs space-y-1 px-3 py-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-faint">
-                    Zasady / opis
-                  </p>
-                  <p className="text-sm leading-snug text-foreground-secondary">
-                    {plan.description?.trim() || "Brak opisu planu."}
-                  </p>
-                </div>
+                {({ close }) => (
+                  <>
+                    <OverflowMenuItem
+                      disabled={downloading}
+                      onClick={() => {
+                        close();
+                        setError(null);
+                        setDownloading(true);
+                        void downloadSavedPlan(plan.id, plan.name)
+                          .catch((err: Error) => setError(err.message))
+                          .finally(() => setDownloading(false));
+                      }}
+                    >
+                      Pobierz plan
+                    </OverflowMenuItem>
+                    <div className="max-w-xs space-y-1 px-3 py-2">
+                      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-faint">
+                        Zasady / opis
+                      </p>
+                      <p className="text-sm leading-snug text-foreground-secondary">
+                        {plan.description?.trim() || "Brak opisu planu."}
+                      </p>
+                    </div>
+                  </>
+                )}
               </OverflowMenu>
               <Button
                 size="sm"

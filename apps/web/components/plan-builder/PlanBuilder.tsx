@@ -30,6 +30,7 @@ import { usePlanPersistence } from "./usePlanPersistence";
 import { LastPrescriptionProvider } from "./lastPrescription";
 import { ComposerChromeProvider, useComposerChrome } from "./ComposerChrome";
 import { WeekTabs } from "./WeekTabs";
+import { downloadSavedPlan } from "@/lib/clientBundle";
 
 type ActiveItem = { dayKey: string; itemKey: string };
 
@@ -359,6 +360,15 @@ export default function PlanBuilder({
             stepLabel={stepLabel}
             onExit={onExit}
             onApplyMethod={() => setMethodOpen(true)}
+            onDownloadPlan={
+              plan?.id
+                ? () => {
+                    void downloadSavedPlan(plan.id, draft.name || plan.name).catch((err: Error) =>
+                      setPersistenceError(err.message),
+                    );
+                  }
+                : undefined
+            }
           />
 
           <WeekTabs

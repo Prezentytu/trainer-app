@@ -1491,6 +1491,27 @@ app.MapPost("/api/plans/{id:int}/duplicate", async (int id, DuplicateInput input
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
 
+app.MapGet("/api/plans/{id:int}/bundle", async (int id, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var doc = await ClientBundle.BuildPlanAsync(db, trainerId, id);
+        return doc is null ? Results.NotFound() : Results.Ok(doc);
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapPost("/api/plans/bundle", async (JsonElement body, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainer = await TrainerAccess.RequireTrainerAsync(http, db, config);
+        return await ClientBundle.ImportPlansAsync(body, trainer, db);
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
 app.MapDelete("/api/plans/{id:int}", async (int id, HttpContext http, AppDb db, IConfiguration config) =>
 {
     try

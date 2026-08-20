@@ -40,10 +40,10 @@ export type SchemeExerciseLike = {
 } | null;
 
 function setMeasure(s: SchemeSetLike): string | null {
-  if (s.durationSeconds != null) return `${s.durationSeconds} s`;
-  if (s.distanceMeters != null) return `${s.distanceMeters} m`;
   if (s.reps != null && s.repsMax != null) return `${s.reps}–${s.repsMax}`;
   if (s.reps != null) return String(s.reps);
+  if (s.durationSeconds != null) return `${s.durationSeconds} s`;
+  if (s.distanceMeters != null) return `${s.distanceMeters} m`;
   return null;
 }
 

@@ -1,51 +1,30 @@
-import { DualSurfaces } from "./DualSurfaces";
+import { HeroStage } from "./HeroStage";
 import { LandingNav } from "./LandingNav";
-import {
-  LANDING_CAPS,
-  LANDING_H1,
-  LANDING_H1_SUB,
-  LANDING_HERO_GRID,
-  LANDING_MEASURE,
-  LandingCta,
-} from "./primitives";
+import { LANDING_CAPS, LANDING_H1, LANDING_MEASURE, LandingCta } from "./primitives";
 
-/** Hero — jeden pełny kadr: copy z lewej, scena produktu z prawej. */
+/** Hero — wyśrodkowane copy, pod nim para produktu jako dowód. */
 export function Hero() {
   return (
-    <section
-      id="top"
-      className="flex flex-col bg-background text-foreground lg:min-h-svh"
-    >
-      <div className={`flex w-full flex-1 flex-col ${LANDING_MEASURE}`}>
+    <section id="top" className="bg-background text-foreground">
+      <div className={LANDING_MEASURE}>
         <LandingNav home variant="hero" />
 
-        <div className={LANDING_HERO_GRID}>
-          <div className="min-w-0">
-            <p className={`landing-hero-line m-0 mb-6 ${LANDING_CAPS} text-muted`}>
-              Dla trenerów personalnych
-            </p>
-            <h1
-              aria-label="Wszyscy podopieczni w jednym raporcie. Za 0 zł, w 24 godziny."
-              className="m-0 min-w-0 text-foreground"
-            >
-              <span className={`landing-hero-line block ${LANDING_H1}`}>
-                Wszyscy podopieczni
-              </span>
-              <span className={`landing-hero-line block ${LANDING_H1}`}>
-                w jednym raporcie.
-              </span>
-            </h1>
-            <p
-              className={`landing-hero-line landing-hero-line-delay mt-7 ${LANDING_H1_SUB}`}
-            >
-              Za 0 zł, w 24 godziny.
-            </p>
-            <div className="mt-9">
-              <LandingCta href="/wdrozenie">Zamów darmowy raport</LandingCta>
-            </div>
+        <div className="flex flex-col items-center pb-4 pt-10 sm:pt-16">
+          <h1 className={`landing-hero-line text-center ${LANDING_H1}`}>
+            Wszyscy podopieczni w jednym raporcie.
+          </h1>
+
+          <div className="landing-hero-line landing-hero-line-delay mt-8 sm:mt-9">
+            <LandingCta href="/wdrozenie">Zamów darmowy raport</LandingCta>
           </div>
 
-          <DualSurfaces />
+          <p
+            className={`landing-hero-line landing-hero-line-delay m-0 mt-5 ${LANDING_CAPS} text-fg-ghost`}
+          >
+            0 zł · bez karty · 24 godziny
+          </p>
+
+          <HeroStage className="mt-14 sm:mt-16 lg:mt-[72px]" />
         </div>
       </div>
     </section>

@@ -40,7 +40,7 @@ Cichy instrument. Near-black / white / greys. Emfaza = **invert fill** (biała p
 | fg | `#0B0C0D` / `#FFFFFF` | tytuł |
 | muted | `#5C636A` / `#9AA1A8` | lead, label |
 
-Landing jest **jasny** z ciemnymi pasami **01 / 03 / 05**. 06 + stopka na home zostają jasne. Inne strony marketingowe — cały czas jasne.
+Landing jest **jasny** z jednym ciemnym pasem: **02 Ile tracisz**. Pytania, closer i stopka zostają jasne. Inne strony marketingowe — cały czas jasne.
 
 **Typografia**
 
@@ -60,7 +60,7 @@ Landing jest **jasny** z ciemnymi pasami **01 / 03 / 05**. 06 + stopka na home z
 
 **Sygnatura strony (jedna)**
 
-Para w hero, **obok** H1: **Ty** (uproszczony panel Klienci) + **Podopieczny** (telefon). 01 to zoom listy raportu, nie trzeci produkt. 03 to strata w zł. Nie big-number + 3 staty + gradient — to szablon AI.
+Para **pod** wyśrodkowanym H1: **Ty** (panel Klienci w ciemnej ramce) + **Podopieczny** (telefon), etykiety caps pod obiektami. Osobnej sekcji z raportem nie ma — para jest dowodem. 02 to strata w zł. Nie big-number + 3 staty + gradient — to szablon AI.
 
 ## Tekst jest materiałem, nie dekoracją
 
@@ -85,23 +85,26 @@ Landing: pełne zdania. Zakaz urywanych haseł bez czasownika.
 
 | Miejsce | Tekst |
 |---|---|
-| Eyebrow | Dla trenerów personalnych |
-| H1 | Wszyscy podopieczni w jednym raporcie. |
-| Sub | Za 0 zł, w 24 godziny. |
-| Lead hero | Nie w kadrze — mechanizm w 02. |
-| Belka | Nie w kadrze — 0 zł i 24 h są w sub; 5 miejsc w cenniku. |
-| Para hero | Etykiety: Ty / Podopieczny. Panel Klienci + telefon, obok H1 od `lg:`. Kotwica `#produkt`. |
-| 01 | Tak wygląda Twój raport. Lead: Jutro o tej porze — z Twoimi nazwiskami. Artefakt + CTA. |
-| 02 | Podopieczny odhacza serie. Ty nic nie przepisujesz. Trzy kroki: wysyłasz → link → raport. Bez panelu i bez drugiego telefonu. |
-| 03 | Rezygnacja nie zaczyna się od wiadomości «kończę». Lead: Spadek ciężarów i ciszę widać dwa tygodnie wcześniej. Etykieta wyniku: Tyle nie weszło na konto. |
-| 04 | Jeden podopieczny to 1 200 zł. To kosztuje 39. 39 / 99. Ciche wyjście: Wolę bez rozmowy. |
-| 06 | Pierwszy raport masz jutro. CTA: Zamów darmowy raport. |
+| Eyebrow | Nie w kadrze — H1 mówi, dla kogo to jest. |
+| H1 | Wszyscy podopieczni w jednym raporcie. (wyśrodkowany, jeden blok) |
+| Sub | Nie w kadrze — hak siedzi w linii pod CTA. |
+| Linia pod CTA | 0 zł · bez karty · 24 godziny |
+| Lead hero | Nie w kadrze — mechanizm w 01. |
+| Para hero | Etykiety: Ty / Podopieczny, **pod** obiektami. Panel Klienci w ramce + telefon, pod H1. |
+| 01 | Podopieczny odhacza serie. Ty nic nie przepisujesz. Trzy kroki: wysyłasz → link → raport. Bez leada. |
+| 02 | Rezygnacja nie zaczyna się od wiadomości «kończę». Lead: Spadek ciężarów i ciszę widać dwa tygodnie wcześniej. Etykieta wyniku: Tyle nie weszło na konto. |
+| 03 | Jeden podopieczny to 1 200 zł. To kosztuje 39. 39 / 99. Pierwszy raport i 90 dni za 0 zł. Bez karty. |
+| Closer | Pierwszy raport masz jutro. CTA: Zamów darmowy raport. Linia: 0 zł · bez karty · 5 miejsc. |
 
 FAQ: max **5** pytań. Pytanie nazywa wątpliwość. Odpowiedź = fakt. Bez sprytnego nagłówka („Zanim zapytasz”).
 
 ## IA landingu (nie dokładaj rozdziałów)
 
-`nav w hero` → hero (H1 + muted sub + 1 CTA + **para panel / telefon obok**) → **01 Raport** (ciemny, artefakt + CTA) → **02 Produkt** (jasny, 3 kroki) → **03 Ile tracisz** (ciemny) → **04 Cennik** (no-brainer 1 200 vs 39 + ciche konto) → **05 Pytania** (ciemny) → **06 Start** + stopka (jasny pas).
+`nav w hero` → hero (wyśrodkowany H1 + 1 CTA + linia faktów + **para panel / telefon pod spodem**) → **01 Produkt** (jasny, 3 kroki) → **02 Ile tracisz** (ciemny) → **03 Cennik** (no-brainer 1 200 vs 39) → **04 Pytania** (jasny akordeon) → closer + stopka (jasne).
+
+Sekcje w siatce `1fr / 1.4fr` z kreską u góry: po lewej caps `01 · Produkt` (+ H2), po prawej treść. Bez wielkich ghost-numerów.
+
+CTA nie przełącza widoku na `/` — prowadzi na `/wdrozenie`, gdzie formularz jest pierwszym kadrem, a stack i 2 900 zł stoją pod nim.
 
 Oferta ze stackiem żyje na `/wdrozenie`. Stack wycenia wyłącznie deliverables weryfikowalne cennikiem (90 dni do 30 podopiecznych = 297 zł, wiadomości i checklista = 190 zł). Zakaz wyceniania rozmowy. Zakaz 68% i generatora planów.
 
@@ -158,7 +161,7 @@ Nie burz tokenów. H1 i CTA są locked w tabeli wyżej — nie wracaj do „nied
 - [ ] Nie doszła sekcja, której nie ma w IA
 - [ ] Mono: invert w chrome, kolor tylko na danych + glif
 - [ ] Instrument Sans + Geist Mono; zero cienia / gradientu / blur
-- [ ] Jasny landing; ciemne pasy 01 / 03 / 05; 06 + stopka jasne
+- [ ] Jasny landing; ciemny pas tylko 02 Ile tracisz; Pytania, closer i stopka jasne
 - [ ] Mobile ~360 px: nic ucięte, nic poza kadr; cele ≥ 44 px
 - [ ] Reduced motion: bez autoplay / stagger
 

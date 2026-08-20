@@ -1166,6 +1166,13 @@ export type ClientBundleImportResult = {
   warnings: string[];
 };
 
+export type PlanBundleImportResult = {
+  planIds: number[];
+  names: string[];
+  createdExercises: number;
+  warnings: string[];
+};
+
 export type NavCounts = {
   clients: number;
   plans: number;
@@ -1712,6 +1719,12 @@ export const api = {
       request<{ id: number }>(`/api/plans/${id}/duplicate`, {
         method: "POST",
         body: JSON.stringify(input),
+      }),
+    exportBundle: (id: number) => request<unknown>(`/api/plans/${id}/bundle`),
+    importBundle: (data: unknown) =>
+      request<PlanBundleImportResult>("/api/plans/bundle", {
+        method: "POST",
+        body: JSON.stringify(data),
       }),
     remove: (id: number) => request(`/api/plans/${id}`, { method: "DELETE" }),
     muscleVolume: (id: number) =>

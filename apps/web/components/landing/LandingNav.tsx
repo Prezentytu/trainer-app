@@ -3,7 +3,6 @@ import { Wordmark } from "@/components/Wordmark";
 import { LANDING_CAPS, LANDING_MEASURE } from "./primitives";
 
 const NAV_LINKS = [
-  { hash: "#raport", path: "/#raport", label: "Raport" },
   { hash: "#produkt", path: "/#produkt", label: "Produkt" },
   { hash: "#ile-tracisz", path: "/#ile-tracisz", label: "Ile tracisz" },
   { hash: "#cennik", path: "/#cennik", label: "Cennik" },
@@ -29,7 +28,7 @@ export function LandingNav({
     >
       <div
         className={`flex items-center justify-between gap-4 ${
-          hero ? "h-20" : `h-[72px] ${LANDING_MEASURE}`
+          hero ? "h-20 sm:h-[88px]" : `h-[72px] ${LANDING_MEASURE}`
         }`}
       >
         <Wordmark href={home ? "#top" : "/"} compact className="min-h-11 sm:hidden" />
@@ -40,7 +39,7 @@ export function LandingNav({
               <a
                 key={link.label}
                 href={home ? link.hash : link.path}
-                className={`${LANDING_CAPS} inline-flex min-h-11 items-center text-muted decoration-1 underline-offset-[6px] transition-colors duration-[var(--dur-fast)] hover:text-foreground hover:underline focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]`}
+                className={`${LANDING_CAPS} inline-flex min-h-11 items-center whitespace-nowrap text-fg-faint decoration-1 underline-offset-[6px] transition-colors duration-[var(--dur-fast)] hover:text-foreground hover:underline focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]`}
               >
                 {link.label}
               </a>
@@ -50,7 +49,7 @@ export function LandingNav({
             href="/sign-in"
             className={
               hero
-                ? "inline-flex min-h-11 shrink-0 items-center rounded-[var(--r-pill)] border border-border px-5 text-[14px] font-medium text-foreground transition-opacity duration-[var(--dur-fast)] hover:opacity-70 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+                ? "inline-flex min-h-11 shrink-0 items-center rounded-[var(--r-pill)] border border-border px-5 text-[14px] font-medium text-foreground transition-colors duration-[var(--dur-fast)] hover:border-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
                 : "inline-flex min-h-11 shrink-0 items-center rounded-[var(--r-pill)] border border-foreground px-4 text-[13px] font-medium text-foreground transition-colors duration-[var(--dur-fast)] hover:bg-foreground hover:text-background focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
             }
           >

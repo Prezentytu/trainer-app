@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 
 namespace TrainerApp.Api;
@@ -9,6 +10,7 @@ namespace TrainerApp.Api;
 public static class ClientBundle
 {
     public const string Kind = "repmaxer.client-bundle";
+    public const string PlanKind = "repmaxer.plan-bundle";
     public const int Version = 1;
 
     public static async Task<ClientBundleDocument?> BuildAsync(AppDb db, int trainerId, int clientId)
@@ -457,6 +459,109 @@ public static class ClientBundle
         }
     }
 
+    public static async Task<PlanBundleDocument?> BuildPlanAsync(AppDb db, int trainerId, int planId)
+    {
+        var plan = await db.Plans
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Include(p => p.Days).ThenInclude(d => d.Items).ThenInclude(i => i.PrescribedSets)
+            .FirstOrDefaultAsync(p => p.Id == planId && p.TrainerId == trainerId);
+        if (plan is null) return null;
+
+        var exerciseIds = plan.Days.SelectMany(d => d.Items).Select(i => i.ExerciseId).Distinct().ToList();
+        var exercises = exerciseIds.Count == 0
+            ? []
+            : await db.Exercises.AsNoTracking()
+                .Where(e => exerciseIds.Contains(e.Id) && (e.TrainerId == null || e.TrainerId == trainerId))
+                .OrderBy(e => e.Name)
+                .ToListAsync();
+
+        return new PlanBundleDocument
+        {
+            Kind = PlanKind,
+            Version = Version,
+            ExportedAt = DateTime.UtcNow,
+            Exercises = exercises.Select(MapExercise).ToList(),
+            Plan = MapPlan(plan),
+        };
+    }
+
+    public static async Task<IResult> ImportPlansAsync(JsonElement body, Trainer trainer, AppDb db)
+    {
+        if (body.ValueKind != JsonValueKind.Object)
+            return Results.BadRequest(new { message = "Wgraj plan z RepMaxera." });
+
+        string? kind = null;
+        int version = 0;
+        foreach (var prop in body.EnumerateObject())
+        {
+            if (prop.Name.Equals("kind", StringComparison.OrdinalIgnoreCase))
+                kind = prop.Value.ValueKind == JsonValueKind.String ? prop.Value.GetString() : null;
+            else if (prop.Name.Equals("version", StringComparison.OrdinalIgnoreCase) && prop.Value.TryGetInt32(out var v))
+                version = v;
+        }
+
+        if (version < 1)
+            return Results.BadRequest(new { message = "Ta kopia jest uszkodzona." });
+        if (version > Version)
+            return Results.BadRequest(new { message = "Ta kopia jest z nowszej wersji RepMaxera. Zaktualizuj aplikację." });
+
+        var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        List<ClientBundleExercise> exercises;
+        List<ClientBundlePlan> plans;
+
+        if (string.Equals(kind, PlanKind, StringComparison.Ordinal))
+        {
+            var doc = body.Deserialize<PlanBundleDocument>(opts);
+            if (doc?.Plan is null)
+                return Results.BadRequest(new { message = "W kopii brakuje planu." });
+            exercises = doc.Exercises;
+            plans = [doc.Plan];
+        }
+        else if (string.Equals(kind, Kind, StringComparison.Ordinal))
+        {
+            var doc = body.Deserialize<ClientBundleDocument>(opts);
+            if (doc is null)
+                return Results.BadRequest(new { message = "Wgraj plan z RepMaxera." });
+            exercises = doc.Exercises;
+            plans = doc.Plans;
+            if (plans.Count == 0)
+                return Results.BadRequest(new { message = "W tej kopii osoby nie ma planu. Wgraj historię w Ustawieniach." });
+        }
+        else
+        {
+            return Results.BadRequest(new { message = "To nie jest plan z RepMaxera." });
+        }
+
+        var warnings = new List<string>();
+        await using var tx = await db.Database.BeginTransactionAsync();
+        try
+        {
+            var exerciseMap = await ResolveExercisesAsync(db, trainer.Id, exercises, warnings);
+            var created = new List<Plan>();
+            var dayMap = new Dictionary<int, PlanDay>();
+            foreach (var src in plans)
+            {
+                var plan = BuildPlan(trainer.Id, src, exerciseMap.BySourceId, dayMap, warnings);
+                db.Plans.Add(plan);
+                created.Add(plan);
+            }
+
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+
+            var ids = created.Select(p => p.Id).ToList();
+            var names = created.Select(p => p.Name).ToList();
+            var location = ids.Count == 1 ? $"/api/plans/{ids[0]}" : "/api/plans";
+            return Results.Created(location, new PlanBundleImportResult(ids, names, exerciseMap.Created, warnings));
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
+    }
+
     static IResult? Validate(ClientBundleDocument? doc)
     {
         if (doc is null)
@@ -604,6 +709,7 @@ public static class ClientBundle
                         RestSeconds = s.RestSeconds,
                     });
                 }
+                StripRepsDurationNoise(item, ex);
                 day.Items.Add(item);
             }
             plan.Days.Add(day);
@@ -750,6 +856,24 @@ public static class ClientBundle
         }).ToList(),
     };
 
+    static void StripRepsDurationNoise(PlanItem item, Exercise ex)
+    {
+        var measure = string.IsNullOrWhiteSpace(item.MeasureType) ? ex.Type : item.MeasureType;
+        if (measure is "time" or "distance") return;
+        var hasReps = item.Reps != null || item.PrescribedSets.Any(s => s.Reps != null);
+        if (!hasReps) return;
+
+        item.RepDurationSeconds = null;
+        item.RepDurationSecondsMax = null;
+        item.DistanceMeters = null;
+        foreach (var s in item.PrescribedSets)
+        {
+            if (s.Reps is null) continue;
+            s.DurationSeconds = null;
+            s.DistanceMeters = null;
+        }
+    }
+
     static string NormalizeName(string? name) =>
         string.IsNullOrWhiteSpace(name)
             ? ""
@@ -776,6 +900,21 @@ public sealed class ClientBundleDocument
     public List<ClientBundleNote> TrainerNotes { get; init; } = [];
     public List<ClientBundlePhoto> Photos { get; init; } = [];
 }
+
+public sealed class PlanBundleDocument
+{
+    public string Kind { get; init; } = "";
+    public int Version { get; init; }
+    public DateTime ExportedAt { get; init; }
+    public List<ClientBundleExercise> Exercises { get; init; } = [];
+    public ClientBundlePlan? Plan { get; init; }
+}
+
+public sealed record PlanBundleImportResult(
+    List<int> PlanIds,
+    List<string> Names,
+    int CreatedExercises,
+    List<string> Warnings);
 
 public sealed class ClientBundleClient
 {

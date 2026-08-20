@@ -50,6 +50,8 @@ export type IconName =
   | "chat-text"
   | "calculator"
   | "image"
+  | "cell-signal-full"
+  | "battery-high"
   | "arrow-u-up-left"
   | "arrow-u-up-right"
   // English aliases

@@ -30,7 +30,9 @@ function itemSetCount(item: DurationLike): number {
 }
 
 function itemWorkSeconds(item: DurationLike): number {
-  return item.repDurationSeconds ?? 40;
+  const dur = item.repDurationSeconds;
+  if (dur != null && dur >= 8) return dur;
+  return 40;
 }
 
 function itemRestSeconds(item: DurationLike): number {

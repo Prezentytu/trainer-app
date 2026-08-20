@@ -12,6 +12,10 @@ function polishPlural(n: number, one: string, few: string, many: string): string
   return `${n} ${polishForm(n, one, few, many)}`;
 }
 
+export function polishPlanCount(n: number): string {
+  return polishPlural(n, "plan", "plany", "planów");
+}
+
 export function polishWeekCount(n: number): string {
   return polishPlural(n, "tydzień", "tygodnie", "tygodni");
 }

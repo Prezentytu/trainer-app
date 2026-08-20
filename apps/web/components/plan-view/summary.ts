@@ -67,9 +67,9 @@ export function prescribedSetLine(s: PlanSet): { primary: string; note: string |
   const chunks: string[] = [`${s.order}`];
   if (s.role) chunks.push(SET_ROLE_LABELS[s.role] ?? s.role);
 
-  if (s.durationSeconds != null) chunks.push(`${s.durationSeconds}s`);
-  else if (s.repsMax) chunks.push(`${s.reps}–${s.repsMax}`);
+  if (s.repsMax) chunks.push(`${s.reps}–${s.repsMax}`);
   else if (s.reps != null) chunks.push(`${s.reps}`);
+  else if (s.durationSeconds != null) chunks.push(`${s.durationSeconds}s`);
   else if (s.distanceMeters != null) chunks.push(`${s.distanceMeters} m`);
 
   if (s.computedLoadKg != null) {
