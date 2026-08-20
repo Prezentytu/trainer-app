@@ -15,6 +15,7 @@ export function PlanTable({
   onPatchDay,
   onRemoveDay,
   onDuplicateDay,
+  onMoveDay,
   weeks,
   onApplyWeekdays,
   onAddItem,
@@ -23,9 +24,11 @@ export function PlanTable({
   onMoveItem,
   onToggleLink,
   onAddSet,
+  onInsertSet,
   onPatchSet,
   onRemoveSet,
   onApplyPreset,
+  onApplyRestToAll,
   onClearSets,
 }: {
   days: BuilderDay[];
@@ -34,6 +37,7 @@ export function PlanTable({
   onPatchDay: (dayKey: string, patch: Partial<BuilderDay>) => void;
   onRemoveDay: (dayKey: string) => void;
   onDuplicateDay: (dayKey: string, targetWeek?: number) => void;
+  onMoveDay?: (dayKey: string, targetWeek: number) => void;
   weeks: number[];
   onApplyWeekdays: (sourceWeek: number) => void;
   onAddItem: (dayKey: string, exerciseId: number, overrides?: Partial<BuilderItem>) => void;
@@ -42,9 +46,11 @@ export function PlanTable({
   onMoveItem: (dayKey: string, itemKey: string, dir: -1 | 1) => void;
   onToggleLink: (dayKey: string, itemKey: string) => void;
   onAddSet: (dayKey: string, itemKey: string) => void;
+  onInsertSet?: (dayKey: string, itemKey: string, index: number, side: "before" | "after") => string;
   onPatchSet: (dayKey: string, itemKey: string, setKey: string, patch: Partial<BuilderSet>) => void;
   onRemoveSet: (dayKey: string, itemKey: string, setKey: string) => void;
   onApplyPreset: (dayKey: string, itemKey: string, presetId: string) => void;
+  onApplyRestToAll?: (dayKey: string, itemKey: string, seconds: number | null) => void;
   onClearSets: (dayKey: string, itemKey: string) => void;
 }) {
   const weekEmpty = days.length > 0 && days.every((d) => d.items.length === 0);
@@ -65,6 +71,7 @@ export function PlanTable({
           onPatchDay={(patch) => onPatchDay(day.key, patch)}
           onRemoveDay={() => onRemoveDay(day.key)}
           onDuplicateDay={(w) => onDuplicateDay(day.key, w)}
+          onMoveDayToWeek={onMoveDay ? (w) => onMoveDay(day.key, w) : undefined}
           weeks={weeks}
           onApplyWeekdays={() => onApplyWeekdays(day.weekNumber)}
           onAddItem={(exerciseId, overrides) => onAddItem(day.key, exerciseId, overrides)}
@@ -73,6 +80,16 @@ export function PlanTable({
           onMoveItem={(itemKey, dir) => onMoveItem(day.key, itemKey, dir)}
           onToggleLink={(itemKey) => onToggleLink(day.key, itemKey)}
           onAddSet={(itemKey) => onAddSet(day.key, itemKey)}
+          onInsertSet={
+            onInsertSet
+              ? (itemKey, index, side) => onInsertSet(day.key, itemKey, index, side)
+              : undefined
+          }
+          onApplyRestToAll={
+            onApplyRestToAll
+              ? (itemKey, seconds) => onApplyRestToAll(day.key, itemKey, seconds)
+              : undefined
+          }
           onPatchSet={(itemKey, setKey, patch) => onPatchSet(day.key, itemKey, setKey, patch)}
           onRemoveSet={(itemKey, setKey) => onRemoveSet(day.key, itemKey, setKey)}
           onApplyPreset={(itemKey, presetId) => onApplyPreset(day.key, itemKey, presetId)}

@@ -1,67 +1,53 @@
-import { LandingReveal } from "./LandingReveal";
-import { LANDING_DISPLAY, LANDING_MEASURE, LandingCta, SECTION_CTA } from "./primitives";
-import { LogWall } from "./LogWall";
+import { DualSurfaces } from "./DualSurfaces";
+import { LandingNav } from "./LandingNav";
+import {
+  LANDING_CAPS,
+  LANDING_H1,
+  LANDING_H1_SUB,
+  LANDING_HERO_GRID,
+  LANDING_MEASURE,
+  LandingCta,
+} from "./primitives";
 
-/**
- * Hero — pełna szerokość (latarka na kadr). Treść w LANDING_MEASURE.
- * Dolna krawędź domknięta rzędem meta, żeby pustka pod CTA nie była przypadkowa.
- */
+/** Hero — jeden pełny kadr: copy z lewej, scena produktu z prawej. */
 export function Hero() {
   return (
-    <LandingReveal
-      as="section"
+    <section
       id="top"
-      className="relative flex min-h-[calc(100svh-72px)] flex-col"
+      className="flex flex-col bg-background text-foreground lg:min-h-svh"
     >
-      <LogWall />
-      <div className={`relative z-10 flex flex-1 flex-col ${LANDING_MEASURE}`}>
-        <div className="relative flex flex-1 flex-col items-center justify-center py-16 text-center sm:py-20">
-          <div className="relative z-10 mx-auto w-fit max-w-full" data-hero-copy>
-            <h1 className={`m-0 ${LANDING_DISPLAY} text-foreground`}>
-              <span className="landing-stagger block" style={{ ["--i" as string]: 0 }}>
-                Wysyłasz link.
+      <div className={`flex w-full flex-1 flex-col ${LANDING_MEASURE}`}>
+        <LandingNav home variant="hero" />
+
+        <div className={LANDING_HERO_GRID}>
+          <div className="min-w-0">
+            <p className={`landing-hero-line m-0 mb-6 ${LANDING_CAPS} text-muted`}>
+              Dla trenerów personalnych
+            </p>
+            <h1
+              aria-label="Wszyscy podopieczni w jednym raporcie. Za 0 zł, w 24 godziny."
+              className="m-0 min-w-0 text-foreground"
+            >
+              <span className={`landing-hero-line block ${LANDING_H1}`}>
+                Wszyscy podopieczni
               </span>
-              <span
-                className="landing-stagger mt-2 block text-muted"
-                style={{ ["--i" as string]: 1 }}
-              >
-                Widzisz trening.
+              <span className={`landing-hero-line block ${LANDING_H1}`}>
+                w jednym raporcie.
               </span>
             </h1>
             <p
-              className="landing-stagger m-0 mx-auto mt-8 max-w-[40ch] text-[17px] font-normal leading-[1.6] text-muted text-pretty"
-              style={{ ["--i" as string]: 2 }}
+              className={`landing-hero-line landing-hero-line-delay mt-7 ${LANDING_H1_SUB}`}
             >
-              Klient otwiera go w&nbsp;przeglądarce — bez konta i&nbsp;bez aplikacji. Po
-              treningu masz serie i&nbsp;rekordy. Piszesz pierwszy, zanim odejdzie.
+              Za 0 zł, w 24 godziny.
             </p>
-            <div
-              className={`landing-stagger ${SECTION_CTA} flex flex-wrap items-center justify-center gap-x-6 gap-y-3`}
-              style={{ ["--i" as string]: 3 }}
-            >
-              <LandingCta href="/wdrozenie">Umów 30 minut wdrożenia</LandingCta>
-              <LandingCta href="/sign-up" variant="ghost">
-                Załóż darmowe konto
-              </LandingCta>
+            <div className="mt-9">
+              <LandingCta href="/wdrozenie">Zamów darmowy raport</LandingCta>
             </div>
           </div>
-        </div>
 
-        <div
-          className="landing-stagger relative z-10 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 border-t border-border bg-background py-5"
-          style={{ ["--i" as string]: 4 }}
-        >
-          <p className="t-label m-0 tracking-[0.16em] text-fg-ghost">
-            Dla trenerów personalnych
-          </p>
-          <a
-            href="#produkt"
-            className="inline-flex min-h-11 items-center t-label tracking-[0.16em] text-muted transition-colors duration-[var(--dur-fast)] hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
-          >
-            Przewiń
-          </a>
+          <DualSurfaces />
         </div>
       </div>
-    </LandingReveal>
+    </section>
   );
 }

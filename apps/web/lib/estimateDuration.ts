@@ -5,7 +5,7 @@ const OPEN_RAMP_SET_FALLBACK = 5;
 
 export type DurationLike = {
   setScheme?: string | null;
-  prescribedSets?: { role?: string | null }[];
+  prescribedSets?: { role?: string | null; restSeconds?: number | null }[];
   overrides?: { sets?: number | null } | null;
   sets?: number | null;
   restBetweenSetsSeconds?: number | null;
@@ -37,6 +37,23 @@ function itemRestSeconds(item: DurationLike): number {
   return item.restBetweenSetsSeconds ?? 60;
 }
 
+/**
+ * Suma przerw ćwiczenia. Rozpisane serie mogą mieć własne przerwy (rozgrzewka 45 s,
+ * robocze 180 s), więc sumujemy je zamiast mnożyć jedną wartość przez liczbę serii.
+ * `count` to liczba przerw do policzenia (bez przerwy po ostatniej serii, gdy to koniec).
+ */
+function itemRestTotal(item: DurationLike, count: number): number {
+  if (count <= 0) return 0;
+  const fallback = itemRestSeconds(item);
+  const sets = item.prescribedSets ?? [];
+  if (sets.length === 0) return fallback * count;
+  let total = 0;
+  for (let i = 0; i < count; i++) {
+    total += sets[i]?.restSeconds ?? fallback;
+  }
+  return total;
+}
+
 function roundMinutes(seconds: number): number {
   const minutes = Math.round(seconds / 60);
   if (minutes <= 0) return 5;
@@ -59,11 +76,10 @@ export function estimateItemsMinutes(
 
     if (!block.multi) {
       const item = blockItems[0];
-      const rest = itemRestSeconds(item);
       const work = itemWorkSeconds(item);
       const sets = itemSetCount(item);
       seconds += sets * work;
-      seconds += rest * (isLastBlock ? Math.max(0, sets - 1) : sets);
+      seconds += itemRestTotal(item, isLastBlock ? Math.max(0, sets - 1) : sets);
       seconds += item.restAfterExerciseSeconds ?? 0;
       continue;
     }

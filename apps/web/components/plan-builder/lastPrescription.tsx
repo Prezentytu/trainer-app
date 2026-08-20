@@ -43,6 +43,7 @@ export function lastPrescriptionOverrides(
     tempo: null,
     role: "work",
     note: null,
+    restSeconds: null,
   }));
   const reps = prescribedSets.map((s) => s.reps);
   const sameReps = reps.every((r) => r === reps[0]);

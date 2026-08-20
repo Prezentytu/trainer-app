@@ -36,6 +36,21 @@ type ActiveItem = { dayKey: string; itemKey: string };
 type ViewMode = "list" | "board" | "table" | "progression";
 const VIEW_MODE_STORAGE_KEY = "trainer-app:plan-builder-view-mode:v2";
 
+/** Ten sam podgląd przeciąganego ćwiczenia w Tablicy, Liście i Arkuszu. */
+function DragGhost({ item }: { item: BuilderItem }) {
+  return (
+    <div className="w-[280px] rounded-[10px] border border-border-strong bg-surface-active px-3 py-2.5">
+      <div className="flex items-center gap-2">
+        <span className="text-muted-faint">⠿</span>
+        <span className="text-[15px] font-medium">
+          <ExerciseName name={item.exerciseName} />
+        </span>
+      </div>
+      <p className="mt-1 pl-5 font-mono text-[12px] text-muted">Przenoszenie…</p>
+    </div>
+  );
+}
+
 function loadInitialViewMode(): ViewMode {
   if (typeof window === "undefined") return "list";
   const stored = window.localStorage.getItem(VIEW_MODE_STORAGE_KEY);
@@ -244,15 +259,18 @@ export default function PlanBuilder({
     onPatchDay: draft.patchDay,
     onRemoveDay: draft.removeDay,
     onDuplicateDay: draft.duplicateDay,
+    onMoveDay: draft.moveDay,
     onAddItem: draft.addItem,
     onPatchItem: draft.patchItem,
     onRemoveItem: draft.removeItem,
     onMoveItem: draft.moveItem,
     onToggleLink: draft.toggleLink,
     onAddSet: draft.addSet,
+    onInsertSet: draft.insertSet,
     onPatchSet: draft.patchSet,
     onRemoveSet: draft.removeSet,
     onApplyPreset: draft.applyPreset,
+    onApplyRestToAll: draft.applyRestToAllSets,
     onClearSets: draft.clearSets,
   };
 
@@ -274,6 +292,22 @@ export default function PlanBuilder({
     setActiveItem(null);
     setViewMode(v as ViewMode);
   }, []);
+
+  const { undo, redo } = draft;
+  // ⌘Z / ⇧⌘Z na całym kreatorze — poza polami tekstowymi, gdzie cofa natywna edycja.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== "z") return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
+      e.preventDefault();
+      if (e.shiftKey) redo();
+      else undo();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [undo, redo]);
 
   const setActiveWeek = draft.setActiveWeek;
   const handleWeekSelect = useCallback(
@@ -333,6 +367,13 @@ export default function PlanBuilder({
             onSelect={handleWeekSelect}
             onAddWeek={draft.addWeek}
             onCopyWeek={draft.copyWeek}
+            onInsertWeek={draft.insertWeek}
+            onDuplicateWeek={draft.duplicateWeek}
+            onRemoveWeek={draft.removeWeek}
+            onUndo={draft.undo}
+            onRedo={draft.redo}
+            canUndo={draft.canUndo}
+            canRedo={draft.canRedo}
             days={viewMode === "list" ? draft.visibleDays : undefined}
             activeDayKey={viewMode === "list" ? resolvedListDayKey : undefined}
             onSelectDay={viewMode === "list" ? setListDayKey : undefined}
@@ -361,6 +402,13 @@ export default function PlanBuilder({
 
         {viewMode === "list" ? (
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <DndContext
+              sensors={dnd.sensors}
+              collisionDetection={dnd.collisionDetection}
+              onDragStart={dnd.handleDragStart}
+              onDragOver={dnd.handleDragOver}
+              onDragEnd={dnd.handleDragEnd}
+            >
             <ListView
               days={draft.visibleDays}
               exercises={library.exercises}
@@ -369,6 +417,7 @@ export default function PlanBuilder({
               onPatchDay={draft.patchDay}
               onRemoveDay={draft.removeDay}
               onDuplicateDay={draft.duplicateDay}
+              onMoveDay={draft.moveDay}
               weeks={draft.weeks}
               onApplyWeekdays={draft.applyWeekdaysToOtherWeeks}
               onAddItem={draft.addItem}
@@ -381,11 +430,15 @@ export default function PlanBuilder({
               onUnlinkGroup={draft.unlinkGroup}
               onSwapItem={(dayKey, itemKey) => setSwapTarget({ dayKey, itemKey })}
               onAddSet={draft.addSet}
+              onInsertSet={draft.insertSet}
               onPatchSet={draft.patchSet}
               onRemoveSet={draft.removeSet}
               onApplyPreset={draft.applyPreset}
+              onApplyRestToAll={draft.applyRestToAllSets}
               onClearSets={draft.clearSets}
             />
+            <DragOverlay>{dnd.activeDragItem ? <DragGhost item={dnd.activeDragItem} /> : null}</DragOverlay>
+            </DndContext>
           </div>
         ) : viewMode === "board" ? (
           <div className="flex min-h-0 flex-1">
@@ -420,6 +473,7 @@ export default function PlanBuilder({
                   onPatchDay={boardCallbacks.onPatchDay}
                   onRemoveDay={boardCallbacks.onRemoveDay}
                   onDuplicateDay={boardCallbacks.onDuplicateDay}
+                  onMoveDay={boardCallbacks.onMoveDay}
                   weeks={draft.weeks}
                   onApplyWeekdays={draft.applyWeekdaysToOtherWeeks}
                   onAddItem={boardCallbacks.onAddItem}
@@ -433,17 +487,7 @@ export default function PlanBuilder({
                   onToggleLink={boardCallbacks.onToggleLink}
                 />
                 <DragOverlay>
-                  {dnd.activeDragItem && (
-                    <div className="w-[280px] rounded-[10px] border border-border-strong bg-surface-active px-3 py-2.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-faint">⠿</span>
-                        <span className="text-[15px] font-medium">
-                          <ExerciseName name={dnd.activeDragItem.exerciseName} />
-                        </span>
-                      </div>
-                      <p className="mt-1 pl-5 font-mono text-[12px] text-muted">Przenoszenie…</p>
-                    </div>
-                  )}
+                  {dnd.activeDragItem ? <DragGhost item={dnd.activeDragItem} /> : null}
                 </DragOverlay>
               </DndContext>
             </div>
@@ -467,6 +511,16 @@ export default function PlanBuilder({
               }}
               onAddSet={() => {
                 if (activeItem) draft.addSet(activeItem.dayKey, activeItem.itemKey);
+              }}
+              onInsertSet={(index, side) =>
+                activeItem
+                  ? draft.insertSet(activeItem.dayKey, activeItem.itemKey, index, side)
+                  : undefined
+              }
+              onApplyRestToAll={(seconds) => {
+                if (activeItem) {
+                  draft.applyRestToAllSets(activeItem.dayKey, activeItem.itemKey, seconds);
+                }
               }}
               onPatchSet={(setKey, patch) => {
                 if (activeItem) draft.patchSet(activeItem.dayKey, activeItem.itemKey, setKey, patch);
@@ -495,16 +549,29 @@ export default function PlanBuilder({
             />
           </div>
         ) : viewMode === "progression" ? (
-          <ProgressionView days={draft.days} />
+          <ProgressionView
+            days={draft.days}
+            activeWeek={draft.activeWeek}
+            onPatchItem={draft.patchItem}
+          />
         ) : (
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-            <PlanTable
-              days={draft.visibleDays}
-              exercises={library.exercises}
-              weeks={draft.weeks}
-              onApplyWeekdays={draft.applyWeekdaysToOtherWeeks}
-              {...boardCallbacks}
-            />
+            <DndContext
+              sensors={dnd.sensors}
+              collisionDetection={dnd.collisionDetection}
+              onDragStart={dnd.handleDragStart}
+              onDragOver={dnd.handleDragOver}
+              onDragEnd={dnd.handleDragEnd}
+            >
+              <PlanTable
+                days={draft.visibleDays}
+                exercises={library.exercises}
+                weeks={draft.weeks}
+                onApplyWeekdays={draft.applyWeekdaysToOtherWeeks}
+                {...boardCallbacks}
+              />
+              <DragOverlay>{dnd.activeDragItem ? <DragGhost item={dnd.activeDragItem} /> : null}</DragOverlay>
+            </DndContext>
           </div>
         )}
 

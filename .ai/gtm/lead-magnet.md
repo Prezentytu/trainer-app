@@ -1,14 +1,14 @@
 # Stos haków Fazy A
 
-Reklamujesz **hak**, nie SaaS. Give:ask 3:1 — trzy wartości (checklista / ile tracisz / gotowiec), potem prośba o 30 min na `/wdrozenie`.
+Reklamujesz **hak**, nie SaaS. Give:ask 3:1 — trzy wartości (checklista / ile tracisz / gotowiec), potem prośba o pierwszy przegląd na `/wdrozenie`.
 
-Freemium **0 zł / 5 osób** też jest hakiem (typ 3): prawdziwy produkt, nie trial. W DM: „pięć osób za 0 zł, bez karty” — nie „plan Start”.
+Główny hak to sam przegląd: przysyłasz arkusz, dostajesz wynik. Freemium 5 osób zostaje w produkcie, nie w DM.
 
 Drukuj albo wyślij. Jedna strona na hak. Bez wstydu — fakty, nie kara.
 
 ---
 
-## Hak 1 — Checklista: kto z Twoich 15 klientów odejdzie w 14 dni
+## Hak 1 — Checklista: kto z Twoich 15 podopiecznych odejdzie w 14 dni
 
 Strona: `/checklista`
 
@@ -34,11 +34,11 @@ Osoba z **dwoma lub więcej** takami — napisz dziś. Nie jutro.
 | 14 | | | | | | |
 | 15 | | | | | | |
 
-Odsłania: w panelu ta lista układa się sama.
+Odsłania: w przeglądzie ta lista układa się sama.
 
 ---
 
-## Hak 2 — Ile tracisz, gdy klient odchodzi
+## Hak 2 — Ile tracisz, gdy podopieczny odchodzi
 
 Strona: `/ile-tracisz`
 
@@ -46,7 +46,7 @@ Wzór: **osoby, które skończyły współpracę w roku × stawka za sesję × 8
 
 Przykład: 1 × 150 zł × 8 = **1 200 zł**. 39 zł za 15 osób.
 
-Odsłania: rozmowa 30 min, plan w linku.
+Odsłania: pierwszy przegląd z Twojego arkusza.
 
 ---
 
@@ -64,9 +64,9 @@ Strona: `/gotowce` (te same treści poniżej). Wkleja dziś, bez konta.
 
 **Nie trenował w ogóle**
 
-> Cześć {imię}. Plan jest pod linkiem — otwierasz w przeglądarce, bez konta. Wystarczy odhaczyć serie na pierwszym treningu.
+> Cześć {imię}. Plan jest pod linkiem — otwierasz w telefonie, nic nie instalujesz. Wystarczy odhaczyć serie na pierwszym treningu.
 
-Odsłania: kolejka + przycisk Napisz w panelu.
+Odsłania: trzy wiadomości w przeglądzie, już pod tę osobę.
 
 ---
 
@@ -80,8 +80,8 @@ Odsłania: kreator + link bez konta.
 
 ## Po co to jest
 
-Klienci rezygnują w tygodniach 8–16, często 3–4 tygodnie po tym, jak przestali trenować. Jeśli dowiadujesz się przy „kończę współpracę”, jest za późno.
+Podopieczni rezygnują w tygodniach 8–16, często 3–4 tygodnie po tym, jak przestali trenować. Jeśli dowiadujesz się przy „kończę współpracę”, jest za późno.
 
-Na 30-minutowej rozmowie przenosisz plan do linku bez konta i widzisz kolejkę od razu.
+Pierwszy przegląd składa się z Twojego arkusza albo zrzutów. 24 godziny. 0 zł.
 
-**Umów wdrożenie:** /wdrozenie — 10 miejsc w miesiącu.
+**Odbierz przegląd:** /wdrozenie — 5 miejsc w miesiącu.

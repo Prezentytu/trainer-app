@@ -75,6 +75,7 @@ public static class Onboarding
                             Tempo = s.Tempo,
                             Role = s.Role,
                             Note = s.Note,
+                            RestSeconds = s.RestSeconds,
                         }).ToList(),
                     }).ToList(),
                 }).ToList(),

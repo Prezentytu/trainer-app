@@ -13,6 +13,11 @@ public class Trainer
     public string PlanKey { get; set; } = "free";
     public string? StripeCustomerId { get; set; }
     public string? StripeSubscriptionId { get; set; }
+    /// <summary>Płatne wdrożenie: start okna gwarancji 14 dni.</summary>
+    public DateTime? WdrozeniePaidAt { get; set; }
+    public string? WdrozeniePaymentIntentId { get; set; }
+    /// <summary>Kredyt rollover (grosze). 0 po zwrocie albo po zużyciu na subskrypcję.</summary>
+    public int WdrozenieCreditGrosze { get; set; }
     /// <summary>Dzienne podsumowanie nieprzeczytanych (max 1 mail/dzień).</summary>
     public bool NotifyDailySummary { get; set; } = true;
     public bool NotifyClientReply { get; set; } = true;
@@ -327,6 +332,7 @@ public class PlanSet
     public string? Tempo { get; set; }
     public string? Role { get; set; }          // "warmup" | "ramp" | "top" | "backoff" | "work"
     public string? Note { get; set; }
+    public int? RestSeconds { get; set; }      // przerwa po tej serii; null = dziedziczy PlanItem.RestBetweenSetsSeconds
 }
 
 public class Assignment

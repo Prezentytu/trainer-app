@@ -1,15 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   matchingPresetId,
   PLAN_PRESETS,
   poliquinWeekHint,
 } from "@/lib/planPresets";
 import { formatSetListPreview, parseSetList } from "@/lib/setList";
-import { Field, inputClass } from "@/components/ui";
-import { polishSetCount } from "@/lib/plural";
+import { Field, IconButton, inputClass } from "@/components/ui";
 import { computeSetKg } from "./computedLoad";
+import {
+  FloatingMenu,
+  FloatingMenuItem,
+  FloatingMenuLabel,
+  FloatingMenuSeparator,
+} from "./FloatingMenu";
 import { SET_ROW_GRID, SetRow } from "./SetRow";
 import { BuilderSet, newKey } from "./types";
 
@@ -24,10 +29,13 @@ export function SetSchemeEditor({
   measureType,
   itemLoadKg,
   oneRmKg,
+  defaultRestSeconds,
   onAdd,
+  onInsert,
   onPatch,
   onRemove,
   onApplyPreset,
+  onApplyRestToAll,
   onClear,
   onReplaceSets,
 }: {
@@ -37,23 +45,40 @@ export function SetSchemeEditor({
   measureType?: "reps" | "time" | "distance";
   itemLoadKg?: number | null;
   oneRmKg?: number | null;
+  /** Przerwa ćwiczenia — placeholder w kolumnie przerwy dla serii bez własnej wartości. */
+  defaultRestSeconds?: number | null;
   onAdd: () => void;
+  /** Zwraca `key` nowej serii — pozwala od razu ustawić fokus na jej ciężarze. */
+  onInsert?: (index: number, side: "before" | "after") => string | void;
   onPatch: (setKey: string, patch: Partial<BuilderSet>) => void;
   onRemove: (setKey: string) => void;
   onApplyPreset: (presetId: string) => void;
+  onApplyRestToAll?: (seconds: number | null) => void;
   onClear: () => void;
   onReplaceSets?: (sets: BuilderSet[]) => void;
 }) {
-  const [templateOpen, setTemplateOpen] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
   const [paste, setPaste] = useState("");
   const [pasteError, setPasteError] = useState<string | null>(null);
+  const [focusKey, setFocusKey] = useState<string | null>(null);
+
+  const focusRef = useCallback(
+    (el: HTMLInputElement | null) => {
+      if (!el) return;
+      el.focus();
+      el.select();
+      setFocusKey(null);
+    },
+    [],
+  );
+
   if (open === false) return null;
 
   const activePresetId = matchingPresetId(sets, weekNumber);
-  const custom = sets.length > 0 && activePresetId == null;
   const parsedPaste = paste.trim() ? parseSetList(paste) : null;
-  const needsTopHint = sets.some((s) => loadKindOf(s) === "percent" && computeSetKg(s, sets, { oneRmKg, itemLoadKg }) == null);
+  const needsTopHint = sets.some(
+    (s) => loadKindOf(s) === "percent" && computeSetKg(s, sets, { oneRmKg, itemLoadKg }) == null,
+  );
 
   const applyPaste = () => {
     if (!onReplaceSets) return;
@@ -78,6 +103,7 @@ export function SetSchemeEditor({
         tempo: null,
         role: "work",
         note: s.isBodyweight ? "BW" : null,
+        restSeconds: null,
       })),
     );
     setPaste("");
@@ -86,100 +112,24 @@ export function SetSchemeEditor({
   };
 
   return (
-    <div className="space-y-2.5">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setTemplateOpen((v) => !v)}
-            className="text-sm font-medium text-foreground-secondary hover:text-foreground"
-            aria-expanded={templateOpen}
-          >
-            Szablon ▾
-          </button>
-          {templateOpen ? (
-            <div className="absolute left-0 top-full z-30 mt-1 min-w-[14rem] rounded-[10px] border border-border-strong bg-surface p-1">
-              {PLAN_PRESETS.map((p) => {
-                const active = activePresetId === p.id;
-                const weekHint = p.id === "642531" ? poliquinWeekHint(weekNumber) : null;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    className={`flex w-full rounded-[8px] px-2.5 py-1.5 text-left text-sm ${
-                      active ? "bg-surface-active text-foreground" : "text-foreground-secondary hover:bg-surface-hover"
-                    }`}
-                    onClick={() => {
-                      onApplyPreset(p.id);
-                      setTemplateOpen(false);
-                    }}
-                  >
-                    {p.id === "642531" ? `${p.chipLabel} · ${weekHint}` : p.chipLabel}
-                  </button>
-                );
-              })}
-            </div>
-          ) : null}
-        </div>
-        {custom ? <span className="t-label text-muted">Własny rozpis</span> : null}
-        {onReplaceSets ? (
-          <button
-            type="button"
-            onClick={() => setPasteOpen((v) => !v)}
-            className="text-sm text-muted hover:text-foreground-secondary"
-          >
-            Wklej z tekstu
-          </button>
-        ) : null}
-      </div>
-
-      {pasteOpen && onReplaceSets ? (
-        <Field label="Wklej serie">
-          <input
-            className={inputClass}
-            value={paste}
-            placeholder="65x5, 70x5 albo 8-10x60"
-            onChange={(e) => {
-              setPaste(e.target.value);
-              setPasteError(null);
-            }}
-            onKeyDown={(e) => {
-              if (e.key !== "Enter") return;
-              e.preventDefault();
-              applyPaste();
-            }}
-          />
-          {pasteError ? (
-            <p className="mt-1 text-sm text-danger">{pasteError}</p>
-          ) : parsedPaste ? (
-            <p className="mt-1 text-xs text-foreground-secondary">
-              Enter wstawi: {formatSetListPreview(parsedPaste)}
-            </p>
-          ) : (
-            <p className="mt-1 text-xs text-muted">
-              Enter wstawia listę. 65×5 to 65 kg na 5 powtórzeń.
-            </p>
-          )}
-        </Field>
-      ) : null}
-
+    <div className="space-y-2">
       {sets.length > 0 ? (
-        <div className="min-w-0 overflow-x-auto">
-          <div className="w-full min-w-[18rem]">
-            <div className={`grid ${SET_ROW_GRID} gap-2 pb-1`}>
-              <span className="t-label text-muted">Seria</span>
-              <span className="t-label text-muted">Ciężar</span>
-              <span className="t-label text-muted">Powtórzenia</span>
-              <span />
-              <span />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              {sets.map((s, idx) => {
-                const kind = loadKindOf(s);
-                const computed = computeSetKg(s, sets, { oneRmKg, itemLoadKg });
-                return (
+        <div className="rounded-[10px] bg-surface-sunken p-2">
+          <div className={`grid ${SET_ROW_GRID} gap-1.5 px-0.5 pb-1.5`}>
+            <span className="t-label truncate text-muted-faint">Seria</span>
+            <span className="t-label truncate text-center text-muted-faint">Ciężar</span>
+            <span className="t-label truncate text-center text-muted-faint">Powt.</span>
+            <span className="t-label truncate text-center text-muted-faint">Przerwa</span>
+            <span />
+            <span />
+          </div>
+          <div className="flex flex-col divide-y divide-border">
+            {sets.map((s, idx) => {
+              const kind = loadKindOf(s);
+              const computed = computeSetKg(s, sets, { oneRmKg, itemLoadKg });
+              return (
+                <div key={s.key} className="py-1">
                   <SetRow
-                    key={s.key}
                     index={idx + 1}
                     reps={s.reps}
                     repsMax={s.repsMax}
@@ -195,10 +145,13 @@ export function SetSchemeEditor({
                     distanceMeters={s.distanceMeters}
                     percentOf={s.percentOf}
                     measureType={measureType}
-                    computedKg={kind === "percent" ? computed : null}
-                    onReps={(v) => onPatch(s.key, { reps: v })}
-                    onRepsMax={(v) => onPatch(s.key, { repsMax: v })}
-                    onLoadKg={(v) => onPatch(s.key, { loadKg: v, loadPercent: v != null ? null : s.loadPercent })}
+                    restSeconds={s.restSeconds}
+                    defaultRestSeconds={defaultRestSeconds}
+                    loadInputRef={s.key === focusKey ? focusRef : undefined}
+                    onReps={(next) => onPatch(s.key, next)}
+                    onLoadKg={(v) =>
+                      onPatch(s.key, { loadKg: v, loadPercent: v != null ? null : s.loadPercent })
+                    }
                     onLoadPercent={(v) =>
                       onPatch(s.key, {
                         loadPercent: v,
@@ -218,42 +171,146 @@ export function SetSchemeEditor({
                       }
                     }}
                     onRole={(role) => onPatch(s.key, { role })}
+                    onRest={(v) => onPatch(s.key, { restSeconds: v })}
+                    onApplyRestToAll={onApplyRestToAll}
                     onMorePatch={(patch) => onPatch(s.key, patch)}
+                    onInsert={
+                      onInsert
+                        ? (side) => {
+                            const created = onInsert(idx, side);
+                            if (typeof created === "string") setFocusKey(created);
+                          }
+                        : undefined
+                    }
                     onRemove={() => onRemove(s.key)}
                   />
-                );
-              })}
-            </div>
-            {needsTopHint ? (
-              <p className="mt-2 text-xs text-muted">
-                Ustaw docelowy ciężar, żeby zobaczyć kilogramy przy seriach procentowych.
-              </p>
-            ) : null}
+                  {kind === "percent" && computed != null ? (
+                    <p className="mt-0.5 pl-[6.4rem] font-mono text-[11px] tabular-nums text-muted-faint">
+                      ≈ {computed} kg
+                    </p>
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
+          {needsTopHint ? (
+            <p className="px-0.5 pt-2 text-xs text-muted">
+              Ustaw docelowy ciężar, żeby zobaczyć kilogramy przy seriach procentowych.
+            </p>
+          ) : null}
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex items-center gap-1">
         <button
           type="button"
           onClick={onAdd}
-          className="text-sm font-medium text-foreground-secondary hover:text-foreground"
+          className="text-sm font-medium text-foreground-secondary transition-colors hover:text-foreground"
         >
           + Seria
         </button>
-        {sets.length > 0 ? (
-          <button
-            type="button"
-            onClick={onClear}
-            className="text-sm text-muted hover:text-foreground-secondary"
+        <div className="ml-auto flex items-center gap-0.5">
+          <FloatingMenu
+            label="Szablony serii"
+            align="right"
+            minWidth="14rem"
+            trigger={({ open: menuOpen, toggle, ref }) => (
+              <button
+                ref={ref}
+                type="button"
+                onClick={toggle}
+                className="inline-flex h-[var(--h-control-sm)] w-[var(--h-control-sm)] items-center justify-center rounded-[var(--r-field)] text-sm text-muted-faint transition-colors hover:bg-surface-hover hover:text-foreground"
+                aria-expanded={menuOpen}
+                aria-haspopup="menu"
+                title="Szablony i wklejanie serii"
+              >
+                …
+              </button>
+            )}
           >
-            Wyczyść serie
-          </button>
-        ) : null}
-        {sets.length > 0 ? (
-          <span className="text-xs text-muted">{polishSetCount(sets.length)}</span>
-        ) : null}
+            {({ close }) => (
+              <>
+                <FloatingMenuLabel>Gotowy rozpis</FloatingMenuLabel>
+                {PLAN_PRESETS.map((p) => (
+                  <FloatingMenuItem
+                    key={p.id}
+                    active={activePresetId === p.id}
+                    onClick={() => {
+                      onApplyPreset(p.id);
+                      close();
+                    }}
+                  >
+                    {p.id === "642531" ? `${p.chipLabel} · ${poliquinWeekHint(weekNumber)}` : p.chipLabel}
+                  </FloatingMenuItem>
+                ))}
+                {onReplaceSets ? (
+                  <>
+                    <FloatingMenuSeparator />
+                    <FloatingMenuItem
+                      onClick={() => {
+                        setPasteOpen(true);
+                        close();
+                      }}
+                    >
+                      Wklej z tekstu
+                    </FloatingMenuItem>
+                  </>
+                ) : null}
+                {onApplyRestToAll && sets.length > 1 ? (
+                  <FloatingMenuItem
+                    onClick={() => {
+                      onApplyRestToAll(null);
+                      close();
+                    }}
+                  >
+                    Wróć do domyślnej przerwy we wszystkich
+                  </FloatingMenuItem>
+                ) : null}
+              </>
+            )}
+          </FloatingMenu>
+          {sets.length > 0 ? (
+            <IconButton title="Wyczyść rozpisane serie" size="xs" onClick={onClear}>
+              ✕
+            </IconButton>
+          ) : null}
+        </div>
       </div>
+
+      {pasteOpen && onReplaceSets ? (
+        <Field label="Wklej serie">
+          <input
+            className={inputClass}
+            autoFocus
+            value={paste}
+            placeholder="65x5, 70x5 albo 8-10x60"
+            onChange={(e) => {
+              setPaste(e.target.value);
+              setPasteError(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                setPasteOpen(false);
+                return;
+              }
+              if (e.key !== "Enter") return;
+              e.preventDefault();
+              applyPaste();
+            }}
+          />
+          {pasteError ? (
+            <p className="mt-1 text-sm text-danger">{pasteError}</p>
+          ) : parsedPaste ? (
+            <p className="mt-1 text-xs text-foreground-secondary">
+              Enter wstawi: {formatSetListPreview(parsedPaste)}
+            </p>
+          ) : (
+            <p className="mt-1 text-xs text-muted">
+              Enter wstawia listę. 65×5 to 65 kg na 5 powtórzeń.
+            </p>
+          )}
+        </Field>
+      ) : null}
     </div>
   );
 }

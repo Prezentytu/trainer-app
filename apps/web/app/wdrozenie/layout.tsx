@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "30 minut wdrożenia",
+  title: "Darmowy raport tygodnia",
   description:
-    "W 30 minut przenosisz plan do linku bez konta. 10 miejsc w miesiącu. 90 dni za 0 zł, do 15 osób. Jeśli w 14 dni nikt nie dokończy treningu — 0 zł.",
+    "Przysyłasz arkusz albo zrzuty. W 24 godziny masz raport podopiecznych i trzy wiadomości. Bezpłatnie, pięć miejsc.",
   alternates: { canonical: "/wdrozenie" },
 };
 

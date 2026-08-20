@@ -290,6 +290,8 @@ app.MapGet("/api/me", async (HttpContext http, AppDb db, IConfiguration config, 
             await db.SaveChangesAsync();
         }
         var clientCount = await db.Clients.CountAsync(c => c.TrainerId == trainer.Id);
+        var hasCompleted = await db.WorkoutSessions
+            .AnyAsync(s => s.Client!.TrainerId == trainer.Id && s.Status == "completed");
         var plan = BillingPlans.Resolve(trainer.PlanKey);
         return Results.Ok(new
         {
@@ -306,6 +308,9 @@ app.MapGet("/api/me", async (HttpContext http, AppDb db, IConfiguration config, 
             notifyDailySummary = trainer.NotifyDailySummary,
             notifyClientReply = trainer.NotifyClientReply,
             notifyWeeklyDigest = trainer.NotifyWeeklyDigest,
+            wdrozeniePaidAt = trainer.WdrozeniePaidAt,
+            wdrozenieCreditGrosze = trainer.WdrozenieCreditGrosze,
+            wdrozenieGuaranteeEligible = BillingService.IsGuaranteeEligible(trainer, hasCompleted),
         });
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
@@ -338,6 +343,18 @@ app.MapPost("/api/billing/checkout", async (BillingCheckoutInput input, HttpCont
         var (ok, url, message) = await billing.CreateCheckoutAsync(trainer, input.PlanKey);
         if (!ok) return Results.Conflict(new { message });
         return Results.Ok(new { checkoutUrl = url, message });
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapPost("/api/billing/wdrozenie-gwarancja", async (HttpContext http, AppDb db, IConfiguration config, BillingService billing) =>
+{
+    try
+    {
+        var trainer = await TrainerAccess.RequireTrainerAsync(http, db, config);
+        var (ok, message) = await billing.RefundWdrozenieGuaranteeAsync(trainer, db);
+        if (!ok) return Results.Conflict(new { message });
+        return Results.Ok(new { ok = true, message });
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
@@ -478,6 +495,27 @@ app.MapPost("/api/clients", async (ClientInput input, HttpContext http, AppDb db
         db.Clients.Add(client);
         await db.SaveChangesAsync();
         return Results.Created($"/api/clients/{client.Id}", client);
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapGet("/api/clients/{id:int}/bundle", async (int id, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainerId = await TrainerAccess.TrainerIdAsync(http, db, config);
+        var doc = await ClientBundle.BuildAsync(db, trainerId, id);
+        return doc is null ? Results.NotFound() : Results.Ok(doc);
+    }
+    catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
+});
+
+app.MapPost("/api/clients/bundle", async (ClientBundleDocument? bundle, HttpContext http, AppDb db, IConfiguration config) =>
+{
+    try
+    {
+        var trainer = await TrainerAccess.RequireTrainerAsync(http, db, config);
+        return await ClientBundle.ImportAsync(bundle, trainer, db);
     }
     catch (UnauthorizedAccessException ex) { return await UnauthorizedTrainer(ex); }
 });
@@ -902,6 +940,7 @@ static object ItemToDto(PlanItem i, IReadOnlyDictionary<int, double>? maxesByExe
         {
             s.Id, s.Order, s.Reps, s.RepsMax, s.DurationSeconds, s.DistanceMeters,
             s.LoadKg, s.LoadPercent, s.PercentOf, s.TargetRpe, s.TargetRir, s.Tempo, s.Role, s.Note,
+            s.RestSeconds,
             ComputedLoadKg = PlanLoads.ComputedSetLoad(s, topKg, oneRmKg),
         }),
     };
@@ -931,6 +970,7 @@ static PlanSet BuildSet(PlanSetInput s) => new()
     Order = s.Order, Reps = s.Reps, RepsMax = s.RepsMax, DurationSeconds = s.DurationSeconds,
     DistanceMeters = s.DistanceMeters, LoadKg = s.LoadKg, LoadPercent = s.LoadPercent,
     PercentOf = s.PercentOf, TargetRpe = s.TargetRpe, TargetRir = s.TargetRir, Tempo = s.Tempo, Role = s.Role, Note = s.Note,
+    RestSeconds = s.RestSeconds,
 };
 
 static PlanItem BuildItem(PlanItemInput i) => new()
@@ -1439,6 +1479,7 @@ app.MapPost("/api/plans/{id:int}/duplicate", async (int id, DuplicateInput input
                     Order = s.Order, Reps = s.Reps, RepsMax = s.RepsMax, DurationSeconds = s.DurationSeconds,
                     DistanceMeters = s.DistanceMeters, LoadKg = s.LoadKg, LoadPercent = s.LoadPercent,
                     PercentOf = s.PercentOf, TargetRpe = s.TargetRpe, TargetRir = s.TargetRir, Tempo = s.Tempo, Role = s.Role, Note = s.Note,
+                    RestSeconds = s.RestSeconds,
                 }).ToList(),
             }).ToList(),
         }).ToList(),
@@ -2454,11 +2495,22 @@ static async Task<ClientAccessToken?> ResolvePortalToken(AppDb db, string token)
     return row;
 }
 
+static async Task<string?> ResolveTrainerDisplayName(AppDb db, int trainerId) =>
+    await db.Trainers.AsNoTracking()
+        .Where(t => t.Id == trainerId)
+        .Select(t => t.Name)
+        .FirstOrDefaultAsync();
+
 app.MapGet("/api/portal/{token}/pin-status", async (string token, AppDb db) =>
 {
     var access = await ResolvePortalToken(db, token);
     if (access is null) return Results.NotFound(new { message = "Link jest nieaktualny." });
-    return Results.Ok(new { pinRequired = !string.IsNullOrEmpty(access.Client!.PortalPinHash) });
+    var trainerName = await ResolveTrainerDisplayName(db, access.Client!.TrainerId);
+    return Results.Ok(new
+    {
+        pinRequired = !string.IsNullOrEmpty(access.Client.PortalPinHash),
+        trainerName,
+    });
 }).RequireRateLimiting("portal");
 
 app.MapPost("/api/portal/{token}/unlock", async (string token, PortalUnlockInput input, AppDb db) =>
@@ -2690,9 +2742,11 @@ app.MapGet("/api/portal/{token}", async (string token, string? today, AppDb db) 
             totalSets = Sessions.CountTotalSets(staleSessionEntity),
         };
 
+    var trainerName = await ResolveTrainerDisplayName(db, access.Client.TrainerId);
     return Results.Ok(new
     {
         client = new { access.Client.Id, access.Client.Name, access.Client.GoalWeightKg },
+        trainerName,
         today = todayDto,
         week,
         inProgressSession,

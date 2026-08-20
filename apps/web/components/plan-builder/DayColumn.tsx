@@ -28,6 +28,7 @@ export function DayColumn({
   onPatchDay,
   onRemoveDay,
   onDuplicateDay,
+  onMoveDayToWeek,
   weeks,
   onApplyWeekdays,
   onAddItem,
@@ -53,6 +54,7 @@ export function DayColumn({
   onPatchDay: (patch: Partial<BuilderDay>) => void;
   onRemoveDay: () => void;
   onDuplicateDay: (targetWeek?: number) => void;
+  onMoveDayToWeek?: (targetWeek: number) => void;
   weeks: number[];
   onApplyWeekdays: () => void;
   onAddItem: (exerciseId: number, overrides?: Partial<BuilderItem>) => void;
@@ -127,6 +129,7 @@ export function DayColumn({
           onPatchDay={onPatchDay}
           onRemoveDay={onRemoveDay}
           onDuplicateDay={onDuplicateDay}
+          onMoveDayToWeek={onMoveDayToWeek}
           onApplyWeekdays={onApplyWeekdays}
         />
       </div>

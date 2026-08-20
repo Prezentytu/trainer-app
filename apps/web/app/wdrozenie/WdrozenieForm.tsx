@@ -4,43 +4,11 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { Button, ErrorBanner, Field, inputClass } from "@/components/ui";
+import { WDROZENIE_PREMIUM_ZL, WDROZENIE_SPOTS } from "@/lib/wdrozenieOffer";
 
 const CONTACT = "kontakt@repmaxer.pl";
 
-const SLOT_PRESETS = ["Wtorek 18:00", "Środa 18:00", "Czwartek 10:00"] as const;
-const SLOT_OTHER = "inna";
-
-type Track = "whiteglove" | "founding";
-
-function YearCard({
-  onPay,
-  busy,
-}: {
-  onPay: () => void;
-  busy: boolean;
-}) {
-  return (
-    <div className="rounded-[var(--r-card)] border border-border-strong p-5">
-      <p className="t-label m-0 tracking-[0.16em]">Rok z góry</p>
-      <p className="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <span className="t-num text-[15px] text-muted line-through">468 zł</span>
-        <span className="t-num text-[clamp(1.75rem,4vw,2.5rem)] leading-none tracking-[-0.03em]">
-          390 zł
-        </span>
-      </p>
-      <p className="mt-4 max-w-[42ch] text-[15px] leading-[1.6] text-muted">
-        Dwa miesiące w cenie. 12 miesięcy, do 15 osób. Po roku: 39 zł za 15 — ta kwota
-        nie rośnie. Ta sama rozmowa 30 minut. Ta sama gwarancja — zwrot 390 zł.
-      </p>
-      <div className="mt-6">
-        <Button type="button" variant="secondary" loading={busy} disabled={busy} onClick={onPay}>
-          Zapłać 390 zł
-        </Button>
-      </div>
-      <p className="t-label mt-3 tracking-[0.16em] text-muted">Godzinę ustalisz w mailu</p>
-    </div>
-  );
-}
+type Track = "whiteglove" | "personal";
 
 export function WdrozenieForm() {
   const params = useSearchParams();
@@ -49,8 +17,7 @@ export function WdrozenieForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [slotId, setSlotId] = useState<string>("");
-  const [slotOther, setSlotOther] = useState("");
+  const [howYouWork, setHowYouWork] = useState("");
   const [busy, setBusy] = useState<Track | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{
@@ -60,9 +27,9 @@ export function WdrozenieForm() {
   } | null>(
     status === "ok"
       ? {
-          message: "Płatność 390 zł przyjęta. Godzinę ustalamy w mailu.",
+          message: "Zgłoszenie zapisane. Odpisz na maila i dołącz arkusz albo zrzuty.",
           emailSent: true,
-          paid: true,
+          paid: false,
         }
       : null,
   );
@@ -70,14 +37,6 @@ export function WdrozenieForm() {
   useEffect(() => {
     if (done) successRef.current?.scrollIntoView({ block: "start" });
   }, [done]);
-
-  const preferredSlot = (): string | undefined => {
-    if (slotId === SLOT_OTHER) {
-      const custom = slotOther.trim();
-      return custom || "Inna godzina";
-    }
-    return slotId || undefined;
-  };
 
   const apply = async (track: Track) => {
     setBusy(track);
@@ -87,7 +46,7 @@ export function WdrozenieForm() {
         name: name.trim(),
         email: email.trim(),
         phone: phone.trim() || undefined,
-        preferredSlot: preferredSlot(),
+        howYouWork: howYouWork.trim() || undefined,
         track,
       });
       if (res.checkoutUrl) {
@@ -97,7 +56,7 @@ export function WdrozenieForm() {
       setDone({
         message: res.message,
         emailSent: !!res.emailSent,
-        paid: track === "founding",
+        paid: track === "personal",
       });
     } catch (err) {
       setError((err as Error).message);
@@ -111,40 +70,32 @@ export function WdrozenieForm() {
     void apply("whiteglove");
   };
 
-  const onPay = () => {
+  const onPersonal = () => {
     if (name.trim().length < 2 || !email.includes("@")) {
-      setError("Najpierw podaj imię i e-mail — potem 390 zł.");
+      setError("Najpierw podaj imię i e-mail.");
       return;
     }
-    void apply("founding");
+    void apply("personal");
   };
 
   if (done) {
     return (
       <div ref={successRef} className="mt-12 max-w-[46ch] space-y-8">
         <p className="m-0 text-[17px] leading-relaxed text-foreground">{done.message}</p>
-        {!done.emailSent && !done.paid ? (
+        {!done.emailSent ? (
           <p className="m-0 text-[15px] leading-[1.6] text-muted">
             Napisz na{" "}
             <a className="text-foreground underline-offset-4 hover:underline" href={`mailto:${CONTACT}`}>
               {CONTACT}
             </a>{" "}
-            i podaj dwie godziny, które Ci pasują.
+            i dołącz arkusz, PDF albo zrzuty.
           </p>
         ) : null}
         <ol className="m-0 grid list-none gap-4 p-0 text-[15px] leading-[1.6] text-foreground-secondary">
-          <li>1. Odpisz na maila — która godzina.</li>
-          <li>2. Potwierdzimy slot w jeden dzień roboczy.</li>
-          <li>3. 30 minut: plan w linku, trzy osoby.</li>
+          <li>1. Odpisz na maila — dołącz to, czym dziś prowadzisz.</li>
+          <li>2. W 24 godziny wraca raport i trzy wiadomości.</li>
+          <li>3. Jeśli nic nie powie — jedno zdanie i kończymy.</li>
         </ol>
-        <div>
-          <p className="t-label m-0 tracking-[0.16em]">Przygotuj</p>
-          <ul className="mt-3 m-0 grid list-none gap-2 p-0 text-[15px] leading-[1.6] text-muted">
-            <li>Arkusz albo PDF jednego planu.</li>
-            <li>Imiona trzech klientów.</li>
-          </ul>
-        </div>
-        {done.paid ? null : <YearCard onPay={onPay} busy={busy === "founding"} />}
       </div>
     );
   }
@@ -153,7 +104,7 @@ export function WdrozenieForm() {
     <form onSubmit={onSubmit} className="mt-14 space-y-8">
       <ErrorBanner message={error} />
       {status === "cancel" ? (
-        <p className="text-sm text-muted">Płatność przerwana. Możesz umówić rozmowę bez karty.</p>
+        <p className="text-sm text-muted">Płatność przerwana. Możesz spróbować ponownie.</p>
       ) : null}
 
       <div className="max-w-md space-y-4">
@@ -186,74 +137,48 @@ export function WdrozenieForm() {
             inputMode="tel"
           />
         </Field>
+        <Field label="Czym dziś prowadzisz" hint="arkusz, PDF, WhatsApp — opcjonalnie">
+          <textarea
+            className="min-h-[5.5rem] w-full resize-y rounded-[var(--r-field)] border border-border-strong bg-field px-2.5 py-3 text-base font-medium text-foreground outline-none transition-[border-color,box-shadow] duration-[var(--dur-fast)] placeholder:font-normal placeholder:text-fg-ghost focus:border-foreground focus:shadow-[var(--focus-ring)] sm:text-sm"
+            value={howYouWork}
+            onChange={(e) => setHowYouWork(e.target.value)}
+            maxLength={400}
+          />
+        </Field>
       </div>
-
-      <fieldset>
-        <legend className="t-label mb-4 tracking-[0.16em]">Kiedy Ci pasuje</legend>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {SLOT_PRESETS.map((label) => {
-            const selected = slotId === label;
-            return (
-              <label
-                key={label}
-                className={`flex min-h-11 cursor-pointer items-center rounded-[var(--r-card)] border px-4 text-[15px] transition-[background-color,border-color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] has-[:focus-visible]:shadow-[var(--focus-ring)] active:[transform:var(--press)] ${
-                  selected
-                    ? "border-foreground bg-invert-bg text-invert-fg"
-                    : "border-border-strong bg-transparent text-foreground"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="slot"
-                  className="sr-only"
-                  checked={selected}
-                  onChange={() => setSlotId(label)}
-                />
-                {label}
-              </label>
-            );
-          })}
-          <label
-            className={`flex min-h-11 cursor-pointer items-center rounded-[var(--r-card)] border px-4 text-[15px] transition-[background-color,border-color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] has-[:focus-visible]:shadow-[var(--focus-ring)] active:[transform:var(--press)] ${
-              slotId === SLOT_OTHER
-                ? "border-foreground bg-invert-bg text-invert-fg"
-                : "border-border-strong bg-transparent text-foreground"
-            }`}
-          >
-            <input
-              type="radio"
-              name="slot"
-              className="sr-only"
-              checked={slotId === SLOT_OTHER}
-              onChange={() => setSlotId(SLOT_OTHER)}
-            />
-            Inna godzina
-          </label>
-        </div>
-        {slotId === SLOT_OTHER ? (
-          <div className="mt-4 max-w-md">
-            <Field label="Napisz dwie godziny">
-              <input
-                className={inputClass}
-                value={slotOther}
-                onChange={(e) => setSlotOther(e.target.value)}
-                placeholder="np. piątek 9:00 albo 19:00"
-              />
-            </Field>
-          </div>
-        ) : null}
-      </fieldset>
 
       <div>
         <Button type="submit" loading={busy === "whiteglove"} disabled={busy != null}>
-          Umów 30 minut wdrożenia
+          Zamów darmowy raport
         </Button>
         <p className="t-label mt-3 tracking-[0.16em] text-muted">
-          10 miejsc · 90 dni · 15 osób · 0 zł
+          {WDROZENIE_SPOTS} miejsc · 24 godziny · 0 zł
+        </p>
+        <p className="mt-3 max-w-[42ch] text-[13px] leading-[1.55] text-muted">
+          Raport wraca w 24 godziny. Jeśli nic Ci nie powie — jedno zdanie i
+          kończymy.
+        </p>
+        <p className="mt-3 max-w-[42ch] text-[13px] leading-[1.55] text-muted">
+          Arkusz widzi jedna osoba. Po raporcie dane kasuję na Twoją prośbę — nic
+          nie trafia do bazy, dopóki nie zdecydujesz.
+        </p>
+        <p className="mt-3 max-w-[42ch] text-[13px] leading-[1.55] text-muted">
+          Po zgłoszeniu dostaniesz maila — odpowiadasz załącznikiem. Nikt nie
+          dzwoni.
         </p>
       </div>
 
-      <YearCard onPay={onPay} busy={busy === "founding"} />
+      <div>
+        <Button
+          type="button"
+          variant="secondary"
+          loading={busy === "personal"}
+          disabled={busy != null}
+          onClick={onPersonal}
+        >
+          Przeniesienie całej bazy · {WDROZENIE_PREMIUM_ZL.toLocaleString("pl-PL")} zł
+        </Button>
+      </div>
     </form>
   );
 }

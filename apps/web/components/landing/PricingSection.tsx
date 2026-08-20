@@ -1,39 +1,71 @@
 import { LandingReveal } from "./LandingReveal";
-import { LandingCta, SectionHead, SECTION_CTA, SECTION_SHELL_TIGHT } from "./primitives";
+import {
+  LANDING_CAPS,
+  LANDING_SECTION_H2,
+  LandingCta,
+  SectionHead,
+  SECTION_SHELL,
+  SECTION_STACK,
+} from "./primitives";
 
-/** 04 — rozwiązanie zaraz po kotwicy straty (03): 0 zł czyta się jako ulga. */
+const TIERS = [
+  {
+    amount: "39",
+    unit: "zł / mies.",
+    detail: "Tyle, co kwadrans jednej sesji.",
+    cap: "Do 15 podopiecznych",
+  },
+  {
+    amount: "99",
+    unit: "zł / mies.",
+    detail: "Jeden wieczór w tygodniu mniej przy arkuszu.",
+    cap: "Do 30 podopiecznych",
+  },
+] as const;
+
+/** 04 — koszt po 90 dniach. Darmowe konto schodzi do cichego odsyłacza. */
 export function PricingSection() {
   return (
-    <LandingReveal as="section" id="cennik" className={SECTION_SHELL_TIGHT}>
+    <LandingReveal
+      as="section"
+      id="cennik"
+      className={SECTION_SHELL}
+    >
       <div className="landing-stagger">
         <SectionHead n="04" label="Cennik">
-          <div className="grid grid-cols-1 items-start gap-14 lg:grid-cols-2 lg:gap-24">
-            <div>
-              <p className="m-0 flex flex-wrap items-baseline gap-x-2 gap-y-0">
-                <span className="t-num text-[clamp(4rem,11vw,8.5rem)] leading-none tracking-[-0.03em] text-foreground">
-                  0
-                </span>
-                <span className="t-num text-[clamp(1.5rem,3.2vw,2.5rem)] leading-none text-fg-faint">
-                  zł
-                </span>
+          <div className={SECTION_STACK}>
+            <h2 className={LANDING_SECTION_H2}>
+              Jeden podopieczny to 1 200 zł. To kosztuje 39.
+            </h2>
+            <ul className="m-0 list-none border-t border-border-strong p-0">
+              {TIERS.map((tier) => (
+                <li
+                  key={tier.amount}
+                  className="grid grid-cols-1 gap-3 border-b border-border py-6 last:border-b-0 md:grid-cols-[220px_minmax(0,1fr)_auto] md:items-baseline md:gap-10 md:py-8"
+                >
+                  <p className="m-0 flex items-baseline gap-2">
+                    <span className="t-num text-[clamp(2rem,4vw,2.75rem)] leading-none text-foreground">
+                      {tier.amount}
+                    </span>
+                    <span className="t-num text-[18px] font-medium text-muted">{tier.unit}</span>
+                  </p>
+                  <p className="m-0 max-w-[46ch] text-[17px] font-normal leading-[1.6] text-muted text-pretty">
+                    {tier.detail}
+                  </p>
+                  <p className={`${LANDING_CAPS} m-0 text-foreground md:text-right`}>
+                    {tier.cap}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <div className="grid items-center gap-8 border-t border-border pt-8 md:grid-cols-[minmax(0,1fr)_auto] md:gap-10 md:pt-10">
+              <p className="m-0 max-w-[44ch] text-[19px] font-normal leading-[1.6] text-foreground text-pretty">
+                Pierwszy raport i 90 dni za 0 zł. Bez karty.
               </p>
-              <p className="t-label mt-8 tracking-[0.16em]">Do 5 osób · na zawsze</p>
-            </div>
-            <div className="max-w-[46ch]">
-              <p className="m-0 text-[17px] font-normal leading-[1.6] text-muted text-pretty">
-                <span className="t-num text-[17px] text-foreground">39 zł</span>
-                {" / 15 osób. "}
-                <span className="t-num text-[17px] text-foreground">99 zł</span>
-                {" / 30 osób. Podopieczny zawsze 0 zł, bez konta. Dane zawsze do eksportu."}
-              </p>
-              <p className="mt-4 text-[15px] font-normal leading-[1.6] text-muted text-pretty">
-                Na start możesz umówić rozmowę: 90 dni za 0 zł, do 15 osób. 10 miejsc
-                w&nbsp;miesiącu.
-              </p>
-              <div className={`${SECTION_CTA} flex flex-wrap items-center gap-x-6 gap-y-3`}>
-                <LandingCta href="/wdrozenie">Umów 30 minut wdrożenia</LandingCta>
-                <LandingCta href="/sign-up" variant="ghost">
-                  Załóż darmowe konto
+              <div className="flex flex-col items-start gap-3.5 md:justify-self-end">
+                <LandingCta href="/wdrozenie">Zamów darmowy raport</LandingCta>
+                <LandingCta href="/sign-up" variant="ghost" className="text-[14px] text-muted">
+                  Wolę bez rozmowy
                 </LandingCta>
               </div>
             </div>

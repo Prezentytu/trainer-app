@@ -68,6 +68,7 @@ export function loadInitialDays(plan?: Plan, initialDayCount = 1, initialWeekCou
           tempo: s.tempo,
           role: s.role,
           note: s.note,
+          restSeconds: s.restSeconds ?? null,
         })),
       })),
     };

@@ -16,7 +16,7 @@ Lista klientów to ciasne kafelki z drobnym tekstem i zawijającymi się badge'a
 
 Decyzje UX:
 - Status `cancelled` osiągalny przez „Usuń” (z undo) lub zakończenie — bez osobnego „Anuluj” na wierszu.
-- Domyślna zakładka: Historia gdy są sesje, inaczej Plany.
+- Domyślna zakładka: **Plany** (nie Historia — wejście w klienta to plan, nie ostatni trening).
 - Kopiowanie linku portalu → toast, nie baner z URL.
 
 ## Model danych
@@ -58,3 +58,4 @@ Typ `ClientSummary` w `apps/web/lib/api.ts` lustrzany.
 - 2026-08-01 — utworzono spec; decyzje: lista zamiast kafelków, modal dodawania, 3 zakładki, agresywne odchudzenie profilu.
 - 2026-08-01 — wdrożono: `lastSessionOn`, lista wierszy + modal, profil z 3 zakładkami i progressive disclosure.
 - 2026-08-01 — CTA „Dodaj trening”; heatmapa „Zgodność” → `WeeklyActivityBar`; ProgressRing + ikony Lucide w profilu.
+- 2026-08-18 — domyślna zakładka zawsze Plany (Historia nie wita na wejściu).

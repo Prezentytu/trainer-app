@@ -17,41 +17,31 @@ export function LandingReveal({ children, className = "", as = "div", id }: Land
     const el = ref.current;
     if (!el) return;
 
-    const show = () => el.classList.add("landing-inview");
-
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce || !("IntersectionObserver" in window)) {
-      show();
+      el.classList.add("landing-inview");
       return;
     }
 
     el.classList.add("landing-ready");
 
+    let t0 = 0;
+    let t1 = 0;
+    let sweepTimer = 0;
+    let show = () => {};
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) show();
+      },
+      { threshold: 0.01, rootMargin: "0px 0px -6% 0px" },
+    );
+
     const sweep = () => {
       if (el.getBoundingClientRect().top < window.innerHeight * 0.94) show();
     };
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) {
-          show();
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.01, rootMargin: "0px 0px -6% 0px" },
-    );
-    observer.observe(el);
-
-    window.addEventListener("scroll", sweep, { passive: true });
-    window.addEventListener("resize", sweep, { passive: true });
-    const t0 = window.setTimeout(sweep, 80);
-    let sweepTimer = window.setInterval(sweep, 700);
-    const t1 = window.setTimeout(() => {
-      window.clearInterval(sweepTimer);
-      sweepTimer = window.setInterval(sweep, 1500);
-    }, 6000);
-
-    return () => {
+    const stopWatch = () => {
       observer.disconnect();
       window.removeEventListener("scroll", sweep);
       window.removeEventListener("resize", sweep);
@@ -59,6 +49,23 @@ export function LandingReveal({ children, className = "", as = "div", id }: Land
       window.clearTimeout(t1);
       window.clearInterval(sweepTimer);
     };
+
+    show = () => {
+      el.classList.add("landing-inview");
+      stopWatch();
+    };
+
+    observer.observe(el);
+    window.addEventListener("scroll", sweep, { passive: true });
+    window.addEventListener("resize", sweep, { passive: true });
+    t0 = window.setTimeout(sweep, 80);
+    sweepTimer = window.setInterval(sweep, 700);
+    t1 = window.setTimeout(() => {
+      window.clearInterval(sweepTimer);
+      sweepTimer = window.setInterval(sweep, 1500);
+    }, 6000);
+
+    return stopWatch;
   }, []);
 
   const Tag = as;

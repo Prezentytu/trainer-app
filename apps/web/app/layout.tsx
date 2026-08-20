@@ -35,20 +35,20 @@ export const metadata: Metadata = {
     template: "%s · RepMaxer",
   },
   description:
-    "Klient otwiera link w przeglądarce — bez konta. Po treningu widzisz serie i rekordy. Od razu wiesz, kto nie trenował.",
+    "Wysyłasz arkusz albo zrzuty z WhatsAppa. Wraca gotowa lista i trzy wiadomości do wysłania. Za 0 zł, w 24 godziny.",
   openGraph: {
     type: "website",
     locale: "pl_PL",
     siteName: "RepMaxer",
-    title: "RepMaxer — wysyłasz link, widzisz każdy trening",
+    title: "RepMaxer — wszyscy podopieczni w jednym raporcie",
     description:
-      "Klient odhacza serie w telefonie. Bez aplikacji, bez konta.",
+      "Wysyłasz arkusz albo zrzuty. Wraca lista i trzy wiadomości. Za 0 zł, w 24 godziny.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "RepMaxer — wysyłasz link, widzisz każdy trening",
+    title: "RepMaxer — wszyscy podopieczni w jednym raporcie",
     description:
-      "Klient odhacza serie w telefonie. Bez aplikacji, bez konta.",
+      "Wysyłasz arkusz albo zrzuty. Wraca lista i trzy wiadomości. Za 0 zł, w 24 godziny.",
   },
   icons: {
     icon: [

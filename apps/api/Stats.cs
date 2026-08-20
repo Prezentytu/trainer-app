@@ -147,7 +147,8 @@ public static class Stats
         double? TargetWeightKg,
         int? TargetReps,
         int? TargetRepsMax,
-        int? TargetDurationSeconds);
+        int? TargetDurationSeconds,
+        int? TargetRestSeconds = null);
 
     public sealed record ExerciseTargets(
         double? TargetRir,
@@ -296,6 +297,7 @@ public static class Stats
                             TargetWeightKg = setTarget?.TargetWeightKg,
                             TargetReps = setTarget?.TargetReps,
                             TargetDurationSeconds = setTarget?.TargetDurationSeconds,
+                            TargetRestSeconds = setTarget?.TargetRestSeconds,
                         };
                     }),
                 };

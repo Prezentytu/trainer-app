@@ -46,6 +46,20 @@ public sealed class BillingService(IHttpClientFactory httpFactory, IConfiguratio
         else if (!string.IsNullOrWhiteSpace(trainer.Email) && trainer.Email.Contains('@'))
             pairs["customer_email"] = trainer.Email;
 
+        if (trainer.WdrozenieCreditGrosze > 0)
+        {
+            var monthlyOff = Math.Min(def.MonthlyGrosze, trainer.WdrozenieCreditGrosze / 12);
+            if (monthlyOff > 0)
+            {
+                var couponId = await CreateRolloverCouponAsync(client, secret, monthlyOff, ct);
+                if (couponId is not null)
+                {
+                    pairs["discounts[0][coupon]"] = couponId;
+                    pairs["metadata[rollover]"] = monthlyOff.ToString(CultureInfo.InvariantCulture);
+                }
+            }
+        }
+
         req.Content = new FormUrlEncodedContent(pairs);
         try
         {
@@ -169,10 +183,24 @@ public sealed class BillingService(IHttpClientFactory httpFactory, IConfiguratio
             trainer = await db.Trainers.FirstOrDefaultAsync(t => t.Email == email, ct);
         if (trainer is null) return;
 
-        if (string.Equals(track, "founding", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(track, "founding", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(track, "personal", StringComparison.OrdinalIgnoreCase))
+        {
             trainer.PlanKey = BillingPlans.Founding;
+            trainer.WdrozeniePaidAt ??= DateTime.UtcNow;
+            trainer.WdrozenieCreditGrosze = string.Equals(track, "personal", StringComparison.OrdinalIgnoreCase)
+                ? FoundingService.PersonalAmountGrosze
+                : FoundingService.WdrozenieAmountGrosze;
+            var paymentIntent = data.TryGetProperty("payment_intent", out var pi) ? pi.GetString() : null;
+            if (!string.IsNullOrWhiteSpace(paymentIntent))
+                trainer.WdrozeniePaymentIntentId = paymentIntent;
+        }
         else if (!string.IsNullOrWhiteSpace(planKey) && BillingPlans.IsPaidKey(planKey))
+        {
             trainer.PlanKey = planKey;
+            if (trainer.WdrozenieCreditGrosze > 0)
+                trainer.WdrozenieCreditGrosze = 0;
+        }
         else if (trainer.PlanKey is BillingPlans.Free or "")
             trainer.PlanKey = BillingPlans.Starter;
 
@@ -181,6 +209,104 @@ public sealed class BillingService(IHttpClientFactory httpFactory, IConfiguratio
         if (!string.IsNullOrWhiteSpace(subscriptionId))
             trainer.StripeSubscriptionId = subscriptionId;
         await db.SaveChangesAsync(ct);
+    }
+
+    public async Task<(bool Ok, string Message)> RefundWdrozenieGuaranteeAsync(
+        Trainer trainer, AppDb db, CancellationToken ct = default)
+    {
+        if (trainer.WdrozeniePaidAt is null || trainer.WdrozenieCreditGrosze <= 0)
+            return (false, "Nie ma płatnego wdrożenia do zwrotu.");
+        if (DateTime.UtcNow < trainer.WdrozeniePaidAt.Value.AddDays(14))
+            return (false, "Gwarancja liczy 14 dni od płatności.");
+
+        var completed = await db.WorkoutSessions
+            .AnyAsync(s => s.Client!.TrainerId == trainer.Id && s.Status == "completed", ct);
+        if (completed)
+            return (false, "Ktoś dokończył trening — gwarancja nie przysługuje.");
+
+        if (StripeConfigured && !string.IsNullOrWhiteSpace(trainer.WdrozeniePaymentIntentId))
+        {
+            var refunded = await RefundPaymentAsync(trainer.WdrozeniePaymentIntentId, ct);
+            if (!refunded)
+                return (false, "Nie udało się zwrócić płatności. Napisz na kontakt@repmaxer.pl.");
+        }
+
+        trainer.WdrozenieCreditGrosze = 0;
+        trainer.WdrozeniePaymentIntentId = null;
+        if (trainer.PlanKey == BillingPlans.Founding && string.IsNullOrWhiteSpace(trainer.StripeSubscriptionId))
+            trainer.PlanKey = BillingPlans.Free;
+        await db.SaveChangesAsync(ct);
+        return (true, "Zwrot przyjęty. 390 zł wraca na kartę.");
+    }
+
+    public static bool IsGuaranteeEligible(Trainer trainer, bool hasCompletedSession)
+    {
+        if (trainer.WdrozeniePaidAt is null || trainer.WdrozenieCreditGrosze <= 0)
+            return false;
+        if (hasCompletedSession)
+            return false;
+        return DateTime.UtcNow >= trainer.WdrozeniePaidAt.Value.AddDays(14);
+    }
+
+    async Task<string?> CreateRolloverCouponAsync(
+        HttpClient client, string secret, int monthlyOffGrosze, CancellationToken ct)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, "https://api.stripe.com/v1/coupons");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", secret);
+        req.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["amount_off"] = monthlyOffGrosze.ToString(CultureInfo.InvariantCulture),
+            ["currency"] = "pln",
+            ["duration"] = "repeating",
+            ["duration_in_months"] = "12",
+            ["name"] = "Wdrożenie — 12 miesięcy",
+        });
+        try
+        {
+            var res = await client.SendAsync(req, ct);
+            var body = await res.Content.ReadAsStringAsync(ct);
+            if (!res.IsSuccessStatusCode)
+            {
+                log.LogError("Stripe coupon {Status}: {Body}", (int)res.StatusCode, body);
+                return null;
+            }
+            using var doc = JsonDocument.Parse(body);
+            return doc.RootElement.TryGetProperty("id", out var id) ? id.GetString() : null;
+        }
+        catch (Exception ex)
+        {
+            log.LogError(ex, "Stripe coupon wyjątek");
+            return null;
+        }
+    }
+
+    async Task<bool> RefundPaymentAsync(string paymentIntentId, CancellationToken ct)
+    {
+        var secret = config["Stripe:SecretKey"];
+        if (string.IsNullOrWhiteSpace(secret)) return false;
+        var client = httpFactory.CreateClient("stripe");
+        using var req = new HttpRequestMessage(HttpMethod.Post, "https://api.stripe.com/v1/refunds");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", secret);
+        req.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["payment_intent"] = paymentIntentId,
+        });
+        try
+        {
+            var res = await client.SendAsync(req, ct);
+            if (!res.IsSuccessStatusCode)
+            {
+                var body = await res.Content.ReadAsStringAsync(ct);
+                log.LogError("Stripe refund {Status}: {Body}", (int)res.StatusCode, body);
+                return false;
+            }
+            return true;
+        }
+        catch (Exception ex)
+        {
+            log.LogError(ex, "Stripe refund wyjątek");
+            return false;
+        }
     }
 
     async Task ApplySubscriptionDeletedAsync(AppDb db, JsonElement data, CancellationToken ct)

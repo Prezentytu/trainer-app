@@ -9,20 +9,20 @@ import { LandingPage } from "@/components/landing/LandingPage";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "RepMaxer — wysyłasz link",
+  title: "RepMaxer — wszyscy podopieczni w jednym raporcie",
   description:
-    "Klient otwiera link w przeglądarce — bez konta i bez aplikacji. Po treningu masz serie i rekordy. Piszesz pierwszy, zanim odejdzie.",
+    "Wysyłasz arkusz albo zrzuty z WhatsAppa. Wraca gotowa lista i trzy wiadomości do wysłania. Za 0 zł, w 24 godziny.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "RepMaxer — wysyłasz link",
+    title: "RepMaxer — wszyscy podopieczni w jednym raporcie",
     description:
-      "Widzisz trening. Klient otwiera link w przeglądarce — bez konta.",
+      "Wysyłasz arkusz albo zrzuty. Wraca lista i trzy wiadomości. Za 0 zł, w 24 godziny.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "RepMaxer — wysyłasz link",
+    title: "RepMaxer — wszyscy podopieczni w jednym raporcie",
     description:
-      "Widzisz trening. Klient otwiera link w przeglądarce — bez konta.",
+      "Wysyłasz arkusz albo zrzuty. Wraca lista i trzy wiadomości. Za 0 zł, w 24 godziny.",
   },
 };
 

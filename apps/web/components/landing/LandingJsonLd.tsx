@@ -3,7 +3,7 @@ import { FAQ_ITEMS, faqPlainText } from "./faqItems";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 const DESCRIPTION =
-  "Klient otwiera link w przeglądarce — bez konta i bez aplikacji. Po treningu masz serie i rekordy. Piszesz pierwszy, zanim odejdzie.";
+  "Wysyłasz arkusz albo zrzuty z WhatsAppa. Wraca gotowa lista i trzy wiadomości do wysłania. Za 0 zł, w 24 godziny.";
 
 function jsonLd(data: unknown): string {
   return JSON.stringify(data).replace(/</g, "\\u003c");
@@ -43,19 +43,19 @@ export function LandingJsonLd() {
         offers: [
           {
             "@type": "Offer",
-            name: "Do 5 osób",
+            name: "Pierwszy raport",
             price: "0",
             priceCurrency: "PLN",
           },
           {
             "@type": "Offer",
-            name: "Do 15 osób",
+            name: "Do 15 podopiecznych",
             price: "39",
             priceCurrency: "PLN",
           },
           {
             "@type": "Offer",
-            name: "Do 30 osób",
+            name: "Do 30 podopiecznych",
             price: "99",
             priceCurrency: "PLN",
           },

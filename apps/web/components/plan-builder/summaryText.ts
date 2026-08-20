@@ -1,7 +1,7 @@
 import { Exercise } from "@/lib/api";
 import { formatRest } from "@/components/ui";
 import { polishExerciseCount, polishSetCount } from "@/lib/plural";
-import { compactSchemeLine } from "@/lib/schemeSummary";
+import { compactSchemeLine, restSummary } from "@/lib/schemeSummary";
 import { estimateItemsMinutes, formatDurationApprox } from "@/lib/estimateDuration";
 import { computeGroupsFromLinks } from "@/lib/supersets";
 import { OPEN_RAMP_SET_FALLBACK, parseRampSchemeInfo } from "./listGroups";
@@ -32,7 +32,10 @@ export function schemeParts(item: BuilderItem, exercise?: Exercise): SchemeParts
   const metaParts: string[] = [];
   if (item.targetRir != null && item.targetRir > 0) metaParts.push(`RIR ${item.targetRir}`);
   else if (item.targetRpe != null && item.targetRpe > 0) metaParts.push(`RPE ${item.targetRpe}`);
-  if (rest != null && rest > 0) metaParts.push(formatRest(rest));
+  // Przy własnych przerwach serii pokazujemy prawdziwy zakres, nie jedną liczbę z ćwiczenia.
+  const perSetRest = restSummary(item.prescribedSets, rest);
+  if (perSetRest) metaParts.push(perSetRest);
+  else if (rest != null && rest > 0) metaParts.push(formatRest(rest));
   if (item.tempo) metaParts.push(`tempo ${item.tempo}`);
   return { primary, meta: metaParts.length ? metaParts.join(" · ") : null };
 }

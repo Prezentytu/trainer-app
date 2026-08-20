@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { MarketingShell } from "@/components/landing/MarketingShell";
 import { IleTraciszCalculator } from "@/components/landing/IleTraciszCalculator";
+import { PAGE_SHELL, SECTION_H2, SECTION_LEAD } from "@/components/landing/primitives";
 
 export const metadata: Metadata = {
-  title: "Ile tracisz, gdy klient odchodzi",
+  title: "Ile tracisz, gdy podopieczny odchodzi",
   description:
     "Osiem sesji razy Twoja stawka razy ile osób skończyło współpracę w tym roku. 39 zł za 15 osób.",
   alternates: { canonical: "/ile-tracisz" },
@@ -12,16 +13,17 @@ export const metadata: Metadata = {
 export default function IleTraciszPage() {
   return (
     <MarketingShell>
-      <main className="mx-auto max-w-[720px] px-5 py-16 sm:px-8 sm:py-24">
+      <main className={PAGE_SHELL}>
         <p className="t-label m-0 tracking-[0.16em]">Kalkulator</p>
-        <h1 className="mt-6 max-w-[16ch] text-[clamp(2.25rem,5vw,3.5rem)] font-semibold leading-[1.08] tracking-[-0.028em]">
-          Ile tracisz, gdy klient odchodzi.
+        <h1 className={`mt-6 ${SECTION_H2}`}>
+          Ile tracisz, gdy podopieczny odchodzi.
         </h1>
-        <p className="mt-6 max-w-[46ch] text-[17px] leading-[1.6] text-muted">
-          Osiem sesji w miesiącu. Twoja stawka. Ile osób skończyło współpracę w tym roku.
-          Wynik to sesje, które nie weszły na konto.
+        <p className={SECTION_LEAD}>
+          Policz: osiem sesji w miesiącu razy Twoja stawka, razy osoby, które w
+          tym roku skończyły współpracę. Raport pokazuje te sygnały, zanim
+          dostaniesz wiadomość «kończę».
         </p>
-        <IleTraciszCalculator />
+        <IleTraciszCalculator className="mt-12" />
       </main>
     </MarketingShell>
   );

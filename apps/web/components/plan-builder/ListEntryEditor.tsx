@@ -1,32 +1,22 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Exercise, ExerciseType, RIR_HELP, rirFromRpe } from "@/lib/api";
+import { useState } from "react";
+import { Exercise, ExerciseType, rirFromRpe } from "@/lib/api";
 import { splitExerciseName } from "@/lib/exerciseName";
 import { MEASURE_SHORT, measurePatch } from "@/lib/measure";
 import { Field, Switch, inputClass } from "@/components/ui";
 import { isDumbbellPair } from "@/lib/weight";
+import { compactSchemeLine } from "@/lib/schemeSummary";
 import { NumInput } from "./NumInput";
-import { RampControls } from "./RampControls";
+import { RangeInput } from "./RangeInput";
+import { ItemDefaultsBar } from "./ItemDefaultsBar";
+import { SchemeModeSection } from "./SchemeModeSection";
 import { SetSchemeEditor } from "./SetSchemeEditor";
 import { editorChipOff, editorChipOn } from "./editorChips";
-import {
-  BackoffRow,
-  buildRampPrescribedSets,
-  formatRampScheme,
-  parseRampSchemeInfo,
-  readRampBackoffs,
-} from "./listGroups";
+import { parseRampSchemeInfo } from "./listGroups";
 import { BuilderItem, BuilderSet, newKey } from "./types";
 
 const MEASURE_OPTS: ExerciseType[] = ["reps", "time", "distance"];
-
-const RIR_OPTS = [
-  { label: "0", value: 0 },
-  { label: "1", value: 1 },
-  { label: "2", value: 2 },
-  { label: "3+", value: 3 },
-] as const;
 
 export type EditorPartner = {
   label: string;
@@ -34,10 +24,6 @@ export type EditorPartner = {
   summary: string;
   setCount: number;
 };
-
-function topKgOf(item: BuilderItem): number | null {
-  return item.prescribedSets.find((s) => s.role === "top")?.loadKg ?? item.loadKg;
-}
 
 function seedPrescribedSets(item: BuilderItem, count?: number): BuilderSet[] {
   const n = Math.max(1, count ?? item.sets ?? 3);
@@ -56,6 +42,7 @@ function seedPrescribedSets(item: BuilderItem, count?: number): BuilderSet[] {
     tempo: item.tempo,
     role: "work",
     note: null,
+    restSeconds: null,
   }));
 }
 
@@ -85,12 +72,13 @@ function measureSlot(item: BuilderItem, onPatch: (patch: Partial<BuilderItem>) =
     );
   }
   return (
-    <Field label="Powtórzenia">
-      <div className="flex items-center gap-1.5">
-        <NumInput value={item.reps} min={1} onChange={(v) => onPatch({ reps: v })} placeholder="8" />
-        <span className="text-muted-faint">–</span>
-        <NumInput value={item.repsMax} min={1} onChange={(v) => onPatch({ repsMax: v })} placeholder="—" />
-      </div>
+    <Field label="Powtórzenia" hint="np. 8 albo 5-10">
+      <RangeInput
+        reps={item.reps}
+        repsMax={item.repsMax}
+        onChange={(next) => onPatch(next)}
+        placeholder="8"
+      />
     </Field>
   );
 }
@@ -114,9 +102,11 @@ export function ListEntryEditor({
   onDuplicate,
   onRemove,
   onAddSet,
+  onInsertSet,
   onPatchSet,
   onRemoveSet,
   onApplyPreset,
+  onApplyRestToAll,
   onClearSets,
 }: {
   item: BuilderItem;
@@ -137,112 +127,19 @@ export function ListEntryEditor({
   onDuplicate?: () => void;
   onRemove: () => void;
   onAddSet: () => void;
+  onInsertSet?: (index: number, side: "before" | "after") => string | void;
   onPatchSet: (setKey: string, patch: Partial<BuilderSet>) => void;
   onRemoveSet: (setKey: string) => void;
   onApplyPreset: (presetId: string) => void;
+  onApplyRestToAll?: (seconds: number | null) => void;
   onClearSets: () => void;
 }) {
-  const rampInfo = parseRampSchemeInfo(item.setScheme);
-  const isRamp = rampInfo != null;
-  const backoffs = readRampBackoffs(item);
+  const isRamp = parseRampSchemeInfo(item.setScheme) != null;
+  const hasSets = item.prescribedSets.length > 0;
   const [moreOpen, setMoreOpen] = useState(false);
-  const setsSnapshot = useRef<BuilderSet[] | null>(null);
-  const [schemeWanted, setSchemeWanted] = useState(item.prescribedSets.length > 0);
-  const schemeOpen = isRamp || schemeWanted || item.prescribedSets.length > 0;
-
-  const pickSets = () => {
-    const restored = setsSnapshot.current ?? item.prescribedSets;
-    setSchemeWanted(restored.length > 0);
-    onPatch({ setScheme: null, prescribedSets: restored });
-  };
-
-  const pickRamp = (target = rampInfo?.targetRm ?? 6) => {
-    if (item.prescribedSets.length > 0) setsSnapshot.current = item.prescribedSets;
-    onPatch({
-      setScheme: formatRampScheme(
-        target,
-        backoffs.length > 0 ? backoffs.map((b) => b.percent) : null,
-      ),
-      reps: null,
-      repsMax: null,
-      prescribedSets: [],
-    });
-  };
-
-  const setRampTarget = (v: number) => {
-    const scheme = formatRampScheme(
-      v,
-      backoffs.length > 0 ? backoffs.map((b) => b.percent) : null,
-    );
-    if (item.prescribedSets.length === 0) {
-      onPatch({ setScheme: scheme, reps: null, repsMax: null });
-      return;
-    }
-    const next = item.prescribedSets.map((s) =>
-      s.role === "top" || s.role === "ramp" ? { ...s, reps: v } : s,
-    );
-    onPatch({ setScheme: scheme, reps: null, repsMax: null, prescribedSets: next });
-  };
-
-  const setTopKg = (v: number | null) => {
-    const next = item.prescribedSets.map((s) =>
-      s.role === "top" ? { ...s, loadKg: v, loadPercent: null, percentOf: null } : s,
-    );
-    onPatch({ loadKg: v, prescribedSets: next });
-  };
-
-  const setBackoffs = (rows: BackoffRow[]) => {
-    const scheme = formatRampScheme(
-      rampInfo?.targetRm ?? 6,
-      rows.length > 0 ? rows.map((b) => b.percent) : null,
-    );
-    if (item.prescribedSets.length === 0) {
-      onPatch({ setScheme: scheme });
-      return;
-    }
-    const withoutBo = item.prescribedSets.filter((s) => s.role !== "backoff");
-    const generated = buildRampPrescribedSets({
-      targetRm: rampInfo?.targetRm ?? 6,
-      topKg: topKgOf(item),
-      backoffs: rows,
-    });
-    const next = [...withoutBo, ...generated.filter((s) => s.role === "backoff")].map((s, i) => ({
-      ...s,
-      order: i + 1,
-    }));
-    onPatch({ setScheme: scheme, prescribedSets: next });
-  };
-
-  const fillRamp = () => {
-    const generated = buildRampPrescribedSets({
-      targetRm: rampInfo?.targetRm ?? 6,
-      topKg: topKgOf(item),
-      backoffs,
-    });
-    onPatch({
-      setScheme: formatRampScheme(
-        rampInfo?.targetRm ?? 6,
-        backoffs.length > 0 ? backoffs.map((b) => b.percent) : null,
-      ),
-      reps: null,
-      repsMax: null,
-      sets: generated.length,
-      loadKg: topKgOf(item),
-      prescribedSets: generated,
-    });
-    setSchemeWanted(true);
-  };
-
-  const openScheme = () => {
-    setSchemeWanted(true);
-    if (item.prescribedSets.length > 0) return;
-    onPatch({ prescribedSets: seedPrescribedSets(item) });
-  };
-
-  const closeScheme = () => {
-    setSchemeWanted(false);
-    onClearSets();
-  };
+  // Zwinięcie chowa wiersze i nic nie kasuje — czyszczenie to osobna akcja z Cofnij.
+  const [tableOpen, setTableOpen] = useState(hasSets || isRamp);
+  const defaultRest = item.restBetweenSetsSeconds ?? exercise?.defaultRestBetweenSetsSeconds ?? null;
 
   const equalizeTo = (count: number) => {
     if (count <= 0) return;
@@ -260,12 +157,6 @@ export function ListEntryEditor({
     onPatch({ prescribedSets: next, sets: next.length });
   };
 
-  const rirActive = (v: number) => {
-    if (item.targetRir == null) return false;
-    if (v === 3) return item.targetRir >= 3;
-    return item.targetRir === v;
-  };
-
   return (
     <div
       className="flex flex-col gap-3 rounded-2xl border border-border-strong bg-surface p-3"
@@ -276,33 +167,7 @@ export function ListEntryEditor({
       }}
     >
       <div className="space-y-2.5 border-b border-border pb-3">
-        <p className="t-label text-muted">Ćwiczenie</p>
-        <RampControls
-          mode={isRamp ? "ramp" : "sets"}
-          targetRm={rampInfo?.targetRm ?? 6}
-          topKg={topKgOf(item)}
-          setsCount={item.sets}
-          restSeconds={item.restBetweenSetsSeconds}
-          restLabel="Przerwa (s)"
-          backoffs={backoffs}
-          showRest={!inSuperset}
-          onModeChange={(mode) => (mode === "ramp" ? pickRamp() : pickSets())}
-          onTargetRm={setRampTarget}
-          onTopKg={setTopKg}
-          onSetsCount={(v) => onPatch({ sets: v })}
-          onRest={(v) => onPatch({ restBetweenSetsSeconds: v })}
-          onBackoffsChange={setBackoffs}
-        />
-
-        {isRamp ? (
-          <button
-            type="button"
-            onClick={fillRamp}
-            className="text-sm font-medium text-foreground-secondary hover:text-foreground"
-          >
-            Rozpisz serie rampy
-          </button>
-        ) : null}
+        <SchemeModeSection item={item} onPatch={onPatch} />
 
         {lastPrescriptionLabel && onUndoLastPrescription ? (
           <p className="text-sm text-muted">
@@ -338,7 +203,11 @@ export function ListEntryEditor({
           </div>
         ) : null}
 
-        {isRamp ? null : schemeOpen ? null : (
+        {hasSets ? (
+          <p className="font-mono text-[13px] tabular-nums text-foreground-secondary">
+            {compactSchemeLine(item, exercise)}
+          </p>
+        ) : (
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
             <Field label="Serie">
               <NumInput
@@ -358,73 +227,48 @@ export function ListEntryEditor({
                 placeholder="—"
               />
             </Field>
-            {!inSuperset ? (
-              <Field label="Przerwa (s)">
-                <NumInput
-                  value={item.restBetweenSetsSeconds}
-                  min={0}
-                  onChange={(v) => onPatch({ restBetweenSetsSeconds: v })}
-                  placeholder="60"
-                />
-              </Field>
-            ) : null}
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-1.5" title={RIR_HELP}>
-          <span className="t-label mr-1 text-muted">RIR</span>
-          {RIR_OPTS.map((o) => (
-            <button
-              key={o.label}
-              type="button"
-              className={rirActive(o.value) ? editorChipOn : editorChipOff}
-              onClick={() => onPatch({ targetRir: o.value })}
-            >
-              {o.label}
-            </button>
-          ))}
-        </div>
+        <ItemDefaultsBar
+          item={item}
+          fallbackRestSeconds={exercise?.defaultRestBetweenSetsSeconds ?? null}
+          onPatch={onPatch}
+        />
       </div>
 
       <div className="space-y-2.5">
-        <p className="t-label text-muted">Serie</p>
-        {schemeOpen && (
+        {tableOpen ? (
           <SetSchemeEditor
             sets={item.prescribedSets}
             weekNumber={weekNumber}
             open
             measureType={item.measureType}
             itemLoadKg={item.loadKg}
+            defaultRestSeconds={defaultRest}
             onAdd={onAddSet}
+            onInsert={onInsertSet}
             onPatch={onPatchSet}
             onRemove={onRemoveSet}
             onApplyPreset={onApplyPreset}
+            onApplyRestToAll={onApplyRestToAll}
             onClear={onClearSets}
             onReplaceSets={(next) => onPatch({ prescribedSets: next, sets: next.length })}
           />
-        )}
+        ) : null}
 
-        {!isRamp && (
-          <div>
-            {schemeOpen ? (
-              <button
-                type="button"
-                onClick={closeScheme}
-                className="text-sm font-medium text-muted hover:text-foreground-secondary"
-              >
-                Zwiń serie
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={openScheme}
-                className="text-sm font-medium text-foreground-secondary hover:text-foreground"
-              >
-                Rozpisz serie
-              </button>
-            )}
-          </div>
-        )}
+        {!isRamp ? (
+          <button
+            type="button"
+            onClick={() => {
+              if (!tableOpen && !hasSets) onPatch({ prescribedSets: seedPrescribedSets(item) });
+              setTableOpen((v) => !v);
+            }}
+            className="text-sm font-medium text-foreground-secondary transition-colors hover:text-foreground"
+          >
+            {tableOpen ? "Zwiń serię po serii" : "Rozpisz serię po serii"}
+          </button>
+        ) : null}
       </div>
 
       <div className="border-t border-border pt-3">
@@ -451,14 +295,6 @@ export function ListEntryEditor({
               ))}
             </div>
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-              <Field label="Tempo">
-                <input
-                  className={inputClass}
-                  value={item.tempo ?? ""}
-                  onChange={(e) => onPatch({ tempo: e.target.value.toUpperCase().slice(0, 5) || null })}
-                  placeholder="3110"
-                />
-              </Field>
               <Field label="% 1RM">
                 <NumInput
                   value={item.loadPercent}
@@ -512,69 +348,69 @@ export function ListEntryEditor({
 
       <div className="space-y-2 border-t border-border pt-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={onMakeSuper}
-          className="text-sm font-medium text-muted transition-colors hover:text-foreground-secondary"
-        >
-          + Superseria → {superLabel}
-        </button>
-        {onUnlink ? (
-          <button
-            type="button"
-            onClick={onUnlink}
-            className="text-sm font-medium text-muted transition-colors hover:text-foreground-secondary"
-          >
-            Rozłącz
-          </button>
-        ) : null}
-        {onMove ? (
-          <>
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() => onMove(-1)}
+              onClick={onMakeSuper}
               className="text-sm font-medium text-muted transition-colors hover:text-foreground-secondary"
             >
-              Wyżej
+              + Superseria → {superLabel}
             </button>
+            {onUnlink ? (
+              <button
+                type="button"
+                onClick={onUnlink}
+                className="text-sm font-medium text-muted transition-colors hover:text-foreground-secondary"
+              >
+                Rozłącz
+              </button>
+            ) : null}
+            {onMove ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onMove(-1)}
+                  className="text-sm font-medium text-muted transition-colors hover:text-foreground-secondary"
+                >
+                  Wyżej
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onMove(1)}
+                  className="text-sm font-medium text-muted transition-colors hover:text-foreground-secondary"
+                >
+                  Niżej
+                </button>
+              </>
+            ) : null}
+            {onSwap ? (
+              <button
+                type="button"
+                onClick={onSwap}
+                className="text-sm font-medium text-muted transition-colors hover:text-foreground-secondary"
+              >
+                Zamień ćwiczenie
+              </button>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap items-center gap-1">
+            {onDuplicate ? (
+              <button
+                type="button"
+                onClick={onDuplicate}
+                className="rounded-[10px] px-3 py-2 text-sm font-medium text-muted transition-colors hover:text-foreground-secondary"
+              >
+                Duplikuj
+              </button>
+            ) : null}
             <button
               type="button"
-              onClick={() => onMove(1)}
-              className="text-sm font-medium text-muted transition-colors hover:text-foreground-secondary"
+              onClick={onRemove}
+              className="rounded-[10px] px-3 py-2 text-sm font-medium text-muted transition-colors hover:text-danger-hover"
             >
-              Niżej
+              Usuń ćwiczenie
             </button>
-          </>
-        ) : null}
-        {onSwap ? (
-          <button
-            type="button"
-            onClick={onSwap}
-            className="text-sm font-medium text-muted transition-colors hover:text-foreground-secondary"
-          >
-            Zamień ćwiczenie
-          </button>
-        ) : null}
-        </div>
-        <div className="flex flex-wrap items-center gap-1">
-          {onDuplicate ? (
-            <button
-              type="button"
-              onClick={onDuplicate}
-              className="rounded-[10px] px-3 py-2 text-sm font-medium text-muted transition-colors hover:text-foreground-secondary"
-            >
-              Duplikuj
-            </button>
-          ) : null}
-          <button
-            type="button"
-            onClick={onRemove}
-            className="rounded-[10px] px-3 py-2 text-sm font-medium text-muted transition-colors hover:text-danger-hover"
-          >
-            Usuń ćwiczenie
-          </button>
-        </div>
+          </div>
         </div>
       </div>
     </div>

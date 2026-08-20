@@ -9,28 +9,31 @@ import { isDefaultDayLabel, WEEKDAY_NAMES } from "@/lib/schedule";
 import { applyMethodTemplate, MethodTemplateId } from "@/lib/methodTemplates";
 import { useUndoToast } from "@/components/ui";
 import { loadInitialDays } from "./loadInitialDays";
+import {
+  duplicateWeek as duplicateWeekPure,
+  insertWeek as insertWeekPure,
+  moveDayTo,
+  moveItemTo,
+  normalizeWeeks,
+  removeWeek as removeWeekPure,
+} from "./builderMove";
+import { useUndoRedo } from "./useUndoRedo";
 import { BuilderDay, BuilderItem, BuilderSet, newKey } from "./types";
 
+/**
+ * Rozpisane serie są jedynym źródłem prawdy. Pola itemu synchronizujemy tylko wtedy,
+ * gdy wszystkie serie są identyczne — inaczej agregat min–max kłamałby („8 × 1–10”
+ * dla rozpisu 3/3/1/1/1/3/3). Przy różnych seriach zostaje wyłącznie liczba serii.
+ */
 function aggregatesFromSets(sets: BuilderSet[]): Partial<BuilderItem> {
   if (sets.length === 0) return {};
-  const reps = sets.map((s) => s.reps);
-  const sameReps = reps.every((r) => r === reps[0]);
-  const repsMax = sets.map((s) => s.repsMax);
-  const sameRepsMax = repsMax.every((r) => r === repsMax[0]);
-  const loads = sets.map((s) => s.loadKg);
-  const sameLoad = loads.every((l) => l === loads[0]);
   const patch: Partial<BuilderItem> = { sets: sets.length };
-  if (sameReps) {
-    patch.reps = reps[0];
-    patch.repsMax = sameRepsMax ? (repsMax[0] ?? null) : null;
-  } else {
-    const numeric = reps.filter((r): r is number => r != null);
-    if (numeric.length > 0) {
-      patch.reps = Math.min(...numeric);
-      patch.repsMax = Math.max(...numeric);
-    }
+  const same = <T,>(values: T[]) => values.every((v) => v === values[0]);
+  if (same(sets.map((s) => s.reps)) && same(sets.map((s) => s.repsMax))) {
+    patch.reps = sets[0].reps;
+    patch.repsMax = sets[0].repsMax ?? null;
   }
-  if (sameLoad) patch.loadKg = loads[0];
+  if (same(sets.map((s) => s.loadKg))) patch.loadKg = sets[0].loadKg;
   return patch;
 }
 
@@ -74,18 +77,16 @@ export function usePlanDraft({
   const [name, setName] = useState(plan?.name ?? initialName ?? "");
   const [description, setDescription] = useState(plan?.description ?? initialDescription ?? "");
   const [isTemplate, setIsTemplate] = useState(plan?.isTemplate ?? initialIsTemplate ?? false);
+  // Stary plan mógł mieć luki w numeracji (np. tydzień 2 i 5) — normalizujemy przy wczytaniu.
   const [days, setDays] = useState<BuilderDay[]>(() =>
-    initialDays && initialDays.length > 0
-      ? initialDays
-      : loadInitialDays(plan, initialDayCount, initialWeekCount)
-  );
-  const [activeWeek, setActiveWeek] = useState<number>(() => {
-    const initial =
+    normalizeWeeks(
       initialDays && initialDays.length > 0
         ? initialDays
-        : loadInitialDays(plan, initialDayCount, initialWeekCount);
-    return initial.length ? Math.min(...initial.map((d) => d.weekNumber)) : 1;
-  });
+        : loadInitialDays(plan, initialDayCount, initialWeekCount),
+    ),
+  );
+  const history = useUndoRedo(days, setDays);
+  const [activeWeek, setActiveWeek] = useState<number>(1);
 
   const weeks = useMemo(() => {
     const set = new Set(days.map((d) => d.weekNumber));
@@ -143,6 +144,7 @@ export function usePlanDraft({
             .map((d) => ({
               ...d,
               key: newKey(),
+              entityId: undefined,
               weekNumber: target,
               items: d.items.map((it) => {
                 let prescribedSets = it.prescribedSets.map((s) => ({ ...s, key: newKey() }));
@@ -186,7 +188,16 @@ export function usePlanDraft({
                         : s.repsMax,
                   }));
                 }
-                return { ...it, key: newKey(), prescribedSets, setScheme, loadKg, reps, repsMax };
+                return {
+                  ...it,
+                  key: newKey(),
+                  entityId: undefined,
+                  prescribedSets,
+                  setScheme,
+                  loadKg,
+                  reps,
+                  repsMax,
+                };
               }),
             }));
           next = [...next, ...clones];
@@ -227,21 +238,72 @@ export function usePlanDraft({
       if (!source) return prev;
       const week = targetWeekNumber ?? source.weekNumber;
       const inWeek = prev.filter((d) => d.weekNumber === week).length;
+      // Klon nie może dziedziczyć entityId — inaczej zapis nadpisałby dzień źródłowy.
       const clone: BuilderDay = {
         ...source,
         key: newKey(),
+        entityId: undefined,
         weekNumber: week,
         order: inWeek + 1,
         label: `${source.label} (kopia)`,
         items: source.items.map((it) => ({
           ...it,
           key: newKey(),
+          entityId: undefined,
           prescribedSets: it.prescribedSets.map((s) => ({ ...s, key: newKey() })),
         })),
       };
       return [...prev, clone];
     });
   }, []);
+
+  /** Przenosi dzień do innego tygodnia (drag na numer tygodnia albo „Przenieś do tygodnia…”). */
+  const moveDay = useCallback(
+    (dayKey: string, targetWeek: number, index?: number) => {
+      setDays((prev) => moveDayTo(prev, dayKey, { weekNumber: targetWeek, index }));
+      setActiveWeek(targetWeek);
+    },
+    [],
+  );
+
+  /** Przenosi ćwiczenie w dniu albo do innego dnia — wspólne dla Listy, Tablicy i Arkusza. */
+  const moveItemTarget = useCallback(
+    (fromDayKey: string, itemKey: string, toDayKey: string, index: number) => {
+      setDays((prev) => moveItemTo(prev, { dayKey: fromDayKey, itemKey }, { dayKey: toDayKey, index }));
+    },
+    [],
+  );
+
+  const insertWeek = useCallback((weekNumber: number, side: "before" | "after") => {
+    setDays((prev) => {
+      const result = insertWeekPure(prev, weekNumber, side);
+      setActiveWeek(result.weekNumber);
+      return result.days;
+    });
+  }, []);
+
+  const duplicateWeek = useCallback((weekNumber: number) => {
+    setDays((prev) => {
+      const result = duplicateWeekPure(prev, weekNumber);
+      setActiveWeek(result.weekNumber);
+      return result.days;
+    });
+  }, []);
+
+  const removeWeek = useCallback(
+    (weekNumber: number) => {
+      setDays((prev) => {
+        const snapshot = prev;
+        const next = removeWeekPure(prev, weekNumber);
+        if (next.length !== prev.length) {
+          showUndoToast(`Usunięto tydzień ${weekNumber}`, () => setDays(snapshot));
+        }
+        setActiveWeek((cur) => Math.max(1, Math.min(cur, next.length ? Math.max(...next.map((d) => d.weekNumber)) : 1)));
+        return next;
+      });
+    },
+    [showUndoToast],
+  );
 
   const applyWeekdaysToOtherWeeks = useCallback((sourceWeek: number) => {
     setDays((prev) => {
@@ -659,6 +721,25 @@ export function usePlanDraft({
     [patchItem]
   );
 
+  /** Nowa seria kopiuje sąsiednią (rola, ciężar, powtórzenia, przerwa) — jak w Everfit. */
+  const cloneNeighbourSet = (source: BuilderSet | undefined, order: number): BuilderSet => ({
+    key: newKey(),
+    order,
+    reps: source?.reps ?? null,
+    repsMax: source?.repsMax ?? null,
+    durationSeconds: source?.durationSeconds ?? null,
+    distanceMeters: source?.distanceMeters ?? null,
+    loadKg: source?.loadKg ?? null,
+    loadPercent: source?.loadPercent ?? null,
+    percentOf: source?.percentOf ?? null,
+    targetRpe: source?.targetRpe ?? null,
+    targetRir: source?.targetRir ?? null,
+    tempo: source?.tempo ?? null,
+    role: source?.role ?? "work",
+    note: null,
+    restSeconds: source?.restSeconds ?? null,
+  });
+
   const addSet = useCallback(
     (dayKey: string, itemKey: string) => {
       setDays((prev) =>
@@ -671,22 +752,7 @@ export function usePlanDraft({
               const last = item.prescribedSets[item.prescribedSets.length - 1];
               const next = [
                 ...item.prescribedSets,
-                {
-                  key: newKey(),
-                  order: item.prescribedSets.length + 1,
-                  reps: last?.reps ?? null,
-                  repsMax: last?.repsMax ?? null,
-                  durationSeconds: last?.durationSeconds ?? null,
-                  distanceMeters: last?.distanceMeters ?? null,
-                  loadKg: last?.loadKg ?? null,
-                  loadPercent: last?.loadPercent ?? null,
-                  percentOf: last?.percentOf ?? null,
-                  targetRpe: last?.targetRpe ?? null,
-                  targetRir: last?.targetRir ?? null,
-                  tempo: last?.tempo ?? null,
-                  role: last?.role ?? "work",
-                  note: null,
-                },
+                cloneNeighbourSet(last, item.prescribedSets.length + 1),
               ];
               return withSyncedSets(item, next);
             }),
@@ -695,6 +761,63 @@ export function usePlanDraft({
       );
     },
     []
+  );
+
+  /**
+   * Wstawia serię dokładnie przed/po wskazanej — trener dopisuje 85 kg między 80 i 90
+   * bez przepisywania kolejnych serii. Zwraca `key` nowej serii, żeby wołający mógł
+   * ustawić fokus na jej ciężarze.
+   */
+  const insertSet = useCallback(
+    (dayKey: string, itemKey: string, index: number, side: "before" | "after"): string => {
+      const created = newKey();
+      setDays((prev) =>
+        prev.map((d) => {
+          if (d.key !== dayKey) return d;
+          return {
+            ...d,
+            items: d.items.map((item) => {
+              if (item.key !== itemKey) return item;
+              const at = side === "before" ? index : index + 1;
+              const neighbour = item.prescribedSets[index];
+              const inserted = { ...cloneNeighbourSet(neighbour, at + 1), key: created };
+              const next = [...item.prescribedSets];
+              next.splice(Math.max(0, Math.min(at, next.length)), 0, inserted);
+              return withSyncedSets(
+                item,
+                next.map((s, o) => ({ ...s, order: o + 1 })),
+              );
+            }),
+          };
+        }),
+      );
+      return created;
+    },
+    [],
+  );
+
+  /** „Zastosuj do wszystkich serii” dla przerwy — jedno kliknięcie zamiast n edycji. */
+  const applyRestToAllSets = useCallback(
+    (dayKey: string, itemKey: string, seconds: number | null) => {
+      setDays((prev) =>
+        prev.map((d) =>
+          d.key !== dayKey
+            ? d
+            : {
+                ...d,
+                items: d.items.map((i) =>
+                  i.key !== itemKey
+                    ? i
+                    : {
+                        ...i,
+                        prescribedSets: i.prescribedSets.map((s) => ({ ...s, restSeconds: seconds })),
+                      },
+                ),
+              },
+        ),
+      );
+    },
+    [],
   );
 
   const patchSet = useCallback(
@@ -869,12 +992,21 @@ export function usePlanDraft({
     visibleDays,
     toastNode,
     showUndoToast,
+    undo: history.undo,
+    redo: history.redo,
+    canUndo: history.canUndo,
+    canRedo: history.canRedo,
     patchDay,
     addDay,
     addWeek,
     copyWeek,
+    insertWeek,
+    duplicateWeek,
+    removeWeek,
     removeDay,
     duplicateDay,
+    moveDay,
+    moveItemTarget,
     applyWeekdaysToOtherWeeks,
     addItem,
     addItemAt,
@@ -889,6 +1021,8 @@ export function usePlanDraft({
     linkSelected,
     unlinkGroup,
     addSet,
+    insertSet,
+    applyRestToAllSets,
     patchSet,
     removeSet,
     applyPreset,

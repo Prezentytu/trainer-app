@@ -1,51 +1,69 @@
 # Maile wdrożenia — szablony ręczne
 
-Automat przy zgłoszeniu: `FoundingService` + `EmailService.WdrozenieTrainerHtml` (Resend). Poniżej wklejki **po** potwierdzeniu godziny. Głos: `ux-writing`. Zakaz: founding, white-glove, call, oddzwonimy, ta stawka zostaje.
+Automat przy zgłoszeniu: `FoundingService` + `EmailService.WdrozenieTrainerHtml` (Resend). Poniżej wklejki **po** tym, jak trener dołączy materiał. Głos: `ux-writing`. Zakaz: founding, white-glove, call, oddzwonimy, kto nie trenował, sklep, przeglądarka.
 
 ---
 
-## 1. Potwierdzenie slotu (gdy trener odpisze)
+## 0. Po zgłoszeniu (automat)
 
-Temat: `30 minut wdrożenia — {dzień} o {godzina}`
+Temat: `Pierwszy przegląd — dołącz arkusz albo zrzuty`
 
 > Cześć {imię},
 >
-> {dzień} o {godzina}, 30 minut. Link: {Meet / FaceTime}.
+> Odpisz na tę wiadomość i dołącz to, czym dziś prowadzisz: arkusz, PDF albo zrzuty z WhatsAppa.
 >
-> Na rozmowie przenosisz jeden plan do linku i wysyłasz go trzem osobom.
->
-> Przygotuj Excel albo PDF tego planu i imiona trzech klientów.
->
-> Jeśli godzina nie pasuje — odpisz inną.
-
-Załącz ICS gdy masz datę.
+> W 24 godziny wraca przegląd i trzy wiadomości do wysłania.
 
 ---
 
-## 2. T−24 h
+## 1. Odbiór materiału
 
-Temat: `Jutro o {godzina} — weź Excel`
+Temat: `Dostałem plik — przegląd jutro`
 
 > Cześć {imię},
 >
-> Jutro o {godzina}. 30 minut.
+> Mam {arkusz / zrzuty}. Przegląd wraca w 24 godziny na ten adres.
 >
-> Weź Excel albo PDF jednego planu. Trzech klientów dostanie link na Twoim WhatsAppie, na rozmowie.
->
-> Link: {Meet / FaceTime}.
+> Jeśli coś jeszcze dopiszesz (ile osób, jaka stawka) — wezmę to pod uwagę.
 
 ---
 
-## 3. Recap (T+1 h po rozmowie)
+## 2. Dostawa przeglądu
 
-Temat: `Trzy linki poszły — jeden trening w tym tygodniu`
+Temat: `Przegląd — {N} osób, trzy wiadomości`
 
 > Cześć {imię},
 >
-> Plan jest w linku. Trzy osoby go dostały.
+> W załączniku przegląd.
 >
-> W tym tygodniu jedna z nich odhacza serie. Potem w panelu widzisz, kto nie trenował.
+> {1–3 zdania: kto stanął, komu spadły ciężary, kto nie odezwał się od dwóch tygodni.}
+>
+> Trzy wiadomości do wklejenia są na dole. Jeśli nic tu nie jest nowe — odpisz jedno zdanie i kończymy.
+>
+> Chcesz taki przegląd co tydzień? Przeniosę plany. Ty nic nie przepisujesz.
+
+---
+
+## 3. T+7 — prawda i opinia
+
+Temat: `Co nie zadziałało?`
+
+> Cześć {imię},
+>
+> Minął tydzień. Co w przeglądzie było nie tak — albo czego brakowało?
+>
+> Jeśli było dobrze i chcesz powiedzieć o tym jednemu koledze albo zostawić opinię — daj znać. Nie musisz.
+
+---
+
+## 4. Recap po przeniesieniu planów (gdy już w środku)
+
+Temat: `Plany są w środku — pierwszy tydzień`
+
+> Cześć {imię},
+>
+> Plany są pod linkiem. Podopieczny otwiera je pod Twoim imieniem.
+>
+> W tym tygodniu jedna osoba odhacza serie. Potem przegląd składa się sam.
 >
 > Feedback za 7 dni — 15 minut.
->
-> Rok z góry, jeśli chcesz zamknąć 39 zł: 390 zł raz (dwa miesiące w cenie), do 15 osób. Potem 39 zł — ta kwota nie rośnie. {link /wdrozenie albo Stripe}

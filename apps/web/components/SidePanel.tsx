@@ -45,10 +45,24 @@ export function SidePanel({
   const panelRef = useRef<HTMLDivElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
   const isMobile = useIsMobileMd();
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
+  // Fokus zapamiętujemy i oddajemy wyłącznie przy realnym otwarciu/zamknięciu.
+  // Zależność od `title`/`onClose` restartowałaby ten efekt przy każdym renderze
+  // i wyrywała fokus z pola, w którym trener właśnie wpisuje ciężar.
   useEffect(() => {
     if (!open) return;
     previouslyFocused.current = document.activeElement as HTMLElement | null;
+    return () => {
+      previouslyFocused.current?.focus?.();
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
     const panel = panelRef.current;
 
     const focusables = () =>
@@ -61,7 +75,7 @@ export function SidePanel({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (!isMobile || e.key !== "Tab" || !panel) return;
@@ -81,9 +95,8 @@ export function SidePanel({
     window.addEventListener("keydown", onKey);
     return () => {
       window.removeEventListener("keydown", onKey);
-      previouslyFocused.current?.focus?.();
     };
-  }, [open, onClose, isMobile, title]);
+  }, [open, isMobile]);
 
   if (!open) return null;
 

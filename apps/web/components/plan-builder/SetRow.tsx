@@ -1,15 +1,23 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { PercentBase, SET_ROLE_LABELS } from "@/lib/api";
 import { Field, IconButton, inputClass } from "@/components/ui";
 import { NumInput } from "./NumInput";
+import { RangeInput } from "./RangeInput";
+import {
+  FloatingMenu,
+  FloatingMenuItem,
+  FloatingMenuLabel,
+  FloatingMenuSeparator,
+} from "./FloatingMenu";
 import { editorChipOff, editorChipOn } from "./editorChips";
 
 export { editorChipOff, editorChipOn } from "./editorChips";
 
+// Rola ma stałą kolumnę — „rozgrzewka” nigdy nie przesuwa ciężaru ani przerwy.
 export const SET_ROW_GRID =
-  "grid-cols-[minmax(4.5rem,auto)_minmax(0,1fr)_minmax(0,1fr)_2.5rem_2.5rem]";
+  "grid-cols-[6rem_minmax(3rem,1fr)_minmax(3rem,1fr)_minmax(2.75rem,0.85fr)_2.25rem_2.25rem]";
 
 const ROLE_OPTIONS = ["work", "warmup", "ramp", "top", "backoff"] as const;
 
@@ -35,14 +43,18 @@ export function SetRow({
   distanceMeters,
   percentOf,
   measureType,
-  computedKg,
+  restSeconds,
+  defaultRestSeconds,
+  loadInputRef,
   onReps,
-  onRepsMax,
   onLoadKg,
   onLoadPercent,
   onLoadKind,
   onRole,
+  onRest,
+  onApplyRestToAll,
   onMorePatch,
+  onInsert,
   onRemove,
   onLoadFocus,
   removeTitle = "Usuń serię",
@@ -63,13 +75,17 @@ export function SetRow({
   distanceMeters?: number | null;
   percentOf?: PercentBase | null;
   measureType?: "reps" | "time" | "distance";
-  computedKg?: number | null;
-  onReps: (v: number | null) => void;
-  onRepsMax: (v: number | null) => void;
+  restSeconds?: number | null;
+  /** Przerwa ćwiczenia — pokazujemy ją jako muted placeholder, gdy seria nie ma własnej. */
+  defaultRestSeconds?: number | null;
+  loadInputRef?: React.Ref<HTMLInputElement>;
+  onReps: (next: { reps: number | null; repsMax: number | null }) => void;
   onLoadKg: (v: number | null) => void;
   onLoadPercent: (v: number | null) => void;
   onLoadKind?: (kind: "kg" | "percent") => void;
   onRole?: (role: string) => void;
+  onRest?: (v: number | null) => void;
+  onApplyRestToAll?: (v: number | null) => void;
   onMorePatch?: (patch: {
     tempo?: string | null;
     targetRpe?: number | null;
@@ -79,156 +95,228 @@ export function SetRow({
     distanceMeters?: number | null;
     percentOf?: PercentBase | null;
   }) => void;
+  onInsert?: (side: "before" | "after") => void;
   onRemove: () => void;
   onLoadFocus?: () => void;
   removeTitle?: string;
 }) {
-  const [roleOpen, setRoleOpen] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
-  const roleRef = useRef<HTMLDivElement>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const display = label ?? `${index} · ${roleShort(role)}`;
-
-  useEffect(() => {
-    if (!roleOpen) return;
-    const onDoc = (e: MouseEvent) => {
-      const t = e.target as Node;
-      if (roleRef.current && !roleRef.current.contains(t)) setRoleOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setRoleOpen(false);
-        setMoreOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", onDoc);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDoc);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [roleOpen]);
+  const hasMore = onMorePatch != null || onInsert != null;
 
   return (
     <div>
-      <div className={`grid ${SET_ROW_GRID} items-center gap-2`}>
-        <div className="relative min-w-0" ref={roleRef}>
+      <div className={`grid ${SET_ROW_GRID} items-center gap-1.5`}>
+        <div className="min-w-0">
           {onRole ? (
-            <>
-              <button
-                type="button"
-                onClick={() => setRoleOpen((v) => !v)}
-                className="t-label w-full whitespace-nowrap text-left text-muted hover:text-foreground"
-                title="Rola serii"
-                aria-haspopup="menu"
-                aria-expanded={roleOpen}
-              >
-                {display}
-              </button>
-              {roleOpen ? (
-                <div
-                  role="menu"
-                  className="absolute left-0 top-full z-30 mt-1 min-w-[8.5rem] rounded-[10px] border border-border-strong bg-surface p-1"
+            <FloatingMenu
+              label="Rola serii"
+              minWidth="9rem"
+              trigger={({ open, toggle, ref }) => (
+                <button
+                  ref={ref}
+                  type="button"
+                  onClick={toggle}
+                  className="t-label block w-full truncate text-left text-muted transition-colors hover:text-foreground"
+                  title={`Rola serii — ${roleShort(role)}`}
+                  aria-haspopup="menu"
+                  aria-expanded={open}
                 >
-                  {ROLE_OPTIONS.map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      role="menuitem"
-                      className={`flex w-full rounded-[8px] px-2.5 py-1.5 text-left text-sm ${
-                        (role ?? "work") === r
-                          ? "bg-surface-active text-foreground"
-                          : "text-foreground-secondary hover:bg-surface-hover"
-                      }`}
-                      onClick={() => {
-                        onRole(r);
-                        setRoleOpen(false);
-                      }}
-                    >
-                      {SET_ROLE_LABELS[r]}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </>
+                  {display}
+                </button>
+              )}
+            >
+              {({ close }) =>
+                ROLE_OPTIONS.map((r) => (
+                  <FloatingMenuItem
+                    key={r}
+                    active={(role ?? "work") === r}
+                    onClick={() => {
+                      onRole(r);
+                      close();
+                    }}
+                  >
+                    {SET_ROLE_LABELS[r]}
+                  </FloatingMenuItem>
+                ))
+              }
+            </FloatingMenu>
           ) : (
-            <span className="t-label whitespace-nowrap text-muted">{display}</span>
+            <span className="t-label block truncate text-muted" title={display}>
+              {display}
+            </span>
           )}
         </div>
 
         <div className="min-w-0" onFocus={onLoadFocus}>
-          <div className="flex items-center gap-1">
-            {loadKind === "percent" ? (
-              <NumInput
-                value={loadPercent}
-                min={1}
-                max={100}
-                step={1}
-                onChange={onLoadPercent}
-                placeholder="80"
-                aria-label="% obciążenia"
-              />
-            ) : (
-              <NumInput
-                value={loadKg}
-                min={0}
-                step={0.5}
-                onChange={onLoadKg}
-                placeholder="—"
-                aria-label="Ciężar kg"
-              />
-            )}
-            {onLoadKind ? (
+          {loadKind === "percent" ? (
+            <NumInput
+              value={loadPercent}
+              min={1}
+              max={100}
+              step={1}
+              onChange={onLoadPercent}
+              placeholder="80"
+              aria-label="Procent obciążenia"
+              className="px-1.5"
+            />
+          ) : (
+            <NumInput
+              inputRef={loadInputRef}
+              value={loadKg}
+              min={0}
+              step={0.5}
+              onChange={onLoadKg}
+              placeholder="—"
+              aria-label="Ciężar w kilogramach"
+              className="px-1.5"
+            />
+          )}
+        </div>
+
+        <div className="min-w-0">
+          {measureType === "time" ? (
+            <NumInput
+              value={durationSeconds ?? null}
+              min={1}
+              onChange={(v) => onMorePatch?.({ durationSeconds: v })}
+              placeholder="30"
+              aria-label="Czas serii w sekundach"
+              className="px-1.5"
+            />
+          ) : measureType === "distance" ? (
+            <NumInput
+              value={distanceMeters ?? null}
+              min={1}
+              onChange={(v) => onMorePatch?.({ distanceMeters: v })}
+              placeholder="20"
+              aria-label="Dystans serii w metrach"
+              className="px-1.5"
+            />
+          ) : (
+            <RangeInput
+              reps={reps}
+              repsMax={repsMax}
+              onChange={onReps}
+              placeholder="8"
+              className="px-1.5"
+              aria-label="Powtórzenia serii — jedna liczba albo zakres, np. 5-10"
+            />
+          )}
+        </div>
+
+        <div className="min-w-0">
+          <NumInput
+            value={restSeconds ?? null}
+            min={0}
+            onChange={(v) => onRest?.(v)}
+            placeholder={defaultRestSeconds != null ? String(defaultRestSeconds) : "—"}
+            aria-label="Przerwa po tej serii w sekundach"
+            className={`px-1.5 ${restSeconds == null ? "text-muted" : ""}`}
+            title={
+              restSeconds == null
+                ? "Dziedziczy domyślną przerwę ćwiczenia"
+                : "Własna przerwa tej serii"
+            }
+          />
+        </div>
+
+        {hasMore ? (
+          <FloatingMenu
+            label="Więcej opcji serii"
+            align="right"
+            minWidth="12rem"
+            trigger={({ open, toggle, ref }) => (
               <button
+                ref={ref}
                 type="button"
-                className="t-label shrink-0 text-muted hover:text-foreground"
-                onClick={() => onLoadKind(loadKind === "kg" ? "percent" : "kg")}
-                title={loadKind === "kg" ? "Przełącz na %" : "Przełącz na kg"}
+                onClick={toggle}
+                className="inline-flex h-[var(--h-control-sm)] w-full items-center justify-center rounded-[var(--r-field)] text-sm text-muted-faint transition-colors hover:bg-surface-hover hover:text-foreground"
+                aria-expanded={open}
+                aria-haspopup="menu"
+                title="Więcej opcji serii"
               >
-                {loadKind === "kg" ? "kg" : "%"}
+                …
               </button>
-            ) : (
-              <span className="t-label shrink-0 text-muted">{loadKind === "kg" ? "kg" : "%"}</span>
             )}
-          </div>
-        </div>
-
-        <div className="flex min-w-0 items-center gap-1">
-          <NumInput
-            value={reps}
-            min={1}
-            onChange={onReps}
-            placeholder="8"
-            aria-label="Powtórzenia od"
-          />
-          <span className="text-muted-faint">–</span>
-          <NumInput
-            value={repsMax}
-            min={1}
-            onChange={onRepsMax}
-            placeholder="—"
-            aria-label="Powtórzenia do"
-          />
-        </div>
-
-        {onMorePatch ? (
-          <button
-            type="button"
-            onClick={() => setMoreOpen((v) => !v)}
-            className="inline-flex min-h-10 min-w-10 items-center justify-center text-sm text-muted-faint hover:text-foreground"
-            aria-expanded={moreOpen}
-            title="Więcej pól serii"
           >
-            {moreOpen ? "▴" : "···"}
-          </button>
+            {({ close }) => (
+              <>
+                {onInsert ? (
+                  <>
+                    <FloatingMenuItem
+                      onClick={() => {
+                        onInsert("before");
+                        close();
+                      }}
+                    >
+                      Wstaw serię przed
+                    </FloatingMenuItem>
+                    <FloatingMenuItem
+                      onClick={() => {
+                        onInsert("after");
+                        close();
+                      }}
+                    >
+                      Wstaw serię po
+                    </FloatingMenuItem>
+                    <FloatingMenuSeparator />
+                  </>
+                ) : null}
+                {onRest && restSeconds != null ? (
+                  <FloatingMenuItem
+                    onClick={() => {
+                      onRest(null);
+                      close();
+                    }}
+                  >
+                    Użyj domyślnej przerwy
+                  </FloatingMenuItem>
+                ) : null}
+                {onApplyRestToAll && restSeconds != null ? (
+                  <FloatingMenuItem
+                    onClick={() => {
+                      onApplyRestToAll(restSeconds);
+                      close();
+                    }}
+                  >
+                    Zastosuj tę przerwę do wszystkich
+                  </FloatingMenuItem>
+                ) : null}
+                {onMorePatch ? (
+                  <FloatingMenuItem
+                    onClick={() => {
+                      setDetailsOpen(true);
+                      close();
+                    }}
+                  >
+                    Tempo, RPE, notatka…
+                  </FloatingMenuItem>
+                ) : null}
+                <FloatingMenuSeparator />
+                <FloatingMenuLabel>Seria {index}</FloatingMenuLabel>
+                <FloatingMenuItem
+                  danger
+                  onClick={() => {
+                    onRemove();
+                    close();
+                  }}
+                >
+                  Usuń serię
+                </FloatingMenuItem>
+              </>
+            )}
+          </FloatingMenu>
         ) : (
           <span />
         )}
 
-        <IconButton title={removeTitle} size="sm" onClick={onRemove}>
+        <IconButton title={removeTitle} size="xs" onClick={onRemove}>
           ✕
         </IconButton>
       </div>
-      {onMorePatch && moreOpen ? (
+
+      {onMorePatch && detailsOpen ? (
         <div className="mt-2 grid grid-cols-2 gap-2 rounded-[10px] border border-border bg-surface-sunken p-3">
           <Field label="Tempo">
             <input
@@ -256,29 +344,29 @@ export function SetRow({
               placeholder="—"
             />
           </Field>
-          {measureType === "time" ? (
-            <Field label="Czas (s)">
-              <NumInput
-                value={durationSeconds ?? null}
-                min={1}
-                onChange={(v) => onMorePatch({ durationSeconds: v })}
-                placeholder="—"
-              />
-            </Field>
-          ) : null}
-          {measureType === "distance" ? (
-            <Field label="Dystans (m)">
-              <NumInput
-                value={distanceMeters ?? null}
-                min={1}
-                onChange={(v) => onMorePatch({ distanceMeters: v })}
-                placeholder="—"
-              />
+          {onLoadKind ? (
+            <Field label="Jednostka">
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  className={loadKind === "kg" ? editorChipOn : editorChipOff}
+                  onClick={() => onLoadKind("kg")}
+                >
+                  kg
+                </button>
+                <button
+                  type="button"
+                  className={loadKind === "percent" ? editorChipOn : editorChipOff}
+                  onClick={() => onLoadKind("percent")}
+                >
+                  %
+                </button>
+              </div>
             </Field>
           ) : null}
           {loadKind === "percent" ? (
             <div className="col-span-2">
-              <p className="t-label mb-1.5 text-muted">Baza %</p>
+              <p className="t-label mb-1.5 text-muted">Baza procentu</p>
               <div className="flex flex-wrap gap-1.5">
                 <button
                   type="button"
@@ -306,6 +394,15 @@ export function SetRow({
                 placeholder="np. ostatnia seria na zapas"
               />
             </Field>
+          </div>
+          <div className="col-span-2">
+            <button
+              type="button"
+              onClick={() => setDetailsOpen(false)}
+              className="text-sm font-medium text-muted transition-colors hover:text-foreground-secondary"
+            >
+              Zwiń szczegóły serii
+            </button>
           </div>
         </div>
       ) : null}

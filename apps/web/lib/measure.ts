@@ -48,6 +48,37 @@ export function measurePatch(
   };
 }
 
+export type RepRange = { reps: number | null; repsMax: number | null };
+
+const RANGE_SEPARATORS = /[-–—/]/;
+
+/**
+ * Jedno pole zamiast pary „od/do”: `5`, `5-10`, `5–10`, `10 - 5` → `reps`/`repsMax`.
+ * Zakres odwrotny normalizuje się, pusty i częściowy (`5-`) zostaje bez `repsMax`.
+ */
+export function parseRepRange(raw: string): RepRange {
+  const text = raw.trim();
+  if (text === "") return { reps: null, repsMax: null };
+  const parts = text.split(RANGE_SEPARATORS).map((p) => p.trim());
+  const nums = parts
+    .filter((p) => p !== "")
+    .map((p) => Number.parseInt(p, 10))
+    .filter((n) => Number.isFinite(n) && n > 0);
+  if (nums.length === 0) return { reps: null, repsMax: null };
+  if (nums.length === 1) return { reps: nums[0], repsMax: null };
+  const min = Math.min(nums[0], nums[1]);
+  const max = Math.max(nums[0], nums[1]);
+  return { reps: min, repsMax: min === max ? null : max };
+}
+
+/** Odwrotność `parseRepRange` — `8` albo `8–12`, pusty string gdy brak wartości. */
+export function formatRepRange(reps: number | null, repsMax: number | null): string {
+  if (reps == null && repsMax == null) return "";
+  if (reps == null) return String(repsMax);
+  if (repsMax == null || repsMax === reps) return String(reps);
+  return `${reps}–${repsMax}`;
+}
+
 /** Rdzeń schematu: `8–10` / `30s` / `20 m`. */
 export function formatMeasureCore(
   item: Pick<

@@ -571,7 +571,8 @@ public static class Sessions
                         PlanLoads.ComputedSetLoad(s, topKg, oneRm > 0 ? oneRm : null) ?? s.LoadKg,
                         s.Reps,
                         s.RepsMax,
-                        s.DurationSeconds);
+                        s.DurationSeconds,
+                        s.RestSeconds);
                 }
             }
             else

@@ -461,6 +461,8 @@ export type PlanSet = {
   tempo: string | null;
   role: string | null;
   note: string | null;
+  /** Przerwa po tej serii. null = dziedziczy `PlanItem.restBetweenSetsSeconds`. */
+  restSeconds: number | null;
   computedLoadKg: number | null;
 };
 
@@ -547,6 +549,8 @@ export type PlanSetInput = {
   tempo: string | null;
   role: string | null;
   note: string | null;
+  /** Przerwa po tej serii. null = dziedziczy `PlanItem.restBetweenSetsSeconds`. */
+  restSeconds: number | null;
 };
 
 export type PlanImportItem = {
@@ -740,6 +744,8 @@ export type LoggedSet = {
   targetWeightKg?: number | null;
   targetReps?: number | null;
   targetDurationSeconds?: number | null;
+  /** Przerwa po tej serii z planu. null = fallback do przerwy ćwiczenia. */
+  targetRestSeconds?: number | null;
 };
 
 export type LoggedExercise = {
@@ -951,6 +957,7 @@ export type PortalSessionProgress = {
 
 export type PortalHome = {
   client: { id: number; name: string; goalWeightKg?: number | null };
+  trainerName?: string | null;
   today: {
     assignmentId: number;
     planId: number;
@@ -1128,6 +1135,9 @@ export type TrainerMe = {
   notifyDailySummary?: boolean;
   notifyClientReply?: boolean;
   notifyWeeklyDigest?: boolean;
+  wdrozeniePaidAt?: string | null;
+  wdrozenieCreditGrosze?: number;
+  wdrozenieGuaranteeEligible?: boolean;
 };
 
 export type ProgressPhoto = {
@@ -1145,6 +1155,15 @@ export type ClientsImportResult = {
   skipped: number;
   errors: string[];
   ids: number[];
+};
+
+export type ClientBundleImportResult = {
+  clientId: number;
+  name: string;
+  createdPlans: number;
+  createdExercises: number;
+  sessionCount: number;
+  warnings: string[];
 };
 
 export type NavCounts = {
@@ -1402,6 +1421,10 @@ export const api = {
       }),
     portal: () =>
       request<{ portalUrl: string; message: string }>("/api/billing/portal", { method: "POST" }),
+    wdrozenieGwarancja: () =>
+      request<{ ok: boolean; message: string }>("/api/billing/wdrozenie-gwarancja", {
+        method: "POST",
+      }),
   },
   inbox: {
     list: (opts?: { unreadOnly?: boolean; kind?: string; take?: number }) => {
@@ -1421,7 +1444,8 @@ export const api = {
       email: string;
       phone?: string;
       preferredSlot?: string;
-      track: "whiteglove" | "founding";
+      howYouWork?: string;
+      track: "whiteglove" | "founding" | "personal";
     }) =>
       request<{
         ok: boolean;
@@ -1455,6 +1479,12 @@ export const api = {
       request<ClientsImportResult>("/api/clients/import", {
         method: "POST",
         body: JSON.stringify({ csv }),
+      }),
+    exportBundle: (id: number) => request<unknown>(`/api/clients/${id}/bundle`),
+    importBundle: (bundle: unknown) =>
+      request<ClientBundleImportResult>("/api/clients/bundle", {
+        method: "POST",
+        body: JSON.stringify(bundle),
       }),
     update: (
       id: number,
@@ -1746,7 +1776,8 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ email }),
       }),
-    pinStatus: (token: string) => request<{ pinRequired: boolean }>(`/api/portal/${token}/pin-status`),
+    pinStatus: (token: string) =>
+      request<{ pinRequired: boolean; trainerName?: string | null }>(`/api/portal/${token}/pin-status`),
     unlock: (token: string, pin: string) =>
       request<{ ok: boolean }>(`/api/portal/${token}/unlock`, {
         method: "POST",

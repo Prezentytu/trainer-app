@@ -35,6 +35,7 @@ import { ClientRecordsSection } from "@/components/ClientRecordsSection";
 import { PlanFromHistoryDialog } from "@/components/PlanFromHistoryDialog";
 import { SearchPicker } from "@/components/SearchPicker";
 import { daysAgo, formatDayShort, relativeDayLabel, todayIsoLocal, withinLastDays } from "@/lib/dates";
+import { downloadClientBundle } from "@/lib/clientBundle";
 import { refreshNavCounts } from "@/lib/navCounts";
 import { markPortalLinkSent } from "@/lib/portalLinkSent";
 import { WeightTrendSparkline } from "@/components/WeightTrendSparkline";
@@ -112,7 +113,7 @@ function ClientDetailsPage() {
   const clientId = Number(params.id);
   const assignedToastShown = useRef(false);
 
-  const [tab, setTab] = useState<string | null>(null);
+  const [tab, setTab] = useState("plans");
   const [notesSegment, setNotesSegment] = useState<"mine" | "client">("mine");
   const [client, setClient] = useState<ClientDetails | null>(null);
   const [plans, setPlans] = useState<PlanSummary[]>([]);
@@ -127,6 +128,7 @@ function ClientDetailsPage() {
   const [checkInsForClient, setCheckInsForClient] = useState<number | null>(null);
   const [progress, setProgress] = useState<ClientProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [exportingBundle, setExportingBundle] = useState(false);
   const { showUndoToast, toastNode } = useUndoToast();
   const plansLoaded = plansForClient === clientId;
   const exercisesLoaded = exercisesForClient === clientId;
@@ -183,10 +185,7 @@ function ClientDetailsPage() {
         setProgress(prog);
         setRecords(r);
         setAssignOpen(false);
-        setTab((prev) => {
-          if (prev === "client-notes") return "notes";
-          return prev ?? (s.length > 0 ? "history" : "plans");
-        });
+        setTab((prev) => (prev === "client-notes" ? "notes" : prev));
       })
       .catch((e: Error) => setError(e.message));
   }, [clientId]);
@@ -614,6 +613,21 @@ function ClientDetailsPage() {
     }
   };
 
+  const downloadBundle = async () => {
+    if (exportingBundle) return;
+    setExportingBundle(true);
+    setError(null);
+    try {
+      const data = await api.clients.exportBundle(clientId);
+      downloadClientBundle(client?.name ?? "klient", data);
+      showUndoToast("Pobrano plany i historię. Na drugim koncie wgraj je w Ustawieniach.");
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setExportingBundle(false);
+    }
+  };
+
   const handleSaveIntake = async (input: ClientIntakeInput) => {
     setError(null);
     try {
@@ -665,7 +679,7 @@ function ClientDetailsPage() {
     openAssignForm();
   };
 
-  const activeTab = tab ?? "plans";
+  const activeTab = tab;
   const presenceLink = presenceHref(client.id, client.liveSession, client.needsReview);
 
   return (
@@ -1426,9 +1440,12 @@ function ClientDetailsPage() {
           onUndoToast={showUndoToast}
         />
         <div className="border-t border-border pt-4">
+          <Button variant="ghost" onClick={() => void downloadBundle()} loading={exportingBundle}>
+            Pobierz plany i historię
+          </Button>
           <Button
             variant="ghost"
-            className="hover:text-danger hover:decoration-danger"
+            className="mt-1 hover:text-danger hover:decoration-danger"
             onClick={() => setDeleteClientOpen(true)}
           >
             Usuń klienta

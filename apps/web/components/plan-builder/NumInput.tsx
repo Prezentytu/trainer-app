@@ -22,6 +22,7 @@ export function NumInput({
   step,
   placeholder,
   className = "",
+  inputRef,
   "aria-label": ariaLabel,
   title,
 }: {
@@ -32,6 +33,7 @@ export function NumInput({
   step?: number;
   placeholder?: string;
   className?: string;
+  inputRef?: React.Ref<HTMLInputElement>;
   "aria-label"?: string;
   title?: string;
 }) {
@@ -55,6 +57,7 @@ export function NumInput({
 
   return (
     <input
+      ref={inputRef}
       className={`${inputNumericClass} ${className}`}
       type="text"
       inputMode="decimal"

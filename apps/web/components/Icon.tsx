@@ -50,6 +50,8 @@ export type IconName =
   | "chat-text"
   | "calculator"
   | "image"
+  | "arrow-u-up-left"
+  | "arrow-u-up-right"
   // English aliases
   | "copy"
   | "lock"
@@ -73,7 +75,9 @@ export type IconName =
   | "share"
   | "download"
   | "warning"
-  | "more";
+  | "more"
+  | "undo"
+  | "redo";
 
 const ALIASES: Partial<Record<IconName, string>> = {
   dumbbell: "barbell",
@@ -104,6 +108,8 @@ const ALIASES: Partial<Record<IconName, string>> = {
   unpin: "push-pin-slash",
   note: "note-blank",
   chat: "chat-text",
+  undo: "arrow-u-up-left",
+  redo: "arrow-u-up-right",
 };
 
 type IconProps = {

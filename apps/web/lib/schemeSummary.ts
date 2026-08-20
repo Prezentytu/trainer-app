@@ -12,6 +12,7 @@ export type SchemeSetLike = {
   computedLoadKg?: number | null;
   loadPercent?: number | null;
   role?: string | null;
+  restSeconds?: number | null;
 };
 
 export type SchemeItemLike = {
@@ -126,13 +127,49 @@ export function compactPrescribedScheme(
     return `${sets.length} × ${measure}`;
   }
 
-  if (measures.every(Boolean) && allLoadSame && load) {
-    return `${measures.join("/")} @ ${load}`;
-  }
+  // Serie są różne — pokazujemy je uczciwie („7 serii · 3/3/1/1/1/3/3 · 40–115 kg”),
+  // zamiast zwijać do kłamliwego agregatu min–max.
   if (measures.every(Boolean)) {
-    return measures.join("/");
+    const pattern = measures.join("/");
+    const parts = [`${sets.length} serii`, pattern];
+    if (allLoadSame && load) {
+      parts.push(load);
+    } else {
+      const numericKgs = kgs.filter((k): k is number => k != null);
+      if (numericKgs.length === sets.length) {
+        const min = Math.min(...numericKgs);
+        const max = Math.max(...numericKgs);
+        parts.push(min === max ? formatLoadDisplay(min, ex) : formatKgRange(min, max, ex));
+      } else {
+        const numericPcts = pcts.filter((p): p is number => p != null);
+        if (numericPcts.length === sets.length) {
+          const min = Math.min(...numericPcts);
+          const max = Math.max(...numericPcts);
+          parts.push(min === max ? `${min}%` : `${min}–${max}%`);
+        }
+      }
+    }
+    return parts.join(" · ");
   }
   return `${sets.length} serii`;
+}
+
+/**
+ * Przerwa rozpisanych serii: `przerwa 120 s` przy jednej wartości, `przerwa 60–180 s`
+ * przy zmiennych. `null` w serii dziedziczy `fallbackSeconds` z ćwiczenia.
+ */
+export function restSummary(
+  sets: SchemeSetLike[],
+  fallbackSeconds: number | null | undefined,
+): string | null {
+  if (sets.length === 0) return null;
+  const resolved = sets
+    .map((s) => s.restSeconds ?? fallbackSeconds ?? null)
+    .filter((r): r is number => r != null);
+  if (resolved.length === 0) return null;
+  const min = Math.min(...resolved);
+  const max = Math.max(...resolved);
+  return min === max ? `przerwa ${min} s` : `przerwa ${min}–${max} s`;
 }
 
 /** Jedna linia schematu — prescribedSets wygrywa z agregatem. */

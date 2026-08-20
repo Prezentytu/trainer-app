@@ -11,6 +11,7 @@ export function DayMenu({
   onPatch,
   onApplyToOtherWeeks,
   onDuplicate,
+  onMoveToWeek,
   onRemove,
   nameClassName,
 }: {
@@ -19,6 +20,8 @@ export function DayMenu({
   onPatch: (patch: Partial<BuilderDay>) => void;
   onApplyToOtherWeeks?: () => void;
   onDuplicate: (targetWeek?: number) => void;
+  /** Przeniesienie (bez kopii) — alternatywa dla przeciągnięcia dnia na numer tygodnia. */
+  onMoveToWeek?: (targetWeek: number) => void;
   onRemove: () => void;
   nameClassName: string;
 }) {
@@ -132,6 +135,27 @@ export function DayMenu({
             onChange={(e) => onPatch({ notes: e.target.value || null })}
             placeholder="np. rozgrzewka ogólna, zasady tempa"
           />
+
+          {onMoveToWeek && otherWeeks.length > 0 ? (
+            <div className="mt-3 border-t border-border pt-2">
+              <p className="t-label px-2 pb-1 text-muted">Przenieś do tygodnia</p>
+              <div className="flex flex-wrap gap-1 px-1">
+                {otherWeeks.map((w) => (
+                  <button
+                    key={w}
+                    type="button"
+                    className="min-w-8 rounded-[10px] border border-border-strong px-2 py-1 font-mono text-[12px] font-medium tabular-nums text-foreground-secondary hover:bg-surface-hover hover:text-foreground"
+                    onClick={() => {
+                      onMoveToWeek(w);
+                      setOpen(false);
+                    }}
+                  >
+                    {w}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <div className="mt-3 border-t border-border pt-2">
             <button

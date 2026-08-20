@@ -1,24 +1,23 @@
 # RepMaxer
 
-> Narzędzie dla trenera personalnego: wysyłasz klientowi link, widzisz zakończony trening.
+> Narzędzie dla trenera personalnego: wysyłasz arkusz, w 24 godziny masz raport podopiecznych.
 
-RepMaxer układa plany siłowe i wysyła je klientom na telefon. Klient otwiera link w przeglądarce — bez konta i bez aplikacji. Po treningu w panelu są serie i rekordy. Od razu wiesz, kto nie trenował.
+RepMaxer układa plany siłowe i wysyła je podopiecznym na telefon. Podopieczny otwiera link — nic nie instaluje i nie zakłada konta. Na ekranie widzi imię trenera. Po treningu w panelu są serie i rekordy.
 
 Nie służy do zarządzania klubem, grafikiem sesji ani dietą.
 
-## Cennik (PLN)
+## Oferta
 
-- 0 zł — do 5 podopiecznych, na zawsze, bez karty
-- 39 zł — do 15 osób
-- 99 zł — do 30 osób
-- Podopieczny zawsze 0 zł
-
-Na start: 10 miejsc w miesiącu na rozmowę wdrożeniową — 90 dni za 0 zł, do 15 osób. Albo 390 zł raz za rok przy 15 osobach (dwa miesiące w cenie); potem 39 zł za 15 — ta kwota nie rośnie.
+- Pierwszy raport: 0 zł, 24 godziny, 5 miejsc. Przysyłasz arkusz, PDF albo zrzuty.
+- Po 90 dniach: 39 zł do 15 podopiecznych albo 99 zł do 30.
+- Podopieczny zawsze 0 zł.
+- Przeniesienie całej bazy: 2 900 zł.
 
 ## Linki
 
-- [Strona główna](/): produkt, cennik, pytania
-- [Wdrożenie](/wdrozenie): 30 minut, 90 dni za 0 zł
+- [Strona główna](/): raport tygodnia, cennik, pytania
+- [Darmowy raport](/wdrozenie): 24 godziny, 0 zł, 5 miejsc
+- [Wiadomości i checklista](/pakiet-retencji)
 - [Ile tracisz](/ile-tracisz): kalkulator utraconej stawki
 - [Regulamin](/regulamin)
 - [Polityka prywatności](/prywatnosc)

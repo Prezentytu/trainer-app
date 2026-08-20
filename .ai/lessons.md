@@ -15,6 +15,55 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Copy: H1 = oferta, nie zagadka
+
+**Kontekst**: H1 „Wiesz, kto przestał trenować, zanim napisze, że kończy.”
+**Problem**: „Napisze, że kończy” brzmi jak ktoś zniknął z czata. Spryt zamiast oferty. Hormozi i YC w hero mówią wprost: co, za ile, w ile („Get Your Free Roadmap in under 30 seconds”, „Financial infrastructure for the internet”).
+**Zasada**: H1 = **Wszyscy podopieczni w jednym raporcie.** Sub = **Za 0 zł, w 24 godziny.** Zakaz klimatu, niedzieli, „kończy”, „do kogo napisać”. Lead tłumaczy mechanizm. CTA = Zamów darmowy raport.
+**Dotyczy**: `Hero.tsx`, OG, skill `odejmowanie`, `ux-writing`
+
+## Copy: raport, nie przegląd; H1 = oferta, nie klimat
+
+**Kontekst**: H1 „Wiesz w niedzielę, do kogo napisać.” i CTA „Odbierz pierwszy przegląd”.
+**Problem**: Niedziela brzmi jak kościół. „Przegląd” jak warsztat. Czytelnik nie wie, co zamawia. Sekcje powtarzały hero zamiast eskalować argument (dowód → wysiłek → strata → cena → pilność).
+**Zasada**: Deliverable = **raport**. CTA = **Zamów darmowy raport**. H1 = oferta (co + 0 zł + 24 h), nie klimat. Formularz na `/wdrozenie` przed stackiem i 2 900 zł. Obiekcja danych przy przycisku.
+**Dotyczy**: `Hero.tsx`, `/wdrozenie`, skill `odejmowanie`, `ux-writing`, spec `2026-08-19-copy-sprzedazowe-landing.md`
+
+## Oferta: wynik, nie cennik i nie mechanizm
+
+**Kontekst**: Landing sprzedawał „0 zł / 5 osób” i H1 „Wysyłasz link. Widzisz trening.” Potem 390 zł za przeniesienie do „naszej apki”.
+**Problem**: Cena i mechanizm nie odpowiadają na „dlaczego mnie to obchodzi”. Dwa CTA w jednym kadrze zabijają płatne. Link bez instalowania i „kto nie trenował” mają wszyscy. Trener nie płaci nieznajomemu 390 zł bez opinii.
+**Zasada**: H1 = oferta (raport, 0 zł, 24 h). Wejście = pierwszy raport za 0 zł w 24 h. Jeden primary na kadr. Darmowe konto schodzi z komunikacji. Język trenera: podopieczny, telefon, nic nie instaluje — nie przeglądarka, sklep, JSON, tap, nazwy innych programów.
+**Dotyczy**: `Hero.tsx`, `/wdrozenie`, skill `odejmowanie`, `ux-writing`, spec `2026-08-19-copy-sprzedazowe-landing.md`
+
+## Karta klienta: plan na wejściu, edge case na dole
+
+**Kontekst**: Transfer klienta dev→prod dostał CTA „Pobierz kopię tej osoby” w hero, a domyślna zakładka skakała na Historię gdy były sesje.
+**Problem**: „Kopia tej osoby” brzmi jak klonowanie człowieka. Przycisk edge-case stał obok głównej akcji. Wejście w klienta otwierało ostatni trening, nie plan.
+**Zasada**: Wejście w klienta = zakładka Plany. Rzadkie akcje (pobranie planów i historii, usunięcie) żyją na dole karty, ghost.
+**Dotyczy**: `clients/[id]/page.tsx`, Ustawienia, `client-bundle` spec
+
+## Copy: Pobierz nazywa zawartość, nie cel
+
+**Kontekst**: Po „kopii tej osoby” etykieta stała się „Pobierz do przeniesienia”.
+**Problem**: Cel bez ładunku. Trener nie wie, co schodzi na telefon — wygląda jak wirus.
+**Zasada**: Pobierz / Wgraj / Wyślij plik = czasownik + zawartość („Pobierz plany i historię”, „Pobierz arkusz”). Zakaz „do przeniesienia”, „kopia”, „backup” i nazwy formatu w etykiecie. Po co — w zdaniu pod spodem, jeśli w ogóle.
+**Dotyczy**: skill `ux-writing`, `senior-ux-cro`, karta klienta, Ustawienia
+
+## Oferta: 390 zł to wdrożenie, nie rok z góry
+
+**Kontekst**: Money model Hormoziego — CFA wymaga gotówki w 30 dni. 90 dni za 0 zł i 390 zł jako rok kanibalizowały się.
+**Problem**: 30D Cash ≈ 0. Gwarancja bez ceny nie ma dźwigni. Hick: każdy bierze darmowe.
+**Zasada**: 390 zł = wdrożenie 14 dni (gwarancja mierzona ukończonym treningiem). 90 dni planu 30 osób w cenie. Rollover = 32 zł / mies. przez 12 miesięcy, nie darmowe miesiące z góry. Downsell = 0 zł / 5 osób, niżej. H1 landingu = mechanizm („Wysyłasz link. Widzisz trening.”). Zakaz w UI: 90 dni za 0 zł jako główna oferta, founding / white-glove / Pro.
+**Dotyczy**: `/wdrozenie`, `FoundingService.cs`, `BillingService.cs`, skill `odejmowanie`, `ux-writing`
+
+## Landing: jedna strona = jedna oferta, stack bez ceny rozmowy
+
+**Kontekst**: H1 „W 14 dni wiesz, kto nie trenował” + sekcja „Wdrożenie za 390 zł” nad „Zaczynasz za 0 zł”. Stack wyceniał rozmowę na 250 zł.
+**Problem**: Informacja „kto nie trenował” jest darmowa — nie broni ceny. Klient czyta, że płaci 390 zł za demo i za to, że mu pokazujemy produkt. Dwie oferty na jednym ekranie się zjadają.
+**Zasada**: H1 = mechanizm (Wysyłasz / Widzisz). Płatna oferta ze stackiem tylko na `/wdrozenie`. Stack nigdy nie wycenia rozmowy sprzedażowej. Wyceny tylko weryfikowalne własnym cennikiem (3 × 99 zł + pakiet 190 zł = 487 zł). Na landingu cennik 0 / 39 / 99 + jedno zdanie o wdrożeniu — bez matematyki rolloveru w wierszu.
+**Dotyczy**: `Hero.tsx`, `LandingPage.tsx`, `PricingSection.tsx`, `/wdrozenie`, `wdrozenieOffer.ts`, skill `odejmowanie`
+
 ## Copy: zakładka ≠ cel w zdaniu
 
 **Kontekst**: Powrót z pustej sesji brzmiał „Wróć na Dziś”.
@@ -974,5 +1023,54 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Problem**: Merge na `main` wjeżdżał na `repmaxer.pl` bez przycisku. Required reviewers na tym samym env zatrzymałyby cron `reminders.yml`.
 **Zasada**: Release kończy się na dev. Prod = **Promote to prod** (`workflow_dispatch`), ten sam obraz `sha-XXXX`. Nie włączaj Required reviewers na `prod`.
 **Dotyczy**: `.github/workflows/release.yml`, `.github/workflows/promote.yml`, `.github/workflows/reminders.yml`
+
+## Landing: telefon nie siada na wierszach panelu
+
+**Kontekst**: Para Ty/Podopieczny w hero — panel + iPhone overlap + `pr-52` na każdym wierszu.
+**Problem**: Kadr ściśnięty: H1 mały, mały gap, telefon na wierszach, trzy–pięć ciasnych rzędów. Overlap + split od `lg` zjada powietrze nawet na 1460 px.
+**Zasada**: Pełny panel zajmuje prawą kolumnę (sidebar + 5 wierszy). Telefon nachodzi tylko na dół-prawo i zaczyna się poniżej akcentów danych — nigdy nie zasłania PR ani zielonego progresu. Osobna kolumna na telefon kurczy panel i kłamie, że to wycinek, nie apka. Obok dużego mocka H1 musi pozostać dominantą słowną, nie drobną etykietą.
+**Dotyczy**: `DualSurfaces.tsx`, `TrainerPanel.tsx`, `primitives.tsx` (hero)
+
+## Landing: kotwice = etykiety sekcji, H1 nie zlewa się
+
+**Kontekst**: Nav „Produkt” szedł na parę w hero (`#produkt` na `DualSurfaces`). Sekcja 02 „Produkt” nie miała id. H1 miał leading 0.92 i `max-w-[16ch]` — trzy linie zlewały się w plamę.
+**Problem**: Linki skakały nie tam, gdzie stoi etykieta. Nagłówek był nieczytelny.
+**Zasada**: Kotwica ma to samo id co numer/etykieta sekcji, w kolejności IA. H1 = dwa osobne takty, leading ≥ 1.1, bez ściskania w 16ch.
+**Dotyczy**: `LandingNav.tsx`, `HowItWorks.tsx`, `Hero.tsx`, `LANDING_H1`
+
+## Landing: mockup nie może wyglądać jak ucięty komponent
+
+**Kontekst**: Hero Quo — panel + telefon. Najpierw panel dostał `min-h-[40rem]`, potem telefon został zamknięty w wrapperze `h-[320px] overflow-hidden`.
+**Problem**: Panel był najpierw pustym kwadratem, a po zmianie na samą wysokość treści stał się panoramicznym paskiem. Telefon wyglądał jak przypadkowo ucięty. Pozycjonowanie `top` w remach rozjeżdżało kompozycję między viewportami.
+**Zasada**: Na mobile wysokość panelu = treść; na desktopie użyj proporcji ekranu 16:10 i rozłóż na niej wiersze. Telefon zawsze pokazuj w całości. Panel i telefon układaj w tej samej komórce CSS Grid; bez `absolute`, arbitralnego `top` i cropa. Usuń techniczne etykiety typu „Dane przykładowe”.
+**Dotyczy**: `TrainerPanel.tsx`, `SessionPhone.tsx`, `DualSurfaces.tsx`
+
+## `SidePanel`: `onClose` w zależnościach efektu wyrzuca fokus z inputu
+
+**Kontekst**: Wpisanie jednej cyfry ciężaru w panelu po prawej gubiło fokus, a kafelek ćwiczenia dostawał obwódkę zaznaczenia.
+**Problem**: Efekt panelu miał `onClose` w tablicy zależności. `title` był JSX-em tworzonym na nowo w każdym renderze, więc efekt restartował się po każdym znaku, a jego cleanup przywracał fokus na element sprzed otwarcia panelu (kafelek).
+**Zasada**: Callbacki z propsów trzymaj w refie aktualizowanym osobnym efektem (`[onClose]`), a efekt cyklu życia panelu odpalaj tylko na `[open]`. Efekt, którego cleanup rusza fokus, nie może zależeć od niestabilnych propsów.
+**Dotyczy**: `apps/web/components/SidePanel.tsx`
+
+## Zmiana trybu edycji nie może kasować danych; potrzebny jest podgląd i Cofnij
+
+**Kontekst**: Przełączenie ćwiczenia z „Serie × wartość” na „Rampa” nadpisywało `prescribedSets` od razu.
+**Problem**: Trener tracił rozpisane serie bez ostrzeżenia i bez drogi powrotu.
+**Zasada**: Przełącznik trybu tylko zmienia widok parametrów; `prescribedSets` zmienia dopiero jawne „Zastosuj” po podglądzie. Do tego globalne Cofnij/Ponów (`useUndoRedo` obserwuje wartość stanu, nie owija settera — inaczej `react-hooks/exhaustive-deps` sypie się w każdym `useCallback`).
+**Dotyczy**: `SchemeModeSection.tsx`, `useUndoRedo.ts`, `usePlanDraft.ts`
+
+## Podsumowanie pozycji liczy z serii, nie z pól zbiorczych
+
+**Kontekst**: Nagłówek pokazywał „8 serii × 8” mimo że każda seria miała inny ciężar i inną przerwę.
+**Problem**: Pola zbiorcze (`sets`, `reps`, `loadKg`) żyły własnym życiem obok `prescribedSets` i kłamały po każdej ręcznej zmianie serii.
+**Zasada**: `prescribedSets` to jedyne źródło prawdy. Zbiorcze pole ustawiaj tylko wtedy, gdy wszystkie serie mają tę samą wartość; różnice pokazuj zakresem (`przerwa 60–180 s`), nie pierwszą serią.
+**Dotyczy**: `usePlanDraft.ts` (`aggregatesFromSets`), `lib/schemeSummary.ts`, `progressionMatrix.ts` (`topLoadPatch`)
+
+## Progresja: macierz z jednym polem na komórkę, generator z podglądem
+
+**Kontekst**: Zakładka „Progresja” tylko wypisywała dni obok siebie — zero edycji i zero programowania.
+**Problem**: Dwa pola w komórce (ciężar + powtórzenia) i przycisk w każdym wierszu robiły z macierzy gęstą kratkę; `!h-6` z Tailwinda 3 i tak nie działa w Tailwindzie 4 (ważność to sufiks `h-6!`).
+**Zasada**: Komórka = jedno pole (ciężar serii szczytowej) + wyciszona linia kontekstu (`4×5` i delta). Nazwa ćwiczenia `sticky left-0` przy przewijaniu w poziomie, panel generatora poza obszarem przewijania. Generator liczy czystymi funkcjami i zawsze pokazuje podgląd `T1…Tn` przed zapisem; zakres „cały dzień” liczy wzór od własnego ciężaru każdego ćwiczenia.
+**Dotyczy**: `ProgressionView.tsx`, `progressionMatrix.ts`, `lib/progressionModels.ts`
 
 ---

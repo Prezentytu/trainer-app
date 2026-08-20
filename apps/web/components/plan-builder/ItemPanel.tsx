@@ -21,9 +21,11 @@ export function ItemPanel({
   onSelectItem,
   onPatch,
   onAddSet,
+  onInsertSet,
   onPatchSet,
   onRemoveSet,
   onApplyPreset,
+  onApplyRestToAll,
   onClearSets,
   onDuplicate,
   onRemove,
@@ -40,9 +42,11 @@ export function ItemPanel({
   onSelectItem: (itemKey: string) => void;
   onPatch: (patch: Partial<BuilderItem>) => void;
   onAddSet: () => void;
+  onInsertSet?: (index: number, side: "before" | "after") => string | void;
   onPatchSet: (setKey: string, patch: Partial<BuilderSet>) => void;
   onRemoveSet: (setKey: string) => void;
   onApplyPreset: (presetId: string) => void;
+  onApplyRestToAll?: (seconds: number | null) => void;
   onClearSets: () => void;
   onDuplicate: () => void;
   onRemove: () => void;
@@ -122,9 +126,11 @@ export function ItemPanel({
         exercise={exercise}
         onPatch={onPatch}
         onAddSet={onAddSet}
+        onInsertSet={onInsertSet}
         onPatchSet={onPatchSet}
         onRemoveSet={onRemoveSet}
         onApplyPreset={onApplyPreset}
+        onApplyRestToAll={onApplyRestToAll}
         onClearSets={onClearSets}
       />
 

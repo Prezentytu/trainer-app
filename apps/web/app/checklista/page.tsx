@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MarketingShell } from "@/components/landing/MarketingShell";
+import { PAGE_SHELL, SECTION_H2, SECTION_LEAD } from "@/components/landing/primitives";
 import { PUBLIC_SILENCE_TEMPLATES } from "@/lib/silenceProtocol";
 
 export const metadata: Metadata = {
@@ -13,12 +14,12 @@ export const metadata: Metadata = {
 export default function ChecklistPage() {
   return (
     <MarketingShell>
-      <main className="mx-auto max-w-[720px] px-5 py-16 sm:px-8 sm:py-24">
+      <main className={PAGE_SHELL}>
         <p className="t-label m-0 tracking-[0.16em]">Jedna strona</p>
-        <h1 className="mt-6 text-[clamp(2.25rem,5vw,3.5rem)] font-semibold leading-[1.08] tracking-[-0.028em]">
+        <h1 className={`mt-6 ${SECTION_H2}`}>
           Kto z Twoich 15 klientów odejdzie w 14 dni
         </h1>
-        <p className="mt-6 text-[17px] leading-[1.6] text-muted">
+        <p className={SECTION_LEAD}>
           Weź listę aktywnych podopiecznych. Przy każdym odhacz, co jest prawdą dziś.
           Osoba z dwoma lub więcej takami — napisz dziś. Nie jutro.
         </p>

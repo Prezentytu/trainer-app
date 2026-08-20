@@ -1,28 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { LandingCta } from "@/components/landing/primitives";
+import { LANDING_CAPS, LandingCta } from "@/components/landing/primitives";
 
 const SESSIONS_PER_MONTH = 8;
 const DEFAULT_RATE = 150;
-const DEFAULT_LEFT = 5;
-const RATE_MIN = 50;
+const DEFAULT_LEFT = 6;
+const RATE_MIN = 80;
 const RATE_MAX = 400;
-const RATE_STEP = 5;
-const LEFT_MIN = 0;
-const LEFT_MAX = 20;
+const RATE_STEP = 10;
+const LEFT_MIN = 1;
+const LEFT_MAX = 24;
 const COUNT_MS = 480;
 
 function formatZl(n: number): string {
   return `${Math.round(n).toLocaleString("pl-PL")} zł`;
-}
-
-function osobyWord(n: number): string {
-  if (n === 1) return "osoba";
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "osoby";
-  return "osób";
 }
 
 function easeOutCubic(t: number): number {
@@ -87,10 +79,12 @@ function LandingSlider({
   return (
     <div className="grid gap-2">
       <div className="flex items-baseline justify-between gap-4">
-        <label htmlFor={id} className="t-label min-w-0 break-words tracking-[0.16em]">
+        <label htmlFor={id} className={`${LANDING_CAPS} min-w-0 break-words text-muted`}>
           {label}
         </label>
-        <span className="t-num shrink-0 text-[15px] tabular-nums">{formatValue(value)}</span>
+        <span className="t-num shrink-0 text-[15px] tabular-nums text-foreground">
+          {formatValue(value)}
+        </span>
       </div>
       <input
         id={id}
@@ -112,14 +106,14 @@ function LandingSlider({
   );
 }
 
-export function IleTraciszCalculator({ className = "mt-12" }: { className?: string }) {
+export function IleTraciszCalculator({ className = "" }: { className?: string }) {
   const [rate, setRate] = useState(DEFAULT_RATE);
   const [left, setLeft] = useState(DEFAULT_LEFT);
   const loss = left * rate * SESSIONS_PER_MONTH;
   const shown = useAnimatedNumber(loss);
 
   return (
-    <div className={className}>
+    <div className={`grid items-start gap-8 lg:grid-cols-2 lg:gap-16 ${className}`.trim()}>
       <form className="grid gap-8" onSubmit={(e) => e.preventDefault()}>
         <LandingSlider
           id="ile-tracisz-rate"
@@ -134,7 +128,7 @@ export function IleTraciszCalculator({ className = "mt-12" }: { className?: stri
         />
         <LandingSlider
           id="ile-tracisz-left"
-          label="Ile osób skończyło współpracę w tym roku"
+          label="Osoby, które odeszły"
           value={left}
           min={LEFT_MIN}
           max={LEFT_MAX}
@@ -143,30 +137,41 @@ export function IleTraciszCalculator({ className = "mt-12" }: { className?: stri
           describedBy="ile-tracisz-left-hint"
           onChange={setLeft}
         />
-      </form>
-      <p id="ile-tracisz-rate-hint" className="sr-only">
-        Kwota, którą bierzesz za jeden trening.
-      </p>
-      <p id="ile-tracisz-left-hint" className="sr-only">
-        Liczba podopiecznych, którzy skończyli współpracę w tym roku.
-      </p>
-
-      <div className="mt-12 grid gap-6 border-t border-border pt-10">
-        <p className="t-label m-0 tracking-[0.16em] text-muted">Nie odbyło się</p>
-        <output
-          htmlFor="ile-tracisz-rate ile-tracisz-left"
-          aria-live="polite"
-          className="t-num m-0 block not-italic text-[clamp(2.75rem,8vw,5.5rem)] leading-none tracking-[-0.03em] tabular-nums"
-        >
-          {formatZl(shown)}
-        </output>
-        <p className="m-0 text-[17px] leading-[1.6] text-muted">
-          {formatZl(rate)} × {SESSIONS_PER_MONTH} sesji × {left.toLocaleString("pl-PL")}{" "}
-          {osobyWord(left)}. 39 zł za 15 osób.
+        <p className={`${LANDING_CAPS} m-0 text-muted`}>
+          {left.toLocaleString("pl-PL")} × {SESSIONS_PER_MONTH} sesji × {formatZl(rate)}
         </p>
-        <LandingCta href="/wdrozenie" full>
-          Umów 30 minut wdrożenia
-        </LandingCta>
+        <p id="ile-tracisz-rate-hint" className="sr-only">
+          Kwota, którą bierzesz za jeden trening.
+        </p>
+        <p id="ile-tracisz-left-hint" className="sr-only">
+          Liczba podopiecznych, którzy skończyli współpracę w tym roku.
+        </p>
+      </form>
+
+      <div className="grid gap-6">
+        <p className={`${LANDING_CAPS} m-0 text-muted`}>Tyle nie weszło na konto</p>
+        <div className="flex flex-wrap items-center gap-4 sm:gap-8">
+          <output
+            htmlFor="ile-tracisz-rate ile-tracisz-left"
+            aria-live="polite"
+            className="t-num m-0 block min-w-0 break-words not-italic text-[clamp(2rem,11vw,4rem)] leading-none tracking-[-0.02em] text-loss tabular-nums"
+          >
+            −{formatZl(shown)}
+          </output>
+          <span className="inline-flex shrink-0 flex-col items-center gap-0.5 rounded-[var(--r-pill)] bg-loss-quiet px-3 py-2 text-loss">
+            <span className="font-mono text-[15px] leading-none" aria-hidden>
+              ▼
+            </span>
+            <span className="font-mono text-[12px] font-bold tracking-wider">spadek</span>
+          </span>
+        </div>
+        <p className={`${LANDING_CAPS} m-0 text-muted`}>
+          {(left * SESSIONS_PER_MONTH).toLocaleString("pl-PL")} sesji w roku
+        </p>
+        <p className="m-0 max-w-[36ch] text-[16px] leading-[1.6] text-muted">
+          Raport pokazuje te sygnały wcześniej.
+        </p>
+        <LandingCta href="/wdrozenie">Zamów darmowy raport</LandingCta>
       </div>
     </div>
   );

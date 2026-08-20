@@ -4,11 +4,13 @@ using System.Net.Http.Headers;
 namespace TrainerApp.Api;
 
 /// <summary>
-/// Zgłoszenie wdrożenia / roku z góry. Mail do trenera + foundera. Stripe Checkout 390 zł gdy jest klucz.
+/// Zgłoszenie wdrożenia. Mail do trenera + foundera. Stripe Checkout 390 / 2 900 zł gdy jest klucz.
 /// </summary>
 public sealed class FoundingService(IHttpClientFactory httpFactory, IConfiguration config, EmailService email, ILogger<FoundingService> log)
 {
-    public const int FoundingAmountGrosze = 39000;
+    public const int WdrozenieAmountGrosze = 39000;
+    public const int PersonalAmountGrosze = 290000;
+    public const int FoundingAmountGrosze = WdrozenieAmountGrosze;
     public const string ContactEmail = "kontakt@repmaxer.pl";
 
     public bool StripeConfigured => !string.IsNullOrWhiteSpace(config["Stripe:SecretKey"]);
@@ -22,9 +24,10 @@ public sealed class FoundingService(IHttpClientFactory httpFactory, IConfigurati
         var slot = string.IsNullOrWhiteSpace(input.PreferredSlot) ? null : input.PreferredSlot.Trim();
         if (slot is { Length: > 200 })
             slot = slot[..200];
-        var track = string.Equals(input.Track, "founding", StringComparison.OrdinalIgnoreCase)
-            ? "founding"
-            : "whiteglove";
+        var howYouWork = string.IsNullOrWhiteSpace(input.HowYouWork) ? null : input.HowYouWork.Trim();
+        if (howYouWork is { Length: > 400 })
+            howYouWork = howYouWork[..400];
+        var track = NormalizeTrack(input.Track);
 
         if (name.Length < 2)
             return (false, null, "Podaj imię.", false);
@@ -33,7 +36,8 @@ public sealed class FoundingService(IHttpClientFactory httpFactory, IConfigurati
 
         var founderTo = config["Email:FounderInbox"] ?? config["Email:From"];
         var origin = (config["WEB_ORIGIN"] ?? "http://localhost:3000").TrimEnd('/');
-        var year = track == "founding";
+        var paid = track is "founding" or "personal";
+        var amount = track == "personal" ? PersonalAmountGrosze : WdrozenieAmountGrosze;
 
         if (!string.IsNullOrWhiteSpace(founderTo) && founderTo.Contains('@'))
         {
@@ -42,8 +46,8 @@ public sealed class FoundingService(IHttpClientFactory httpFactory, IConfigurati
                 : founderTo;
             await email.SendAsync(
                 toAddr,
-                $"Zgłoszenie {(year ? "390 zł" : "wdrożenie 0 zł")}: {name}",
-                EmailService.WdrozenieFounderHtml(name, mail, phone, slot, year),
+                $"Zgłoszenie {OfferLabel(track)}: {name}",
+                EmailService.WdrozenieFounderHtml(name, mail, phone, slot, track, howYouWork),
                 ct);
         }
 
@@ -52,34 +56,57 @@ public sealed class FoundingService(IHttpClientFactory httpFactory, IConfigurati
         {
             var (ok, _) = await email.SendAsync(
                 mail,
-                year
-                    ? "390 zł — rok, do 15 osób. Godzinę ustalamy w mailu"
-                    : "30 minut wdrożenia — odpisz, która godzina",
-                EmailService.WdrozenieTrainerHtml(name, slot, year, origin),
+                paid
+                    ? $"{OfferLabel(track)} — godzinę ustalamy w mailu"
+                    : "Pierwszy raport — dołącz arkusz albo zrzuty",
+                EmailService.WdrozenieTrainerHtml(name, slot, track, origin),
                 ct);
             emailSent = ok;
         }
 
-        if (year && StripeConfigured)
+        if (paid && StripeConfigured)
         {
-            var checkout = await CreateCheckoutAsync(name, mail, origin, ct);
+            var checkout = await CreateCheckoutAsync(name, mail, origin, track, amount, ct);
             if (checkout is not null)
-                return (true, checkout, "Przejdź do płatności 390 zł.", emailSent);
+                return (true, checkout, $"Przejdź do płatności {amount / 100} zł.", emailSent);
             log.LogWarning("Stripe Checkout nie powiódł się — zostawiam zgłoszenie e-mailowe.");
         }
 
         var message = emailSent
-            ? year
-                ? "Napisaliśmy na ten adres. 390 zł — rok, do 15 osób. Godzinę ustalamy w mailu."
-                : "Napisaliśmy na ten adres. Odpisz, która godzina Ci pasuje."
-            : $"Zapisaliśmy zgłoszenie. Odpisz na {ContactEmail} i podaj dwie godziny, które Ci pasują.";
+            ? paid
+                ? $"Napisaliśmy na ten adres. {OfferLabel(track)}. Godzinę ustalamy w mailu."
+                : "Napisaliśmy na ten adres. Odpisz i dołącz arkusz albo zrzuty. Raport wraca w 24 godziny."
+            : paid
+                ? $"{OfferLabel(track)}. Zapisaliśmy zgłoszenie. Odpisz na {ContactEmail} i podaj dwie godziny, które Ci pasują."
+                : $"Zapisaliśmy zgłoszenie. Odpisz na {ContactEmail} i dołącz arkusz albo zrzuty.";
         return (true, null, message, emailSent);
     }
 
-    async Task<string?> CreateCheckoutAsync(string name, string emailAddr, string origin, CancellationToken ct)
+    static string NormalizeTrack(string? track)
+    {
+        if (string.Equals(track, "personal", StringComparison.OrdinalIgnoreCase))
+            return "personal";
+        if (string.Equals(track, "founding", StringComparison.OrdinalIgnoreCase))
+            return "founding";
+        return "whiteglove";
+    }
+
+    static string OfferLabel(string track) => track switch
+    {
+        "personal" => "2 900 zł — wdrożenie osobiste",
+        "founding" => "390 zł — wdrożenie 14 dni",
+        _ => "pierwszy raport",
+    };
+
+    async Task<string?> CreateCheckoutAsync(
+        string name, string emailAddr, string origin, string track, int amountGrosze, CancellationToken ct)
     {
         var secret = config["Stripe:SecretKey"];
         if (string.IsNullOrWhiteSpace(secret)) return null;
+
+        var product = track == "personal"
+            ? "RepMaxer — wdrożenie osobiste"
+            : "RepMaxer — wdrożenie 14 dni";
 
         var client = httpFactory.CreateClient("stripe");
         using var req = new HttpRequestMessage(HttpMethod.Post, "https://api.stripe.com/v1/checkout/sessions");
@@ -93,10 +120,10 @@ public sealed class FoundingService(IHttpClientFactory httpFactory, IConfigurati
             ["client_reference_id"] = emailAddr,
             ["line_items[0][quantity]"] = "1",
             ["line_items[0][price_data][currency]"] = "pln",
-            ["line_items[0][price_data][unit_amount]"] = FoundingAmountGrosze.ToString(CultureInfo.InvariantCulture),
-            ["line_items[0][price_data][product_data][name]"] = "RepMaxer — rok, do 15 osób (dwa miesiące w cenie)",
+            ["line_items[0][price_data][unit_amount]"] = amountGrosze.ToString(CultureInfo.InvariantCulture),
+            ["line_items[0][price_data][product_data][name]"] = product,
             ["metadata[name]"] = name,
-            ["metadata[track]"] = "founding",
+            ["metadata[track]"] = track,
         };
         req.Content = new FormUrlEncodedContent(pairs);
 

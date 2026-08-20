@@ -36,7 +36,7 @@ Cichy instrument: near-black / white / greys. Emfaza = **invert fill**, nigdy hu
 | `accent` | invert white | primary fill (legacy alias) |
 | `pr` / `gain` / `loss` / `danger` | gold / green / red | tylko dane (+ destrukcja) |
 
-Light: `[data-theme="light"]` — przełącznik w `/settings` (`lib/theme.ts`, klucz `repmaxer-theme`). Landing zawsze light (`LandingThemeLock`). `prefers-contrast: more` podnosi secondary.
+Light: `[data-theme="light"]` — przełącznik w `/settings` (`lib/theme.ts`, klucz `repmaxer-theme`). Landing lock light (`LandingThemeLock`); na `/` ciemne pasy 01 / 03 / 05 (`data-theme="dark"`), 06 + stopka jasne. `prefers-contrast: more` podnosi secondary.
 
 ## Typografia
 
@@ -85,3 +85,4 @@ Focus: `box-shadow: var(--focus-ring)` (2px bg + 4px fg). Press: `scale(0.97)`.
 - [ ] Karty: fill + hairline; listy: ListRow
 - [ ] Phosphor przez `Icon`
 - [ ] Polskie copy wg `ux-writing`: jasność przed zwięzłością, pełne zdania, test na głos; bez wykrzykników
+- [ ] Landing / mockup: skill `odejmowanie` — test odejmowania na każdy blok tekstu

@@ -294,6 +294,7 @@ export function loggedSetsOverridesFromParsed(parsed: ParsedQuickEntry): Partial
     tempo: parsed.tempo,
     role: inferSetRole(parsed.loggedSets!, i),
     note: s.isBodyweight ? "BW" : null,
+    restSeconds: null,
   }));
   return {
     measureType: "reps",

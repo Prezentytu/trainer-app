@@ -16,6 +16,7 @@ function set(order: number, patch: Partial<PlanSetInput>): PlanSetInput {
     tempo: null,
     role: null,
     note: null,
+    restSeconds: null,
     ...patch,
   };
 }

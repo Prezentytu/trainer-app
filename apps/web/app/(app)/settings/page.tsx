@@ -1,20 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useClerk } from "@clerk/nextjs";
 import { Icon } from "@/components/Icon";
 import { api, NavCounts, TrainerMe, clerkEnabled } from "@/lib/api";
+import { importClientBundleFile } from "@/lib/clientBundle";
 import { PalettePicker } from "@/components/PalettePicker";
 import { useTheme } from "@/lib/theme";
 import { Button, Card, ErrorBanner, PageHeader, Skeleton, Switch } from "@/components/ui";
 
 export default function SettingsPage() {
+  const router = useRouter();
+  const bundleInputRef = useRef<HTMLInputElement>(null);
   const [counts, setCounts] = useState<NavCounts | null>(null);
   const [loadingCounts, setLoadingCounts] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
   const [downloadingCsv, setDownloadingCsv] = useState(false);
   const [downloadingJson, setDownloadingJson] = useState(false);
+  const [importingBundle, setImportingBundle] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState("");
   const { theme, setTheme } = useTheme();
@@ -89,6 +95,29 @@ export default function SettingsPage() {
     }
   };
 
+  const claimGuarantee = async () => {
+    setBillingBusy("gwarancja");
+    setError(null);
+    setNote(null);
+    try {
+      const res = await api.billing.wdrozenieGwarancja();
+      setMe((prev) =>
+        prev
+          ? {
+              ...prev,
+              wdrozenieCreditGrosze: 0,
+              wdrozenieGuaranteeEligible: false,
+            }
+          : prev,
+      );
+      setNote(res.message);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBillingBusy(null);
+    }
+  };
+
   const openBillingPortal = async () => {
     setBillingBusy("portal");
     setError(null);
@@ -139,6 +168,25 @@ export default function SettingsPage() {
     }
   };
 
+  const importBundle = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setImportingBundle(true);
+    setError(null);
+    setNote(null);
+    try {
+      const result = await importClientBundleFile(file);
+      const extra = result.warnings[0] ? ` ${result.warnings[0]}` : "";
+      setNote(`${result.name} jest na tym koncie.${extra}`);
+      router.push(`/clients/${result.clientId}`);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setImportingBundle(false);
+    }
+  };
+
   const summary =
     counts != null
       ? `Kopia obejmuje ${counts.clients} ${pluralClients(counts.clients)} i ${counts.plans} ${pluralPlans(counts.plans)} wraz z historią treningów, pomiarami i wywiadem.`
@@ -148,6 +196,7 @@ export default function SettingsPage() {
     <div className="space-y-4">
       <PageHeader title="Ustawienia" subtitle="Wygląd, konto i kopia danych" />
       <ErrorBanner message={error} />
+      {note ? <p className="text-sm text-foreground-secondary">{note}</p> : null}
 
       {loadingCounts ? (
         <div className="space-y-3 rounded-[var(--r-card)] border border-border bg-surface p-4">
@@ -251,6 +300,24 @@ export default function SettingsPage() {
                 Płatność kartą włączymy przy starcie. Limit 5 osób obowiązuje na koncie produkcyjnym.
               </p>
             ) : null}
+            {me.wdrozenieCreditGrosze && me.wdrozenieCreditGrosze > 0 ? (
+              <p className="mt-4 text-sm text-foreground-secondary">
+                Kredyt z wdrożenia: {Math.round(me.wdrozenieCreditGrosze / 100)} zł. Przy przejściu
+                na rok schodzi jako {Math.round(me.wdrozenieCreditGrosze / 100 / 12)} zł mniej przez
+                12 miesięcy.
+              </p>
+            ) : null}
+            {me.wdrozenieGuaranteeEligible ? (
+              <div className="mt-4">
+                <Button
+                  variant="secondary"
+                  onClick={() => void claimGuarantee()}
+                  loading={billingBusy === "gwarancja"}
+                >
+                  Zwrot wdrożenia — nikt nie dokończył treningu
+                </Button>
+              </div>
+            ) : null}
           </>
         ) : null}
       </Card>
@@ -266,7 +333,7 @@ export default function SettingsPage() {
             <Button
               onClick={() => void downloadCsv()}
               loading={downloadingCsv}
-              disabled={downloadingCsv || downloadingJson || deleting}
+              disabled={downloadingCsv || downloadingJson || importingBundle || deleting}
             >
               Pobierz arkusz
             </Button>
@@ -274,15 +341,39 @@ export default function SettingsPage() {
               variant="secondary"
               onClick={() => void downloadJson()}
               loading={downloadingJson}
-              disabled={downloadingCsv || downloadingJson || deleting}
+              disabled={downloadingCsv || downloadingJson || importingBundle || deleting}
             >
               Pobierz pełną kopię
             </Button>
           </div>
           <p className="text-xs text-muted">
-            Arkusz ma też każdą serię. Pełna kopia obejmuje pomiary, wywiad i samopoczucie —
-            bez linków do portalu klientów.
+            Arkusz ma też każdą serię. Pełna kopia to archiwum całego konta — nie wgrywa się na
+            drugim koncie. Bez linków do portalu.
           </p>
+        </div>
+        <div className="mt-5 border-t border-border pt-4">
+          <p className="text-[15px] font-medium text-foreground">Wgraj plany i historię</p>
+          <p className="mt-0.5 text-xs text-muted">
+            Na drugim koncie, na dole karty klienta: Pobierz plany i historię. Tu wgrywasz ten plik.
+            Potem wyślij nowy link do portalu.
+          </p>
+          <input
+            ref={bundleInputRef}
+            type="file"
+            accept="application/json,.json"
+            className="sr-only"
+            onChange={(e) => void importBundle(e)}
+          />
+          <div className="mt-3">
+            <Button
+              variant="secondary"
+              loading={importingBundle}
+              disabled={downloadingCsv || downloadingJson || importingBundle || deleting}
+              onClick={() => bundleInputRef.current?.click()}
+            >
+              Wybierz plik
+            </Button>
+          </div>
         </div>
       </Card>
 

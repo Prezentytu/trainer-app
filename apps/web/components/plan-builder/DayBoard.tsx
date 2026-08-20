@@ -20,6 +20,7 @@ export function DayBoard({
   onPatchDay,
   onRemoveDay,
   onDuplicateDay,
+  onMoveDay,
   weeks,
   onApplyWeekdays,
   onAddItem,
@@ -46,6 +47,7 @@ export function DayBoard({
   onPatchDay: (dayKey: string, patch: Partial<BuilderDay>) => void;
   onRemoveDay: (dayKey: string) => void;
   onDuplicateDay: (dayKey: string, targetWeek?: number) => void;
+  onMoveDay?: (dayKey: string, targetWeek: number) => void;
   weeks: number[];
   onApplyWeekdays: (sourceWeek: number) => void;
   onAddItem: (dayKey: string, exerciseId: number, overrides?: Partial<BuilderItem>) => void;
@@ -85,6 +87,7 @@ export function DayBoard({
             onPatchDay={(patch) => onPatchDay(day.key, patch)}
             onRemoveDay={() => onRemoveDay(day.key)}
             onDuplicateDay={(w) => onDuplicateDay(day.key, w)}
+            onMoveDayToWeek={onMoveDay ? (w) => onMoveDay(day.key, w) : undefined}
             weeks={weeks}
             onApplyWeekdays={() => onApplyWeekdays(day.weekNumber)}
             onAddItem={(exerciseId, overrides) => onAddItem(day.key, exerciseId, overrides)}

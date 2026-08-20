@@ -471,6 +471,7 @@ SCHEMAT JSON (pola opcjonalne pomijaj gdy brak danych):
             Tempo = string.IsNullOrWhiteSpace(s.Tempo) ? null : s.Tempo.Trim().ToUpperInvariant(),
             Role = NormalizeRole(s.Role),
             Note = string.IsNullOrWhiteSpace(s.Note) ? null : s.Note.Trim(),
+            RestSeconds = ClampNullable(s.RestSeconds, 0, 3600),
         };
 
     public static int? MatchExerciseId(string exerciseName, IReadOnlyList<(int Id, string Name, string Type)> library)

@@ -63,7 +63,10 @@ function emptySet(order: number, patch: Partial<PlanSetInput> = {}): BuilderSet 
     tempo: null,
     role: null,
     note: null,
+    restSeconds: null,
     ...patch,
+    // patch pochodzi z importu i może mieć `restSeconds: undefined` — normalizujemy do null.
+    ...(patch.restSeconds == null ? { restSeconds: null } : {}),
   };
 }
 

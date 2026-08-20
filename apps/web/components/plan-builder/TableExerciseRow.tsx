@@ -1,5 +1,7 @@
 "use client";
 
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Exercise, rirFromRpe } from "@/lib/api";
 import { ExerciseName } from "@/components/ExerciseName";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
@@ -7,15 +9,9 @@ import { Badge, IconButton, inputClass } from "@/components/ui";
 import { isDumbbellPair } from "@/lib/weight";
 import { demoMedia } from "@/lib/youtube";
 import { NumInput } from "./NumInput";
-import { RampControls } from "./RampControls";
+import { RangeInput } from "./RangeInput";
+import { SchemeModeSection } from "./SchemeModeSection";
 import { SetSchemeEditor } from "./SetSchemeEditor";
-import {
-  BackoffRow,
-  buildRampPrescribedSets,
-  formatRampScheme,
-  parseRampSchemeInfo,
-  readRampBackoffs,
-} from "./listGroups";
 import { BuilderItem, BuilderSet, newKey } from "./types";
 import type { EditorPartner } from "./ListEntryEditor";
 
@@ -79,23 +75,15 @@ function SetsRepsCell({
     );
   }
   return (
-    <div className="flex items-center gap-0.5">
+    <div className="flex items-center gap-1">
       {setsField}
       {times}
-      <NumInput
-        className="w-10 px-1 py-1.5 text-center"
-        value={item.reps}
-        min={1}
-        onChange={(v) => onPatch({ reps: v })}
-        placeholder={exercise ? String(exercise.defaultReps) : "—"}
-      />
-      <span className="shrink-0 text-xs text-muted">–</span>
-      <NumInput
-        className="w-10 px-1 py-1.5 text-center"
-        value={item.repsMax}
-        min={1}
-        onChange={(v) => onPatch({ repsMax: v })}
-        placeholder="—"
+      <RangeInput
+        className="w-[4.5rem] px-1 py-1.5"
+        reps={item.reps}
+        repsMax={item.repsMax}
+        onChange={(next) => onPatch(next)}
+        placeholder={exercise ? String(exercise.defaultReps) : "8"}
       />
     </div>
   );
@@ -118,9 +106,11 @@ export function TableExerciseRow({
   onToggleLink,
   onPatch,
   onAddSet,
+  onInsertSet,
   onPatchSet,
   onRemoveSet,
   onApplyPreset,
+  onApplyRestToAll,
   onClearSets,
 }: {
   item: BuilderItem;
@@ -139,28 +129,40 @@ export function TableExerciseRow({
   onToggleLink: () => void;
   onPatch: (patch: Partial<BuilderItem>) => void;
   onAddSet: () => void;
+  onInsertSet?: (index: number, side: "before" | "after") => string | void;
   onPatchSet: (setKey: string, patch: Partial<BuilderSet>) => void;
   onRemoveSet: (setKey: string) => void;
   onApplyPreset: (presetId: string) => void;
+  onApplyRestToAll?: (seconds: number | null) => void;
   onClearSets: () => void;
 }) {
-  const rampInfo = parseRampSchemeInfo(item.setScheme);
-  const isRamp = rampInfo != null;
-  const backoffs = readRampBackoffs(item);
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.key,
+  });
+
   return (
     <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
       className={`rounded-[10px] border bg-surface ${
         isInSuperset ? "border-accent/50 border-l-[3px] bg-accent-dim/40" : "border-border"
-      }`}
+      } ${isDragging ? "opacity-50" : ""}`}
     >
       <div className={`grid ${TABLE_ROW_GRID_COLS} items-center gap-2 px-2 py-2`}>
         <IconButton title={expanded ? "Zwiń szczegóły" : "Rozwiń szczegóły"} size="xs" onClick={onToggleExpand}>
           {expanded ? "▾" : "▸"}
         </IconButton>
 
-        <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-surface-hover font-mono text-xs font-semibold tabular-nums text-muted">
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          aria-label="Przeciągnij, aby zmienić kolejność albo przenieść do innego dnia"
+          title="Przeciągnij, aby zmienić kolejność"
+          className="inline-flex h-6 w-6 cursor-grab touch-none items-center justify-center rounded-md bg-surface-hover font-mono text-xs font-semibold tabular-nums text-muted transition-colors hover:text-foreground-secondary active:cursor-grabbing"
+        >
           {supersetLabel ?? index + 1}
-        </span>
+        </button>
 
         <div className="flex min-w-0 items-center gap-2">
           <div className="h-9 w-9 shrink-0">
@@ -284,6 +286,7 @@ export function TableExerciseRow({
                             tempo: item.tempo,
                             role: "work",
                             note: null,
+                            restSeconds: null,
                           }));
                         } else if (next.length < p.setCount) {
                           const last = next[next.length - 1];
@@ -304,90 +307,7 @@ export function TableExerciseRow({
               ))}
             </div>
           ) : null}
-          <RampControls
-            mode={isRamp ? "ramp" : "sets"}
-            targetRm={rampInfo?.targetRm ?? 6}
-            topKg={item.prescribedSets.find((s) => s.role === "top")?.loadKg ?? item.loadKg}
-            backoffs={backoffs}
-            showSetsCount={false}
-            showRest={false}
-            onModeChange={(mode) => {
-              if (mode !== "ramp") {
-                onPatch({ setScheme: null });
-                return;
-              }
-              onPatch({
-                setScheme: formatRampScheme(
-                  rampInfo?.targetRm ?? 6,
-                  backoffs.length > 0 ? backoffs.map((b) => b.percent) : null,
-                ),
-                prescribedSets: [],
-              });
-            }}
-            onTargetRm={(v) => {
-              const next = item.prescribedSets.map((s) =>
-                s.role === "top" || s.role === "ramp" ? { ...s, reps: v } : s,
-              );
-              onPatch({
-                setScheme: formatRampScheme(v, backoffs.length > 0 ? backoffs.map((b) => b.percent) : null),
-                prescribedSets: next,
-              });
-            }}
-            onTopKg={(v) =>
-              onPatch({
-                loadKg: v,
-                prescribedSets: item.prescribedSets.map((s) =>
-                  s.role === "top" ? { ...s, loadKg: v, loadPercent: null, percentOf: null } : s,
-                ),
-              })
-            }
-            onBackoffsChange={(rows: BackoffRow[]) => {
-              const scheme = formatRampScheme(
-                rampInfo?.targetRm ?? 6,
-                rows.length > 0 ? rows.map((b) => b.percent) : null,
-              );
-              if (item.prescribedSets.length === 0) {
-                onPatch({ setScheme: scheme });
-                return;
-              }
-              const withoutBo = item.prescribedSets.filter((s) => s.role !== "backoff");
-              const generated = buildRampPrescribedSets({
-                targetRm: rampInfo?.targetRm ?? 6,
-                topKg: item.loadKg,
-                backoffs: rows,
-              });
-              onPatch({
-                setScheme: scheme,
-                prescribedSets: [...withoutBo, ...generated.filter((s) => s.role === "backoff")].map((s, i) => ({
-                  ...s,
-                  order: i + 1,
-                })),
-              });
-            }}
-          />
-          {isRamp ? (
-            <button
-              type="button"
-              onClick={() => {
-                const generated = buildRampPrescribedSets({
-                  targetRm: rampInfo?.targetRm ?? 6,
-                  topKg: item.loadKg,
-                  backoffs,
-                });
-                onPatch({
-                  setScheme: formatRampScheme(
-                    rampInfo?.targetRm ?? 6,
-                    backoffs.length > 0 ? backoffs.map((b) => b.percent) : null,
-                  ),
-                  prescribedSets: generated,
-                  sets: generated.length,
-                });
-              }}
-              className="mt-2 text-sm font-medium text-foreground-secondary hover:text-foreground"
-            >
-              Rozpisz rozbieg
-            </button>
-          ) : null}
+          <SchemeModeSection item={item} onPatch={onPatch} />
           <details className="mt-2">
             <summary className="t-label cursor-pointer text-muted-faint">Zaawansowane</summary>
             <div className="mt-2 flex items-center gap-2">
@@ -407,16 +327,21 @@ export function TableExerciseRow({
               ) : null}
             </div>
           </details>
-          <p className="mb-2 mt-2.5 text-xs font-medium uppercase tracking-wide text-muted">Rozkład serii</p>
+          <p className="mb-2 mt-2.5 t-label text-muted">Rozkład serii</p>
           <SetSchemeEditor
             sets={item.prescribedSets}
             weekNumber={weekNumber}
             measureType={item.measureType}
             itemLoadKg={item.loadKg}
+            defaultRestSeconds={
+              item.restBetweenSetsSeconds ?? exercise?.defaultRestBetweenSetsSeconds ?? null
+            }
             onAdd={onAddSet}
+            onInsert={onInsertSet}
             onPatch={onPatchSet}
             onRemove={onRemoveSet}
             onApplyPreset={onApplyPreset}
+            onApplyRestToAll={onApplyRestToAll}
             onClear={onClearSets}
             onReplaceSets={(next) => onPatch({ prescribedSets: next, sets: next.length })}
           />

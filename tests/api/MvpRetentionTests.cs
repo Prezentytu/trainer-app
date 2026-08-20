@@ -157,6 +157,23 @@ public class MvpRetentionTests : IClassFixture<TestWebAppFactory>
     }
 
     [Fact]
+    public async Task FoundingApply_PaidTrack_ReturnsOkWithoutCheckoutWhenStripeOff()
+    {
+        var res = await _client.PostAsJsonAsync("/api/founding/apply", new
+        {
+            name = "Bartek Test",
+            email = "bartek@example.com",
+            preferredSlot = "Czwartek 10:00",
+            track = "founding",
+        });
+        res.EnsureSuccessStatusCode();
+        var json = await res.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(json.GetProperty("ok").GetBoolean());
+        Assert.False(json.TryGetProperty("checkoutUrl", out var url) && url.ValueKind == JsonValueKind.String && url.GetString()?.Length > 0);
+        Assert.Contains("390", json.GetProperty("message").GetString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task FoundingApply_RejectsEmptyName()
     {
         var res = await _client.PostAsJsonAsync("/api/founding/apply", new

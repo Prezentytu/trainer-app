@@ -1,21 +1,16 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Exercise, RIR_HELP, rirFromRpe } from "@/lib/api";
-import { editorChipOff, editorChipOn } from "./editorChips";
-import { Field, Switch, inputClass } from "@/components/ui";
+import { useState } from "react";
+import { Exercise, rirFromRpe } from "@/lib/api";
+import { Field, inputClass } from "@/components/ui";
 import { isDumbbellPair } from "@/lib/weight";
-import { polishSetCount } from "@/lib/plural";
+import { compactSchemeLine } from "@/lib/schemeSummary";
 import { NumInput } from "./NumInput";
-import { RampControls } from "./RampControls";
+import { RangeInput } from "./RangeInput";
+import { ItemDefaultsBar } from "./ItemDefaultsBar";
+import { SchemeModeSection } from "./SchemeModeSection";
 import { SetSchemeEditor } from "./SetSchemeEditor";
-import {
-  BackoffRow,
-  buildRampPrescribedSets,
-  formatRampScheme,
-  parseRampSchemeInfo,
-  readRampBackoffs,
-} from "./listGroups";
+import { parseRampSchemeInfo } from "./listGroups";
 import { libraryDefaults } from "./lastPrescription";
 import { BuilderItem, BuilderSet } from "./types";
 
@@ -26,9 +21,11 @@ export function ExerciseEditor({
   exercise,
   onPatch,
   onAddSet,
+  onInsertSet,
   onPatchSet,
   onRemoveSet,
   onApplyPreset,
+  onApplyRestToAll,
   onClearSets,
 }: {
   item: BuilderItem;
@@ -36,99 +33,19 @@ export function ExerciseEditor({
   exercise?: Exercise;
   onPatch: (patch: Partial<BuilderItem>) => void;
   onAddSet: () => void;
+  onInsertSet?: (index: number, side: "before" | "after") => string | void;
   onPatchSet: (setKey: string, patch: Partial<BuilderSet>) => void;
   onRemoveSet: (setKey: string) => void;
   onApplyPreset: (presetId: string) => void;
+  onApplyRestToAll?: (seconds: number | null) => void;
   onClearSets: () => void;
 }) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const setsSnapshot = useRef<BuilderSet[] | null>(null);
-  const rampInfo = parseRampSchemeInfo(item.setScheme);
-  const isRamp = rampInfo != null;
-  const backoffs = readRampBackoffs(item);
-  const [schemeOpen, setSchemeOpen] = useState(isRamp || item.prescribedSets.length > 0);
-  const tableOpen = isRamp || schemeOpen || item.prescribedSets.length > 0;
-
-  const pickRamp = () => {
-    const targetRm = rampInfo?.targetRm ?? 6;
-    if (item.prescribedSets.length > 0) setsSnapshot.current = item.prescribedSets;
-    onPatch({
-      setScheme: formatRampScheme(targetRm, backoffs.length > 0 ? backoffs.map((b) => b.percent) : null),
-      reps: null,
-      repsMax: null,
-      loadKg: item.loadKg,
-      prescribedSets: [],
-    });
-    setSchemeOpen(true);
-  };
-
-  const setBackoffs = (rows: BackoffRow[]) => {
-    const scheme = formatRampScheme(
-      rampInfo?.targetRm ?? 6,
-      rows.length > 0 ? rows.map((b) => b.percent) : null,
-    );
-    if (item.prescribedSets.length === 0) {
-      onPatch({ setScheme: scheme });
-      return;
-    }
-    const withoutBo = item.prescribedSets.filter((s) => s.role !== "backoff");
-    const generated = buildRampPrescribedSets({
-      targetRm: rampInfo?.targetRm ?? 6,
-      topKg: item.loadKg,
-      backoffs: rows,
-    });
-    onPatch({
-      setScheme: scheme,
-      prescribedSets: [...withoutBo, ...generated.filter((s) => s.role === "backoff")].map((s, i) => ({
-        ...s,
-        order: i + 1,
-      })),
-    });
-  };
-
-  const pickSets = () => {
-    onPatch({
-      setScheme: null,
-      prescribedSets: setsSnapshot.current ?? item.prescribedSets,
-    });
-  };
-
-  const setTopKg = (v: number | null) => {
-    onPatch({
-      loadKg: v,
-      prescribedSets: item.prescribedSets.map((s) =>
-        s.role === "top" ? { ...s, loadKg: v, loadPercent: null, percentOf: null } : s,
-      ),
-    });
-  };
-
-  const setRampTarget = (v: number) => {
-    const next = item.prescribedSets.map((s) =>
-      s.role === "top" || s.role === "ramp" ? { ...s, reps: v } : s,
-    );
-    onPatch({
-      setScheme: formatRampScheme(v, backoffs.length > 0 ? backoffs.map((b) => b.percent) : null),
-      prescribedSets: next,
-    });
-  };
-
-  const summaryFromSets = (() => {
-    if (item.prescribedSets.length === 0) return null;
-    const reps = item.prescribedSets.map((s) => s.reps).filter((r): r is number => r != null);
-    const loads = item.prescribedSets
-      .map((s) => s.loadKg)
-      .filter((k): k is number => k != null);
-    const parts = [polishSetCount(item.prescribedSets.length)];
-    if (reps.length) parts.push(`${Math.min(...reps)}${reps.length > 1 ? `–${Math.max(...reps)}` : ""}`);
-    if (loads.length) parts.push(`${Math.max(...loads)} kg`);
-    return parts.join(" · ");
-  })();
-
-  const rirActive = (v: number) => {
-    if (item.targetRir == null) return false;
-    if (v === 3) return item.targetRir >= 3;
-    return item.targetRir === v;
-  };
+  const isRamp = parseRampSchemeInfo(item.setScheme) != null;
+  const hasSets = item.prescribedSets.length > 0;
+  // Zwinięcie chowa wiersze, nie kasuje danych — czyszczenie to osobna, jawna akcja.
+  const [tableOpen, setTableOpen] = useState(hasSets || isRamp);
+  const defaultRest = item.restBetweenSetsSeconds ?? exercise?.defaultRestBetweenSetsSeconds ?? null;
 
   return (
     <div className="space-y-3">
@@ -146,133 +63,111 @@ export function ExerciseEditor({
           ) : null}
         </p>
       ) : null}
-      <RampControls
-        mode={isRamp ? "ramp" : "sets"}
-        targetRm={rampInfo?.targetRm ?? 6}
-        topKg={item.prescribedSets.find((s) => s.role === "top")?.loadKg ?? item.loadKg}
-        backoffs={backoffs}
-        showSetsCount={false}
-        showRest={false}
-        onModeChange={(mode) => (mode === "ramp" ? pickRamp() : pickSets())}
-        onTargetRm={setRampTarget}
-        onTopKg={setTopKg}
-        onBackoffsChange={setBackoffs}
+
+      <SchemeModeSection item={item} onPatch={onPatch} />
+
+      {hasSets ? (
+        <p className="font-mono text-[13px] tabular-nums text-foreground-secondary">
+          {compactSchemeLine(item, exercise)}
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <Field label="Serie">
+            <NumInput
+              value={item.sets}
+              min={1}
+              onChange={(v) => onPatch({ sets: v })}
+              placeholder={exercise ? String(exercise.defaultSets) : "3"}
+            />
+          </Field>
+          {item.measureType === "time" ? (
+            <Field label="Czas powt. (s)">
+              <NumInput
+                value={item.repDurationSeconds}
+                min={1}
+                onChange={(v) => onPatch({ repDurationSeconds: v })}
+                placeholder="dom."
+              />
+            </Field>
+          ) : item.measureType === "distance" ? (
+            <Field label="Dystans (m)">
+              <NumInput
+                value={item.distanceMeters}
+                min={1}
+                onChange={(v) => onPatch({ distanceMeters: v })}
+                placeholder="dom."
+              />
+            </Field>
+          ) : (
+            <Field label="Powtórzenia" hint="np. 8 albo 5-10">
+              <RangeInput
+                reps={item.reps}
+                repsMax={item.repsMax}
+                onChange={(next) => onPatch(next)}
+                placeholder="8"
+              />
+            </Field>
+          )}
+          <Field
+            label={isDumbbellPair(exercise ?? {}) ? "Ciężar (kg · na hantlę)" : "Ciężar (kg)"}
+            hint={isDumbbellPair(exercise ?? {}) ? "Wpisz wagę jednej hantli — klient zobaczy 2×" : undefined}
+          >
+            <NumInput
+              value={item.loadKg}
+              min={0}
+              step={0.5}
+              onChange={(v) => onPatch({ loadKg: v })}
+              placeholder="klient decyduje"
+            />
+          </Field>
+        </div>
+      )}
+
+      <ItemDefaultsBar
+        item={item}
+        fallbackRestSeconds={exercise?.defaultRestBetweenSetsSeconds ?? null}
+        onPatch={onPatch}
       />
-      {isRamp ? (
+
+      {tableOpen ? (
+        <SetSchemeEditor
+          sets={item.prescribedSets}
+          weekNumber={weekNumber}
+          open
+          measureType={item.measureType}
+          itemLoadKg={item.loadKg}
+          defaultRestSeconds={defaultRest}
+          onAdd={onAddSet}
+          onInsert={onInsertSet}
+          onPatch={onPatchSet}
+          onRemove={onRemoveSet}
+          onApplyPreset={onApplyPreset}
+          onApplyRestToAll={onApplyRestToAll}
+          onClear={onClearSets}
+          onReplaceSets={(next) => onPatch({ prescribedSets: next, sets: next.length })}
+        />
+      ) : null}
+
+      {!isRamp ? (
         <button
           type="button"
-          onClick={() => {
-            const generated = buildRampPrescribedSets({
-              targetRm: rampInfo?.targetRm ?? 6,
-              topKg: item.loadKg,
-              backoffs,
-            });
-            onPatch({
-              setScheme: formatRampScheme(
-                rampInfo?.targetRm ?? 6,
-                backoffs.length > 0 ? backoffs.map((b) => b.percent) : null,
-              ),
-              prescribedSets: generated,
-              sets: generated.length,
-            });
-          }}
-          className="text-sm font-medium text-foreground-secondary hover:text-foreground"
+          onClick={() => setTableOpen((v) => !v)}
+          className="text-sm font-medium text-foreground-secondary transition-colors hover:text-foreground"
         >
-          Rozpisz serie rampy
+          {tableOpen ? "Zwiń serię po serii" : "Rozpisz serię po serii"}
         </button>
       ) : null}
 
-      {tableOpen && summaryFromSets ? (
-        <p className="text-sm text-foreground-secondary">{summaryFromSets}</p>
-      ) : (
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Field label="Serie">
-          <NumInput
-            value={item.sets}
-            min={1}
-            onChange={(v) => onPatch({ sets: v })}
-            placeholder={exercise ? String(exercise.defaultSets) : "3"}
-          />
-        </Field>
-        {item.measureType === "time" ? (
-          <Field label="Czas powt. (s)">
-            <NumInput
-              value={item.repDurationSeconds}
-              min={1}
-              onChange={(v) => onPatch({ repDurationSeconds: v })}
-              placeholder="dom."
-            />
-          </Field>
-        ) : item.measureType === "distance" ? (
-          <Field label="Dystans (m)">
-            <NumInput
-              value={item.distanceMeters}
-              min={1}
-              onChange={(v) => onPatch({ distanceMeters: v })}
-              placeholder="dom."
-            />
-          </Field>
-        ) : (
-          <Field label="Powtórzenia">
-            <div className="flex items-center gap-1">
-              <NumInput value={item.reps} min={1} onChange={(v) => onPatch({ reps: v })} placeholder="8" />
-              <span className="text-muted-faint">–</span>
-              <NumInput value={item.repsMax} min={1} onChange={(v) => onPatch({ repsMax: v })} placeholder="12" />
-            </div>
-          </Field>
-        )}
-        <Field
-          label={isDumbbellPair(exercise ?? {}) ? "Ciężar (kg · na hantlę)" : "Ciężar (kg)"}
-          hint={isDumbbellPair(exercise ?? {}) ? "Wpisz wagę jednej hantli — klient zobaczy 2×" : undefined}
-        >
-          <NumInput
-            value={item.loadKg}
-            min={0}
-            step={0.5}
-            onChange={(v) => onPatch({ loadKg: v })}
-            placeholder="klient decyduje"
-          />
-        </Field>
-      </div>
-      )}
-
-      <div className="flex flex-wrap items-center gap-1.5" title={RIR_HELP}>
-        <span className="t-label mr-1 text-muted">RIR</span>
-        {([
-          { label: "0", value: 0 },
-          { label: "1", value: 1 },
-          { label: "2", value: 2 },
-          { label: "3+", value: 3 },
-        ] as const).map((o) => (
-          <button
-            key={o.label}
-            type="button"
-            className={rirActive(o.value) ? editorChipOn : editorChipOff}
-            onClick={() => onPatch({ targetRir: o.value })}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
-
-      <div>
+      <div className="border-t border-border pt-3">
         <button
           type="button"
           onClick={() => setAdvancedOpen((v) => !v)}
-          className="mb-2 font-mono text-xs font-semibold uppercase tracking-[0.08em] text-muted-faint"
+          className="t-label text-muted-faint"
         >
           Zaawansowane {advancedOpen ? "▾" : "▸"}
         </button>
         {advancedOpen && (
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Tempo">
-              <input
-                className={inputClass}
-                value={item.tempo ?? ""}
-                onChange={(e) => onPatch({ tempo: e.target.value || null })}
-                placeholder="3110"
-              />
-            </Field>
+          <div className="mt-3 grid grid-cols-2 gap-3">
             <Field
               label="RPE"
               hint={
@@ -289,15 +184,7 @@ export function ExerciseEditor({
                 placeholder="—"
               />
             </Field>
-            <Field label="Przerwa serie">
-              <NumInput
-                value={item.restBetweenSetsSeconds}
-                min={0}
-                onChange={(v) => onPatch({ restBetweenSetsSeconds: v })}
-                placeholder="60"
-              />
-            </Field>
-            <Field label="Po ćwiczeniu">
+            <Field label="Po ćwiczeniu (s)">
               <NumInput
                 value={item.restAfterExerciseSeconds}
                 min={0}
@@ -318,42 +205,6 @@ export function ExerciseEditor({
           </div>
         )}
       </div>
-
-      {!isRamp ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-border bg-surface-sunken px-3.5 py-3">
-          <Switch
-            label="Rozpisz serie"
-            checked={tableOpen}
-            onChange={(v) => {
-              setSchemeOpen(v);
-              if (!v) onClearSets();
-            }}
-          />
-          {tableOpen ? (
-            <span className="font-mono text-xs tabular-nums text-muted">
-              {polishSetCount(item.prescribedSets.length || item.sets || 0)}
-            </span>
-          ) : null}
-        </div>
-      ) : null}
-
-      {tableOpen ? (
-        <div className="min-w-0 overflow-x-auto">
-          <SetSchemeEditor
-            sets={item.prescribedSets}
-            weekNumber={weekNumber}
-            open
-            measureType={item.measureType}
-            itemLoadKg={item.loadKg}
-            onAdd={onAddSet}
-            onPatch={onPatchSet}
-            onRemove={onRemoveSet}
-            onApplyPreset={onApplyPreset}
-            onClear={onClearSets}
-            onReplaceSets={(next) => onPatch({ prescribedSets: next, sets: next.length })}
-          />
-        </div>
-      ) : null}
     </div>
   );
 }

@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useDroppable } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Exercise } from "@/lib/api";
 import { buildGroupLabels, computeGroupsFromLinks } from "@/lib/supersets";
+import { dayContainerId } from "./dnd";
 import { DayHeader } from "./DayHeader";
 import { QuickComposer } from "./QuickComposer";
 import { listEntrySummary } from "./listGroups";
@@ -16,6 +19,7 @@ export function TableDay({
   onPatchDay,
   onRemoveDay,
   onDuplicateDay,
+  onMoveDayToWeek,
   weeks,
   onApplyWeekdays,
   onAddItem,
@@ -24,9 +28,11 @@ export function TableDay({
   onMoveItem,
   onToggleLink,
   onAddSet,
+  onInsertSet,
   onPatchSet,
   onRemoveSet,
   onApplyPreset,
+  onApplyRestToAll,
   onClearSets,
 }: {
   day: BuilderDay;
@@ -35,6 +41,7 @@ export function TableDay({
   onPatchDay: (patch: Partial<BuilderDay>) => void;
   onRemoveDay: () => void;
   onDuplicateDay: (targetWeek?: number) => void;
+  onMoveDayToWeek?: (targetWeek: number) => void;
   weeks: number[];
   onApplyWeekdays: () => void;
   onAddItem: (exerciseId: number, overrides?: Partial<BuilderItem>) => void;
@@ -43,9 +50,11 @@ export function TableDay({
   onMoveItem: (itemKey: string, dir: -1 | 1) => void;
   onToggleLink: (itemKey: string) => void;
   onAddSet: (itemKey: string) => void;
+  onInsertSet?: (itemKey: string, index: number, side: "before" | "after") => string | void;
   onPatchSet: (itemKey: string, setKey: string, patch: Partial<BuilderSet>) => void;
   onRemoveSet: (itemKey: string, setKey: string) => void;
   onApplyPreset: (itemKey: string, presetId: string) => void;
+  onApplyRestToAll?: (itemKey: string, seconds: number | null) => void;
   onClearSets: (itemKey: string) => void;
 }) {
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
@@ -60,9 +69,14 @@ export function TableDay({
 
   const groups = computeGroupsFromLinks(day.items.map((i) => i.linkedToNext));
   const labels = buildGroupLabels(groups);
+  // Cały dzień jest strefą upuszczenia — ćwiczenie można przeciągnąć do pustego dnia niżej.
+  const { setNodeRef, isOver } = useDroppable({ id: dayContainerId(day.key) });
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
+    <div
+      ref={setNodeRef}
+      className={`rounded-xl border bg-surface p-4 ${isOver ? "border-border-strong" : "border-border"}`}
+    >
       <div className="mb-3">
         <DayHeader
           day={day}
@@ -73,6 +87,7 @@ export function TableDay({
           onPatchDay={onPatchDay}
           onRemoveDay={onRemoveDay}
           onDuplicateDay={onDuplicateDay}
+          onMoveDayToWeek={onMoveDayToWeek}
           onApplyWeekdays={onApplyWeekdays}
         />
       </div>
@@ -94,6 +109,10 @@ export function TableDay({
               <span>Notatki</span>
               <span />
             </div>
+            <SortableContext
+              items={day.items.map((i) => i.key)}
+              strategy={verticalListSortingStrategy}
+            >
             <div className="space-y-1">
               {day.items.map((item, idx) => (
                 <TableExerciseRow
@@ -135,6 +154,12 @@ export function TableDay({
                   onToggleLink={() => onToggleLink(item.key)}
                   onPatch={(patch) => onPatchItem(item.key, patch)}
                   onAddSet={() => onAddSet(item.key)}
+                  onInsertSet={
+                    onInsertSet ? (index, side) => onInsertSet(item.key, index, side) : undefined
+                  }
+                  onApplyRestToAll={
+                    onApplyRestToAll ? (seconds) => onApplyRestToAll(item.key, seconds) : undefined
+                  }
                   onPatchSet={(setKey, patch) => onPatchSet(item.key, setKey, patch)}
                   onRemoveSet={(setKey) => onRemoveSet(item.key, setKey)}
                   onApplyPreset={(presetId) => onApplyPreset(item.key, presetId)}
@@ -142,6 +167,7 @@ export function TableDay({
                 />
               ))}
             </div>
+            </SortableContext>
           </div>
         </div>
       ) : null}

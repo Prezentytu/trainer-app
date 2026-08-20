@@ -224,7 +224,7 @@ Zakazane:
 - [ ] Minimalna liczba pól; single-column na mobile
 - [ ] Walidacja inline na blur; dane nie giną; scroll do błędu
 - [ ] Autofill / inputMode; „po co to pole" przy wrażliwych danych
-- [ ] CTA = czasownik + obiekt („Przypisz plan", „Zapisz plan") — nie samo „OK" i nie slogan; skill `ux-writing`
+- [ ] CTA = czasownik + obiekt („Przypisz plan", „Zapisz plan") — nie samo „OK" i nie slogan; skill `ux-writing`. Przy Pobierz/Wgraj obiekt = zawartość pliku, nie cel („do przeniesienia”).
 
 **Hierarchia, skanowanie, craft**
 

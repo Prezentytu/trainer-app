@@ -65,6 +65,7 @@ export function buildPlanInput(
             tempo: s.tempo?.trim() || null,
             role: s.role,
             note: s.note?.trim() || null,
+            restSeconds: s.restSeconds ?? null,
           })),
         })),
       };

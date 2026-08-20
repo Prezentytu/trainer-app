@@ -57,7 +57,8 @@ public record PlanSetInput(
     double? TargetRir = null,
     string? Tempo = null,
     string? Role = null,
-    string? Note = null);
+    string? Note = null,
+    int? RestSeconds = null);
 
 public record PlanItemInput(
     int ExerciseId,
@@ -167,7 +168,8 @@ public record FoundingApplyInput(
     string Email,
     string? Phone = null,
     string? PreferredSlot = null,
-    string Track = "whiteglove");
+    string Track = "whiteglove",
+    string? HowYouWork = null);
 
 public record PushSubscriptionInput(string Endpoint, string P256dh, string Auth);
 

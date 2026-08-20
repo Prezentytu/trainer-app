@@ -813,6 +813,9 @@ namespace TrainerApp.Api.Migrations
                     b.Property<int?>("RepsMax")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("RestSeconds")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Role")
                         .HasColumnType("text");
 
@@ -878,6 +881,15 @@ namespace TrainerApp.Api.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("StripeSubscriptionId")
+                        .HasColumnType("text");
+
+                    b.Property<int>("WdrozenieCreditGrosze")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("WdrozeniePaidAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("WdrozeniePaymentIntentId")
                         .HasColumnType("text");
 
                     b.HasKey("Id");

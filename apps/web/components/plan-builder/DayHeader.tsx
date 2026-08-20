@@ -22,6 +22,7 @@ export function DayHeader({
   onPatchDay,
   onRemoveDay,
   onDuplicateDay,
+  onMoveDayToWeek,
   onApplyWeekdays,
 }: {
   day: BuilderDay;
@@ -32,6 +33,7 @@ export function DayHeader({
   onPatchDay: (patch: Partial<BuilderDay>) => void;
   onRemoveDay: () => void;
   onDuplicateDay: (targetWeek?: number) => void;
+  onMoveDayToWeek?: (targetWeek: number) => void;
   onApplyWeekdays: () => void;
 }) {
   const weekday = WEEKDAY_CHIPS.find((c) => c.iso === day.dayOfWeek);
@@ -44,6 +46,7 @@ export function DayHeader({
       onPatch={onPatchDay}
       onApplyToOtherWeeks={weeks.length > 1 ? onApplyWeekdays : undefined}
       onDuplicate={onDuplicateDay}
+      onMoveToWeek={onMoveDayToWeek}
       onRemove={onRemoveDay}
       nameClassName={NAME_CLASS[density]}
     />

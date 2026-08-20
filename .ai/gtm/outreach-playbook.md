@@ -4,7 +4,7 @@ Cel: 5–10 partnerów z **≥1 ukończoną sesją klienta** w 14 dniach. Nie si
 
 Kanał: **tylko warm**. 20 spersonalizowanych wiadomości dziennie. Content 1×/tydzień jako wsparcie, nie zamiast. Ads: zero.
 
-Haki przed prośbą o rozmowę: [lead-magnet.md](lead-magnet.md) — `/checklista`, `/ile-tracisz`, `/gotowce`. Give:ask 3:1.
+Haki przed prośbą o przegląd: [lead-magnet.md](lead-magnet.md) — `/checklista`, `/ile-tracisz`, `/gotowce`. Give:ask 3:1. Wejście: pierwszy przegląd za 0 zł.
 
 ## Gate
 
@@ -12,7 +12,7 @@ Haki przed prośbą o rozmowę: [lead-magnet.md](lead-magnet.md) — `/checklist
 |---|---|
 | Pass | ≥5 partnerów z sesją klienta / 14 dni |
 | Kill | <3 partnerów z sesją / 14 dni → zmień hak lub avatar, nie dodawaj ficzerów |
-| Płatność | po gate A, od 11. osoby: 390 zł raz (12 miesięcy, do 15 osób, dwa miesiące w cenie; potem 39 zł zamknięte) |
+| Płatność | po 3 opiniach: 390 zł za przeniesienie (potem 590 / 790). Hak teraz: przegląd 0 zł |
 
 ## Walidacja 10 rozmów (nie internet)
 
@@ -48,4 +48,4 @@ Po 10 rozmowach: zlicz narzędzia i kwoty. Nie koduj z tej tabeli diety ani kale
 
 ## Po gate A
 
-390 zł raz na `/wdrozenie` (12 miesięcy, do 15 osób, dwa miesiące w cenie; potem 39 zł za 15 — ta kwota nie rośnie). Stripe gdy klucz; inaczej e-mail. 90 dni za 0 zł, potem próg — bez wiecznego 0 zł ponad 5 osób. Szablony maili: [wdrozenie-maile.md](wdrozenie-maile.md).
+Pierwszy przegląd 0 zł na `/wdrozenie`. Po trzech opiniach cena przeniesienia wraca (390 → 590 → 790). Stripe gdy klucz; inaczej e-mail. Konto 5 osób zostaje cichym wyjściem. Szablony maili: [wdrozenie-maile.md](wdrozenie-maile.md). Spec: `.ai/specs/2026-08-18-oferta-przeglad-tygodnia.md`.

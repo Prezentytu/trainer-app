@@ -5,7 +5,8 @@
  *
  * Chrome: near-black / white / greys. Emphasis = invert fill, never a hue.
  * Data accents only: --pr / --gain / --loss (+ --danger for destructive).
- * Landing = te same tokeny mono v2, zawsze `data-theme="light"` (LandingThemeLock).
+ * Landing = te same tokeny mono v2, lock light (`LandingThemeLock`);
+ * ciemne pasy 01/03/05 przez `[data-theme="dark"]` (nadpisuje dziedziczony light).
  */
 
 :root {
@@ -220,6 +221,67 @@
   --success-bg: var(--gain-quiet);
   --overlay-scrim: var(--scrim);
   --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--fg);
+}
+
+/* Ciemny pas na jasnym landingu (01 / 03 / 05). Bez tego atrybut dziedziczy light. */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: var(--ink-900);
+  --surface-sunken: var(--ink-850);
+  --surface: var(--ink-800);
+  --surface-raised: var(--ink-700);
+  --surface-hover: var(--ink-700);
+  --surface-active: var(--ink-600);
+  --field: var(--ink-700);
+  --line: var(--ink-400);
+  --line-faint: var(--ink-500);
+  --fg: var(--ink-000);
+  --fg-muted: var(--ink-100);
+  --fg-faint: var(--ink-200);
+  --fg-ghost: var(--ink-300);
+  --invert-bg: var(--ink-000);
+  --invert-fg: var(--ink-900);
+  --scrim: rgba(4, 5, 6, 0.78);
+  --danger: #ff6b6b;
+  --danger-quiet: #2a1618;
+  --pr: #e0b13f;
+  --pr-quiet: #2a2213;
+  --gain: #57bf82;
+  --gain-quiet: #14261c;
+  --loss: #ef7a70;
+  --loss-quiet: #2a1a19;
+  --background: var(--bg);
+  --border: var(--line-faint);
+  --border-strong: var(--line);
+  --foreground: var(--fg);
+  --foreground-secondary: var(--fg-muted);
+  --muted-strong: var(--fg-muted);
+  --muted: var(--fg-faint);
+  --muted-faint: var(--fg-ghost);
+  --accent: var(--invert-bg);
+  --accent-strong: var(--fg-muted);
+  --accent-text: var(--fg);
+  --accent-foreground: var(--ink-900);
+  --accent-dim: var(--surface-raised);
+  --accent-border: var(--line);
+  --pr-dim: var(--pr-quiet);
+  --pr-border: #4d3c17;
+  --text-on-gold: var(--ink-900);
+  --positive: var(--gain);
+  --positive-dim: var(--gain-quiet);
+  --danger-bg: var(--danger-quiet);
+  --danger-border: var(--danger);
+  --danger-hover: var(--danger);
+  --success: var(--gain);
+  --success-bg: var(--gain-quiet);
+  --overlay-scrim: var(--scrim);
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--fg);
+}
+
+/* Landing: tło strony #F6F7F8, nie czysta biel kart. */
+.landing-canvas[data-theme="light"] {
+  --bg: #f6f7f8;
+  --background: var(--bg);
 }
 
 /*
@@ -780,6 +842,10 @@ html[data-theme="light"] textarea {
 }
 
 /* —— Landing mono v2 —— */
+.landing-measure {
+  container-type: inline-size;
+}
+
 .landing-scroll {
   opacity: 1;
   transform: none;
@@ -812,50 +878,52 @@ html[data-theme="light"] textarea {
   transform: rotate(45deg);
 }
 
-.landing-log-ghost {
-  color: color-mix(in srgb, var(--fg) 13%, var(--bg));
+.landing-cta-ghost {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--fg);
 }
 
-/* Drift tylko na treści ściany — maski (elipsa, wiązka) zostają nieruchome na warstwach. */
-.landing-log-drift {
-  transform: translate3d(0, var(--drift, 0px), 0);
-}
-
-/* Jedna elipsa liczona z bloku H1 (--hole-*). Bez drugiej maski: WebKit source-in zerował całą warstwę. */
-.landing-log-mask {
-  -webkit-mask-image: radial-gradient(
-    ellipse var(--hole-rx, 18rem) var(--hole-ry, 8rem) at var(--hole-x, 50%) var(--hole-y, 42%),
-    transparent 0 64%,
-    #000 100%
-  );
-  mask-image: radial-gradient(
-    ellipse var(--hole-rx, 18rem) var(--hole-ry, 8rem) at var(--hole-x, 50%) var(--hole-y, 42%),
-    transparent 0 64%,
-    #000 100%
-  );
-}
-
-/* Fade nad closerem — overlay, nie mask-composite (Safari). */
-.landing-log-fade {
+.landing-cta-ghost::after {
+  content: "";
   position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  height: 5.5rem;
-  background: linear-gradient(to bottom, transparent, var(--bg));
-  pointer-events: none;
+  right: 0;
+  bottom: 12px;
+  left: 0;
+  height: 1px;
+  background: currentColor;
+  transform-origin: left;
+  transition: transform var(--dur-fast) var(--ease-out);
 }
 
-.landing-log-beam {
-  -webkit-mask-image: radial-gradient(
-    circle clamp(280px, 32vw, 560px) at var(--x) var(--y),
-    #000 0 35%,
-    transparent 100%
-  );
-  mask-image: radial-gradient(
-    circle clamp(280px, 32vw, 560px) at var(--x) var(--y),
-    #000 0 35%,
-    transparent 100%
-  );
+.landing-cta-ghost:hover::after {
+  transform: scaleY(2);
+}
+
+.landing-cta-ghost:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.landing-rep {
+  display: inline-block;
+}
+
+.landing-rep > span {
+  display: inline-block;
+  transform-origin: 50% 100%;
+}
+
+.landing-pr-star {
+  display: inline-block;
+  vertical-align: top;
+  margin-left: 0.06em;
+  font-size: 0.2em;
+  color: var(--pr);
 }
 
 /* Suwak kalkulatora — invert fill, bez hue, tap 44px. */
@@ -946,23 +1014,6 @@ html[data-theme="light"] textarea {
     animation-delay: calc(min(var(--i, 0), 6) * 80ms);
   }
 
-  @keyframes landing-log-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  .landing-scroll.landing-ready:not(.landing-inview) .landing-log-enter {
-    opacity: 0;
-  }
-
-  .landing-scroll.landing-inview .landing-log-enter {
-    animation: landing-log-in 600ms cubic-bezier(0.22, 1, 0.36, 1) 400ms both;
-  }
-
   @keyframes landing-check-in {
     from {
       opacity: 0.4;
@@ -977,6 +1028,157 @@ html[data-theme="light"] textarea {
   .landing-check-in {
     animation: landing-check-in var(--dur-med) var(--ease-out) both;
   }
+
+  @keyframes landing-live-value {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .landing-live-value {
+    animation: landing-live-value var(--dur-med) var(--ease-out) both;
+  }
+
+  @keyframes landing-hero-line {
+    from {
+      clip-path: inset(100% 0 0 0);
+      transform: translateY(0.12em);
+    }
+    to {
+      clip-path: inset(-20% 0 -10% 0);
+      transform: none;
+    }
+  }
+
+  @keyframes landing-rep-drop {
+    0% {
+      opacity: 0;
+      transform: translateY(-0.42em) scaleY(1.14) scaleX(0.96);
+    }
+    62% {
+      opacity: 1;
+      transform: translateY(0.02em) scaleY(0.9) scaleX(1.04);
+    }
+    80% {
+      transform: translateY(-0.012em) scaleY(1.03) scaleX(0.99);
+    }
+    100% {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes landing-rep-bend {
+    0% {
+      transform: none;
+    }
+    18% {
+      transform: translateY(calc(var(--amp) * 0.86em)) scaleY(0.975);
+    }
+    26% {
+      transform: translateY(calc(var(--amp) * 1em)) scaleY(0.965) translateX(0.006em);
+    }
+    30% {
+      transform: translateY(calc(var(--amp) * 1em)) scaleY(0.965) translateX(-0.006em);
+    }
+    46% {
+      transform: translateY(calc(var(--amp) * 0.97em)) scaleY(0.968);
+    }
+    70% {
+      transform: translateY(calc(var(--amp) * -0.3em)) scaleY(1.022);
+    }
+    86% {
+      transform: translateY(calc(var(--amp) * 0.06em)) scaleY(0.996);
+    }
+    100% {
+      transform: none;
+    }
+  }
+
+  @keyframes landing-rep-squeeze {
+    0%,
+    100% {
+      letter-spacing: -0.01em;
+    }
+    26%,
+    46% {
+      letter-spacing: -0.038em;
+    }
+  }
+
+  @keyframes landing-pr-flash {
+    0%,
+    100% {
+      color: inherit;
+    }
+    34%,
+    66% {
+      color: var(--pr);
+    }
+  }
+
+  @keyframes landing-pr-star {
+    0% {
+      opacity: 0;
+      transform: scale(0.4) translateY(0.1em);
+    }
+    64% {
+      opacity: 1;
+      transform: scale(1.18) translateY(-0.02em);
+    }
+    100% {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes landing-caret {
+    0%,
+    48% {
+      opacity: 1;
+    }
+    52%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  .landing-hero-line {
+    animation: landing-hero-line 320ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  .landing-hero-line-delay {
+    animation-delay: 60ms;
+  }
+
+  .landing-rep {
+    display: inline-block;
+    animation:
+      landing-rep-squeeze 2000ms cubic-bezier(0.3, 0, 0.2, 1) 1250ms both,
+      landing-pr-flash 1000ms linear 3150ms both;
+  }
+
+  .landing-rep > span {
+    display: inline-block;
+    transform-origin: 50% 100%;
+    animation:
+      landing-rep-drop 620ms cubic-bezier(0.16, 0.9, 0.24, 1) both,
+      landing-rep-bend 2000ms cubic-bezier(0.3, 0, 0.2, 1) 1250ms both;
+  }
+
+  .landing-pr-star {
+    display: inline-block;
+    animation: landing-pr-star 420ms cubic-bezier(0.2, 0, 0, 1) 3400ms both;
+  }
+
+  .landing-caret {
+    animation: landing-caret 1s steps(1, end) infinite;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -984,17 +1186,25 @@ html[data-theme="light"] textarea {
     animation: none;
   }
 
-  .landing-check-in {
-    animation: none;
-  }
-
-  .landing-log-enter {
-    opacity: 1;
+  .landing-check-in,
+  .landing-live-value {
     animation: none;
   }
 
   .landing-faq-content,
   .landing-faq-icon {
     transition: none;
+  }
+
+  .landing-hero-line,
+  .landing-rep,
+  .landing-rep > span,
+  .landing-pr-star,
+  .landing-caret {
+    animation: none !important;
+  }
+
+  .landing-pr-star {
+    opacity: 1;
   }
 }

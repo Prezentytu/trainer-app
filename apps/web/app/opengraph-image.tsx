@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "RepMaxer — wysyłasz link, widzisz każdy trening";
+export const alt = "RepMaxer — wszyscy podopieczni w jednym raporcie";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -43,10 +43,10 @@ export default function OpenGraphImage() {
               letterSpacing: "-0.02em",
             }}
           >
-            Wysyłasz link. Widzisz każdy trening.
+            Wszyscy podopieczni w jednym raporcie. Za 0 zł, w 24 godziny.
           </div>
           <div style={{ fontSize: 22, color: "#C9CED4", maxWidth: 640, lineHeight: 1.45 }}>
-            Klient odhacza serie w telefonie. Bez aplikacji, bez konta.
+            Wysyłasz arkusz albo zrzuty. Wraca lista i trzy wiadomości. Za 0 zł, w 24 godziny.
           </div>
         </div>
 
@@ -58,11 +58,11 @@ export default function OpenGraphImage() {
             color: "#9AA1A8",
           }}
         >
-          <span>0 zł do 5 osób</span>
+          <span>24 godziny</span>
           <span>·</span>
-          <span>Bez karty</span>
+          <span>Bez opłat</span>
           <span>·</span>
-          <span>Klient bez aplikacji</span>
+          <span>5 miejsc</span>
         </div>
       </div>
     ),

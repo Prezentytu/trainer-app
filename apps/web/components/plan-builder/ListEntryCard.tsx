@@ -1,5 +1,7 @@
 "use client";
 
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Exercise } from "@/lib/api";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { demoMedia } from "@/lib/youtube";
@@ -30,9 +32,11 @@ export function ListEntryCard({
   onDuplicate,
   onRemove,
   onAddSet,
+  onInsertSet,
   onPatchSet,
   onRemoveSet,
   onApplyPreset,
+  onApplyRestToAll,
   onClearSets,
 }: {
   item: BuilderItem;
@@ -56,15 +60,24 @@ export function ListEntryCard({
   onDuplicate?: () => void;
   onRemove: () => void;
   onAddSet: () => void;
+  onInsertSet?: (index: number, side: "before" | "after") => string | void;
   onPatchSet: (setKey: string, patch: Partial<BuilderSet>) => void;
   onRemoveSet: (setKey: string) => void;
   onApplyPreset: (presetId: string) => void;
+  onApplyRestToAll?: (seconds: number | null) => void;
   onClearSets: () => void;
 }) {
   const summary = listEntrySummary(item, exercise, multi);
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.key,
+  });
 
   return (
-    <div className="flex flex-col gap-2">
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={`flex flex-col gap-2 ${isDragging ? "opacity-50" : ""}`}
+    >
       <button
         type="button"
         onClick={onToggleExpand}
@@ -75,6 +88,18 @@ export function ListEntryCard({
         }`}
       >
         <div className="flex items-center gap-2.5">
+          <span
+            {...attributes}
+            {...listeners}
+            role="button"
+            tabIndex={0}
+            aria-label="Przeciągnij, aby zmienić kolejność albo przenieść do innego dnia"
+            title="Przeciągnij, aby zmienić kolejność"
+            onClick={(e) => e.stopPropagation()}
+            className="-ml-1 shrink-0 cursor-grab touch-none px-1 text-muted-faint transition-colors hover:text-foreground-secondary active:cursor-grabbing"
+          >
+            ⋮⋮
+          </span>
           <span
             className={`inline-flex h-[26px] w-8 shrink-0 items-center justify-center rounded-lg font-mono text-xs font-semibold tabular-nums ${
               multi
@@ -153,6 +178,8 @@ export function ListEntryCard({
           onDuplicate={onDuplicate}
           onRemove={onRemove}
           onAddSet={onAddSet}
+          onInsertSet={onInsertSet}
+          onApplyRestToAll={onApplyRestToAll}
           onPatchSet={onPatchSet}
           onRemoveSet={onRemoveSet}
           onApplyPreset={onApplyPreset}

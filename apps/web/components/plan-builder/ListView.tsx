@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Exercise } from "@/lib/api";
 import { formatRest } from "@/components/ui";
 import { DayHeader } from "./DayHeader";
@@ -19,6 +20,7 @@ export function ListView({
   onPatchDay,
   onRemoveDay,
   onDuplicateDay,
+  onMoveDay,
   weeks,
   onApplyWeekdays,
   onAddItem,
@@ -31,9 +33,11 @@ export function ListView({
   onUnlinkGroup,
   onSwapItem,
   onAddSet,
+  onInsertSet,
   onPatchSet,
   onRemoveSet,
   onApplyPreset,
+  onApplyRestToAll,
   onClearSets,
 }: {
   days: BuilderDay[];
@@ -43,6 +47,7 @@ export function ListView({
   onPatchDay: (dayKey: string, patch: Partial<BuilderDay>) => void;
   onRemoveDay: (dayKey: string) => void;
   onDuplicateDay: (dayKey: string, targetWeek?: number) => void;
+  onMoveDay?: (dayKey: string, targetWeek: number) => void;
   weeks: number[];
   onApplyWeekdays: (sourceWeek: number) => void;
   onAddItem: (dayKey: string, exerciseId: number, overrides?: Partial<BuilderItem>) => void;
@@ -64,9 +69,11 @@ export function ListView({
   onUnlinkGroup: (dayKey: string, itemKey: string) => void;
   onSwapItem: (dayKey: string, itemKey: string) => void;
   onAddSet: (dayKey: string, itemKey: string) => void;
+  onInsertSet?: (dayKey: string, itemKey: string, index: number, side: "before" | "after") => string;
   onPatchSet: (dayKey: string, itemKey: string, setKey: string, patch: Partial<BuilderSet>) => void;
   onRemoveSet: (dayKey: string, itemKey: string, setKey: string) => void;
   onApplyPreset: (dayKey: string, itemKey: string, presetId: string) => void;
+  onApplyRestToAll?: (dayKey: string, itemKey: string, seconds: number | null) => void;
   onClearSets: (dayKey: string, itemKey: string) => void;
 }) {
   const [edit, setEdit] = useState<{ dayKey: string; itemKey: string } | null>(null);
@@ -109,9 +116,14 @@ export function ListView({
           onPatchDay={(patch) => onPatchDay(activeDay.key, patch)}
           onRemoveDay={() => onRemoveDay(activeDay.key)}
           onDuplicateDay={(w) => onDuplicateDay(activeDay.key, w)}
+          onMoveDayToWeek={onMoveDay ? (w) => onMoveDay(activeDay.key, w) : undefined}
           onApplyWeekdays={() => onApplyWeekdays(activeDay.weekNumber)}
         />
 
+        <SortableContext
+          items={activeDay.items.map((i) => i.key)}
+          strategy={verticalListSortingStrategy}
+        >
         <div className="flex flex-col gap-3">
           {groups.map((g) => (
             <div key={`g-${g.positionNum}-${g.entries[0]?.item.key}`} className="flex flex-col gap-2">
@@ -215,6 +227,16 @@ export function ListView({
                       onDuplicate={() => onDuplicateItem(activeDay.key, entry.item.key)}
                       onRemove={() => onRemoveItem(activeDay.key, entry.item.key)}
                       onAddSet={() => onAddSet(activeDay.key, entry.item.key)}
+                      onInsertSet={
+                        onInsertSet
+                          ? (index, side) => onInsertSet(activeDay.key, entry.item.key, index, side)
+                          : undefined
+                      }
+                      onApplyRestToAll={
+                        onApplyRestToAll
+                          ? (seconds) => onApplyRestToAll(activeDay.key, entry.item.key, seconds)
+                          : undefined
+                      }
                       onPatchSet={(setKey, patch) =>
                         onPatchSet(activeDay.key, entry.item.key, setKey, patch)
                       }
@@ -230,6 +252,7 @@ export function ListView({
             </div>
           ))}
         </div>
+        </SortableContext>
 
         <ListComposer
           exercises={exercises}

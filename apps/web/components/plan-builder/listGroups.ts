@@ -1,5 +1,5 @@
 import { Exercise } from "@/lib/api";
-import { compactSchemeLine } from "@/lib/schemeSummary";
+import { compactSchemeLine, restSummary } from "@/lib/schemeSummary";
 import { BuilderItem, newKey } from "./types";
 
 const LETTERS = "abcdefgh";
@@ -194,6 +194,7 @@ function emptyRampSet(
     tempo: null,
     role: null,
     note: null,
+    restSeconds: null,
     ...patch,
   };
 }
@@ -288,7 +289,11 @@ export function listEntrySummary(item: BuilderItem, exercise?: Exercise, omitRes
     parts.push(`RIR ${rirLabel}`);
   }
   const rest = item.restBetweenSetsSeconds ?? exercise?.defaultRestBetweenSetsSeconds ?? null;
-  if (rest != null && rest > 0 && !omitRest) parts.push(`przerwa ${rest}s`);
+  if (!omitRest) {
+    const perSet = restSummary(item.prescribedSets, rest);
+    if (perSet) parts.push(perSet);
+    else if (rest != null && rest > 0) parts.push(`przerwa ${rest} s`);
+  }
   return parts.join(" · ");
 }
 

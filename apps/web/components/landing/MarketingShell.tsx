@@ -6,23 +6,23 @@ import { LandingThemeLock } from "./LandingThemeLock";
 export function MarketingShell({
   children,
   home = false,
-  action = "wdrozenie",
+  footer = true,
 }: {
   children: ReactNode;
   home?: boolean;
-  action?: "wdrozenie" | "konto";
+  footer?: boolean;
 }) {
   return (
     // Bez overflow-x-hidden: hidden na osi X robi z diva scroll container (overflow-y: auto)
     // i zabija KAŻDY position:sticky w środku (nav, scena telefonu). Oś X domyka body w globals.css.
     <div
       data-theme="light"
-      className="min-h-screen bg-background text-foreground"
+      className="landing-canvas min-h-screen bg-background text-foreground"
     >
       <LandingThemeLock />
-      <LandingNav home={home} action={action} />
+      {home ? null : <LandingNav home={home} variant="page" />}
       {children}
-      <LandingFooter />
+      {footer ? <LandingFooter /> : null}
     </div>
   );
 }

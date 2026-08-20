@@ -23,7 +23,7 @@ public static class BillingPlans
         Starter => Paid[0],
         Pro => Paid[1],
         Studio => Paid[2],
-        Founding => new(Founding, "Founding — 15 osób", 15, 0),
+        Founding => new(Founding, "Wdrożenie — 30 osób", 30, 0),
         Dev => new(Dev, "Konto deweloperskie", null, 0),
         _ => new(Free, "Darmowy — 5 osób", 5, 0),
     };

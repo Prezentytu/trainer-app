@@ -445,7 +445,12 @@ export default function PortalTodayPage() {
     <div className="mx-auto max-w-lg space-y-8">
       {toastNode}
       <header>
-        <p className="text-xs font-medium uppercase tracking-caps text-muted">
+        {home.trainerName?.trim() ? (
+          <p className="text-xs font-medium uppercase tracking-caps text-muted">
+            Plan od {home.trainerName.trim().split(/\s+/)[0]}
+          </p>
+        ) : null}
+        <p className={`text-xs font-medium uppercase tracking-caps text-muted${home.trainerName?.trim() ? " mt-2" : ""}`}>
           {heroSectionLabel}
         </p>
         <h1 className="mt-2 break-words text-[1.75rem] font-semibold leading-tight tracking-tight text-foreground sm:text-3xl">

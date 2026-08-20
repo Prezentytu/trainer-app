@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { IOS_SPLASH_ENTRIES } from "@/lib/iosSplash";
+import { fetchPortalTrainerName, trainerFirstName } from "@/lib/portalBrand";
 
 export const viewport: Viewport = {
   themeColor: "#0B0C0D",
@@ -16,15 +17,17 @@ export async function generateMetadata({
   params: Promise<{ token: string }>;
 }): Promise<Metadata> {
   const { token } = await params;
+  const trainerName = await fetchPortalTrainerName(token);
+  const title = trainerFirstName(trainerName) ?? "RepMaxer";
   const manifest = `/portal/${token}/manifest.webmanifest`;
 
   return {
-    title: "RepMaxer",
+    title,
     robots: { index: false, follow: false, nocache: true, googleBot: { index: false, follow: false, noimageindex: true } },
     manifest,
     appleWebApp: {
       capable: true,
-      title: "RepMaxer",
+      title,
       statusBarStyle: "black-translucent",
       startupImage: IOS_SPLASH_ENTRIES.map((entry) => ({
         url: `/splash/${entry.size}`,
