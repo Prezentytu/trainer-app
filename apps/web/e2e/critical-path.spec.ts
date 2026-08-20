@@ -21,7 +21,7 @@ test.describe("public", () => {
       );
     }
 
-    await expect(page.getByRole("heading", { name: /Wysyłasz link/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Wszyscy podopieczni/i })).toBeVisible();
     await expect(
       page.getByRole("link", { name: /Zaloguj się|Załóż darmowe konto|Załóż konto/i }).first(),
     ).toBeVisible();

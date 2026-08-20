@@ -937,8 +937,8 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 **Kontekst**: `dev.repmaxer.pl` u właściciela pokazywał landing; Playwright w CI nie znajdował „Zaloguj się”. Fetch bez sesji Vercel dostaje „Log in to Vercel”.
 **Problem**: Standard Protection na Preview. Przeglądarka z zalogowanym Vercel omija ścianę; runner GitHub nie. Test szukał też wyłącznie „Zaloguj się”, a hero ma „Załóż darmowe konto”.
-**Zasada**: Na Hobby wyłącz Vercel Authentication na Preview (Exceptions są płatne). E2E asseruje H1 landingu i link logowania albo rejestracji; przy ścianie Vercela — jasny błąd, nie timeout. Bez `VERCEL_AUTOMATION_BYPASS_SECRET`.
-**Dotyczy**: `apps/web/e2e/critical-path.spec.ts`, Vercel Settings → Deployment Protection
+**Zasada**: Na Hobby wyłącz Vercel Authentication na Preview (Exceptions są płatne). E2E asseruje H1 landingu i link logowania albo rejestracji; przy ścianie Vercela — jasny błąd, nie timeout. Bez `VERCEL_AUTOMATION_BYPASS_SECRET`. H1 w teście musi być tym z `Hero.tsx` (dziś „Wszyscy podopieczni”), nie starym hasłem — Dev E2E leci po deploju na `dev.repmaxer.pl`.
+**Dotyczy**: `apps/web/e2e/critical-path.spec.ts`, Vercel Settings → Deployment Protection, `Hero.tsx`
 
 ## Domena Preview nie „jedzie” z Redeploy — tylko z `alias set` albo Git Branch
 
