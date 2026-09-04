@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { isDefaultDayLabel, WEEKDAY_CHIPS, WEEKDAY_NAMES } from "@/lib/schedule";
 import { inputClass } from "@/components/ui";
 import { BuilderDay } from "./types";
+import { CopyTargets } from "./CopyTargets";
 
 export function DayMenu({
   day,
@@ -11,6 +12,7 @@ export function DayMenu({
   onPatch,
   onApplyToOtherWeeks,
   onDuplicate,
+  onCopyToWeeks,
   onMoveToWeek,
   onRemove,
   nameClassName,
@@ -20,12 +22,14 @@ export function DayMenu({
   onPatch: (patch: Partial<BuilderDay>) => void;
   onApplyToOtherWeeks?: () => void;
   onDuplicate: (targetWeek?: number) => void;
+  onCopyToWeeks?: (targetWeeks: number[], extraWeeks: number) => void;
   /** Przeniesienie (bez kopii) — alternatywa dla przeciągnięcia dnia na numer tygodnia. */
   onMoveToWeek?: (targetWeek: number) => void;
   onRemove: () => void;
   nameClassName: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [copyOpen, setCopyOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
   const dialogId = useId();
@@ -168,19 +172,31 @@ export function DayMenu({
             >
               Duplikuj w tym tygodniu
             </button>
-            {otherWeeks.map((w) => (
-              <button
-                key={w}
-                type="button"
-                className="block w-full rounded-[var(--r-field)] px-2 py-2 text-left text-sm text-foreground-secondary hover:bg-surface-hover hover:text-foreground"
-                onClick={() => {
-                  onDuplicate(w);
-                  setOpen(false);
-                }}
-              >
-                Duplikuj do tygodnia {w}
-              </button>
-            ))}
+            {onCopyToWeeks ? (
+              copyOpen ? (
+                <div className="px-1 py-2">
+                  <CopyTargets
+                    sourceWeek={day.weekNumber}
+                    weeks={weeks}
+                    confirmLabel="Kopiuj dzień"
+                    onCancel={() => setCopyOpen(false)}
+                    onCopy={(targetWeeks, extraWeeks) => {
+                      onCopyToWeeks(targetWeeks, extraWeeks);
+                      setCopyOpen(false);
+                      setOpen(false);
+                    }}
+                  />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="block w-full rounded-[var(--r-field)] px-2 py-2 text-left text-sm text-foreground-secondary hover:bg-surface-hover hover:text-foreground"
+                  onClick={() => setCopyOpen(true)}
+                >
+                  Kopiuj do tygodni…
+                </button>
+              )
+            ) : null}
             <button
               type="button"
               className="block w-full rounded-[var(--r-field)] px-2 py-2 text-left text-sm text-danger hover:bg-danger-bg"

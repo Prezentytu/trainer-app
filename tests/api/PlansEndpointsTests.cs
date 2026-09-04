@@ -294,4 +294,123 @@ public class PlansEndpointsTests : IClassFixture<TestWebAppFactory>
                 o.AssignmentId == assignmentId && o.PlanDayId == dayId && o.Date == overrideDate));
         }
     }
+
+    [Fact]
+    public async Task UpdatePlan_RejectsDuplicateDayIds()
+    {
+        var created = await CreateBarePlanAsync("Dup Id");
+        var get = await _client.GetAsync($"/api/plans/{created}");
+        using var doc = JsonDocument.Parse(await get.Content.ReadAsStringAsync());
+        var dayId = doc.RootElement.GetProperty("days")[0].GetProperty("id").GetInt32();
+
+        var put = await _client.PutAsJsonAsync($"/api/plans/{created}", new
+        {
+            name = "Dup Id",
+            description = (string?)null,
+            isTemplate = true,
+            days = new[]
+            {
+                DayPayload(dayId, 1, 1, "A"),
+                DayPayload(dayId, 2, 1, "B"),
+            },
+        });
+        Assert.Equal(HttpStatusCode.Conflict, put.StatusCode);
+
+        var after = await _client.GetAsync($"/api/plans/{created}");
+        using var afterDoc = JsonDocument.Parse(await after.Content.ReadAsStringAsync());
+        Assert.Equal(1, afterDoc.RootElement.GetProperty("days").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task UpdatePlan_RejectsDuplicateWeekAndOrder()
+    {
+        var created = await CreateBarePlanAsync("Dup week");
+        var put = await _client.PutAsJsonAsync($"/api/plans/{created}", new
+        {
+            name = "Dup week",
+            description = (string?)null,
+            isTemplate = true,
+            days = new[]
+            {
+                DayPayload(null, 1, 1, "A"),
+                DayPayload(null, 1, 1, "B"),
+            },
+        });
+        Assert.Equal(HttpStatusCode.Conflict, put.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdatePlan_RoundTripsSixWeeksOfClonedDays()
+    {
+        var created = await CreateBarePlanAsync("Sześć tygodni");
+        var days = Enumerable.Range(1, 6).SelectMany(week =>
+            Enumerable.Range(1, 3).Select(order => new
+            {
+                id = (int?)null,
+                weekNumber = week,
+                order,
+                label = $"D{order}",
+                notes = (string?)null,
+                items = new[]
+                {
+                    new
+                    {
+                        exerciseId = 1,
+                        order = 1,
+                        sets = 3,
+                        reps = 5,
+                        loadKg = 40.0 + week,
+                        prescribedSets = new[]
+                        {
+                            new { order = 1, reps = 5, loadKg = 40.0 + week },
+                            new { order = 2, reps = 5, loadKg = 42.5 + week },
+                        },
+                    },
+                },
+            })).ToArray();
+
+        var put = await _client.PutAsJsonAsync($"/api/plans/{created}", new
+        {
+            name = "Sześć tygodni",
+            description = (string?)null,
+            isTemplate = true,
+            days,
+        });
+        Assert.Equal(HttpStatusCode.OK, put.StatusCode);
+
+        var get = await _client.GetAsync($"/api/plans/{created}");
+        using var doc = JsonDocument.Parse(await get.Content.ReadAsStringAsync());
+        var savedDays = doc.RootElement.GetProperty("days");
+        Assert.Equal(18, savedDays.GetArrayLength());
+        var weeks = savedDays.EnumerateArray().Select(d => d.GetProperty("weekNumber").GetInt32()).Distinct().OrderBy(w => w).ToArray();
+        Assert.Equal(new[] { 1, 2, 3, 4, 5, 6 }, weeks);
+        Assert.Equal(18, savedDays.EnumerateArray().SelectMany(d => d.GetProperty("items").EnumerateArray()).Count());
+        var topKg = savedDays[0].GetProperty("items")[0].GetProperty("prescribedSets")[0].GetProperty("loadKg").GetDouble();
+        Assert.Equal(41.0, topKg);
+    }
+
+    private async Task<int> CreateBarePlanAsync(string name)
+    {
+        var post = await _client.PostAsJsonAsync("/api/plans", new
+        {
+            name,
+            description = (string?)null,
+            isTemplate = true,
+            days = new[] { DayPayload(null, 1, 1, "Dzień 1") },
+        });
+        Assert.Equal(HttpStatusCode.Created, post.StatusCode);
+        var created = await post.Content.ReadFromJsonAsync<CreatedPlan>();
+        Assert.NotNull(created);
+        return created!.Id;
+    }
+
+    private static object DayPayload(int? id, int weekNumber, int order, string label) => new
+    {
+        id,
+        weekNumber,
+        order,
+        label,
+        notes = (string?)null,
+        items = new[] { new { exerciseId = 1, order = 1, sets = 3, reps = 8 } },
+    };
 }

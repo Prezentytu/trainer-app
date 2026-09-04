@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/workout-alchemist-design-system-381a04e2-33a4-47af-8aaa-c696c1dc5919/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/workout-alchemist-design-system-381a04e2-33a4-47af-8aaa-c696c1dc5919/tokens/colors.css">
+<link rel="stylesheet" href="_ds/workout-alchemist-design-system-381a04e2-33a4-47af-8aaa-c696c1dc5919/tokens/typography.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<style>
+  body { margin:0; background:#ffffff; color:#0b0c0d; font-family:'Instrument Sans', system-ui, sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:#0b0c0d; text-decoration:none; }
+  a:hover { color:#40464c; }
+  input, textarea, button { font-family:inherit; }
+  input[type="range"] { -webkit-appearance:none; appearance:none; height:2px; border-radius:999px; outline:none; cursor:pointer; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; height:18px; width:18px; border-radius:999px; background:#ffffff; border:1px solid #0b0c0d; cursor:pointer; }
+  input[type="range"]::-moz-range-thumb { height:18px; width:18px; border-radius:999px; background:#ffffff; border:1px solid #0b0c0d; cursor:pointer; }
+</style>
+</helmet>
+
+<div style="min-height:100vh; background:#ffffff">
+
+  <header style="display:flex; align-items:center; justify-content:space-between; height:88px; padding:0 56px; max-width:1440px; margin:0 auto; box-sizing:border-box">
+    <a href="#top" style="font-size:13px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase">RepMaxer</a>
+    <nav style="display:flex; align-items:center; gap:36px; flex-shrink:0">
+      <a href="#produkt" style="font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#5b6268; white-space:nowrap">Produkt</a>
+      <a href="#cennik" style="font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#5b6268; white-space:nowrap">Cennik</a>
+      <a href="#ile-tracisz" style="font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#5b6268; white-space:nowrap">Ile tracisz</a>
+      <a href="#pytania" style="font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#5b6268; white-space:nowrap">Pytania</a>
+      <a href="#sign-in" style="display:inline-flex; align-items:center; height:38px; padding:0 18px; border-radius:999px; border:1px solid #adb4bb; font-size:14px; font-weight:500; white-space:nowrap; flex-shrink:0" style-hover="border-color:#0b0c0d">Zaloguj się</a>
+    </nav>
+  </header>
+
+  <sc-if value="{{ isLanding }}" hint-placeholder-val="{{ true }}">
+  <main id="top">
+
+    <section style="display:flex; flex-direction:column; align-items:center; padding:72px 56px 0">
+      <h1 style="margin:0; max-width:19ch; text-align:center; font-size:72px; font-weight:600; line-height:0.94; letter-spacing:-0.04em; text-wrap:pretty">Wszyscy podopieczni w jednym raporcie.</h1>
+      <button type="button" onClick="{{ goForm }}" style="margin-top:36px; display:inline-flex; align-items:center; height:46px; padding:0 26px; border:none; border-radius:999px; background:#0b0c0d; color:#ffffff; font-size:15px; font-weight:600; cursor:pointer" style-hover="background:#40464c">Zamów darmowy raport</button>
+      <p style="margin:20px 0 0; font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#7d858c">0 zł · bez karty · 24 godziny</p>
+
+      <div ref="{{ stageWrapRef }}" style="width:100%; overflow:hidden; margin-top:72px; height:{{ stageHeight }}">
+      <div ref="{{ stageRef }}" style="width:1044px; transform:{{ stageTransform }}; transform-origin:top left">
+      <div style="display:flex; align-items:flex-end; justify-content:center; gap:40px; padding-bottom:8px">
+        <div style="border-radius:20px; background:#0b0c0d; padding:12px 12px 20px">
+          <div style="width:800px; height:453px; overflow:hidden; border-radius:8px; background:#0b0c0d">
+            <div style="width:1200px; height:680px; transform:scale(0.6667); transform-origin:top left">
+              <dc-import name="RMPanelFull" hint-size="1200px,680px"></dc-import>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:center; padding-top:7px">
+            <span style="font-family:'Geist Mono', monospace; font-size:11px; letter-spacing:0.16em; color:#40464c">REPMAXER</span>
+          </div>
+        </div>
+        <div style="width:176px; height:382px">
+          <div style="width:320px; height:694px; transform:scale(0.55); transform-origin:top left">
+            <dc-import name="RMPhoneFixed" hint-size="320px,694px"></dc-import>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; gap:40px; justify-content:center; margin-top:20px; width:1040px">
+        <p style="margin:0; width:824px; text-align:center; font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#7d858c">Ty</p>
+        <p style="margin:0; width:176px; text-align:center; font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#7d858c">Podopieczny</p>
+      </div>
+      </div>
+      </div>
+    </section>
+
+    <section id="produkt" style="max-width:1440px; margin:0 auto; padding:160px 56px 0; box-sizing:border-box">
+      <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.4fr); gap:80px; border-top:1px solid #adb4bb; padding-top:40px">
+        <div>
+          <p style="margin:0; font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#7d858c">01 · Produkt</p>
+          <h2 style="margin:24px 0 0; max-width:20ch; font-size:40px; font-weight:600; line-height:1.02; letter-spacing:-0.03em; text-wrap:pretty">Podopieczny odhacza serie. Ty nic nie przepisujesz.</h2>
+        </div>
+        <ol style="margin:0; padding:0; list-style:none">
+          <li style="display:grid; grid-template-columns:44px minmax(0,1fr); gap:24px; align-items:baseline; border-bottom:1px solid #adb4bb; padding:28px 0">
+            <span style="font-family:'Geist Mono', monospace; font-size:13px; font-weight:700; color:#7d858c">01</span>
+            <span>
+              <span style="display:block; font-size:20px; font-weight:500; letter-spacing:-0.01em">Wysyłasz to, co masz dziś</span>
+              <span style="display:block; margin-top:8px; font-size:16px; line-height:1.6; color:#5b6268">Arkusz, PDF albo zrzuty z WhatsAppa.</span>
+            </span>
+          </li>
+          <li style="display:grid; grid-template-columns:44px minmax(0,1fr); gap:24px; align-items:baseline; border-bottom:1px solid #adb4bb; padding:28px 0">
+            <span style="font-family:'Geist Mono', monospace; font-size:13px; font-weight:700; color:#7d858c">02</span>
+            <span>
+              <span style="display:block; font-size:20px; font-weight:500; letter-spacing:-0.01em">Podopieczny otwiera link pod Twoim imieniem</span>
+              <span style="display:block; margin-top:8px; font-size:16px; line-height:1.6; color:#5b6268">Nic nie instaluje i nie zakłada konta.</span>
+            </span>
+          </li>
+          <li style="display:grid; grid-template-columns:44px minmax(0,1fr); gap:24px; align-items:baseline; padding:28px 0">
+            <span style="font-family:'Geist Mono', monospace; font-size:13px; font-weight:700; color:#7d858c">03</span>
+            <span>
+              <span style="display:block; font-size:20px; font-weight:500; letter-spacing:-0.01em">Ty widzisz tydzień w jednym raporcie</span>
+              <span style="display:block; margin-top:8px; font-size:16px; line-height:1.6; color:#5b6268">Kto stanął, komu spadły ciężary, kto nie odezwał się od dwóch tygodni.</span>
+            </span>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="ile-tracisz" style="margin-top:160px; background:#0b0c0d; color:#ffffff">
+      <div style="max-width:1440px; margin:0 auto; padding:120px 56px; box-sizing:border-box">
+        <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.4fr); gap:80px">
+          <div>
+            <p style="margin:0; font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#9aa1a8">02 · Ile tracisz</p>
+            <h2 style="margin:24px 0 0; max-width:20ch; font-size:40px; font-weight:600; line-height:1.02; letter-spacing:-0.03em; text-wrap:pretty">Rezygnacja nie zaczyna się od wiadomości «kończę».</h2>
+            <p style="margin:20px 0 0; max-width:36ch; font-size:17px; line-height:1.6; color:#c9ced4">Spadek ciężarów i ciszę widać dwa tygodnie wcześniej.</p>
+          </div>
+
+          <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:64px; align-items:start; border-top:1px solid #33373b; padding-top:40px">
+            <div style="display:grid; gap:40px">
+              <div style="display:grid; gap:14px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between; gap:16px">
+                  <span style="font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#9aa1a8">Stawka za sesję</span>
+                  <span style="font-family:'Geist Mono', monospace; font-size:15px; font-weight:700; font-variant-numeric:tabular-nums">{{ rateLabel }}</span>
+                </div>
+                <input type="range" min="80" max="400" step="10" value="{{ rate }}" onInput="{{ onRate }}" aria-label="Stawka za sesję" style="width:100%; accent-color:#ffffff; background:linear-gradient(#ffffff,#ffffff) 0/{{ ratePct }} no-repeat #33373b">
+              </div>
+              <div style="display:grid; gap:14px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between; gap:16px">
+                  <span style="font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#9aa1a8">Osoby, które odeszły</span>
+                  <span style="font-family:'Geist Mono', monospace; font-size:15px; font-weight:700; font-variant-numeric:tabular-nums">{{ left }}</span>
+                </div>
+                <input type="range" min="1" max="24" step="1" value="{{ left }}" onInput="{{ onLeft }}" aria-label="Osoby, które odeszły" style="width:100%; accent-color:#ffffff; background:linear-gradient(#ffffff,#ffffff) 0/{{ leftPct }} no-repeat #33373b">
+              </div>
+              <p style="margin:0; font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#9aa1a8">{{ formula }}</p>
+            </div>
+
+            <div style="display:grid; gap:24px">
+              <p style="margin:0; font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#9aa1a8">Tyle nie weszło na konto</p>
+              <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap">
+                <span style="font-family:'Geist Mono', monospace; font-size:56px; font-weight:700; line-height:1; letter-spacing:-0.02em; font-variant-numeric:tabular-nums; color:#ef7a70">{{ lossLabel }}</span>
+                <span style="display:inline-flex; flex-direction:column; align-items:center; gap:2px; flex-shrink:0; border-radius:999px; background:#2a1a19; color:#ef7a70; padding:8px 12px">
+                  <span style="font-family:'Geist Mono', monospace; font-size:15px; line-height:1">▼</span>
+                  <span style="font-family:'Geist Mono', monospace; font-size:12px; font-weight:700; letter-spacing:0.1em">spadek</span>
+                </span>
+              </div>
+              <p style="margin:0; font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#9aa1a8">{{ sessionsLabel }}</p>
+              <p style="margin:0; max-width:34ch; font-size:16px; line-height:1.6; color:#c9ced4">Raport pokazuje te sygnały wcześniej.</p>
+              <button type="button" onClick="{{ goForm }}" style="justify-self:start; display:inline-flex; align-items:center; height:46px; padding:0 26px; border:none; border-radius:999px; background:#ffffff; color:#0b0c0d; font-size:15px; font-weight:600; cursor:pointer" style-hover="background:#c9ced4">Zamów darmowy raport</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="cennik" style="max-width:1440px; margin:0 auto; padding:160px 56px 0; box-sizing:border-box">
+      <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.4fr); gap:80px; border-top:1px solid #adb4bb; padding-top:40px">
+        <div>
+          <p style="margin:0; font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#7d858c">03 · Cennik</p>
+          <h2 style="margin:24px 0 0; max-width:20ch; font-size:40px; font-weight:600; line-height:1.02; letter-spacing:-0.03em; text-wrap:pretty">Jeden podopieczny to 1 200 zł. To kosztuje 39.</h2>
+        </div>
+        <div>
+          <div style="display:grid; grid-template-columns:200px minmax(0,1fr) auto; gap:40px; align-items:baseline; border-bottom:1px solid #adb4bb; padding:28px 0">
+            <p style="margin:0; display:flex; align-items:baseline; gap:8px">
+              <span style="font-family:'Geist Mono', monospace; font-size:44px; font-weight:700; line-height:1; font-variant-numeric:tabular-nums">39</span>
+              <span style="font-family:'Geist Mono', monospace; font-size:16px; font-weight:500; color:#5b6268">zł / mies.</span>
+            </p>
+            <p style="margin:0; font-size:17px; line-height:1.6; color:#5b6268">Tyle, co kwadrans jednej sesji.</p>
+            <p style="margin:0; font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; text-align:right">Do 15 podopiecznych</p>
+          </div>
+          <div style="display:grid; grid-template-columns:200px minmax(0,1fr) auto; gap:40px; align-items:baseline; border-bottom:1px solid #adb4bb; padding:28px 0">
+            <p style="margin:0; display:flex; align-items:baseline; gap:8px">
+              <span style="font-family:'Geist Mono', monospace; font-size:44px; font-weight:700; line-height:1; font-variant-numeric:tabular-nums">99</span>
+              <span style="font-family:'Geist Mono', monospace; font-size:16px; font-weight:500; color:#5b6268">zł / mies.</span>
+            </p>
+            <p style="margin:0; font-size:17px; line-height:1.6; color:#5b6268">Jeden wieczór w tygodniu mniej przy arkuszu.</p>
+            <p style="margin:0; font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; text-align:right">Do 30 podopiecznych</p>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:40px; padding-top:32px">
+            <p style="margin:0; max-width:26ch; font-size:19px; line-height:1.5">Pierwszy raport i 90 dni za 0 zł. Bez karty.</p>
+            <button type="button" onClick="{{ goForm }}" style="flex-shrink:0; display:inline-flex; align-items:center; height:46px; padding:0 26px; border:none; border-radius:999px; background:#0b0c0d; color:#ffffff; font-size:15px; font-weight:600; cursor:pointer" style-hover="background:#40464c">Zamów darmowy raport</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pytania" style="max-width:1440px; margin:0 auto; padding:160px 56px 0; box-sizing:border-box">
+      <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.4fr); gap:80px; border-top:1px solid #adb4bb; padding-top:40px">
+        <div>
+          <p style="margin:0; font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#7d858c">04 · Pytania</p>
+        </div>
+        <div style="margin:0; border-top:1px solid #adb4bb">
+          <sc-for list="{{ faqItems }}" as="item" hint-placeholder-count="5">
+            <div style="border-bottom:1px solid #adb4bb">
+              <button type="button" onClick="{{ item.toggle }}" style="display:flex; width:100%; align-items:center; justify-content:space-between; gap:32px; min-height:76px; padding:20px 0; border:none; background:none; text-align:left; cursor:pointer; color:#0b0c0d" style-hover="color:#40464c">
+                <span style="font-size:20px; font-weight:500; letter-spacing:-0.01em">{{ item.q }}</span>
+                <span style="flex-shrink:0; font-family:'Geist Mono', monospace; font-size:20px; font-weight:500; color:#7d858c">{{ item.sign }}</span>
+              </button>
+              <sc-if value="{{ item.isOpen }}" hint-placeholder-val="{{ false }}">
+                <p style="margin:0; padding:0 0 28px; max-width:52ch; font-size:16px; line-height:1.65; color:#5b6268">{{ item.a }}</p>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <section style="max-width:1440px; margin:0 auto; padding:160px 56px 0; box-sizing:border-box">
+      <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:64px; border-top:1px solid #adb4bb; padding-top:40px">
+        <div>
+          <h2 style="margin:0; font-size:56px; font-weight:600; line-height:1; letter-spacing:-0.035em">Pierwszy raport masz jutro.</h2>
+          <p style="margin:20px 0 0; max-width:46ch; font-size:17px; line-height:1.6; color:#5b6268">Wyślij arkusz dziś — wynik wraca w 24 godziny.</p>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:flex-start; gap:14px; flex-shrink:0">
+          <button type="button" onClick="{{ goForm }}" style="display:inline-flex; align-items:center; height:46px; padding:0 26px; border:none; border-radius:999px; background:#0b0c0d; color:#ffffff; font-size:15px; font-weight:600; cursor:pointer" style-hover="background:#40464c">Zamów darmowy raport</button>
+          <p style="margin:0; font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#7d858c">0 zł · bez karty · 5 miejsc</p>
+        </div>
+      </div>
+    </section>
+
+    <footer style="margin-top:140px; border-top:1px solid #adb4bb">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:40px; max-width:1440px; margin:0 auto; padding:40px 56px; box-sizing:border-box">
+        <a href="#top" style="font-size:13px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase">RepMaxer</a>
+        <nav style="display:flex; gap:28px">
+          <a href="#cennik" style="font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em">Cennik</a>
+          <a href="mailto:kontakt@repmaxer.pl" style="font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em">Kontakt</a>
+          <a href="#regulamin" style="font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em">Regulamin</a>
+          <a href="#prywatnosc" style="font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em">Prywatność</a>
+        </nav>
+        <span style="font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#7d858c">© 2026 RepMaxer</span>
+      </div>
+    </footer>
+  </main>
+  </sc-if>
+
+  <sc-if value="{{ isForm }}" hint-placeholder-val="{{ false }}">
+  <main style="max-width:1440px; margin:0 auto; padding:0 56px; box-sizing:border-box">
+    <div style="max-width:520px; margin:0 auto; padding:64px 0 140px">
+      <button type="button" onClick="{{ goLanding }}" style="display:inline-flex; align-items:center; gap:8px; height:38px; padding:0; border:none; background:none; font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#5b6268; cursor:pointer" style-hover="color:#0b0c0d"><i class="ph ph-caret-left" style="font-size:15px"></i>Wróć</button>
+
+      <sc-if value="{{ notSent }}" hint-placeholder-val="{{ true }}">
+      <div>
+        <p style="margin:40px 0 0; font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#7d858c">24 godziny · 0 zł · 5 miejsc</p>
+        <h1 style="margin:24px 0 0; font-size:44px; font-weight:600; line-height:1.02; letter-spacing:-0.03em; text-wrap:pretty">Pierwszy raport z Twoich podopiecznych — za 0 zł, w 24 godziny.</h1>
+        <p style="margin:24px 0 0; font-size:17px; line-height:1.6; color:#5b6268">Przysyłasz to, czym dziś prowadzisz: arkusz, PDF albo zrzuty z WhatsAppa. Bez rozmowy, bez karty.</p>
+
+        <form onSubmit="{{ submit }}" style="margin-top:56px; display:grid; gap:24px">
+          <label style="display:grid; gap:8px">
+            <span style="font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#5b6268; white-space:nowrap">Imię</span>
+            <input required="required" autocomplete="name" style="height:44px; width:100%; box-sizing:border-box; border:none; border-bottom:1px solid #adb4bb; border-radius:0; background:none; padding:0; font-size:17px; font-weight:500; color:#0b0c0d; outline:none" style-focus="border-bottom-color:#0b0c0d">
+          </label>
+          <label style="display:grid; gap:8px">
+            <span style="font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#5b6268; white-space:nowrap">E-mail</span>
+            <input required="required" type="email" autocomplete="email" style="height:44px; width:100%; box-sizing:border-box; border:none; border-bottom:1px solid #adb4bb; border-radius:0; background:none; padding:0; font-size:17px; font-weight:500; color:#0b0c0d; outline:none" style-focus="border-bottom-color:#0b0c0d">
+          </label>
+          <label style="display:grid; gap:8px">
+            <span style="display:flex; justify-content:space-between; font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#5b6268; white-space:nowrap"><span>Telefon</span><span style="color:#7d858c">opcjonalnie</span></span>
+            <input type="tel" autocomplete="tel" style="height:44px; width:100%; box-sizing:border-box; border:none; border-bottom:1px solid #adb4bb; border-radius:0; background:none; padding:0; font-size:17px; font-weight:500; color:#0b0c0d; outline:none" style-focus="border-bottom-color:#0b0c0d">
+          </label>
+          <label style="display:grid; gap:8px">
+            <span style="display:flex; justify-content:space-between; gap:16px; font-family:'Geist Mono', monospace; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#5b6268; white-space:nowrap"><span>Czym dziś prowadzisz</span><span style="color:#7d858c">opcjonalnie</span></span>
+            <textarea rows="3" maxlength="400" style="width:100%; box-sizing:border-box; resize:vertical; border:none; border-bottom:1px solid #adb4bb; background:none; padding:8px 0; font-size:17px; font-weight:500; line-height:1.5; color:#0b0c0d; outline:none" style-focus="border-bottom-color:#0b0c0d"></textarea>
+          </label>
+
+          <div style="margin-top:16px; display:flex; flex-direction:column; align-items:flex-start; gap:14px">
+            <button type="submit" style="display:inline-flex; align-items:center; height:46px; padding:0 26px; border:none; border-radius:999px; background:#0b0c0d; color:#ffffff; font-size:15px; font-weight:600; cursor:pointer" style-hover="background:#40464c">Zamów darmowy raport</button>
+            <p style="margin:0; max-width:42ch; font-size:13px; line-height:1.55; color:#5b6268">Po zgłoszeniu dostaniesz maila — odpowiadasz załącznikiem. Nikt nie dzwoni.</p>
+          </div>
+        </form>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ sent }}" hint-placeholder-val="{{ false }}">
+      <div style="padding-top:64px">
+        <h1 style="margin:0; font-size:44px; font-weight:600; line-height:1.02; letter-spacing:-0.03em">Zgłoszenie zapisane.</h1>
+        <p style="margin:24px 0 0; max-width:46ch; font-size:17px; line-height:1.6; color:#5b6268">Odpisz na maila i dołącz arkusz albo zrzuty.</p>
+        <ol style="margin:48px 0 0; padding:0; list-style:none; display:grid; gap:0">
+          <li style="display:grid; grid-template-columns:44px minmax(0,1fr); gap:24px; align-items:baseline; border-top:1px solid #adb4bb; padding:20px 0"><span style="font-family:'Geist Mono', monospace; font-size:13px; font-weight:700; color:#7d858c">01</span><span style="font-size:16px; line-height:1.6">Odpisz na maila — dołącz to, czym dziś prowadzisz.</span></li>
+          <li style="display:grid; grid-template-columns:44px minmax(0,1fr); gap:24px; align-items:baseline; border-top:1px solid #adb4bb; padding:20px 0"><span style="font-family:'Geist Mono', monospace; font-size:13px; font-weight:700; color:#7d858c">02</span><span style="font-size:16px; line-height:1.6">W 24 godziny wraca raport i trzy wiadomości.</span></li>
+          <li style="display:grid; grid-template-columns:44px minmax(0,1fr); gap:24px; align-items:baseline; border-top:1px solid #adb4bb; border-bottom:1px solid #adb4bb; padding:20px 0"><span style="font-family:'Geist Mono', monospace; font-size:13px; font-weight:700; color:#7d858c">03</span><span style="font-size:16px; line-height:1.6">Jeśli nic nie powie — jedno zdanie i kończymy.</span></li>
+        </ol>
+      </div>
+      </sc-if>
+    </div>
+  </main>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;view&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;landing&quot;,&quot;form&quot;],&quot;default&quot;:&quot;landing&quot;,&quot;tsType&quot;:&quot;\&quot;landing\&quot; | \&quot;form\&quot;&quot;,&quot;section&quot;:&quot;Widok&quot;}}">
+const SESSIONS = 8;
+const FAQ = [
+  { q: "Ile czasu mi to zajmie?", a: "Tyle, co wysłanie maila. Załączasz arkusz, PDF albo zrzuty — w formie, jaką masz dziś." },
+  { q: "Podopieczni nie lubią nowych aplikacji.", a: "Nie dostają aplikacji. Otwierają link, widzą plan pod Twoim imieniem i odhaczają serie." },
+  { q: "Czym to się różni od innych programów?", a: "Nic nie konfigurujesz, zanim nie zobaczysz efektu. Najpierw raport z Twoich danych, potem decyzja." },
+  { q: "Co się dzieje z danymi podopiecznych?", a: "Służą tylko do złożenia raportu. Wyjmiesz je do pliku w każdej chwili, a na prośbę usuwam wszystko." },
+  { q: "Ile ostatecznie zapłacę?", a: "Pierwszy raport 0 zł, potem 90 dni bez opłat. Później 39 zł do 15 podopiecznych albo 99 zł do 30. Podopieczny zawsze 0 zł." },
+];
+const num = (n) => Math.round(n).toLocaleString("pl-PL").replace(/\u00A0/g, " ");
+
+class Component extends DCLogic {
+  state = { view: null, sent: false, rate: 150, left: 6, shown: 6 * 150 * SESSIONS, open: null, scale: 1, stageH: 0, wrapW: 0 };
+
+  componentDidMount() {
+    this.measure();
+    this._onResize = () => this.measure();
+    window.addEventListener("resize", this._onResize);
+  }
+  componentWillUnmount() {
+    window.removeEventListener("resize", this._onResize);
+    cancelAnimationFrame(this._raf);
+  }
+  componentDidUpdate() { this.measure(); }
+
+  measure() {
+    if (!this.wrap || !this.stage) return;
+    const w = this.wrap.clientWidth;
+    if (!w) return;
+    const scale = Math.min(1, w / 1044);
+    const stageH = Math.round(this.stage.scrollHeight * scale);
+    if (Math.abs(scale - this.state.scale) > 0.002 || Math.abs(stageH - this.state.stageH) > 1 || w !== this.state.wrapW) {
+      this.setState({ scale, stageH, wrapW: w });
+    }
+  }
+
+  animateTo(target) {
+    cancelAnimationFrame(this._raf);
+    const from = this.state.shown;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      this._animating = false;
+      this.setState({ shown: target });
+      return;
+    }
+    this._animating = true;
+    const start = performance.now();
+    const tick = (now) => {
+      const t = Math.min(1, (now - start) / 480);
+      const e = 1 - Math.pow(1 - t, 3);
+      if (t >= 1) this._animating = false;
+      this.setState({ shown: from + (target - from) * e });
+      if (t < 1) this._raf = requestAnimationFrame(tick);
+    };
+    this._raf = requestAnimationFrame(tick);
+  }
+
+  setRate = (rate) => { this.setState({ rate }); this.animateTo(this.state.left * rate * SESSIONS); };
+  setLeft = (left) => { this.setState({ left }); this.animateTo(left * this.state.rate * SESSIONS); };
+
+  renderVals() {
+    const v = this.state.view ?? this.props.view ?? "landing";
+    const { rate, left, shown, open, scale, stageH, wrapW } = this.state;
+    const dx = Math.max(0, ((wrapW || 1044) - 1044 * scale) / 2);
+    return {
+      isLanding: v === "landing",
+      isForm: v === "form",
+      sent: this.state.sent,
+      notSent: !this.state.sent,
+      goForm: () => { this.setState({ view: "form", sent: false }); window.scrollTo(0, 0); },
+      goLanding: () => { this.setState({ view: "landing" }); window.scrollTo(0, 0); },
+      submit: (e) => { e.preventDefault(); this.setState({ sent: true }); window.scrollTo(0, 0); },
+
+      stageWrapRef: (el) => { this.wrap = el; },
+      stageRef: (el) => { this.stage = el; },
+      stageTransform: "translateX(" + dx + "px) scale(" + scale + ")",
+      stageHeight: stageH ? stageH + "px" : "auto",
+
+      rate,
+      left,
+      rateLabel: num(rate) + " zł",
+      ratePct: ((rate - 80) / 320) * 100 + "% 100%",
+      leftPct: ((left - 1) / 23) * 100 + "% 100%",
+      onRate: (e) => this.setRate(Number(e.target.value)),
+      onLeft: (e) => this.setLeft(Number(e.target.value)),
+      formula: left + " × " + SESSIONS + " sesji × " + num(rate) + " zł",
+      lossLabel: "−" + num(this._animating ? shown : left * rate * SESSIONS) + " zł",
+      sessionsLabel: num(left * SESSIONS) + " sesji w roku",
+
+      faqItems: FAQ.map((item, i) => ({
+        q: item.q,
+        a: item.a,
+        isOpen: open === i,
+        sign: open === i ? "−" : "+",
+        toggle: () => this.setState({ open: open === i ? null : i }),
+      })),
+    };
+  }
+}
+</script>
+</body>
+</html>

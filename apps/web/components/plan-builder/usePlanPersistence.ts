@@ -7,7 +7,16 @@ import { sanitizeSetScheme } from "@/lib/schemeSummary";
 import { clearImportHandoff } from "@/lib/planImportHandoff";
 import { refreshNavCounts } from "@/lib/navCounts";
 import { computeGroupsFromLinks } from "@/lib/supersets";
+import { compactDayOrders, normalizeWeeks } from "./builderMove";
+import { stripDuplicateEntityIds } from "./planSaveMap";
 import { BuilderDay } from "./types";
+
+const SAVE_TIMEOUT_MS = 30_000;
+const SAVE_TIMEOUT_MESSAGE = "Zapis trwał zbyt długo. Sprawdź sieć i spróbuj ponownie.";
+
+export function snapshotDaysForSave(days: BuilderDay[]): BuilderDay[] {
+  return stripDuplicateEntityIds(compactDayOrders(normalizeWeeks(days)));
+}
 
 export function buildPlanInput(
   name: string,
@@ -19,7 +28,7 @@ export function buildPlanInput(
     name: name.trim(),
     description: description.trim() || null,
     isTemplate,
-    days: days.map((d) => {
+    days: snapshotDaysForSave(days).map((d) => {
       const groups = computeGroupsFromLinks(d.items.map((i) => i.linkedToNext));
       return {
         id: d.entityId,
@@ -34,7 +43,6 @@ export function buildPlanInput(
           order: idx + 1,
           supersetGroup: groups[idx],
           isWarmup: it.isWarmup,
-          // null gdy równe typowi biblioteki — dziedziczenie przy zapisie
           measureType: it.measureType === it.exerciseType ? null : it.measureType,
           sets: it.sets,
           reps: it.reps,
@@ -73,6 +81,31 @@ export function buildPlanInput(
   };
 }
 
+function isAbortError(err: unknown): boolean {
+  return err instanceof DOMException
+    ? err.name === "AbortError"
+    : err instanceof Error && err.name === "AbortError";
+}
+
+function withTimeout<T>(promise: Promise<T>, abort: AbortController): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      abort.abort();
+      reject(new Error(SAVE_TIMEOUT_MESSAGE));
+    }, SAVE_TIMEOUT_MS);
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        window.clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
+
 export function usePlanPersistence({
   plan,
   name,
@@ -87,9 +120,8 @@ export function usePlanPersistence({
   description: string;
   isTemplate: boolean;
   days: BuilderDay[];
-  /** Po create — przypisz plan do klienta i wróć na jego profil. */
   assignTo?: { id: number; name: string };
-  onSavedIds?: (saved: PlanSaveIds) => void;
+  onSavedIds?: (saved: PlanSaveIds, snapshot: BuilderDay[]) => void;
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -97,11 +129,12 @@ export function usePlanPersistence({
   const [autosaveFailed, setAutosaveFailed] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [isDirty, setIsDirty] = useState(false);
-  /** Snapshot ostatnio wysłanego payloadu — pomija PUT gdy treść się nie zmieniła. */
   const lastSavedPayloadRef = useRef<string | null>(null);
   const seededRef = useRef(false);
+  const inFlightRef = useRef(false);
+  const genRef = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
 
-  // Snapshot startowy dla istniejącego planu — „Niezapisane zmiany” tylko gdy draft ≠ zapis.
   useEffect(() => {
     if (!plan || seededRef.current) return;
     lastSavedPayloadRef.current = JSON.stringify(
@@ -130,6 +163,54 @@ export function usePlanPersistence({
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [isDirty]);
 
+  const saveExisting = useCallback(
+    async (manual: boolean) => {
+      if (!plan) return;
+      if (inFlightRef.current && !manual) return;
+      abortRef.current?.abort();
+      const abort = new AbortController();
+      abortRef.current = abort;
+      const gen = ++genRef.current;
+      inFlightRef.current = true;
+      if (manual) {
+        setSaving(true);
+        setError(null);
+      }
+      const snapshot = snapshotDaysForSave(days);
+      const input = buildPlanInput(name, description, isTemplate, days);
+      try {
+        const saved = await withTimeout(
+          api.plans.update(plan.id, input, { signal: abort.signal }),
+          abort,
+        );
+        if (gen !== genRef.current) return;
+        onSavedIds?.(saved, snapshot);
+        lastSavedPayloadRef.current = JSON.stringify(input);
+        setIsDirty(false);
+        setAutosaveFailed(false);
+        setLastSavedAt(new Date());
+        setError(null);
+        clearImportHandoff();
+      } catch (err) {
+        if (gen !== genRef.current) return;
+        if (isAbortError(err) && !manual) return;
+        const message = isAbortError(err)
+          ? SAVE_TIMEOUT_MESSAGE
+          : err instanceof Error
+            ? err.message
+            : SAVE_TIMEOUT_MESSAGE;
+        setAutosaveFailed(true);
+        if (manual) setError(message);
+      } finally {
+        if (gen === genRef.current) {
+          inFlightRef.current = false;
+          if (manual) setSaving(false);
+        }
+      }
+    },
+    [days, description, isTemplate, name, onSavedIds, plan],
+  );
+
   const handleSubmit = useCallback(
     async (e: FormEvent) => {
       e.preventDefault();
@@ -138,51 +219,44 @@ export function usePlanPersistence({
         setError("Dodaj przynajmniej jedno ćwiczenie do planu.");
         return;
       }
+      if (plan) {
+        await saveExisting(true);
+        return;
+      }
       setSaving(true);
       setError(null);
-      // Plan tworzony z profilu klienta jest zawsze przypisywalny (nie szablon).
       const effectiveIsTemplate = assignTo ? false : isTemplate;
       const input = buildPlanInput(name, description, effectiveIsTemplate, days);
       try {
-        if (plan) {
-          const saved = await api.plans.update(plan.id, input);
-          onSavedIds?.(saved);
-          lastSavedPayloadRef.current = JSON.stringify(input);
-          setIsDirty(false);
-          setAutosaveFailed(false);
-          clearImportHandoff();
-          router.push(`/plans/${plan.id}`);
-        } else {
-          const created = await api.plans.create(input);
-          void refreshNavCounts();
-          lastSavedPayloadRef.current = JSON.stringify(input);
-          setIsDirty(false);
-          clearImportHandoff();
-          if (assignTo) {
-            const startDate = new Date().toISOString().slice(0, 10);
-            try {
-              await api.assignments.create({
-                planId: created.id,
-                clientId: assignTo.id,
-                startDate,
-                note: null,
-              });
-              router.push(`/clients/${assignTo.id}?assigned=1`);
-            } catch {
-              // Plan już istnieje — nie gub danych; trener przypisze ręcznie z widoku planu.
-              router.push(`/plans/${created.id}`);
-            }
-          } else {
+        const created = await api.plans.create(input);
+        void refreshNavCounts();
+        lastSavedPayloadRef.current = JSON.stringify(input);
+        setIsDirty(false);
+        clearImportHandoff();
+        if (assignTo) {
+          const startDate = new Date().toISOString().slice(0, 10);
+          try {
+            await api.assignments.create({
+              planId: created.id,
+              clientId: assignTo.id,
+              startDate,
+              note: null,
+            });
+            router.push(`/clients/${assignTo.id}?assigned=1`);
+          } catch {
             router.push(`/plans/${created.id}`);
           }
+        } else {
+          router.push(`/plans/${created.id}`);
         }
         router.refresh();
       } catch (err) {
         setError((err as Error).message);
+      } finally {
         setSaving(false);
       }
     },
-    [assignTo, days, description, isTemplate, name, onSavedIds, plan, router]
+    [assignTo, days, description, isTemplate, name, plan, router, saveExisting],
   );
 
   useEffect(() => {
@@ -192,41 +266,15 @@ export function usePlanPersistence({
     const input = buildPlanInput(name, description, isTemplate, days);
     const payload = JSON.stringify(input);
     if (payload === lastSavedPayloadRef.current) return;
-    const timer = setTimeout(() => {
-      api.plans
-        .update(plan.id, input)
-        .then((saved) => {
-          onSavedIds?.(saved);
-          lastSavedPayloadRef.current = payload;
-          setLastSavedAt(new Date());
-          setIsDirty(false);
-          setAutosaveFailed(false);
-        })
-        .catch(() => {
-          setAutosaveFailed(true);
-        });
+    const timer = window.setTimeout(() => {
+      void saveExisting(false);
     }, 2000);
-    return () => clearTimeout(timer);
-  }, [plan, name, description, isTemplate, days, onSavedIds]);
+    return () => window.clearTimeout(timer);
+  }, [plan, name, description, isTemplate, days, saveExisting]);
 
   const retryAutosave = useCallback(() => {
-    if (!plan) return;
-    const input = buildPlanInput(name, description, isTemplate, days);
-    api.plans
-      .update(plan.id, input)
-      .then((saved) => {
-        onSavedIds?.(saved);
-        lastSavedPayloadRef.current = JSON.stringify(input);
-        setLastSavedAt(new Date());
-        setIsDirty(false);
-        setAutosaveFailed(false);
-        setError(null);
-      })
-      .catch((err: Error) => {
-        setAutosaveFailed(true);
-        setError(err.message);
-      });
-  }, [days, description, isTemplate, name, onSavedIds, plan]);
+    void saveExisting(true);
+  }, [saveExisting]);
 
   const totalItems = days.reduce((sum, d) => sum + d.items.length, 0);
   const visibleError =

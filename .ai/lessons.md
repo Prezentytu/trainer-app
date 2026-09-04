@@ -15,6 +15,24 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## Oferta: wynik, nie „przeniesienie arkusza”
+
+**Kontekst**: Roadster trenerski 2 900 zł miał być walidacją Tesli. Founder: trener w Polsce nie zapłaci 3 tys. za przeniesienie Excela, skoro nie mówimy nawet dokąd.
+**Problem**: Sprzedawaliśmy mechanizm (migracja, inne miejsce, apka). Równanie wartości Hormoziego pada na dole: wysiłek i niepewność, zero wyniku. Publiczność trenerska w PL nie ma linii budżetowej na taki ticket.
+**Zasada**: Nie sprzedawaj przeniesienia narzędzia. Albo wynik, który klient nazywa liczbą (merge, złotówki CI, egzamin kanonu w firmie, która już kupiła Program), albo nie ma oferty. Adam nie buduje firmy na cenniku 39 zł i nie jest twarzą QA — buduje artefakt, który zostaje po Premium Testoneo, za pisemnym podziałem przychodu.
+**Dotyczy**: `.ai/research/2026-08-21-mvp-trzy-pomysly-aktywa.md`, `/wdrozenie`, GTM RepMaxer
+
+---
+
+## Research: pełne zdania, walidacja od góry
+
+**Kontekst**: Dokument trzech MVP był gęsty od SKU / LOI / ICP / GTM / SUT i skakał do abonamentu 399 dolarów plus kliniki grupowej.
+**Problem**: Skróty nic nie znaczą przy decyzji. Środek drabiny (tani SaaS + sprzedaż czasu) to ani test Tesli, ani destinacja firmy.
+**Zasada**: Plik strategiczny pisz pełnymi zdaniami. Najpierw drogi, ręczny Roadster (jeden-na-jeden, faktura w tym tygodniu), potem tańszy produkt bez kalendarza. List intencyjny ≠ sprzedaż. Nie zaczynaj Roadstera, jeśli nie umiesz nazwać destinacji po zdjęciu czasu.
+**Dotyczy**: `.ai/research/`, oferty, rozmowy z wspólnikiem
+
+---
+
 ## Copy: H1 = oferta, nie zagadka
 
 **Kontekst**: H1 „Wiesz, kto przestał trenować, zanim napisze, że kończy.”
@@ -84,6 +102,13 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Problem**: Klient nie wie, co to CSV; Excel to cudza marka. „Trzeba poprawić” nie mówi *co*. 1RM to język siłowni — Hevy/Styrka skracają celowo; parafraza nic nie dodaje.
 **Zasada**: W copy UI nazywaj skutek i narzędzie, które człowiek zna: „arkusz”, „zdjęcia”, „nagranie techniki”, „trener jeszcze nie zatwierdził”, „brak internetu”. Status = fakt + liczba („2 serie poniżej celu”), nie rozkaz bez przedmiotu. Terminy siłowe zostaw krótkie (1RM, nie „est.” i nie „szacowany max”). Bez nazw cudzych programów (Excel, CSV, JSON). Format zostaje w kodzie i w nazwie pobranego pliku, nie w etykiecie.
 **Dotyczy**: portal (Profil, Import, Historia, Progres, logger), karta klienta, dashboard, ustawienia trenera, FAQ landingu, importy
+
+## Zapis planu: tożsamość po key, nie po tygodniu i kolejności
+
+**Kontekst**: „Duplikuj do tygodnia” + autosave zlepiły plan Janusza: 6 tygodni w kreatorze, po zapisie 3, jeden dzień spuchł do 18 ćwiczeń. Przycisk został na „Zapisywanie…”.
+**Problem**: `applySavedIds` matchował bieżący draft po `(weekNumber, order)`. Przy kolizji `order` albo wyścigu dwa dni dostawały to samo Id. `MergePlanDays` last-write-wins + doklejanie pozycji bez Id. `handleSubmit` nie miał `finally` i robił `push` na ten sam URL. `normalizeWeeks` omijało `removeDay` / `copyWeek`.
+**Zasada**: Id z PUT wgrywasz tylko na `key` ze snapshotu wysłanego w tamtym requeście. Kopiowanie czyści `entityId`; przeniesienie zostawia. Nowy dzień: `max(order)+1`. Tygodnie zawsze `1…N` po operacji strukturalnej. Jeden PUT naraz, timeout, `finally`. Backend `409` na zdublowane Id / `(week, order)` — nigdy ciche scalenie. Draft w `localStorage` — zapis nie może zależeć od jednego requestu.
+**Dotyczy**: `usePlanDraft.ts` (`applySavedIds`), `planSaveMap.ts`, `usePlanPersistence.ts`, `builderMove.ts`, `Program.cs` (`ValidatePlanDayPayload`)
 
 ## Zapis planu merge'uje dni — nie kasuje i nie odtwarza
 
@@ -1086,5 +1111,33 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 **Problem**: Widok bez URL-a psuje przycisk wstecz, odświeżenie, kampanie i analytics — konwersji nie da się zmierzyć ani zalinkować.
 **Zasada**: Mock daje układ i copy, nie routing. Wszystkie CTA idą na jeden stały URL (`/wdrozenie`), a formularz jest tam pierwszym kadrem; oferta i FAQ schodzą pod niego, za kreską. Skalowania scenografii z mocka (`transform: scale`) też nie przenosimy — kompozycję odtwarzamy responsywnie w realnych rozmiarach tokenów, żeby tekst nie zszedł pod 12 px.
 **Dotyczy**: `components/landing/`, `app/wdrozenie/`, skill `odejmowanie`
+
+## FiziYo ≠ spółka; Testoneo = wspólnik; terms ≠ P&L
+
+**Kontekst**: Ranking MVP 2026. Regulamin fiziyo.pl/terms wskazuje TESTONEO (KRS jaktestowac). Agenci uznali FiziYo za produkt spółki kursowej.
+**Problem**: FiziYo to wasz produkt bez przychodu i bez własnej spółki; jaktestowac to spółka wspólnika. Formalny operator ≠ żywy biznes. Pivot „mamy KRS, sprzedamy HEP” jest fałszywy.
+**Zasada**: FiziYo = martwy P&L w Testoneo (nie nowa spółka HEP). RepMaxer zostaje u Adama. Nie łączyć trzech marek. To nie ustala, *jaki* produkt budować.
+**Dotyczy**: `.ai/research/2026-08-21-mvp-trzy-pomysly-aktywa.md`
+
+## Firma = produkt, nie godzina i nie akcja CI
+
+**Kontekst**: Ranking złożył „Playwright Ops” z parsera + 45 min instruktorów i bramkę jako akcję na GitHubie.
+**Problem**: Founder chce firmę na realnym bólu, dużej skali i wysokiej cenie. Akcja CI i klinika to dźwignia czasu ludzi, nie produktu. Istniejące apki (FiziYo, RepMaxer) są prawdziwe, ale nie przechodzą skali / chęci zapłaty.
+**Zasada**: Filtr pomysłu, zanim kod: (1) kto nie śpi przez ten problem *dziś*, (2) czy takich firm/ludzi są dziesiątki tysięcy, nie tysiące w jednym kraju, (3) czy już płacą komuś innemu dużo, (4) czy N-ty klient kosztuje ułamek pierwszego — bez cotygodniowego spotkania z twórcą. Lista kursu i istniejące repo przyspieszają, nie wybierają problemu. Akcja na GitHubie może być rurą, nigdy firmą.
+**Dotyczy**: wybór produktu, GTM, `.ai/research/2026-08-21-mvp-trzy-pomysly-aktywa.md`
+
+## „Nie ma produktu, zostaje usługa" to nie jest odpowiedź na pytanie o narzędzie
+
+**Kontekst**: 21.08 wieczór cztery soczewki zabiły linter, bramkę i dashboard i skończyły werdyktem „jest tylko droższa usługa Premium, Adam przyspiesza dostawę wspólnika". User: *brzmi jak bełkot, powiedz co faktycznie mogę zbudować ja, Adam*.
+**Problem**: Poprawna egzekucja złych pomysłów została podana jako odpowiedź. Pytanie brzmiało „jakie narzędzie", a odpowiedź brzmiała „sprzedawajcie godziny Krzyśka" — czyli dokładnie model, który founder odrzucił trzy razy. Agenci szukali produktu **w tej samej warstwie** (reguły na kodzie testów), którą platforma zjada, i po zabiciu wszystkich kandydatów uznali kategorię za pustą, zamiast zmienić warstwę.
+**Zasada**: Po zabiciu kandydatów obowiązkowy jest jeszcze jeden ruch: gdzie jest **odpad** tornada, którego lider nie posprząta, bo sprzątanie oskarża jego własny produkt. Narzędzie, które *stoi na drodze* platformie (bramka, linter, gate), umiera; narzędzie, które *konsumuje output* platformy (inwentarz, dedupe, mapowanie na biznes, koszt w złotych), jest bezpieczne. I test wykonalności: czy jeden fullstack zbuduje wersję pierwszą w 2–3 tygodnie na **własnych** repozytoriach, bez cudzych godzin i bez czekania na klienta. Jeśli werdykt brzmi „zostaje usługa", nie oddawaj go — poszukaj warstwy wyżej albo niżej.
+**Dotyczy**: `.ai/research/2026-08-22-narzedzie-adama-inwentarz-suite.md`, wybór produktu
+
+## Ficzer platformy to nie produkt — jeden PR i towar znika
+
+**Kontekst**: Wieczór 21.08. Po odrzuceniu kliniki 399 USD dokument złożył destinację „Standard jaktestowac w CI / egzamin kanonu / kwarantanna plikiem”. Founder: Playwright doda to jednym PR.
+**Problem**: Linter, parser flake, healer, dashboard i akcja na Marketplace to zaległe tickety Microsoftu, GitHuba albo Cursora. `eslint-plugin-playwright` już jest. Agents są w frameworku od v1.56. Cztery soczewki (oferta, kasa, Cohen, Moore) zeszły się: w warstwie Playwright nie ma oprogramowania, które przeżyje platformę. Lista + dwaj MVP wygrywają tylko tam, gdzie faktura jest za człowieka (System Wydania, retainer), nie za YAML.
+**Zasada**: Zanim „zbudujemy tool”: test „Playwright / GitHub / Cursor dodaje to w piątek — co zostaje na fakturze?”. Pusta kartka = martwy pomysł. Zostaje usługa na ciepłej liście albo inny ból, nie cieńszy wrapper. Adam nie koduje cudzego moatu bez drawu / procentu od *tej* faktury.
+**Dotyczy**: `.ai/research/2026-08-21-mvp-trzy-pomysly-aktywa.md` sekcja 0B
 
 ---

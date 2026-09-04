@@ -1713,8 +1713,12 @@ export const api = {
       request<Plan>(`/api/plans/${id}${clientId != null ? `?clientId=${clientId}` : ""}`),
     create: (input: PlanInput) =>
       request<{ id: number }>("/api/plans", { method: "POST", body: JSON.stringify(input) }),
-    update: (id: number, input: PlanInput) =>
-      request<PlanSaveIds>(`/api/plans/${id}`, { method: "PUT", body: JSON.stringify(input) }),
+    update: (id: number, input: PlanInput, init?: Pick<RequestInit, "signal">) =>
+      request<PlanSaveIds>(`/api/plans/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(input),
+        signal: init?.signal,
+      }),
     duplicate: (id: number, input: { name: string | null; isTemplate: boolean | null }) =>
       request<{ id: number }>(`/api/plans/${id}/duplicate`, {
         method: "POST",

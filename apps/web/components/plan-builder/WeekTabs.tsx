@@ -1,9 +1,12 @@
 "use client";
 
 import { ReactNode } from "react";
+import { horizontalListSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Icon } from "@/components/Icon";
 import { IconButton } from "@/components/ui";
 import { CopyWeekOpts, CopyWeekPopover } from "./CopyWeekPopover";
+import { dayPillId, weekChipId } from "./dnd";
 import {
   FloatingMenu,
   FloatingMenuItem,
@@ -57,24 +60,18 @@ export function WeekTabs({
   return (
     <div className="flex min-h-9 shrink-0 items-center gap-2 border-b border-border py-1.5">
       <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto overscroll-x-contain">
-        <div className="flex shrink-0 items-center gap-1">
-          {weeks.map((week) => (
-            <button
-              key={week}
-              type="button"
-              onClick={() => onSelect(week)}
-              aria-label={`Tydzień ${week}`}
-              aria-current={week === activeWeek ? "true" : undefined}
-              className={`min-w-8 rounded-full px-2.5 py-1.5 font-mono text-sm tabular-nums transition-colors ${
-                week === activeWeek
-                  ? "border border-border-strong bg-surface-active font-semibold text-foreground"
-                  : "border border-border bg-surface text-foreground-secondary hover:border-border-strong"
-              }`}
-            >
-              {week}
-            </button>
-          ))}
-        </div>
+        <SortableContext items={weeks.map(weekChipId)} strategy={horizontalListSortingStrategy}>
+          <div className="flex shrink-0 items-center gap-1">
+            {weeks.map((week) => (
+              <WeekChip
+                key={week}
+                week={week}
+                active={week === activeWeek}
+                onSelect={() => onSelect(week)}
+              />
+            ))}
+          </div>
+        </SortableContext>
         <IconButton title="Dodaj tydzień" size="sm" variant="outline" onClick={onAddWeek}>
           <Icon name="plus" size={16} decorative />
         </IconButton>
@@ -157,27 +154,19 @@ export function WeekTabs({
         {showDays ? (
           <>
             <span className="mx-1 h-4 w-px shrink-0 bg-border" aria-hidden />
-            <div className="flex shrink-0 items-center gap-1">
-              {days.map((day, idx) => {
-                const active = day.key === activeDayKey;
-                return (
-                  <button
+            <SortableContext items={days.map((d) => dayPillId(d.key))} strategy={horizontalListSortingStrategy}>
+              <div className="flex shrink-0 items-center gap-1">
+                {days.map((day, idx) => (
+                  <DayChip
                     key={day.key}
-                    type="button"
-                    onClick={() => onSelectDay(day.key)}
-                    aria-label={`Dzień ${idx + 1}`}
-                    aria-current={active ? "true" : undefined}
-                    className={`min-w-8 rounded-full px-2.5 py-1.5 font-mono text-sm tabular-nums transition-colors ${
-                      active
-                        ? "border border-border-strong bg-surface-active font-semibold text-foreground"
-                        : "border border-border bg-surface text-foreground-secondary hover:border-border-strong"
-                    }`}
-                  >
-                    D{idx + 1}
-                  </button>
-                );
-              })}
-            </div>
+                    dayKey={day.key}
+                    label={`D${idx + 1}`}
+                    active={day.key === activeDayKey}
+                    onSelect={() => onSelectDay(day.key)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
             <button
               type="button"
               onClick={onAddDay}
@@ -207,5 +196,72 @@ export function WeekTabs({
         ) : null}
       </div>
     </div>
+  );
+}
+
+const chipClass = (active: boolean) =>
+  `min-h-8 min-w-8 rounded-full px-2.5 py-1.5 font-mono text-sm tabular-nums transition-colors ${
+    active
+      ? "border border-border-strong bg-surface-active font-semibold text-foreground"
+      : "border border-border bg-surface text-foreground-secondary hover:border-border-strong"
+  }`;
+
+function WeekChip({
+  week,
+  active,
+  onSelect,
+}: {
+  week: number;
+  active: boolean;
+  onSelect: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: weekChipId(week),
+  });
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      onClick={onSelect}
+      aria-label={`Tydzień ${week}. Przeciągnij, żeby zmienić kolejność.`}
+      aria-current={active ? "true" : undefined}
+      className={`${chipClass(active)} ${isDragging ? "opacity-50" : ""}`}
+      {...attributes}
+      {...listeners}
+    >
+      {week}
+    </button>
+  );
+}
+
+function DayChip({
+  dayKey,
+  label,
+  active,
+  onSelect,
+}: {
+  dayKey: string;
+  label: string;
+  active: boolean;
+  onSelect: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: dayPillId(dayKey),
+  });
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      onClick={onSelect}
+      aria-label={`${label}. Przeciągnij na tydzień, żeby przenieść.`}
+      aria-current={active ? "true" : undefined}
+      className={`${chipClass(active)} ${isDragging ? "opacity-50" : ""}`}
+      {...attributes}
+      {...listeners}
+    >
+      {label}
+    </button>
   );
 }

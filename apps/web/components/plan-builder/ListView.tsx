@@ -20,6 +20,7 @@ export function ListView({
   onPatchDay,
   onRemoveDay,
   onDuplicateDay,
+  onCopyToWeeks,
   onMoveDay,
   weeks,
   onApplyWeekdays,
@@ -47,6 +48,7 @@ export function ListView({
   onPatchDay: (dayKey: string, patch: Partial<BuilderDay>) => void;
   onRemoveDay: (dayKey: string) => void;
   onDuplicateDay: (dayKey: string, targetWeek?: number) => void;
+  onCopyToWeeks?: (dayKey: string, targetWeeks: number[], extraWeeks: number) => void;
   onMoveDay?: (dayKey: string, targetWeek: number) => void;
   weeks: number[];
   onApplyWeekdays: (sourceWeek: number) => void;
@@ -116,6 +118,11 @@ export function ListView({
           onPatchDay={(patch) => onPatchDay(activeDay.key, patch)}
           onRemoveDay={() => onRemoveDay(activeDay.key)}
           onDuplicateDay={(w) => onDuplicateDay(activeDay.key, w)}
+          onCopyToWeeks={
+            onCopyToWeeks
+              ? (targetWeeks, extraWeeks) => onCopyToWeeks(activeDay.key, targetWeeks, extraWeeks)
+              : undefined
+          }
           onMoveDayToWeek={onMoveDay ? (w) => onMoveDay(activeDay.key, w) : undefined}
           onApplyWeekdays={() => onApplyWeekdays(activeDay.weekNumber)}
         />

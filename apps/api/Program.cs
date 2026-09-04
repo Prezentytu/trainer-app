@@ -1043,6 +1043,30 @@ static void MergePlanItems(AppDb db, PlanDay day, List<PlanItemInput> incoming)
     }
 }
 
+static string? ValidatePlanDayPayload(List<PlanDayInput> incoming)
+{
+    var dayIds = incoming.Where(d => d.Id is > 0).Select(d => d.Id!.Value).ToList();
+    if (dayIds.Count != dayIds.Distinct().Count())
+        return "Ten sam dzień jest w zapisie dwa razy. Odśwież plan i spróbuj ponownie.";
+
+    var weekOrder = incoming.Select(d => (d.WeekNumber, d.Order)).ToList();
+    if (weekOrder.Count != weekOrder.Distinct().Count())
+        return "Dwa dni mają ten sam tydzień i kolejność. Popraw układ i zapisz jeszcze raz.";
+
+    foreach (var day in incoming)
+    {
+        var items = day.Items ?? [];
+        var itemIds = items.Where(i => i.Id is > 0).Select(i => i.Id!.Value).ToList();
+        if (itemIds.Count != itemIds.Distinct().Count())
+            return "To samo ćwiczenie jest w zapisie dwa razy. Odśwież plan i spróbuj ponownie.";
+        var itemOrders = items.Select(i => i.Order).ToList();
+        if (itemOrders.Count != itemOrders.Distinct().Count())
+            return "Dwa ćwiczenia w jednym dniu mają tę samą kolejność. Popraw układ i zapisz jeszcze raz.";
+    }
+
+    return null;
+}
+
 static void MergePlanDays(AppDb db, Plan plan, List<PlanDayInput> incoming)
 {
     var existingById = plan.Days.Where(d => d.Id > 0).ToDictionary(d => d.Id);
@@ -1423,6 +1447,9 @@ app.MapPut("/api/plans/{id:int}", async (int id, PlanInput input, HttpContext ht
         var plan = await db.Plans.Include(p => p.Days).ThenInclude(d => d.Items).ThenInclude(i => i.PrescribedSets)
             .FirstOrDefaultAsync(p => p.Id == id && p.TrainerId == trainerId);
         if (plan is null) return Results.NotFound();
+
+        var payloadError = ValidatePlanDayPayload(input.Days ?? []);
+        if (payloadError is not null) return Results.Conflict(new { message = payloadError });
 
         plan.Name = input.Name;
         plan.Description = input.Description;

@@ -19,6 +19,7 @@ export function TableDay({
   onPatchDay,
   onRemoveDay,
   onDuplicateDay,
+  onCopyToWeeks,
   onMoveDayToWeek,
   weeks,
   onApplyWeekdays,
@@ -41,6 +42,7 @@ export function TableDay({
   onPatchDay: (patch: Partial<BuilderDay>) => void;
   onRemoveDay: () => void;
   onDuplicateDay: (targetWeek?: number) => void;
+  onCopyToWeeks?: (targetWeeks: number[], extraWeeks: number) => void;
   onMoveDayToWeek?: (targetWeek: number) => void;
   weeks: number[];
   onApplyWeekdays: () => void;
@@ -87,6 +89,7 @@ export function TableDay({
           onPatchDay={onPatchDay}
           onRemoveDay={onRemoveDay}
           onDuplicateDay={onDuplicateDay}
+          onCopyToWeeks={onCopyToWeeks}
           onMoveDayToWeek={onMoveDayToWeek}
           onApplyWeekdays={onApplyWeekdays}
         />

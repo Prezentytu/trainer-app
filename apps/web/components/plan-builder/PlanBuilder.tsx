@@ -25,12 +25,22 @@ import { estimateDaysMinutes, formatDurationApprox } from "./summaryText";
 import { useBuilderDnd } from "./useBuilderDnd";
 import { useExerciseLibrary } from "./useExerciseLibrary";
 import { BuilderDay, BuilderItem } from "./types";
+import { loadInitialDays } from "./loadInitialDays";
 import { usePlanDraft } from "./usePlanDraft";
 import { usePlanPersistence } from "./usePlanPersistence";
 import { LastPrescriptionProvider } from "./lastPrescription";
 import { ComposerChromeProvider, useComposerChrome } from "./ComposerChrome";
 import { WeekTabs } from "./WeekTabs";
 import { downloadSavedPlan } from "@/lib/clientBundle";
+import {
+  clearPlanWorkingDraft,
+  downloadPlanWorkingCopy,
+  PLAN_WORKING_KIND,
+  readPlanWorkingCopyFile,
+  peekRestoreOffer,
+  savePlanWorkingDraft,
+  type PlanWorkingCopy,
+} from "@/lib/planWorkingCopy";
 
 type ActiveItem = { dayKey: string; itemKey: string };
 
@@ -110,6 +120,17 @@ export default function PlanBuilder({
   const [createdToast, setCreatedToast] = useState<Exercise | null>(null);
   const [methodOpen, setMethodOpen] = useState(false);
   const [listDayKey, setListDayKey] = useState<string | null>(null);
+  const [restoreOffer, setRestoreOffer] = useState<PlanWorkingCopy | null>(() =>
+    peekRestoreOffer(plan?.id ?? "new", {
+      name: plan?.name ?? initialName ?? "",
+      description: (plan?.description ?? initialDescription) || "",
+      isTemplate: plan?.isTemplate ?? initialIsTemplate ?? false,
+      days:
+        initialDays && initialDays.length > 0
+          ? initialDays
+          : loadInitialDays(plan, initialDayCount, initialWeekCount),
+    }),
+  );
   const [lastById, setLastById] = useState<Map<number, LastPrescription>>(() => new Map());
   const getLastPrescription = useCallback((id: number) => lastById.get(id), [lastById]);
 
@@ -135,7 +156,38 @@ export default function PlanBuilder({
     onSavedIds: draft.applySavedIds,
   });
 
-  const dnd = useBuilderDnd({ days: draft.days, setDays: draft.setDays });
+  const dnd = useBuilderDnd({
+    days: draft.days,
+    setDays: draft.setDays,
+    setActiveWeek: draft.setActiveWeek,
+    onReorderWeeks: draft.reorderWeeks,
+    onMoveDay: draft.moveDay,
+  });
+
+  const draftScope = plan?.id ?? "new";
+  const { setName, setDescription, setIsTemplate, setDays } = draft;
+  const applyWorkingCopy = useCallback(
+    (copy: PlanWorkingCopy) => {
+      setName(copy.name);
+      setDescription(copy.description);
+      setIsTemplate(copy.isTemplate);
+      setDays(copy.days);
+    },
+    [setDays, setDescription, setIsTemplate, setName],
+  );
+
+  useEffect(() => {
+    if (restoreOffer) return;
+    const timer = window.setTimeout(() => {
+      savePlanWorkingDraft(draftScope, {
+        name: draft.name,
+        description: draft.description,
+        isTemplate: draft.isTemplate,
+        days: draft.days,
+      });
+    }, 800);
+    return () => window.clearTimeout(timer);
+  }, [draftScope, draft.name, draft.description, draft.isTemplate, draft.days, restoreOffer]);
 
   useEffect(() => {
     window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
@@ -337,9 +389,43 @@ export default function PlanBuilder({
         }}
         className="flex min-h-0 min-w-0 flex-1 flex-col"
       >
-        <div className="shrink-0">
-          <ErrorBanner message={persistence.error} />
+        <ErrorBanner message={persistence.error} />
+        {restoreOffer ? (
+          <div className="flex flex-wrap items-center gap-2 border-b border-border px-1 py-2 text-sm">
+            <p className="min-w-0 flex-1 text-foreground-secondary">
+              W tej przeglądarce jest nowsza wersja tego planu.
+            </p>
+            <button
+              type="button"
+              className="shrink-0 font-medium text-foreground hover:underline"
+              onClick={() => {
+                applyWorkingCopy(restoreOffer);
+                setRestoreOffer(null);
+              }}
+            >
+              Przywróć
+            </button>
+            <button
+              type="button"
+              className="shrink-0 text-muted hover:text-foreground"
+              onClick={() => {
+                clearPlanWorkingDraft(draftScope);
+                setRestoreOffer(null);
+              }}
+            >
+              Zostaw zapisany
+            </button>
+          </div>
+        ) : null}
 
+        <DndContext
+          sensors={dnd.sensors}
+          collisionDetection={dnd.collisionDetection}
+          onDragStart={dnd.handleDragStart}
+          onDragOver={dnd.handleDragOver}
+          onDragEnd={dnd.handleDragEnd}
+        >
+        <div className="shrink-0">
           <PlanToolbarWithHelp
             name={draft.name}
             onNameChange={draft.setName}
@@ -369,6 +455,26 @@ export default function PlanBuilder({
                   }
                 : undefined
             }
+            onDownloadWorkingCopy={() =>
+              downloadPlanWorkingCopy({
+                kind: PLAN_WORKING_KIND,
+                version: 1,
+                exportedAt: new Date().toISOString(),
+                planId: plan?.id ?? null,
+                name: draft.name,
+                description: draft.description,
+                isTemplate: draft.isTemplate,
+                days: draft.days,
+              })
+            }
+            onImportWorkingCopy={(file) => {
+              void readPlanWorkingCopyFile(file)
+                .then((copy) => {
+                  applyWorkingCopy(copy);
+                  setRestoreOffer(null);
+                })
+                .catch((err: Error) => setPersistenceError(err.message));
+            }}
           />
 
           <WeekTabs
@@ -412,13 +518,6 @@ export default function PlanBuilder({
 
         {viewMode === "list" ? (
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-            <DndContext
-              sensors={dnd.sensors}
-              collisionDetection={dnd.collisionDetection}
-              onDragStart={dnd.handleDragStart}
-              onDragOver={dnd.handleDragOver}
-              onDragEnd={dnd.handleDragEnd}
-            >
             <ListView
               days={draft.visibleDays}
               exercises={library.exercises}
@@ -427,6 +526,7 @@ export default function PlanBuilder({
               onPatchDay={draft.patchDay}
               onRemoveDay={draft.removeDay}
               onDuplicateDay={draft.duplicateDay}
+              onCopyToWeeks={draft.copyDayToWeeks}
               onMoveDay={draft.moveDay}
               weeks={draft.weeks}
               onApplyWeekdays={draft.applyWeekdaysToOtherWeeks}
@@ -447,19 +547,10 @@ export default function PlanBuilder({
               onApplyRestToAll={draft.applyRestToAllSets}
               onClearSets={draft.clearSets}
             />
-            <DragOverlay>{dnd.activeDragItem ? <DragGhost item={dnd.activeDragItem} /> : null}</DragOverlay>
-            </DndContext>
           </div>
         ) : viewMode === "board" ? (
           <div className="flex min-h-0 flex-1">
             <div className="min-h-0 min-w-0 flex-1">
-              <DndContext
-                sensors={dnd.sensors}
-                collisionDetection={dnd.collisionDetection}
-                onDragStart={dnd.handleDragStart}
-                onDragOver={dnd.handleDragOver}
-                onDragEnd={dnd.handleDragEnd}
-              >
                 <DayBoard
                   days={draft.visibleDays}
                   exercises={library.exercises}
@@ -483,6 +574,7 @@ export default function PlanBuilder({
                   onPatchDay={boardCallbacks.onPatchDay}
                   onRemoveDay={boardCallbacks.onRemoveDay}
                   onDuplicateDay={boardCallbacks.onDuplicateDay}
+                  onCopyToWeeks={draft.copyDayToWeeks}
                   onMoveDay={boardCallbacks.onMoveDay}
                   weeks={draft.weeks}
                   onApplyWeekdays={draft.applyWeekdaysToOtherWeeks}
@@ -496,10 +588,6 @@ export default function PlanBuilder({
                   onMoveItem={boardCallbacks.onMoveItem}
                   onToggleLink={boardCallbacks.onToggleLink}
                 />
-                <DragOverlay>
-                  {dnd.activeDragItem ? <DragGhost item={dnd.activeDragItem} /> : null}
-                </DragOverlay>
-              </DndContext>
             </div>
             <ItemPanel
               item={activeBuilderItem}
@@ -566,24 +654,31 @@ export default function PlanBuilder({
           />
         ) : (
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-            <DndContext
-              sensors={dnd.sensors}
-              collisionDetection={dnd.collisionDetection}
-              onDragStart={dnd.handleDragStart}
-              onDragOver={dnd.handleDragOver}
-              onDragEnd={dnd.handleDragEnd}
-            >
               <PlanTable
                 days={draft.visibleDays}
                 exercises={library.exercises}
                 weeks={draft.weeks}
                 onApplyWeekdays={draft.applyWeekdaysToOtherWeeks}
+                onCopyToWeeks={draft.copyDayToWeeks}
                 {...boardCallbacks}
               />
-              <DragOverlay>{dnd.activeDragItem ? <DragGhost item={dnd.activeDragItem} /> : null}</DragOverlay>
-            </DndContext>
           </div>
         )}
+
+        <DragOverlay>
+          {dnd.activeDrag?.kind === "item" ? <DragGhost item={dnd.activeDrag.item} /> : null}
+          {dnd.activeDrag?.kind === "week" ? (
+            <div className="rounded-full border border-border-strong bg-surface-active px-2.5 py-1.5 font-mono text-sm">
+              Tydzień {dnd.activeDrag.week}
+            </div>
+          ) : null}
+          {dnd.activeDrag?.kind === "day" ? (
+            <div className="rounded-full border border-border-strong bg-surface-active px-2.5 py-1.5 text-sm">
+              {dnd.activeDrag.label}
+            </div>
+          ) : null}
+        </DragOverlay>
+        </DndContext>
 
         <ExerciseDrawer
           open={drawerDayKey != null || swapTarget != null}

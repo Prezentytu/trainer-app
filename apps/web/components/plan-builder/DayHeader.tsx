@@ -22,6 +22,7 @@ export function DayHeader({
   onPatchDay,
   onRemoveDay,
   onDuplicateDay,
+  onCopyToWeeks,
   onMoveDayToWeek,
   onApplyWeekdays,
 }: {
@@ -33,6 +34,7 @@ export function DayHeader({
   onPatchDay: (patch: Partial<BuilderDay>) => void;
   onRemoveDay: () => void;
   onDuplicateDay: (targetWeek?: number) => void;
+  onCopyToWeeks?: (targetWeeks: number[], extraWeeks: number) => void;
   onMoveDayToWeek?: (targetWeek: number) => void;
   onApplyWeekdays: () => void;
 }) {
@@ -46,6 +48,7 @@ export function DayHeader({
       onPatch={onPatchDay}
       onApplyToOtherWeeks={weeks.length > 1 ? onApplyWeekdays : undefined}
       onDuplicate={onDuplicateDay}
+      onCopyToWeeks={onCopyToWeeks}
       onMoveToWeek={onMoveDayToWeek}
       onRemove={onRemoveDay}
       nameClassName={NAME_CLASS[density]}

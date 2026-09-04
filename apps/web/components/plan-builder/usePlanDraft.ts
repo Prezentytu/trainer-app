@@ -10,13 +10,19 @@ import { applyMethodTemplate, MethodTemplateId } from "@/lib/methodTemplates";
 import { useUndoToast } from "@/components/ui";
 import { loadInitialDays } from "./loadInitialDays";
 import {
+  copyDayToWeeks as copyDayToWeeksPure,
   duplicateWeek as duplicateWeekPure,
   insertWeek as insertWeekPure,
   moveDayTo,
   moveItemTo,
+  nextDayOrder,
+  normalizeStructure,
   normalizeWeeks,
+  remapActiveWeek,
   removeWeek as removeWeekPure,
+  reorderWeeks as reorderWeeksPure,
 } from "./builderMove";
+import { applySavedIdMap, mapSavedIdsByClientKey } from "./planSaveMap";
 import { useUndoRedo } from "./useUndoRedo";
 import { BuilderDay, BuilderItem, BuilderSet, newKey } from "./types";
 
@@ -106,11 +112,11 @@ export function usePlanDraft({
 
   const addDay = useCallback((weekNumber: number) => {
     setDays((prev) => {
-      const inWeek = prev.filter((d) => d.weekNumber === weekNumber).length;
-      return [
+      const order = nextDayOrder(prev, weekNumber);
+      return normalizeStructure([
         ...prev,
-        { key: newKey(), weekNumber, order: inWeek + 1, label: `Dzień ${inWeek + 1}`, notes: null, dayOfWeek: null, items: [] },
-      ];
+        { key: newKey(), weekNumber, order, label: `Dzień ${order}`, notes: null, dayOfWeek: null, items: [] },
+      ]).days;
     });
   }, []);
 
@@ -204,8 +210,9 @@ export function usePlanDraft({
           sourceWeek = target;
         }
         const lastWeek = next.length ? Math.max(...next.map((d) => d.weekNumber)) : weekNumber;
-        setActiveWeek(lastWeek);
-        return next;
+        const normalized = normalizeStructure(next);
+        setActiveWeek(normalized.weekMap.get(lastWeek) ?? lastWeek);
+        return normalized.days;
       });
     },
     []
@@ -216,17 +223,18 @@ export function usePlanDraft({
       setDays((prev) => {
         const removed = prev.find((d) => d.key === dayKey);
         const removedIndex = prev.findIndex((d) => d.key === dayKey);
-        const next = prev.filter((d) => d.key !== dayKey);
+        const next = normalizeStructure(prev.filter((d) => d.key !== dayKey));
         if (removed) {
           showUndoToast(`Usunięto dzień „${removed.label}”`, () =>
             setDays((cur) => {
               const restored = [...cur];
               restored.splice(Math.min(removedIndex, restored.length), 0, removed);
-              return restored;
+              return normalizeStructure(restored).days;
             })
           );
         }
-        return next;
+        setActiveWeek((cur) => remapActiveWeek(next.weekMap, cur, next.days));
+        return next.days;
       });
     },
     [showUndoToast]
@@ -237,23 +245,24 @@ export function usePlanDraft({
       const source = prev.find((d) => d.key === dayKey);
       if (!source) return prev;
       const week = targetWeekNumber ?? source.weekNumber;
-      const inWeek = prev.filter((d) => d.weekNumber === week).length;
-      // Klon nie może dziedziczyć entityId — inaczej zapis nadpisałby dzień źródłowy.
-      const clone: BuilderDay = {
-        ...source,
-        key: newKey(),
-        entityId: undefined,
-        weekNumber: week,
-        order: inWeek + 1,
-        label: `${source.label} (kopia)`,
-        items: source.items.map((it) => ({
-          ...it,
-          key: newKey(),
-          entityId: undefined,
-          prescribedSets: it.prescribedSets.map((s) => ({ ...s, key: newKey() })),
-        })),
-      };
-      return [...prev, clone];
+      const result = copyDayToWeeksPure(prev, dayKey, [week], 0);
+      return result.days;
+    });
+  }, []);
+
+  const copyDayToWeeks = useCallback((dayKey: string, targetWeeks: number[], extraWeeks: number) => {
+    setDays((prev) => {
+      const result = copyDayToWeeksPure(prev, dayKey, targetWeeks, extraWeeks);
+      setActiveWeek(result.lastWeek);
+      return result.days;
+    });
+  }, []);
+
+  const reorderWeeks = useCallback((fromWeek: number, toWeek: number) => {
+    setDays((prev) => {
+      const result = reorderWeeksPure(prev, fromWeek, toWeek);
+      setActiveWeek(result.weekNumber);
+      return result.days;
     });
   }, []);
 
@@ -298,7 +307,13 @@ export function usePlanDraft({
         if (next.length !== prev.length) {
           showUndoToast(`Usunięto tydzień ${weekNumber}`, () => setDays(snapshot));
         }
-        setActiveWeek((cur) => Math.max(1, Math.min(cur, next.length ? Math.max(...next.map((d) => d.weekNumber)) : 1)));
+        const weekMap = new Map(
+          [...new Set(prev.map((d) => d.weekNumber))]
+            .sort((a, b) => a - b)
+            .filter((w) => w !== weekNumber)
+            .map((w, idx) => [w, idx + 1] as const),
+        );
+        setActiveWeek((cur) => remapActiveWeek(weekMap, cur, next));
         return next;
       });
     },
@@ -603,21 +618,9 @@ export function usePlanDraft({
     []
   );
 
-  const applySavedIds = useCallback((saved: PlanSaveIds) => {
-    setDays((prev) =>
-      prev.map((d) => {
-        const match = saved.days.find((s) => s.weekNumber === d.weekNumber && s.order === d.order);
-        if (!match) return d;
-        return {
-          ...d,
-          entityId: match.id,
-          items: d.items.map((it, idx) => {
-            const im = match.items.find((s) => s.order === it.order) ?? match.items[idx];
-            return im ? { ...it, entityId: im.id } : it;
-          }),
-        };
-      }),
-    );
+  const applySavedIds = useCallback((saved: PlanSaveIds, snapshot: BuilderDay[]) => {
+    const { dayIds, itemIds } = mapSavedIdsByClientKey(snapshot, saved);
+    setDays((prev) => applySavedIdMap(prev, dayIds, itemIds));
   }, []);
 
   const swapItem = useCallback(
@@ -1005,6 +1008,8 @@ export function usePlanDraft({
     removeWeek,
     removeDay,
     duplicateDay,
+    copyDayToWeeks,
+    reorderWeeks,
     moveDay,
     moveItemTarget,
     applyWeekdaysToOtherWeeks,

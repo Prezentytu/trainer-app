@@ -12,32 +12,62 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { dayKeyFromContainerId, isDayContainerId } from "./dnd";
-import { detachLinks } from "./usePlanDraft";
+import {
+  dayKeyFromContainerId,
+  dayKeyFromPillId,
+  isDayContainerId,
+  isDayPillId,
+  isWeekChipId,
+  weekFromChipId,
+} from "./dnd";
+import { moveDayTo, moveItemTo } from "./builderMove";
 import { BuilderDay, BuilderItem } from "./types";
 
 export type DropTarget = { dayKey: string; index: number } | null;
 
+export type ActiveDrag =
+  | { kind: "item"; item: BuilderItem }
+  | { kind: "day"; label: string }
+  | { kind: "week"; week: number };
+
 export function useBuilderDnd({
   days,
   setDays,
+  setActiveWeek,
+  onReorderWeeks,
+  onMoveDay,
 }: {
   days: BuilderDay[];
   setDays: React.Dispatch<React.SetStateAction<BuilderDay[]>>;
+  setActiveWeek?: (week: number) => void;
+  onReorderWeeks?: (from: number, to: number) => void;
+  onMoveDay?: (dayKey: string, week: number) => void;
 }) {
-  const [activeDragItem, setActiveDragItem] = useState<BuilderItem | null>(null);
+  const [activeDrag, setActiveDrag] = useState<ActiveDrag | null>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(KeyboardSensor)
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor),
   );
 
   const findDayOfItem = (itemKey: string) => days.find((d) => d.items.some((i) => i.key === itemKey));
+  const firstDayOfWeek = (week: number) =>
+    days.filter((d) => d.weekNumber === week).sort((a, b) => a.order - b.order)[0];
 
   const handleDragStart = (event: DragStartEvent) => {
-    const day = findDayOfItem(String(event.active.id));
-    setActiveDragItem(day?.items.find((i) => i.key === event.active.id) ?? null);
+    const id = String(event.active.id);
+    if (isWeekChipId(id)) {
+      setActiveDrag({ kind: "week", week: weekFromChipId(id) });
+      return;
+    }
+    if (isDayPillId(id)) {
+      const day = days.find((d) => d.key === dayKeyFromPillId(id));
+      setActiveDrag({ kind: "day", label: day?.label ?? "Dzień" });
+      return;
+    }
+    const day = findDayOfItem(id);
+    setActiveDrag(day ? { kind: "item", item: day.items.find((i) => i.key === id)! } : null);
   };
 
   const handleDragOver = (event: DragOverEvent) => {
@@ -48,8 +78,22 @@ export function useBuilderDnd({
     }
     const overId = String(over.id);
     const activeKey = String(active.id);
+    if (isWeekChipId(activeKey) || isDayPillId(activeKey)) {
+      setDropTarget(null);
+      return;
+    }
     if (overId === activeKey) {
       setDropTarget(null);
+      return;
+    }
+    if (isWeekChipId(overId)) {
+      const day = firstDayOfWeek(weekFromChipId(overId));
+      setDropTarget(day ? { dayKey: day.key, index: day.items.length } : null);
+      return;
+    }
+    if (isDayPillId(overId)) {
+      const day = days.find((d) => d.key === dayKeyFromPillId(overId));
+      setDropTarget(day ? { dayKey: day.key, index: day.items.length } : null);
       return;
     }
     const targetDayKey = isDayContainerId(overId) ? dayKeyFromContainerId(overId) : findDayOfItem(overId)?.key;
@@ -67,77 +111,83 @@ export function useBuilderDnd({
       : targetDay.items.findIndex((i) => i.key === overId);
     const next = { dayKey: targetDayKey, index: index === -1 ? targetDay.items.length : index };
     setDropTarget((prev) =>
-      prev?.dayKey === next.dayKey && prev.index === next.index ? prev : next
+      prev?.dayKey === next.dayKey && prev.index === next.index ? prev : next,
     );
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const currentDrop = dropTarget;
-    setActiveDragItem(null);
+    const drag = activeDrag;
+    setActiveDrag(null);
     setDropTarget(null);
     const { active, over } = event;
-    if (!over && !currentDrop) return;
-    const activeKey = String(active.id);
+    const activeId = String(active.id);
     const overId = over ? String(over.id) : null;
 
-    const sourceDay = findDayOfItem(activeKey);
-    if (!sourceDay) return;
+    if (isWeekChipId(activeId) && overId && isWeekChipId(overId)) {
+      const from = weekFromChipId(activeId);
+      const to = weekFromChipId(overId);
+      if (from !== to) onReorderWeeks?.(from, to);
+      return;
+    }
 
-    const targetDayKey =
-      currentDrop?.dayKey ??
-      (overId ? (isDayContainerId(overId) ? dayKeyFromContainerId(overId) : findDayOfItem(overId)?.key) : null);
+    if (isDayPillId(activeId) && overId) {
+      const dayKey = dayKeyFromPillId(activeId);
+      if (isWeekChipId(overId)) {
+        onMoveDay?.(dayKey, weekFromChipId(overId));
+        return;
+      }
+      if (isDayPillId(overId)) {
+        const target = days.find((d) => d.key === dayKeyFromPillId(overId));
+        const source = days.find((d) => d.key === dayKey);
+        if (target && source) {
+          setDays((prev) =>
+            moveDayTo(prev, dayKey, { weekNumber: target.weekNumber, index: target.order - 1 }),
+          );
+          setActiveWeek?.(target.weekNumber);
+        }
+      }
+      return;
+    }
+
+    if (!over && !currentDrop) return;
+    const sourceDay = findDayOfItem(activeId);
+    if (!sourceDay || drag?.kind !== "item") return;
+
+    let targetDayKey = currentDrop?.dayKey ?? null;
+    if (!targetDayKey && overId) {
+      if (isWeekChipId(overId)) targetDayKey = firstDayOfWeek(weekFromChipId(overId))?.key ?? null;
+      else if (isDayPillId(overId)) targetDayKey = dayKeyFromPillId(overId);
+      else if (isDayContainerId(overId)) targetDayKey = dayKeyFromContainerId(overId);
+      else targetDayKey = findDayOfItem(overId)?.key ?? null;
+    }
     if (!targetDayKey) return;
 
-    if (sourceDay.key === targetDayKey && overId && !isDayContainerId(overId) && !currentDrop) {
-      const oldIndex = sourceDay.items.findIndex((i) => i.key === activeKey);
+    if (sourceDay.key === targetDayKey && overId && !isDayContainerId(overId) && !isWeekChipId(overId) && !isDayPillId(overId) && !currentDrop) {
+      const oldIndex = sourceDay.items.findIndex((i) => i.key === activeId);
       const newIndex = sourceDay.items.findIndex((i) => i.key === overId);
       if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
       setDays((prev) =>
         prev.map((d) =>
           d.key !== sourceDay.key
             ? d
-            : { ...d, items: arrayMove(d.items, oldIndex, newIndex).map((i, o) => ({ ...i, order: o + 1 })) }
-        )
+            : { ...d, items: arrayMove(d.items, oldIndex, newIndex).map((i, o) => ({ ...i, order: o + 1 })) },
+        ),
       );
       return;
     }
 
-    const movingItem = sourceDay.items.find((i) => i.key === activeKey);
-    if (!movingItem) return;
-
-    setDays((prev) => {
-      const withoutItem = prev.map((d) =>
-        d.key !== sourceDay.key
-          ? d
-          : { ...d, items: detachLinks(d.items, activeKey).filter((i) => i.key !== activeKey) }
-      );
-      return withoutItem.map((d) => {
-        if (d.key !== targetDayKey) return d;
-        let targetIndex: number;
-        if (currentDrop && currentDrop.dayKey === targetDayKey) {
-          targetIndex = currentDrop.index;
-          // Adjust if we removed an item before the target in the same day
-          if (sourceDay.key === targetDayKey) {
-            const oldIndex = sourceDay.items.findIndex((i) => i.key === activeKey);
-            if (oldIndex !== -1 && oldIndex < targetIndex) targetIndex = Math.max(0, targetIndex - 1);
-          }
-        } else if (overId && !isDayContainerId(overId)) {
-          const idx = d.items.findIndex((i) => i.key === overId);
-          targetIndex = idx === -1 ? d.items.length : idx;
-        } else {
-          targetIndex = d.items.length;
-        }
-        const items = [...d.items];
-        items.splice(targetIndex, 0, { ...movingItem, linkedToNext: false });
-        return { ...d, items: items.map((i, o) => ({ ...i, order: o + 1 })) };
-      });
-    });
+    const targetIndex = currentDrop?.dayKey === targetDayKey ? currentDrop.index : days.find((d) => d.key === targetDayKey)?.items.length ?? 0;
+    setDays((prev) => moveItemTo(prev, { dayKey: sourceDay.key, itemKey: activeId }, { dayKey: targetDayKey, index: targetIndex }));
+    const targetWeek = days.find((d) => d.key === targetDayKey)?.weekNumber;
+    if (targetWeek != null) setActiveWeek?.(targetWeek);
   };
 
   return {
     sensors,
     collisionDetection: closestCenter,
-    activeDragItem,
+    activeDragItem: activeDrag?.kind === "item" ? activeDrag.item : null,
+    activeDrag,
     dropTarget,
     handleDragStart,
     handleDragOver,

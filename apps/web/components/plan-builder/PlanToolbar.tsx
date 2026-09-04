@@ -42,6 +42,8 @@ export function PlanToolbar({
   onApplyMethod,
   onOpenComposerHelp,
   onDownloadPlan,
+  onDownloadWorkingCopy,
+  onImportWorkingCopy,
 }: {
   name: string;
   onNameChange: (v: string) => void;
@@ -64,6 +66,8 @@ export function PlanToolbar({
   onApplyMethod?: () => void;
   onOpenComposerHelp?: () => void;
   onDownloadPlan?: () => void;
+  onDownloadWorkingCopy?: () => void;
+  onImportWorkingCopy?: (file: File) => void;
 }) {
   const [editingName, setEditingName] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -170,6 +174,33 @@ export function PlanToolbar({
                     >
                       Ustawienia planu
                     </OverflowMenuItem>
+                    {onDownloadWorkingCopy ? (
+                      <OverflowMenuItem
+                        onClick={() => {
+                          close();
+                          onDownloadWorkingCopy();
+                        }}
+                      >
+                        Pobierz plan z ekranu
+                      </OverflowMenuItem>
+                    ) : null}
+                    {onImportWorkingCopy ? (
+                      <OverflowMenuItem
+                        onClick={() => {
+                          close();
+                          const input = document.createElement("input");
+                          input.type = "file";
+                          input.accept = "application/json,.json";
+                          input.onchange = () => {
+                            const file = input.files?.[0];
+                            if (file) onImportWorkingCopy(file);
+                          };
+                          input.click();
+                        }}
+                      >
+                        Wgraj plan z pliku
+                      </OverflowMenuItem>
+                    ) : null}
                     {onDownloadPlan ? (
                       <OverflowMenuItem
                         onClick={() => {
@@ -177,7 +208,7 @@ export function PlanToolbar({
                           onDownloadPlan();
                         }}
                       >
-                        Pobierz plan
+                        Pobierz zapisany plan
                       </OverflowMenuItem>
                     ) : null}
                     {onApplyMethod ? (
