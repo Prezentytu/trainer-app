@@ -140,9 +140,16 @@ export function useBuilderDnd({
       if (isDayPillId(overId)) {
         const target = days.find((d) => d.key === dayKeyFromPillId(overId));
         const source = days.find((d) => d.key === dayKey);
-        if (target && source) {
+        if (target && source && target.key !== source.key) {
+          const weekDays = days
+            .filter((d) => d.weekNumber === target.weekNumber)
+            .sort((a, b) => a.order - b.order);
+          const index = weekDays.findIndex((d) => d.key === target.key);
           setDays((prev) =>
-            moveDayTo(prev, dayKey, { weekNumber: target.weekNumber, index: target.order - 1 }),
+            moveDayTo(prev, dayKey, {
+              weekNumber: target.weekNumber,
+              index: index === -1 ? undefined : index,
+            }),
           );
           setActiveWeek?.(target.weekNumber);
         }

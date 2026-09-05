@@ -255,7 +255,7 @@ function DayChip({
       type="button"
       style={{ transform: CSS.Transform.toString(transform), transition }}
       onClick={onSelect}
-      aria-label={`${label}. Przeciągnij na tydzień, żeby przenieść.`}
+      aria-label={`${label}. Przeciągnij, żeby zmienić kolejność albo przenieść na inny tydzień.`}
       aria-current={active ? "true" : undefined}
       className={`${chipClass(active)} ${isDragging ? "opacity-50" : ""}`}
       {...attributes}

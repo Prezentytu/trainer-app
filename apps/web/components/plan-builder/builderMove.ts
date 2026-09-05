@@ -4,15 +4,6 @@ function reorderItems(items: BuilderItem[]): BuilderItem[] {
   return items.map((i, idx) => ({ ...i, order: idx + 1 }));
 }
 
-function reorderDaysInWeeks(days: BuilderDay[]): BuilderDay[] {
-  const counters = new Map<number, number>();
-  return days.map((d) => {
-    const next = (counters.get(d.weekNumber) ?? 0) + 1;
-    counters.set(d.weekNumber, next);
-    return { ...d, order: next };
-  });
-}
-
 /** Kolejny `order` w tygodniu — po maksymalnym numerze, nie po liczbie dni (luki nie kolidują). */
 export function nextDayOrder(days: BuilderDay[], weekNumber: number): number {
   const orders = days.filter((d) => d.weekNumber === weekNumber).map((d) => d.order);
@@ -212,10 +203,12 @@ export function moveDayTo(
   });
 
   const others = rest.filter((d) => d.weekNumber !== target.weekNumber);
-  const merged = [...others, ...reordered].sort(
-    (a, b) => a.weekNumber - b.weekNumber || a.order - b.order,
-  );
-  return normalizeWeeks(reorderDaysInWeeks(merged));
+  // Nowe `order` z pozycji po splice — sort po starym orderze cofałby przeciągnięcie.
+  const next = [
+    ...others,
+    ...reordered.map((d, idx) => ({ ...d, weekNumber: target.weekNumber, order: idx + 1 })),
+  ];
+  return normalizeWeeks(compactDayOrders(next));
 }
 
 /** Wstawia pusty tydzień przed/po wskazanym; kolejne numery przesuwają się o jeden. */

@@ -15,6 +15,15 @@ Po każdej korekcie od użytkownika dopisz tu wpis w formacie:
 
 ---
 
+## DnD dnia: nie sortuj po starym order po splice
+
+**Kontekst**: Pigułki D1/D2/D3 w kreatorze — przeciągnięcie wizualnie działało, po puszczeniu wracała stara kolejność i zapis nic nie widział.
+**Problem**: `moveDayTo` wstawiał dzień na nowy indeks, a potem `sort(week, order)` układał tablicę po **starych** numerach. `reorderDaysInWeeks` przepisywało 1…K w tej samej, niezmienionej kolejności.
+**Zasada**: Po przestawieniu nadaj `order` z pozycji w tablicy (albo `arrayMove`). Sort po dotychczasowym `order` wolno tylko **przed** zmianą kolejności.
+**Dotyczy**: `builderMove.ts` (`moveDayTo`), `useBuilderDnd.ts` (pigułki dnia)
+
+---
+
 ## Oferta: wynik, nie „przeniesienie arkusza”
 
 **Kontekst**: Roadster trenerski 2 900 zł miał być walidacją Tesli. Founder: trener w Polsce nie zapłaci 3 tys. za przeniesienie Excela, skoro nie mówimy nawet dokąd.
