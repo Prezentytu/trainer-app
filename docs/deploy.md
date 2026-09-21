@@ -263,7 +263,7 @@ Settings → **Environment variables** → **+ Add** każdą osobno:
 | `Push__PublicKey`            | VAPID public                      | opcjonalnie; ten sam w Vercel jako `NEXT_PUBLIC_VAPID_PUBLIC_KEY` |
 | `Push__PrivateKey`           | VAPID private                     | tylko API                                                         |
 | `Push__Subject`              | `mailto:support@…`                | opcjonalnie                                                       |
-| `Cron__Key`                  | losowy sekret                     | ten sam w GitHub `CRON_KEY` gdy włączysz cron                     |
+| `Cron__Key`                  | losowy sekret                     | chroni `POST /api/cron/reminders` (wywołanie ręczne)              |
 
 
 `__` jest celowe (`Clerk__Authority` → `Clerk:Authority`). **Apply** → restart.
@@ -313,7 +313,7 @@ az account show --query "{tenant:tenantId, subscription:id}" -o json
 
 Repo → **Settings → Environments**. Pełna tabela: [ci-cd.md](ci-cd.md).
 
-`dev` = `trainer-app-api` (stary Neon). `prod` = `repmaxer-prod` (Neon `repmaxer`). Nazwy sekretów **identyczne**: `DB_CONNECTION_STRING`, `AZURE_WEBAPP_NAME`, `API_BASE_URL`, `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `GHCR_TOKEN`, `VERCEL_*`, `CRON_KEY` (tylko prod).
+`dev` = `trainer-app-api` (stary Neon). `prod` = `repmaxer-prod` (Neon `repmaxer`). Nazwy sekretów **identyczne**: `DB_CONNECTION_STRING`, `AZURE_WEBAPP_NAME`, `API_BASE_URL`, `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `GHCR_TOKEN`, `VERCEL_*`.
 
 Nie wklejaj connection stringa `repmaxer` do Environment `dev`.
 

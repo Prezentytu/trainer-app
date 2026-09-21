@@ -40,7 +40,7 @@ API zawsze przed frontem. Prod nigdy nie buduje nowego obrazu API — **Promote 
 
 Concurrency jest **per środowisko**, nie na cały workflow: joby `dev` / `web-dev` / `e2e-dev` dzielą grupę `deploy-dev`, joby Promote `prod` / `web-prod` — `deploy-prod`. Czekający promote **nie blokuje** kolejnych merge'y na `dev.repmaxer.pl`. `cancel-in-progress: false` — kolejka, nigdy przerwanie migracji w połowie.
 
-Nie włączaj **Required reviewers** na Environment `prod`. Ten sam env czyta cron (`reminders.yml`) — reviewer zatrzymałby codzienny POST. Bramka to przycisk **Promote to prod**, nie żółty banner w runie Release.
+Nie włączaj **Required reviewers** na Environment `prod`. Bramka to przycisk **Promote to prod**, nie żółty banner w runie Release.
 
 | Workflow | Kiedy | Rola |
 |---|---|---|
@@ -49,7 +49,6 @@ Nie włączaj **Required reviewers** na Environment `prod`. Ten sam env czyta cr
 | `promote.yml` | ręcznie | Ten sam digest na prod + `repmaxer.pl` |
 | `deploy-api.yml` | ręcznie | Break-glass (poza trainem) |
 | `rollback-api.yml` | ręcznie | Przywróć digest / tag |
-| `reminders.yml` | cron 07:00 UTC | Twardy fail bez sekretów |
 
 ## Słownik: nasze środowiska vs Vercel
 
@@ -92,9 +91,9 @@ Repo → **Settings → Environments**.
 
 Variables: `WEB_BASE_URL` = `https://dev.repmaxer.pl`, `VERCEL_DEV_ALIAS` = `dev.repmaxer.pl`.
 
-**`prod`** (bez reviewerów — bramka to **Promote to prod**, nie Environment; cron czyta ten sam env):
+**`prod`** (bez reviewerów — bramka to **Promote to prod**, nie Environment):
 
-Te **same nazwy**. Wartości: Neon `repmaxer` direct, `repmaxer-prod`, `https://repmaxer-prod.azurewebsites.net`, SP na RG `repmaxer-prod`, plus `CRON_KEY`, opcjonalnie `NEON_API_KEY` / `NEON_PROJECT_ID` / `NEON_PARENT_BRANCH_ID`.
+Te **same nazwy**. Wartości: Neon `repmaxer` direct, `repmaxer-prod`, `https://repmaxer-prod.azurewebsites.net`, SP na RG `repmaxer-prod`, opcjonalnie `NEON_API_KEY` / `NEON_PROJECT_ID` / `NEON_PARENT_BRANCH_ID`.
 
 Stare sekrety repo (`DEV_*`, `*_PROD`, `AZURE_CREDENTIALS*`) **nie są już czytane**. Możesz je usunąć po pierwszym zielonym Release.
 
@@ -213,6 +212,5 @@ Bez maila/hasła: tylko landing + `/sign-in` (job zielony). Pełna ścieżka: kl
 | Smoke: 200 na `/api/clients` | Clerk wyłączony na Web App — ustaw `Clerk__Authority` |
 | Vercel `Could not retrieve Project Settings` | `VERCEL_ORG_ID` = `team_…`, `VERCEL_PROJECT_ID` = `prj_…`, token na ten sam team |
 | Vercel `environment=dev` fail | nie twórz Custom Environment — skrypt mapuje nasz `dev` na Preview |
-| Reminders czerwone | `CRON_KEY` + `API_BASE_URL` w Environment **prod** |
 | Migracje `Couldn't set …/neondb?sslmode` | do CI **direct**, nie pooler; `DbConnectionString.Normalize` |
 | Dependency review: not supported | Settings → Code security → **Dependency graph** On. Job nie blokuje bramki CI. |
