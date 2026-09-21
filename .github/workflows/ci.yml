@@ -150,7 +150,7 @@ jobs:
           echo "Druga aplikacja (idempotencja)…"
           ./efbundle
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ef-idempotent-script
           path: artifacts/ef.sql
