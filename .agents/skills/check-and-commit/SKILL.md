@@ -17,6 +17,7 @@ Uruchom pełną bramkę walidacyjną, napraw oczywiste błędy, a następnie zac
    - nie dodawaj sekretów/`.env`/`trainer.db`/`bin`/`obj`,
    - komunikat zwięzły, po angielsku, opisujący „dlaczego” (Conventional Commits: `feat:`, `fix:`, `chore:`…),
    - **commituj tylko gdy użytkownik o to poprosił** (ten skill jest tym żądaniem).
+   - temat to jedna zmiana i jej skutek, do 72 znaków; przed commitem przeczytaj `git log --format=%s -10`. Dobrze: `fix: resolve DnD order issue in plan builder`. Źle: `refactor: upgrade user experience` (nie mówi, co się zmieniło) albo temat z kilkoma zmianami po średnikach na trzy linie (to kilka commitów albo body).
 
 ## Zasady bezpieczeństwa git
 
