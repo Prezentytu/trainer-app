@@ -1,0 +1,6 @@
+# Limit słów (wc -w) dla plików, które agent czyta w każdej sesji. Wolno tylko obniżać (CI porównuje z main).
+# Format: <limit> <ścieżka>
+1241 AGENTS.md
+525 apps/api/AGENTS.md
+640 apps/web/AGENTS.md
+63 .ai/lessons.md

@@ -1,0 +1,3 @@
+# Fałszywe trafienia gitleaks (fingerprint). Każdy wpis z powodem.
+# Nazwy pakietów Clerk w specu, nie klucz.
+75057e4c1968012a749b631474c04f149a9afc03:.ai/specs/2026-08-07-custom-auth-ui.md:generic-api-key:64
