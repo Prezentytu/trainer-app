@@ -47,7 +47,7 @@ Baza SQLite (`apps/api/trainer.db`) tworzy się automatycznie przy pierwszym sta
 ./scripts/clean.sh        # usuwa apps/web/.next + bin/obj (.NET) — odzysk miejsca
 ```
 
-Dev web domyślnie idzie na **Webpacku** z limitem pamięci 4 GB (`npm run dev`), bo Turbopack w Next 16.2 na Apple Silicon wycieka natywną pamięć `IOAccelerator` i potrafi zamrozić cały macOS. Turbopack zostaje na `next build` i opcjonalnie: `npm run dev:turbo` w `apps/web`. Po stabilnym Next **16.3+** wracamy na Turbopack (patrz `.ai/lessons.md`).
+Dev web domyślnie idzie na **Webpacku** z limitem pamięci 4 GB (`npm run dev`), bo Turbopack w Next 16.2 na Apple Silicon wycieka natywną pamięć `IOAccelerator` i potrafi zamrozić cały macOS. Turbopack zostaje na `next build` i opcjonalnie: `npm run dev:turbo` w `apps/web`. Po stabilnym Next **16.3+** wracamy na Turbopack (patrz `.ai/lessons-archiwum.md`, grep `Turbopack`).
 
 ### Higiena środowiska (macOS + antywirus)
 
