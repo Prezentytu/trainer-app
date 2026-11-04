@@ -5,8 +5,8 @@ const RAW_FETCH_MESSAGE =
   "Surowy fetch poza warstwą API: użyj obiektu `api` z `@/lib/api` (request<T>() mapuje błędy na polski komunikat, retry).";
 const RAW_COLOR_MESSAGE =
   "Surowa klasa koloru albo hex w className: użyj tokenów z app/globals.css (mono v2, skill design-system).";
-// zinc-500, bg-red-400/50, border-[#fff] itp. Paleta z AGENTS.md: zinc/lime/yellow/teal/red/emerald.
-const RAW_COLOR_PATTERN = String.raw`(^|[\s:"'\x60-])(zinc|lime|yellow|teal|red|emerald)-(50|[1-9]00|950)\b|\[#[0-9a-fA-F]{3,8}\]`;
+// zinc-500, bg-red-400/50, border-[#fff], shadow-[0_0_0_1px_#fff] itp. Paleta z AGENTS.md: zinc/lime/yellow/teal/red/emerald.
+const RAW_COLOR_PATTERN = String.raw`(^|[\s:"'\x60-])(zinc|lime|yellow|teal|red|emerald)-(50|[1-9]00|950)\b|\[[^\]]*#[0-9a-fA-F]{3,8}\b[^\]]*\]`;
 
 const eslintConfig = [
   ...next,
@@ -29,16 +29,16 @@ const eslintConfig = [
     },
   },
   {
-    files: ["app/**/*.tsx", "components/**/*.tsx"],
+    files: ["app/**/*.tsx", "components/**/*.tsx", "lib/**/*.tsx"],
     rules: {
       "no-restricted-syntax": [
         "error",
         {
-          selector: `JSXAttribute[name.name='className'] Literal[value=/${RAW_COLOR_PATTERN}/]`,
+          selector: `JSXAttribute[name.name=/[cC]lassName$/] Literal[value=/${RAW_COLOR_PATTERN}/]`,
           message: RAW_COLOR_MESSAGE,
         },
         {
-          selector: `JSXAttribute[name.name='className'] TemplateElement[value.raw=/${RAW_COLOR_PATTERN}/]`,
+          selector: `JSXAttribute[name.name=/[cC]lassName$/] TemplateElement[value.raw=/${RAW_COLOR_PATTERN}/]`,
           message: RAW_COLOR_MESSAGE,
         },
       ],

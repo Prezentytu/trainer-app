@@ -36,7 +36,7 @@ trainer-app/
 
 - Sprawdź `.ai/specs/` przed nietrywialną zmianą; przy zadaniach 3+ kroków lub decyzjach architektonicznych napisz spec (patrz `.ai/specs/AGENTS.md`), bo tam leżą już podjęte decyzje i plan, który ktoś zatwierdził.
 - Przy dodawaniu nowego zasobu CRUD **wzoruj się na module referencyjnym `Clients`** — to najprostszy, kompletny przykład end-to-end (API + web). Zobacz skill `add-crud-feature`.
-- Przy zmianie UI przeczytaj skille adekwatne do zmiany według wiersza UI w **Task Router**, nie wszystkie naraz: razem mają ~7,5 tys. słów, a każdy wnosi coś innego (tokeny, domena, mobile, copy, ruch, konwersja).
+- Przy zmianie UI przeczytaj skille adekwatne do zmiany według wiersza UI w **Task Router**, nie wszystkie naraz: razem mają ~6,4 tys. słów, a każdy wnosi coś innego (tokeny, domena, mobile, copy, ruch, konwersja).
 - Trzymaj typy TypeScript w `apps/web/lib/api.ts` **lustrzane** do DTO/encji w `apps/api/` (camelCase po stronie JSON), bo nie ma generatora typów i rozjazd wychodzi dopiero w przeglądarce.
 - Wszystkie teksty UI pisz po polsku, bo aplikacja deklaruje `lang="pl"` (`apps/web/app/layout.tsx`) i nie ma warstwy tłumaczeń.
 - Zanim uznasz zadanie za skończone, zweryfikuj je według `Validation Commands`.
@@ -46,9 +46,9 @@ trainer-app/
 ## Ask First
 
 - Przed dodaniem nowej zależności produkcyjnej (NuGet lub npm), bo każda wchodzi do bramek podatności w CI (`npm audit`, NuGet `--vulnerable`) i do bundla.
-- Przed zmianą kontraktu API używanego już przez istniejące strony (sygnatury endpointów, kształt odpowiedzi, typy w `apps/web/lib/api.ts`).
+- Przed zmianą kontraktu API używanego już przez istniejące strony (sygnatury endpointów, kształt odpowiedzi, typy w `apps/web/lib/api.ts`), bo strony i portal klienta czytają ten kształt bez kontroli kompilatora po stronie API.
 - Przed zmianą schematu bazy (pola encji, relacje). Lokalnie `EnsureCreated()` **nie migruje** istniejącej bazy — zmiana schematu wymaga usunięcia `apps/api/trainer.db`, co kasuje dane. Na produkcji potrzebna jest dodatkowo migracja EF.
-- Przed zmianą architektury, układu katalogów lub dotknięciem wielu obszarów naraz w sposób nieopisany w istniejącym specu.
+- Przed zmianą architektury, układu katalogów lub dotknięciem wielu obszarów naraz w sposób nieopisany w istniejącym specu, bo spec w `.ai/specs/` jest miejscem, gdzie taką decyzję się zatwierdza.
 
 ## Never
 

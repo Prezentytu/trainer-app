@@ -9,6 +9,11 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+if [[ -n "${1:-}" && "${1}" != "--zmienione" ]]; then
+  echo "Nieznana opcja: ${1}. Użycie: ./scripts/check.sh [--zmienione]" >&2
+  exit 2
+fi
+
 if [[ "${1:-}" == "--zmienione" ]]; then
   BASE="$(git merge-base origin/main HEAD 2>/dev/null || echo HEAD)"
   CHANGED="$( { git diff --name-only "${BASE}"; git ls-files --others --exclude-standard; } | sort -u)"

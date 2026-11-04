@@ -13,7 +13,7 @@ LIMITS="scripts/word-limits.txt"
 BASE_REF="${1:-}"
 fail=0
 
-while read -r limit path; do
+while read -r limit path || [[ -n "${limit:-}" ]]; do
   [[ -z "${limit}" || "${limit}" == \#* ]] && continue
   if [[ ! -f "${path}" ]]; then
     echo "::error::${path}: plik z ${LIMITS} nie istnieje."
@@ -34,7 +34,7 @@ if [[ -n "${BASE_REF}" ]]; then
     git fetch --depth=1 origin "${BASE_REF}"
   fi
   if base_limits=$(git show "origin/${BASE_REF}:${LIMITS}" 2>/dev/null); then
-    while read -r base_limit path; do
+    while read -r base_limit path || [[ -n "${base_limit:-}" ]]; do
       [[ -z "${base_limit}" || "${base_limit}" == \#* ]] && continue
       head_limit=$(awk -v p="${path}" '$1 !~ /^#/ && $2 == p { print $1 }' "${LIMITS}")
       if [[ -z "${head_limit}" ]]; then
