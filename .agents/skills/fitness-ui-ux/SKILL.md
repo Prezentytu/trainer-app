@@ -1,6 +1,6 @@
 ---
 name: fitness-ui-ux
-description: Wytyczne UI/UX dla portalu trenera i aplikacji treningowej (kreator planów, tabele serii, periodyzacja, logowanie, statystyki). Używaj, gdy projektujesz albo zmieniasz ekran domeny treningowej: kreator planów, tabelę serii, periodyzację, logowanie sesji, listę ćwiczeń albo wykres progresu w Trainer App. Czytaj razem z `design-system`, `ux-writing`, `senior-ux-cro`.
+description: Wytyczne UI/UX dla portalu trenera i aplikacji treningowej (kreator planów, tabele serii, periodyzacja, logowanie, statystyki). Używaj, gdy projektujesz albo zmieniasz ekran domeny treningowej — kreator planów, tabelę serii, periodyzację, logowanie sesji, listę ćwiczeń albo wykres progresu w Trainer App. Inne skille UI dobierz do zmiany według wiersza UI w Task Router (AGENTS.md).
 ---
 
 # UI/UX aplikacji treningowej
@@ -68,7 +68,7 @@ Różnica między trybami to ilość **danych** na ekranie, nie ilość dekoracj
 
 - Tokeny/typografia/spacing: skill `design-system`.
 - Responsywność: skill `responsive-ui`.
-- Psychologia konwersji, hierarchia uwagi, empty states, gotchas (poziom "10/10"): skill `senior-ux-cro` — czytaj przy każdej implementacji UI.
+- Psychologia konwersji, hierarchia uwagi, empty states, gotchas (poziom "10/10"): skill `senior-ux-cro` — czytaj przy nowym ekranie, formularzu, onboardingu albo ścieżce konwersji.
 - Interakcje, materiały, craft (Apple): skill `apple-design`.
 
 ## Źródła

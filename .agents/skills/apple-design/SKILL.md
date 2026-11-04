@@ -1,6 +1,6 @@
 ---
 name: apple-design
-description: Podejście Apple do interfejsu (response, direct manipulation, materiały, typografia, craft) przetłumaczone na Trainer App / Acid — bez nowej biblioteki motion. Używaj, gdy zmiana dotyczy ruchu i reakcji interfejsu: feedback po naciśnięciu, przejścia i animacje, gesty i przeciąganie, materiały i przezroczystość, dialogi i arkusze, typografia optyczna albo reduced motion. Nie do zmiany samego układu, koloru czy tekstu. EN triggers — fluid interfaces, press feedback, materials, translucency, backdrop-filter, spatial consistency, optical sizing, tracking, reduced motion, craft, delight. Czytaj razem z `design-system`, `fitness-ui-ux`, `senior-ux-cro`, `responsive-ui` i `ux-writing`.
+description: Podejście Apple do interfejsu (response, direct manipulation, materiały, typografia, craft) przetłumaczone na Trainer App / Acid — bez nowej biblioteki motion. Używaj, gdy zmiana dotyczy ruchu i reakcji interfejsu — feedback po naciśnięciu, przejścia i animacje, gesty i przeciąganie, materiały i przezroczystość, dialogi i arkusze, typografia optyczna albo reduced motion. Nie do zmiany samego układu, koloru czy tekstu. EN triggers — fluid interfaces, press feedback, materials, translucency, backdrop-filter, spatial consistency, optical sizing, tracking, reduced motion, craft, delight. Inne skille UI dobierz do zmiany według wiersza UI w Task Router (AGENTS.md).
 ---
 
 # Apple Design — craft interakcji (Trainer App)
