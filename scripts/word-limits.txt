@@ -1,0 +1,7 @@
+# Limit słów (wc -w) dla plików, które agent czyta w każdej sesji. Wolno tylko obniżać (CI porównuje z main).
+# Format: <limit> <ścieżka>
+# .ai/lessons.md: budżet roboczy na wpisy z ostatnich 30 dni (starsze idą do lessons-archiwum.md); sam nagłówek ma ~63 słowa.
+1266 AGENTS.md
+525 apps/api/AGENTS.md
+640 apps/web/AGENTS.md
+400 .ai/lessons.md

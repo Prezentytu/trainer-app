@@ -156,6 +156,39 @@ jobs:
           path: artifacts/ef.sql
           if-no-files-found: error
 
+  harness:
+    name: Harness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Limity słów instrukcji (tylko w dół)
+        env:
+          BASE_REF: ${{ github.base_ref || 'main' }}
+        run: bash scripts/check-word-limits.sh "${BASE_REF}"
+
+      - name: Skille — jedno źródło (.agents/skills)
+        run: |
+          if [[ "$(readlink .cursor/skills)" != "../.agents/skills" ]]; then
+            echo "::error::.cursor/skills musi być symlinkiem do ../.agents/skills (jedno źródło skilli)."
+            exit 1
+          fi
+
+      - name: Skan sekretów (gitleaks, cała historia)
+        env:
+          GITLEAKS_VERSION: "8.30.1"
+          GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+        run: |
+          set -euo pipefail
+          tarball="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -sSfL -o "${RUNNER_TEMP}/${tarball}" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${tarball}"
+          echo "${GITLEAKS_SHA256}  ${RUNNER_TEMP}/${tarball}" | sha256sum -c -
+          tar -xzf "${RUNNER_TEMP}/${tarball}" -C "${RUNNER_TEMP}" gitleaks
+          # Fałszywe trafienia: .gitleaksignore (fingerprint + powód).
+          "${RUNNER_TEMP}/gitleaks" git --no-banner --redact --exit-code 1 .
+
   dependency-review:
     name: Dependency review
     if: github.event_name == 'pull_request'
@@ -172,7 +205,7 @@ jobs:
   ci-ok:
     name: CI
     if: always()
-    needs: [api, web, migrations, dependency-review]
+    needs: [api, web, migrations, harness, dependency-review]
     runs-on: ubuntu-latest
     steps:
       - name: Require green jobs
@@ -181,9 +214,10 @@ jobs:
           api="${{ needs.api.result }}"
           web="${{ needs.web.result }}"
           mig="${{ needs.migrations.result }}"
+          har="${{ needs.harness.result }}"
           dep="${{ needs.dependency-review.result }}"
-          echo "api=$api web=$web migrations=$mig dependency-review=$dep"
-          if [[ "$api" != "success" || "$web" != "success" || "$mig" != "success" ]]; then
+          echo "api=$api web=$web migrations=$mig harness=$har dependency-review=$dep"
+          if [[ "$api" != "success" || "$web" != "success" || "$mig" != "success" || "$har" != "success" ]]; then
             exit 1
           fi
           if [[ "$dep" != "success" && "$dep" != "skipped" ]]; then
