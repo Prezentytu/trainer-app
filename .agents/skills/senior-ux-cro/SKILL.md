@@ -7,7 +7,7 @@ description: Senior UX/UI + psychologia konwersji (CRO) dla Trainer App — redu
 
 Warstwa "10/10": senior nie tylko projektuje wygląd — **zarządza uwagą i minimalizuje koszt interakcji** (poznawczy, fizyczny, czasowy). Interfejs ma prowadzić użytkownika i usuwać wątpliwości na każdym kroku.
 
-Stosuj ŁĄCZNIE z:
+Powiązane skille (dobierz te, których dotyczy zmiana, według wiersza UI w Task Router w AGENTS.md, nie wszystkie naraz):
 
 - `design-system` — tokeny semantyczne (`bg-surface`, `text-foreground`, `text-muted`, `accent`), typografia, spacing, radius. Zero surowych `zinc-*`/`yellow-*`.
 - `fitness-ui-ux` — domena (kreator = gęstość; logowanie sesji = wielka typografia, minimum tapnięć).

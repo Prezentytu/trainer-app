@@ -1,6 +1,6 @@
 ---
 name: fitness-ui-ux
-description: Wytyczne UI/UX dla portalu trenera i aplikacji treningowej (kreator planów, tabele serii, periodyzacja, logowanie, statystyki). Używaj, gdy projektujesz albo zmieniasz ekran domeny treningowej — kreator planów, tabelę serii, periodyzację, logowanie sesji, listę ćwiczeń albo wykres progresu w Trainer App. Inne skille UI dobierz do zmiany według wiersza UI w Task Router (AGENTS.md).
+description: Wytyczne UI/UX dla portalu trenera i aplikacji treningowej (kreator planów, tabele serii, periodyzacja, logowanie, statystyki). Używaj, gdy projektujesz albo zmieniasz ekran domeny treningowej — kreator planów, tabelę serii, periodyzację, logowanie sesji albo wykres progresu w Trainer App. Inne skille UI dobierz do zmiany według wiersza UI w Task Router (AGENTS.md).
 ---
 
 # UI/UX aplikacji treningowej

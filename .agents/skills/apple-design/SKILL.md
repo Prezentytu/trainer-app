@@ -7,7 +7,7 @@ description: Podejście Apple do interfejsu (response, direct manipulation, mate
 
 Interfejs czuje się żywy, gdy reaguje natychmiast, śledzi gest 1:1, zachowuje spójność przestrzenną i nie kradnie uwagi. Ten skill tłumaczy zasady z WWDC (*Designing Fluid Interfaces*, typografia, materiały, Principles of Great Design) na realia Acid — **bez wprowadzania springów ani biblioteki motion**.
 
-Stosuj ŁĄCZNIE z:
+Powiązane skille (dobierz te, których dotyczy zmiana, według wiersza UI w Task Router w AGENTS.md, nie wszystkie naraz):
 
 - `design-system` — tokeny, typografia, spacing, motion (`--dur-*`, `--ease-*`, press `scale(0.98)`, bez bounce).
 - `fitness-ui-ux` — dwa tryby: planowanie (gęstość) vs wykonanie/sesja (minimum interakcji).
@@ -144,7 +144,7 @@ Czytaj, gdy rozstrzygasz spór projektowy i potrzebujesz słownika decyzji. Peł
 
 ## Checklist — Apple craft
 
-Przed oddaniem UI (obok Senior Excellence z `senior-ux-cro`):
+Przed oddaniem UI (przy nowym ekranie lub redesignie także Senior Excellence z `senior-ux-cro`):
 
 - [ ] Press feedback na pointer-down (`active:scale` / stan), nie dopiero na click
 - [ ] Brak zbędnego debounce/timeout na ścieżce feedbacku; < 100 ms dla lokalnego efektu
