@@ -1,13 +1,13 @@
 ---
 name: senior-ux-cro
-description: Senior UX/UI + psychologia konwersji (CRO) dla Trainer App — redukcja kosztu interakcji, biasy poznawcze, aktywacja, formularze, perceived performance i etyczna perswazja. Użyj przy KAŻDEJ implementacji lub redesignie UI (strony, komponenty, formularze, kreator planów, logowanie sesji, statystyki, empty states, nawigacja, dashboard). EN triggers — conversion optimization, UX psychology, interaction cost, activation, empty state, form UX, peak-end, perceived performance, ethical persuasion, CTA microcopy. Czytaj razem z `design-system`, `fitness-ui-ux`, `responsive-ui` i `ux-writing`.
+description: Senior UX/UI + psychologia konwersji (CRO) dla Trainer App — redukcja kosztu interakcji, biasy poznawcze, aktywacja, formularze, perceived performance i etyczna perswazja. Używaj, gdy powstaje nowy ekran albo redesign ścieżki, formularz lub onboarding, empty state prowadzący do pierwszej akcji, CTA i microcopy decydujące o konwersji, zmiana ładowania lub perceived performance (skeletony, optymistyczne zapisy), dashboard albo statystyki, albo gdy ścieżka wymaga zbyt wielu kroków lub kliknięć. Nie do drobnej poprawki wyglądu istniejącego komponentu. EN triggers — conversion optimization, UX psychology, interaction cost, activation, empty state, form UX, peak-end, perceived performance, ethical persuasion, CTA microcopy. Inne skille UI dobierz do zmiany według wiersza UI w Task Router (AGENTS.md).
 ---
 
 # Senior UX/UI & Conversion (CRO) — Trainer App
 
 Warstwa "10/10": senior nie tylko projektuje wygląd — **zarządza uwagą i minimalizuje koszt interakcji** (poznawczy, fizyczny, czasowy). Interfejs ma prowadzić użytkownika i usuwać wątpliwości na każdym kroku.
 
-Stosuj ŁĄCZNIE z:
+Powiązane skille (dobierz te, których dotyczy zmiana, według wiersza UI w Task Router w AGENTS.md, nie wszystkie naraz):
 
 - `design-system` — tokeny semantyczne (`bg-surface`, `text-foreground`, `text-muted`, `accent`), typografia, spacing, radius. Zero surowych `zinc-*`/`yellow-*`.
 - `fitness-ui-ux` — domena (kreator = gęstość; logowanie sesji = wielka typografia, minimum tapnięć).

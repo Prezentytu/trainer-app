@@ -1,13 +1,13 @@
 ---
 name: apple-design
-description: Podejście Apple do interfejsu (response, direct manipulation, materiały, typografia, craft) przetłumaczone na Trainer App / Acid — bez nowej biblioteki motion. Użyj ZAWSZE przy każdej implementacji lub redesignie UI (strony, komponenty, formularze, sesja, nawigacja, dialogi, empty states). EN triggers — fluid interfaces, press feedback, materials, translucency, backdrop-filter, spatial consistency, optical sizing, tracking, reduced motion, craft, delight. Czytaj razem z `design-system`, `fitness-ui-ux`, `senior-ux-cro`, `responsive-ui` i `ux-writing`.
+description: Podejście Apple do interfejsu (response, direct manipulation, materiały, typografia, craft) przetłumaczone na Trainer App / Acid — bez nowej biblioteki motion. Używaj, gdy zmiana dotyczy ruchu i reakcji interfejsu — feedback po naciśnięciu, przejścia i animacje, gesty i przeciąganie, materiały i przezroczystość, dialogi i arkusze, typografia optyczna albo reduced motion. Nie do zmiany samego układu, koloru czy tekstu. EN triggers — fluid interfaces, press feedback, materials, translucency, backdrop-filter, spatial consistency, optical sizing, tracking, reduced motion, craft, delight. Inne skille UI dobierz do zmiany według wiersza UI w Task Router (AGENTS.md).
 ---
 
 # Apple Design — craft interakcji (Trainer App)
 
 Interfejs czuje się żywy, gdy reaguje natychmiast, śledzi gest 1:1, zachowuje spójność przestrzenną i nie kradnie uwagi. Ten skill tłumaczy zasady z WWDC (*Designing Fluid Interfaces*, typografia, materiały, Principles of Great Design) na realia Acid — **bez wprowadzania springów ani biblioteki motion**.
 
-Stosuj ŁĄCZNIE z:
+Powiązane skille (dobierz te, których dotyczy zmiana, według wiersza UI w Task Router w AGENTS.md, nie wszystkie naraz):
 
 - `design-system` — tokeny, typografia, spacing, motion (`--dur-*`, `--ease-*`, press `scale(0.98)`, bez bounce).
 - `fitness-ui-ux` — dwa tryby: planowanie (gęstość) vs wykonanie/sesja (minimum interakcji).
@@ -144,7 +144,7 @@ Czytaj, gdy rozstrzygasz spór projektowy i potrzebujesz słownika decyzji. Peł
 
 ## Checklist — Apple craft
 
-Przed oddaniem UI (obok Senior Excellence z `senior-ux-cro`):
+Przed oddaniem UI (przy nowym ekranie lub redesignie także Senior Excellence z `senior-ux-cro`):
 
 - [ ] Press feedback na pointer-down (`active:scale` / stan), nie dopiero na click
 - [ ] Brak zbędnego debounce/timeout na ścieżce feedbacku; < 100 ms dla lokalnego efektu
