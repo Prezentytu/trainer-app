@@ -1,6 +1,6 @@
 ---
 name: senior-ux-cro
-description: Senior UX/UI + psychologia konwersji (CRO) dla Trainer App — redukcja kosztu interakcji, biasy poznawcze, aktywacja, formularze, perceived performance i etyczna perswazja. Użyj przy KAŻDEJ implementacji lub redesignie UI (strony, komponenty, formularze, kreator planów, logowanie sesji, statystyki, empty states, nawigacja, dashboard). EN triggers — conversion optimization, UX psychology, interaction cost, activation, empty state, form UX, peak-end, perceived performance, ethical persuasion, CTA microcopy. Czytaj razem z `design-system`, `fitness-ui-ux`, `responsive-ui` i `ux-writing`.
+description: Senior UX/UI + psychologia konwersji (CRO) dla Trainer App — redukcja kosztu interakcji, biasy poznawcze, aktywacja, formularze, perceived performance i etyczna perswazja. Używaj, gdy powstaje nowy ekran albo redesign ścieżki, formularz lub onboarding, empty state prowadzący do pierwszej akcji, CTA i microcopy decydujące o konwersji, albo gdy ścieżka wymaga zbyt wielu kroków lub kliknięć. Nie do drobnej poprawki wyglądu istniejącego komponentu. EN triggers — conversion optimization, UX psychology, interaction cost, activation, empty state, form UX, peak-end, perceived performance, ethical persuasion, CTA microcopy. Czytaj razem z `design-system`, `fitness-ui-ux`, `responsive-ui` i `ux-writing`.
 ---
 
 # Senior UX/UI & Conversion (CRO) — Trainer App
