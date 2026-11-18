@@ -6,6 +6,14 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+echo "==> [0/5] Agenci: modułowy AGENTS.md ma obok CLAUDE.md (Claude Code wczytuje tylko CLAUDE.md podkatalogu)"
+missing=0
+while IFS= read -r f; do
+  d="$(dirname "$f")"
+  if ! grep -qx '@AGENTS.md' "$d/CLAUDE.md" 2>/dev/null; then echo "brak $d/CLAUDE.md z linią @AGENTS.md"; missing=1; fi
+done < <(git ls-files '*/AGENTS.md')
+[ "$missing" -eq 0 ]
+
 echo "==> [1/5] Backend: build"
 dotnet build apps/api/TrainerApp.Api.csproj -nologo -warnaserror
 
